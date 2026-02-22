@@ -568,11 +568,53 @@ let db;
                 transform-origin: top right; z-index: 10000;
             }
             .auth-menu-container .border-b { border-color: var(--menu-divider, #333) !important; transition: border-color 0.3s ease; }
+            .auth-menu-displayname {
+                color: #ffffff !important;
+                text-align: left !important; margin: 0 !important; font-weight: 600 !important;
+            }
+            .auth-menu-username-handle {
+                color: #9ca3af !important;
+                text-align: left !important; margin: 0 !important; font-weight: 400 !important;
+            }
             .auth-menu-username {
                 color: var(--menu-username-text, white);
                 transition: color 0.3s ease;
                 text-align: left !important; margin: 0 !important; font-weight: 400 !important;
             }
+
+            /* Profile Stat Styles */
+            .profile-stat-container {
+                display: flex;
+                gap: 1.25rem;
+                padding: 0.25rem 0.5rem;
+                margin-bottom: 0.5rem;
+            }
+            .profile-stat-item {
+                display: flex;
+                flex-direction: column;
+                cursor: pointer;
+                transition: transform 0.2s ease;
+            }
+            .profile-stat-item:hover {
+                transform: translateY(-2px);
+            }
+            .profile-stat-item:hover .stat-count, .profile-stat-item:hover .stat-label {
+                color: var(--tab-active-text, #4f46e5) !important;
+            }
+            .stat-count {
+                font-weight: 600;
+                font-size: 0.95rem;
+                color: #ffffff;
+                transition: color 0.2s ease;
+            }
+            .stat-label {
+                font-size: 0.7rem;
+                color: #9ca3af;
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
+                transition: color 0.2s ease;
+            }
+
             .auth-menu-email { color: var(--menu-email-text, #9ca3af); text-align: left !important; margin: 0 !important; font-weight: 400 !important; }
             @keyframes menu-pop-in {
                 0% { opacity: 0; transform: translateY(-10px) scale(0.95); }
@@ -901,10 +943,96 @@ let db;
             }
         };
 
+        const getProfileButtonHtml = (user, userData) => {
+            if (!user) return '';
+            const username = userData?.username || user.displayName?.toLowerCase().replace(/[^a-z0-9]/g, "") || "user";
+            const displayName = userData?.displayName || user.displayName || username;
+            const pfpType = userData?.pfpType || 'google'; 
+
+            let avatarHtml = '';
+            const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
+            if (pfpType === 'custom' && userData?.customPfp) {
+                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
+            } else if (pfpType === 'mibi' && userData?.mibiConfig) {
+                const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = userData.mibiConfig;
+                avatarHtml = `
+                    <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 14px;">
+                         <div class="absolute inset-0 w-full h-full" style="transform: translate(${offsetX || 0}%, ${offsetY || 0}%) rotate(${rotation || 0}deg) scale(${(size || 100) / 100}); transform-origin: center;">
+                             <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
+                             ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                             ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                             ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                         </div>
+                    </div>
+                `;
+            } else if (pfpType === 'letter') {
+                const bg = userData?.pfpLetterBg || DEFAULT_THEME['avatar-gradient'];
+                const textColor = getLetterAvatarTextColor(bg); 
+                const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
+                avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
+            } else {
+                const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
+                const googlePhoto = googleProvider ? googleProvider.photoURL : null;
+                const displayPhoto = googlePhoto || user.photoURL;
+                if (displayPhoto) {
+                    avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 12px;" alt="Profile">`;
+                } else {
+                    const bg = DEFAULT_THEME['avatar-gradient'];
+                    const textColor = getLetterAvatarTextColor(bg);
+                    const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
+                    avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
+                }
+            }
+
+            const followers = 120; // Example count
+            const following = 45;  // Example count
+            const followersDisplay = followers > 99 ? '99+' : followers;
+            const followingDisplay = following > 99 ? '99+' : following;
+
+            const userTagHtml = (userData?.userTag) 
+                ? `<div class="text-xs font-italic" style="color: ${userData.userTag.color}; font-style: italic; margin-top: 2px;">${userData.userTag.text}</div>`
+                : '';
+
+            return `
+                <div id="profile-area-wrapper" class="relative flex-shrink-0 flex items-center">
+                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 14px;">
+                        <i class="fa-solid fa-address-card text-gray-300"></i>
+                    </button>
+                    <div id="profile-menu-container" class="auth-menu-container closed">
+                        <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center gap-3 pb-2">
+                            <div class="w-10 h-10 flex-shrink-0" id="auth-menu-avatar-container">
+                                ${avatarHtml}
+                            </div>
+                            <div class="min-w-0 flex-1 overflow-hidden">
+                                <div class="marquee-container" id="displayname-marquee">
+                                    <p class="text-sm auth-menu-displayname marquee-content">${displayName}</p>
+                                </div>
+                                <div class="marquee-container" id="username-marquee">
+                                    <p class="text-xs auth-menu-username-handle marquee-content">@${username}</p>
+                                </div>
+                                ${userTagHtml}
+                            </div>
+                        </div>
+                        <div class="profile-stat-container">
+                            <div class="profile-stat-item">
+                                <span class="stat-count">${followersDisplay}</span>
+                                <span class="stat-label">Followers</span>
+                            </div>
+                            <div class="profile-stat-item">
+                                <span class="stat-count">${followingDisplay}</span>
+                                <span class="stat-label">Following</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         const getAuthControlsHtml = () => {
             const user = currentUser;
             const userData = currentUserData;
             const pinButtonHtml = getPinButtonHtml();
+            const profileButtonHtml = getProfileButtonHtml(user, userData);
 
             const loggedOutView = `
                 <div id="auth-button-container" class="relative flex-shrink-0 flex items-center">
@@ -939,25 +1067,17 @@ let db;
             `;
 
             const loggedInView = (user, userData) => {
-                const username = userData?.username || user.displayName || 'User';
-                const email = user.email || 'No email';
-                const initial = (userData?.letterAvatarText || username.charAt(0)).toUpperCase();
+                const displayName = userData?.displayName || user.displayName || userData?.username || 'User';
                 let avatarHtml = '';
                 const pfpType = userData?.pfpType || 'google'; 
 
-                // FIX: Combined styles to ensure background colors render correctly
                 if (pfpType === 'custom' && userData?.customPfp) {
                     avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
                 } else if (pfpType === 'mibi' && userData?.mibiConfig) {
                     const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = userData.mibiConfig;
-                    const scale = (size || 100) / 100;
-                    const rot = rotation || 0;
-                    const x = offsetX || 0;
-                    const y = offsetY || 0;
-                    
                     avatarHtml = `
                         <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 14px;">
-                             <div class="absolute inset-0 w-full h-full" style="transform: translate(${x}%, ${y}%) rotate(${rot}deg) scale(${scale}); transform-origin: center;">
+                             <div class="absolute inset-0 w-full h-full" style="transform: translate(${offsetX || 0}%, ${offsetY || 0}%) rotate(${rotation || 0}deg) scale(${(size || 100) / 100}); transform-origin: center;">
                                  <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
                                  ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
                                  ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
@@ -967,6 +1087,7 @@ let db;
                     `;
                 } else if (pfpType === 'letter') {
                     const bg = userData?.pfpLetterBg || DEFAULT_THEME['avatar-gradient'];
+                    const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
                     const textColor = getLetterAvatarTextColor(bg); 
                     const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
                     avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
@@ -974,11 +1095,11 @@ let db;
                     const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
                     const googlePhoto = googleProvider ? googleProvider.photoURL : null;
                     const displayPhoto = googlePhoto || user.photoURL;
-
                     if (displayPhoto) {
                         avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 12px;" alt="Profile">`;
                     } else {
                         const bg = DEFAULT_THEME['avatar-gradient'];
+                        const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
                         const textColor = getLetterAvatarTextColor(bg);
                         const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
                         avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
@@ -989,10 +1110,6 @@ let db;
                 const showPinOption = isPinHidden 
                     ? `<button id="show-pin-button" class="auth-menu-link"><i class="fa-solid fa-map-pin w-4"></i>Show Pin Button</button>` 
                     : '';
-                
-                const userTagHtml = (userData?.userTag) 
-                    ? `<div class="text-xs font-italic" style="color: ${userData.userTag.color}; font-style: italic; margin-top: 2px;">${userData.userTag.text}</div>`
-                    : '';
 
                 return `
                     <div id="auth-button-container" class="relative flex-shrink-0 flex items-center">
@@ -1000,17 +1117,6 @@ let db;
                             ${avatarHtml}
                         </button>
                         <div id="auth-menu-container" class="auth-menu-container closed">
-                            <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center">
-                                <div class="min-w-0 flex-1 overflow-hidden">
-                                    <div class="marquee-container" id="username-marquee">
-                                        <p class="text-sm font-semibold auth-menu-username marquee-content">${username}</p>
-                                    </div>
-                                    <div class="marquee-container" id="email-marquee">
-                                        <p class="text-xs text-gray-400 auth-menu-email marquee-content">${email}</p>
-                                    </div>
-                                    ${userTagHtml}
-                                </div>
-                            </div>
                             <a href="/logged-in/settings.html" class="auth-menu-link">
                                 <i class="fa-solid fa-gear w-4"></i>
                                 Settings
@@ -1044,6 +1150,7 @@ let db;
             };
 
             return `
+                ${profileButtonHtml}
                 ${pinButtonHtml}
                 ${user ? loggedInView(user, userData) : loggedOutView}
             `;
@@ -1053,20 +1160,60 @@ let db;
             const toggleButton = document.getElementById('auth-toggle');
             const menu = document.getElementById('auth-menu-container');
 
+            const profileToggle = document.getElementById('profile-toggle');
+            const profileMenu = document.getElementById('profile-menu-container');
+
+            if (profileToggle && profileMenu) {
+                profileToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // Close other menus
+                    const otherMenus = ['auth-menu-container', 'pin-context-menu'];
+                    otherMenus.forEach(id => {
+                        const m = document.getElementById(id);
+                        if (m && m.classList.contains('open')) {
+                            m.classList.remove('open');
+                            m.classList.add('closing');
+                            m.addEventListener('animationend', () => {
+                                m.classList.remove('closing');
+                                m.classList.add('closed');
+                            }, { once: true });
+                        }
+                    });
+
+                    if (profileMenu.classList.contains('open')) {
+                        profileMenu.classList.remove('open');
+                        profileMenu.classList.add('closing');
+                        profileMenu.addEventListener('animationend', () => {
+                            profileMenu.classList.remove('closing');
+                            profileMenu.classList.add('closed');
+                        }, { once: true });
+                    } else {
+                        profileMenu.classList.remove('closed');
+                        profileMenu.classList.remove('closing');
+                        profileMenu.classList.add('open');
+                        checkMarquees();
+                    }
+                });
+            }
+
             if (toggleButton && menu) {
                 toggleButton.addEventListener('click', (e) => {
                     e.stopPropagation();
                     
-                    // Close Pin Menu if open
-                    const pinMenu = document.getElementById('pin-context-menu');
-                    if (pinMenu && pinMenu.classList.contains('open')) {
-                        pinMenu.classList.remove('open');
-                        pinMenu.classList.add('closing');
-                        pinMenu.addEventListener('animationend', () => {
-                            pinMenu.classList.remove('closing');
-                            pinMenu.classList.add('closed');
-                        }, { once: true });
-                    }
+                    // Close other menus
+                    const otherMenus = ['profile-menu-container', 'pin-context-menu'];
+                    otherMenus.forEach(id => {
+                        const m = document.getElementById(id);
+                        if (m && m.classList.contains('open')) {
+                            m.classList.remove('open');
+                            m.classList.add('closing');
+                            m.addEventListener('animationend', () => {
+                                m.classList.remove('closing');
+                                m.classList.add('closed');
+                            }, { once: true });
+                        }
+                    });
 
                     if (menu.classList.contains('open')) {
                         menu.classList.remove('open');
@@ -1356,15 +1503,19 @@ let db;
                 pinButton.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
                     
-                    const authMenu = document.getElementById('auth-menu-container');
-                    if (authMenu && authMenu.classList.contains('open')) {
-                        authMenu.classList.remove('open');
-                        authMenu.classList.add('closing');
-                        authMenu.addEventListener('animationend', () => {
-                            authMenu.classList.remove('closing');
-                            authMenu.classList.add('closed');
-                        }, { once: true });
-                    }
+                    // Close other menus
+                    const otherMenus = ['auth-menu-container', 'profile-menu-container'];
+                    otherMenus.forEach(id => {
+                        const m = document.getElementById(id);
+                        if (m && m.classList.contains('open')) {
+                            m.classList.remove('open');
+                            m.classList.add('closing');
+                            m.addEventListener('animationend', () => {
+                                m.classList.remove('closing');
+                                m.classList.add('closed');
+                            }, { once: true });
+                        }
+                    });
 
                     if (pinContextMenu.classList.contains('open')) {
                         pinContextMenu.classList.remove('open');
@@ -1447,16 +1598,30 @@ let db;
 
             if (!globalClickListenerAdded) {
                 document.addEventListener('click', (e) => {
-                    const menu = document.getElementById('auth-menu-container');
-                    const toggleButton = document.getElementById('auth-toggle');
+                    const authMenu = document.getElementById('auth-menu-container');
+                    const authToggle = document.getElementById('auth-toggle');
                     
-                    if (menu && menu.classList.contains('open')) {
-                        if (!menu.contains(e.target) && (toggleButton && !toggleButton.contains(e.target))) {
-                            menu.classList.remove('open');
-                            menu.classList.add('closing');
-                            menu.addEventListener('animationend', () => {
-                                menu.classList.remove('closing');
-                                menu.classList.add('closed');
+                    if (authMenu && authMenu.classList.contains('open')) {
+                        if (!authMenu.contains(e.target) && (authToggle && !authToggle.contains(e.target))) {
+                            authMenu.classList.remove('open');
+                            authMenu.classList.add('closing');
+                            authMenu.addEventListener('animationend', () => {
+                                authMenu.classList.remove('closing');
+                                authMenu.classList.add('closed');
+                            }, { once: true });
+                        }
+                    }
+
+                    const profileMenu = document.getElementById('profile-menu-container');
+                    const profileToggle = document.getElementById('profile-toggle');
+
+                    if (profileMenu && profileMenu.classList.contains('open')) {
+                        if (!profileMenu.contains(e.target) && (profileToggle && !profileToggle.contains(e.target))) {
+                            profileMenu.classList.remove('open');
+                            profileMenu.classList.add('closing');
+                            profileMenu.addEventListener('animationend', () => {
+                                profileMenu.classList.remove('closing');
+                                profileMenu.classList.add('closed');
                             }, { once: true });
                         }
                     }
@@ -1569,6 +1734,39 @@ let db;
             }
             currentUser = user;
             currentUserData = userData;
+
+            // --- DATA CORRECTION LOGIC ---
+            if (user && userData) {
+                let updated = false;
+                const originalUsername = userData.username || user.displayName || 'user';
+                const correctedUsername = originalUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+                
+                // If username violates new strict rules, fix it
+                if (originalUsername !== correctedUsername) {
+                    // Save original as displayName if displayName doesn't exist
+                    if (!userData.displayName) {
+                        userData.displayName = originalUsername.slice(0, 24);
+                    }
+                    userData.username = correctedUsername;
+                    updated = true;
+                } else if (!userData.displayName) {
+                    // Ensure displayName exists even if username was already clean
+                    userData.displayName = originalUsername.slice(0, 24);
+                    updated = true;
+                }
+
+                if (updated) {
+                    try {
+                        await db.collection('users').doc(user.uid).update({
+                            username: userData.username,
+                            displayName: userData.displayName
+                        });
+                    } catch (e) {
+                        console.error("Error updating user data:", e);
+                    }
+                }
+            }
+            // -----------------------------
 
             // --- Apply Theme from Firestore ---
             if (userData && userData.navbarTheme) {
