@@ -304,7 +304,7 @@
                 const item = document.createElement('div');
                 item.className = 'page-link-item';
                 
-                const isLocalPath = path.startsWith('file://') || (path.startsWith('/') && !path.startsWith('/logged-in') && !path.includes('.vercel.app'));
+                const isLocalPath = path.startsWith('file://') || (path.startsWith('/') && !path.startsWith('/logged-in') && !path.includes('.vercel.app')) || path.includes('4simpleproblems_v5_latest.html');
 
                 let isClickable = true;
                 if (isLocalPath) {

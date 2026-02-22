@@ -131,6 +131,10 @@
     function trackPageView() {
         if (isExcluded || !db) return;
         const path = window.location.protocol === 'file:' ? window.location.href : window.location.pathname;
+        
+        // Filter out invalid/internal paths
+        if (path.includes('srcdoc') || path.includes('javascript:')) return;
+
         const pageName = getCleanTitle(window.location.pathname, document.title);
         
         const docRef = db.collection('analytics').doc(sessionId);
