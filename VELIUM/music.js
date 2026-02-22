@@ -3,7 +3,15 @@ const API_BASE_URL = '/music-api';
 // --- Proxy Helper ---
 function getProxyUrl(url) {
     if (!url) return url;
+    if (url.startsWith('data:')) return url;
+    
+    // If it looks like a relative path, make it absolute to the domain
+    if (url.startsWith('//')) url = 'https:' + url;
+    
     if (window.__uv$config && window.__uv$config.prefix && window.__uv$config.encodeUrl) {
+        // If it's already a proxied URL (starts with prefix), don't double proxy
+        if (url.includes(window.__uv$config.prefix)) return url;
+        
         return window.__uv$config.prefix + window.__uv$config.encodeUrl(url);
     }
     return url;
@@ -177,11 +185,14 @@ async function handleSearch(query) {
     const tracksGrid = document.getElementById('searchGrid');
     const albumsGrid = document.getElementById('albumsGrid');
     const artistsGrid = document.getElementById('artistsGrid');
+    const playlistsGrid = document.getElementById('playlistsGrid');
 
     resultsDiv.classList.remove('hidden');
     categoriesDiv.classList.add('hidden');
 
-    tracksGrid.innerHTML = '<div class="col-span-full py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
+    [tracksGrid, albumsGrid, artistsGrid, playlistsGrid].forEach(g => {
+        if (g) g.innerHTML = '<div class="col-span-full py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
+    });
 
     try {
         const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`);
@@ -190,6 +201,7 @@ async function handleSearch(query) {
         renderTrackGrid(data.tracks, tracksGrid);
         renderAlbumGrid(data.albums, albumsGrid);
         renderArtistGrid(data.artists, artistsGrid);
+        renderPlaylistGrid(data.playlists, playlistsGrid);
     } catch (e) {
         console.error('Search failed', e);
     }
@@ -200,11 +212,75 @@ function handleCategorySearch(category) {
     if (input) {
         input.value = category;
         handleSearch(category);
+        
+        // Automatically switch to playlists tab for categories
+        const playlistsTab = document.querySelector('.search-tab[data-tab="playlists"]');
+        if (playlistsTab) playlistsTab.click();
+    }
+}
+
+// ... rendering grids ...
+
+function renderPlaylistGrid(playlistsData, container) {
+    if (!container) return;
+    container.innerHTML = '';
+    playlistsData.forEach(pl => {
+        const card = document.createElement('div');
+        card.className = 'track-card';
+        card.innerHTML = `
+            <img src="${getProxyUrl(pl.artwork_url)}" class="track-artwork" loading="lazy">
+            <div class="font-bold text-sm truncate text-white mb-1">${escapeHtml(pl.name)}</div>
+            <div class="text-xs text-gray-500 truncate">${pl.song_count} songs</div>
+        `;
+        card.addEventListener('click', () => loadOfficialPlaylistDetails(pl.id));
+        container.appendChild(card);
+    });
+}
+
+async function loadOfficialPlaylistDetails(playlistId) {
+    switchView('dynamic');
+    const container = document.getElementById('dynamicView');
+    container.innerHTML = '<div class="py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/playlist/${playlistId}`);
+        const data = await response.json();
+
+        container.innerHTML = `
+            <div class="flex flex-col md:flex-row items-end gap-8 mb-10">
+                <img src="${getProxyUrl(data.artwork_url)}" class="w-56 h-56 rounded-3xl shadow-2xl border border-brand-border">
+                <div class="flex-1">
+                    <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Playlist</span>
+                    <h1 class="text-6xl font-black tracking-tighter mb-4">${escapeHtml(data.name)}</h1>
+                    <p class="text-gray-500 mb-4">${data.description || 'Official Playlist'}</p>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-white">${data.song_count} songs</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-6 mb-8 border-b border-brand-border pb-8">
+                <button class="w-16 h-16 bg-accent-indigo rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform" onclick="playAllFromDynamic()">
+                    <i class="fas fa-play text-white text-xl"></i>
+                </button>
+            </div>
+            <div id="dynamicList" class="space-y-2"></div>
+        `;
+
+        const list = document.getElementById('dynamicList');
+        data.tracks.forEach((track, index) => {
+            const item = createTrackRow(track, index, data.tracks);
+            list.appendChild(item);
+        });
+
+        currentDynamicPlaylist = data.tracks;
+    } catch (e) {
+        console.error('Failed to load playlist details', e);
     }
 }
 
 // --- Rendering ---
 function renderTrackGrid(tracks, container) {
+    if (!container) return;
     container.innerHTML = '';
     tracks.forEach((track, index) => {
         const card = document.createElement('div');
@@ -227,6 +303,7 @@ function renderTrackGrid(tracks, container) {
 }
 
 function renderAlbumGrid(albums, container) {
+    if (!container) return;
     container.innerHTML = '';
     albums.forEach(album => {
         const card = document.createElement('div');
@@ -242,6 +319,7 @@ function renderAlbumGrid(albums, container) {
 }
 
 function renderArtistGrid(artists, container) {
+    if (!container) return;
     container.innerHTML = '';
     artists.forEach(artist => {
         const card = document.createElement('div');
@@ -252,6 +330,22 @@ function renderArtistGrid(artists, container) {
             <div class="text-center text-xs text-gray-500">Artist</div>
         `;
         card.addEventListener('click', () => loadArtistDetails(artist.id));
+        container.appendChild(card);
+    });
+}
+
+function renderPlaylistGrid(playlistsData, container) {
+    if (!container) return;
+    container.innerHTML = '';
+    playlistsData.forEach(pl => {
+        const card = document.createElement('div');
+        card.className = 'track-card';
+        card.innerHTML = `
+            <img src="${getProxyUrl(pl.artwork_url)}" class="track-artwork" loading="lazy">
+            <div class="font-bold text-sm truncate text-white mb-1">${escapeHtml(pl.name)}</div>
+            <div class="text-xs text-gray-500 truncate">${pl.song_count} songs</div>
+        `;
+        card.addEventListener('click', () => loadOfficialPlaylistDetails(pl.id));
         container.appendChild(card);
     });
 }

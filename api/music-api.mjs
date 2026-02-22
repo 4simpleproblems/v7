@@ -68,10 +68,11 @@ export default async function handler(req, res) {
         return r.json();
       };
 
-      const [songsRes, albumsRes, artistsRes] = await Promise.all([
+      const [songsRes, albumsRes, artistsRes, playlistsRes] = await Promise.all([
         fetchJson(`${SAAVN_API}/search/songs?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`),
         fetchJson(`${SAAVN_API}/search/albums?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`),
-        fetchJson(`${SAAVN_API}/search/artists?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`)
+        fetchJson(`${SAAVN_API}/search/artists?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`),
+        fetchJson(`${SAAVN_API}/search/playlists?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`)
       ]);
 
       const formatTrack = (s) => ({
@@ -97,8 +98,41 @@ export default async function handler(req, res) {
           id: a.id,
           name: a.name,
           image_url: a.image?.[a.image.length - 1]?.link || a.image?.[a.image.length - 1]?.url
+        })),
+        playlists: (playlistsRes.data?.results || []).map(p => ({
+          id: p.id,
+          name: p.name,
+          artwork_url: p.image?.[p.image.length - 1]?.link || p.image?.[p.image.length - 1]?.url,
+          song_count: p.songCount,
+          firstname: p.firstname
         }))
       });
+    }
+
+    // 2.1 Playlist Details
+    if (endpoint === 'playlist' || pathname.includes('/playlist/')) {
+        const playlistId = id || pathParts[pathParts.length - 1];
+        const response = await fetch(`${SAAVN_API}/playlists?id=${playlistId}`);
+        if (!response.ok) throw new Error(`Playlist API Error: ${response.status}`);
+        const json = await response.json();
+        const data = json.data;
+        if (!data) throw new Error('No playlist data found');
+        
+        return res.status(200).json({
+            id: data.id,
+            name: data.name,
+            description: data.description,
+            artwork_url: data.image?.[data.image.length - 1]?.link,
+            song_count: data.songCount,
+            tracks: (data.songs || []).map(s => ({
+                id: s.id,
+                title: s.name,
+                artist_name: s.primaryArtists,
+                artist_id: s.primaryArtistsId,
+                duration: s.duration * 1000,
+                artwork_url: s.image?.[s.image.length - 1]?.link
+            }))
+        });
     }
 
     // 3. Album Details
