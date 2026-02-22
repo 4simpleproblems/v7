@@ -514,7 +514,7 @@ let db;
                 padding: 0.5rem 1rem; 
                 color: var(--tab-text, #9ca3af); 
                 font-size: 0.875rem; font-weight: 400; 
-                border-radius: 14px; /* Reset to 14px */
+                border-radius: 16px; /* Updated to 16px */
                 text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
                 border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
                 flex-shrink: 0; 
@@ -547,7 +547,7 @@ let db;
             #auth-toggle {
                 border-color: var(--avatar-border);
                 transition: border-color 0.3s ease;
-                border-radius: 14px; /* Reset to 14px */
+                border-radius: 16px; /* Updated to 16px */
                 border-width: 1px; /* Explicit 1px */
                 width: 40px; height: 40px;
                 display: flex; align-items: center; justify-content: center;
@@ -560,7 +560,7 @@ let db;
                 position: absolute; right: 0; top: 55px; width: 16rem;
                 background: var(--menu-bg, #000);
                 border: 1px solid var(--menu-border, #333);
-                border-radius: 20px; /* Updated to 20px */
+                border-radius: 22px; /* Updated to 22px */
                 padding: 0.75rem; /* Equal spacing on edges */
                 display: flex; flex-direction: column; gap: 0.5rem; /* Flex gap for equal internal spacing */
                 box-shadow: 0 10px 30px rgba(0,0,0,0.6);
@@ -669,7 +669,7 @@ let db;
             .logged-out-auth-toggle { 
                 background: var(--logged-out-icon-bg, #010101); border: 1px solid var(--logged-out-icon-border, #374151); 
                 transition: background-color 0.3s ease, border-color 0.3s ease;
-                border-radius: 14px; /* Reset to 14px */
+                border-radius: 16px; /* Updated to 16px */
             }
             .logged-out-auth-toggle i { color: var(--logged-out-icon-color, #DADADA); transition: color 0.3s ease; }
 
@@ -682,7 +682,7 @@ let db;
             #pin-button { 
                 border-color: var(--pin-btn-border, #4b5563); transition: background-color 0.2s, border-color 0.3s ease; 
                 display: flex; align-items: center; justify-content: center; 
-                border-radius: 14px; /* Reset to 14px */
+                border-radius: 16px; /* Updated to 16px */
                 border-width: 1px; /* Explicit 1px */
                 width: 40px; height: 40px;
                 background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); /* Sync with theme */
@@ -693,7 +693,7 @@ let db;
             #profile-toggle {
                 border-color: var(--pin-btn-border, #4b5563); transition: background-color 0.2s, border-color 0.3s ease; 
                 display: flex; align-items: center; justify-content: center; 
-                border-radius: 14px; /* Reset to 14px */
+                border-radius: 16px; /* Updated to 16px */
                 border-width: 1px; /* Explicit 1px */
                 width: 40px; height: 40px;
                 background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); /* Sync with theme */
@@ -729,7 +729,7 @@ let db;
                 pointer-events: none;
             }
             .notification-toast {
-                background-color: #0a0a0a; border: 1px solid #333; border-radius: 14px;
+                background-color: #0a0a0a; border: 1px solid #333; border-radius: 16px;
                 padding: 0.75rem 1.25rem; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
                 display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem;
                 min-width: 200px; transform: translateX(120%);

@@ -2,94 +2,117 @@
     "dashboard": {
         "name": "Dashboard",
         "icon": "fa-solid fa-house-user", 
-        "url": "../logged-in/dashboard.html"
+        "url": "../logged-in/dashboard.html",
+        "aliases": ["/logged-in/dashboard"]
     },
     "soundboard": {
         "name": "Soundboard",
         "icon": "fa-solid fa-volume-up", 
-        "url": "../logged-in/soundboard.html"
+        "url": "../logged-in/soundboard.html",
+        "aliases": ["/logged-in/soundboard"]
     },
     "notes": {
         "name": "Notes",
         "icon": "fa-solid fa-sticky-note", 
-        "url": "../logged-in/notes.html"
+        "url": "../logged-in/notes.html",
+        "aliases": ["/logged-in/notes"]
     },
      "dailyphoto": {
         "name": "Dailyphoto",
         "icon": "fa-solid fa-image",
-        "url": "../logged-in/dailyphoto.html"
+        "url": "../logged-in/dailyphoto.html",
+        "aliases": ["/logged-in/dailyphoto"]
     },
     "countdowns": {
         "name": "Countdowns",
         "icon": "fa-solid fa-clock", 
-        "url": "../logged-in/countdowns.html"
+        "url": "../logged-in/countdowns.html",
+        "aliases": ["/logged-in/countdowns"]
     },
     "weather": {
         "name": "Weather",
         "icon": "fa-solid fa-cloud-sun", 
-        "url": "../logged-in/weather.html"
+        "url": "../logged-in/weather.html",
+        "aliases": ["/logged-in/weather"]
     },
     "dictionary": {
         "name": "Dictionary",
         "icon": "fa-solid fa-book", 
-        "url": "../logged-in/dictionary.html"
+        "url": "../logged-in/dictionary.html",
+        "aliases": ["/logged-in/dictionary"]
     },
     "schedule": {
         "name": "Schedule",
         "icon": "fa-solid fa-calendar-days",
-        "url": "../logged-in/schedule.html"
+        "url": "../logged-in/schedule.html",
+        "aliases": ["/logged-in/schedule"]
     },
     "messenger-v2": {
         "name": "Messenger",
         "icon": "fa-solid fa-comments", 
-        "url": "../logged-in/messenger-tutorial.html"
+        "url": "../logged-in/messenger-tutorial.html",
+        "aliases": ["/logged-in/messenger-tutorial", "/logged-in/messenger"]
     },
     "games-4sp": {
         "name": "Games",
         "icon": "fa-solid fa-gamepad",
-        "url": "../logged-in/games.html"
+        "url": "../logged-in/games.html",
+        "aliases": ["/logged-in/games"]
     },
     "vana": {
         "name": "Vana",
         "icon": "fa-solid fa-robot",
-        "url": "../logged-in/vana.html"
+        "url": "../logged-in/vana.html",
+        "aliases": ["/logged-in/vana"]
     },
     "vora": {
         "name": "Vora",
         "icon": "fa-solid fa-tv",
-        "url": "../logged-in/vora.html"
+        "url": "../logged-in/vora.html",
+        "aliases": ["/logged-in/vora"]
     },
     "vern": {
         "name": "Vern",
         "icon": "fa-solid fa-globe",
-        "url": "../logged-in/vern.html"
+        "url": "../logged-in/vern.html",
+        "aliases": ["/logged-in/vern"]
     },
     "velium": {
         "name": "Velium",
         "icon": "fa-solid fa-music",
-        "url": "../logged-in/velium.html"
+        "url": "../logged-in/velium.html",
+        "aliases": ["/logged-in/velium"]
     },
     "vira": {
         "name": "Vira",
         "icon": "fa-brands fa-youtube",
         "url": "../Vira/index.html",
+        "aliases": ["/Vira/index", "/Vira/"],
         "adminOnly": true
     },
     "securly-tester": {
         "name": "Securly Tester",
         "icon": "fa-solid fa-shield-alt",
-        "url": "../logged-in/securly-tester.html"
+        "url": "../logged-in/securly-tester.html",
+        "aliases": ["/logged-in/securly-tester"]
     },
     "settings": {
         "name": "Settings",
         "icon": "fa-solid fa-gear",
-        "url": "../logged-in/settings.html"
+        "url": "../logged-in/settings.html",
+        "aliases": ["/logged-in/settings"]
+    },
+    "profile": {
+        "name": "Profile",
+        "icon": "fa-solid fa-user",
+        "url": "../logged-in/profile.html",
+        "aliases": ["/logged-in/profile", "/logged-in/@"]
     },
     "analytics": {
         "name": "Analytics",
         "icon": "fa-solid fa-chart-line",
         "url": "../logged-in/analytics.html",
+        "aliases": ["/logged-in/analytics"],
         "adminOnly": true
     }
 }
-
