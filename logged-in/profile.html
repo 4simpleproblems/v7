@@ -484,8 +484,12 @@
         }
 
         async function loadDailyPhotos() {
+            const now = new Date();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
             const snap = await firestore.collection('daily_photos')
                 .where('creatorUid', '==', profileOwnerId)
+                .where('createdAt', '>=', startOfDay)
                 .orderBy('createdAt', 'desc')
                 .get();
             
@@ -493,7 +497,7 @@
             allPhotosGrid.innerHTML = '';
 
             if (snap.empty) {
-                dailyphotoContainer.innerHTML = '<div class="col-span-full py-12 text-center text-gray-600 italic">No photos shared yet.</div>';
+                dailyphotoContainer.innerHTML = '<div class="col-span-full py-12 text-center text-gray-600 italic">No photos shared today.</div>';
                 return;
             }
 
