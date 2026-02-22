@@ -32,8 +32,9 @@ export default async function handler(req, res) {
 
   const { pathname } = new URL(req.url, `http://${req.headers.host}`);
   const pathParts = pathname.split('/').filter(Boolean);
-  const endpoint = pathParts[pathParts.length - 1];
-  const { q, query, offset, id } = req.query;
+  const endpointFromPath = pathParts[pathParts.length - 1];
+  const { q, query, offset, id, endpoint: endpointFromQuery } = req.query;
+  const endpoint = (endpointFromQuery || endpointFromPath);
 
   try {
     // 1. Suggestions
@@ -93,8 +94,8 @@ export default async function handler(req, res) {
     }
 
     // 3. Album Details
-    if (pathname.includes('/album/')) {
-        const albumId = pathParts[pathParts.length - 1];
+    if (endpoint === 'album' || pathname.includes('/album/')) {
+        const albumId = id || pathParts[pathParts.length - 1];
         const response = await axios.get(`${SAAVN_API}/albums?id=${albumId}`);
         const data = response.data.data;
         
@@ -117,8 +118,8 @@ export default async function handler(req, res) {
     }
 
     // 4. Artist Details
-    if (pathname.includes('/artist/')) {
-        const artistId = pathParts[pathParts.length - 1];
+    if (endpoint === 'artist' || pathname.includes('/artist/')) {
+        const artistId = id || pathParts[pathParts.length - 1];
         const [detailsRes, songsRes, albumsRes] = await Promise.all([
             axios.get(`${SAAVN_API}/artists?id=${artistId}`),
             axios.get(`${SAAVN_API}/artists/${artistId}/songs?page=1`),

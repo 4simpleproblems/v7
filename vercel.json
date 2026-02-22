@@ -2,8 +2,16 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/music-api/(.*)",
-      "destination": "/api/music-api"
+      "source": "/music-api/:endpoint",
+      "destination": "/api/music-api?endpoint=:endpoint"
+    },
+    {
+      "source": "/music-api/album/:id",
+      "destination": "/api/music-api?endpoint=album&id=:id"
+    },
+    {
+      "source": "/music-api/artist/:id",
+      "destination": "/api/music-api?endpoint=artist&id=:id"
     },
     {
       "source": "/logged-in/@:username",
