@@ -23,11 +23,11 @@
     },
     {
       "source": "/api/comments/:videoId",
-      "destination": "/api/comments.mjs?videoId=:videoId"
+      "destination": "/api/comments?videoId=:videoId"
     },
     {
       "source": "/api/videoDetails/:videoId",
-      "destination": "/api/videoDetails.mjs?videoId=:videoId"
+      "destination": "/api/videoDetails?videoId=:videoId"
     },
     {
       "source": "/logged-in/@:username",

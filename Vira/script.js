@@ -74,7 +74,7 @@ async function loadVideoIntoPlayer(videoId) {
 
     // Fetch video details (title, author, likes, description)
     try {
-        const response = await fetch(`${VIRA_API_BASE}/videoDetails?videoId=${videoId}`);
+        const response = await fetch(`${VIRA_API_BASE}/videoDetails/${videoId}`);
         if (!response.ok) throw new Error('Failed to fetch video details.');
         const details = await response.json();
 
@@ -398,7 +398,7 @@ function showComments(videoId) { // Modified to accept videoId
     commentsContainer.innerHTML = '<p class="text-gray-500 text-center">Loading comments...</p>';
 
     try {
-        fetch(`/api/comments?videoId=${videoId}`) // Use the new comments API
+        fetch(`/api/comments/${videoId}`) // Use the new comments API
             .then(response => {
                 if (!response.ok) throw new Error(`Failed to fetch comments: ${response.statusText}`);
                 return response.json();
