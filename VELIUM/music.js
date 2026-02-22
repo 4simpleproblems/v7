@@ -250,9 +250,23 @@ async function handleSearch(query) {
             return aPrio - bPrio;
         });
 
+        const sortedAlbums = (data.albums || []).sort((a, b) => {
+            const priority = { 'YTMusic': 0, 'JioSaavn': 1 };
+            const aPrio = priority[a.source] ?? 2;
+            const bPrio = priority[b.source] ?? 2;
+            return aPrio - bPrio;
+        });
+
+        const sortedArtists = (data.artists || []).sort((a, b) => {
+            const priority = { 'YTMusic': 0, 'JioSaavn': 1 };
+            const aPrio = priority[a.source] ?? 2;
+            const bPrio = priority[b.source] ?? 2;
+            return aPrio - bPrio;
+        });
+
         renderTrackGrid(sortedTracks, tracksGrid);
-        renderAlbumGrid(data.albums || [], albumsGrid);
-        renderArtistGrid(data.artists || [], artistsGrid);
+        renderAlbumGrid(sortedAlbums, albumsGrid);
+        renderArtistGrid(sortedArtists, artistsGrid);
         renderPlaylistGrid(data.playlists || [], playlistsGrid);
     } catch (e) {
         console.error('Search failed', e);

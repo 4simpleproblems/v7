@@ -42,17 +42,30 @@ export default async function handler(req, res) {
       const searchQuery = q || query;
       if (!searchQuery) return res.status(400).json({ error: 'Missing query' });
       
-      const { data } = await useFetch({
-        endpoint: Endpoints.search.all,
-        params: { query: searchQuery }
-      });
-      
-      const suggestions = (data.songs?.data || []).map(s => ({
-        name: s.title,
-        type: 'Song'
-      }));
-      
-      return res.status(200).json({ suggestions });
+      try {
+          const yt = await getYoutube();
+          const suggestions = await yt.music.getSearchSuggestions(searchQuery);
+          
+          return res.status(200).json({ 
+              suggestions: suggestions.map(s => ({
+                  name: s.toString(),
+                  type: 'Search'
+              }))
+          });
+      } catch (e) {
+          console.error('YT Music suggestions failed, falling back to JioSaavn', e);
+          const { data } = await useFetch({
+            endpoint: Endpoints.search.all,
+            params: { query: searchQuery }
+          });
+          
+          const suggestions = (data.songs?.data || []).map(s => ({
+            name: s.title,
+            type: 'Song'
+          }));
+          
+          return res.status(200).json({ suggestions });
+      }
     }
 
     // 2. Search
@@ -87,17 +100,42 @@ export default async function handler(req, res) {
         // Provider 3: YT Music (Local Logic via youtubei.js)
         getYoutube().then(async yt => {
             try {
-                // Search for multiple types to populate all grids
-                const [songs, albums, artists] = await Promise.all([
-                    yt.music.search(searchQuery, { type: 'song' }),
-                    yt.music.search(searchQuery, { type: 'album' }),
-                    yt.music.search(searchQuery, { type: 'artist' })
-                ]);
-                return { 
-                    songs: songs.sections[0]?.contents || [], 
-                    albums: albums.sections[0]?.contents || [],
-                    artists: artists.sections[0]?.contents || []
+                // Use general search to get 'Top Result' and other categories
+                const search = await yt.music.search(searchQuery);
+                
+                const contents = {
+                    songs: [],
+                    albums: [],
+                    artists: []
                 };
+
+                // Extract from sections
+                search.sections.forEach(section => {
+                    const type = section.type; // MusicShelf or MusicCarouselShelf
+                    const title = section.title?.toString().toLowerCase() || '';
+                    
+                    if (title.includes('songs') || title.includes('results')) {
+                        contents.songs.push(...(section.contents || []));
+                    } else if (title.includes('albums')) {
+                        contents.albums.push(...(section.contents || []));
+                    } else if (title.includes('artists')) {
+                        contents.artists.push(...(section.contents || []));
+                    }
+                });
+
+                // Also check 'Top result' if it exists and map it
+                const topResult = search.sections.find(s => s.title?.toString().toLowerCase().includes('top result'))?.contents?.[0];
+                if (topResult) {
+                    if (topResult.type === 'MusicResponsiveListItem') {
+                        // Determine what kind of top result it is
+                        const itemType = topResult.item_type?.toLowerCase() || '';
+                        if (itemType.includes('song')) contents.songs.unshift(topResult);
+                        else if (itemType.includes('album')) contents.albums.unshift(topResult);
+                        else if (itemType.includes('artist')) contents.artists.unshift(topResult);
+                    }
+                }
+
+                return contents;
             } catch (e) {
                 console.error('YT Music search failed', e);
                 return { songs: [], albums: [], artists: [] };
@@ -125,12 +163,18 @@ export default async function handler(req, res) {
       if (ytMusicRes.songs) {
           const ytTracks = ytMusicRes.songs.map(item => {
               if (item.type !== 'MusicResponsiveListItem') return null;
+              
+              const title = item.title?.toString() || item.name?.toString() || 'Unknown Title';
+              const artist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'YT Music Artist';
+              const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
+              const duration = (item.duration?.seconds || 0) * 1000;
+
               return {
                   id: `ytm-${item.id}`,
-                  title: item.title,
-                  artist_name: item.artists?.[0]?.name || 'YT Music Artist',
-                  artwork_url: item.thumbnails?.[0]?.url,
-                  duration: (item.duration?.seconds || 0) * 1000,
+                  title: title,
+                  artist_name: artist,
+                  artwork_url: thumbnail,
+                  duration: duration,
                   youtube_id: item.id,
                   source: 'YTMusic'
               };
@@ -147,12 +191,17 @@ export default async function handler(req, res) {
       if (ytMusicRes.albums) {
           const ytAlbums = ytMusicRes.albums.map(item => {
               if (item.type !== 'MusicResponsiveListItem') return null;
+              
+              const title = item.title?.toString() || item.name?.toString() || 'Unknown Album';
+              const artist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'YT Music Artist';
+              const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
+
               return {
                   id: `ytm-${item.id}`,
-                  name: item.title,
-                  artwork_url: item.thumbnails?.[0]?.url,
-                  artist_name: item.artists?.[0]?.name || 'YT Music Artist',
-                  release_year: item.year || 'Unknown',
+                  name: title,
+                  artwork_url: thumbnail,
+                  artist_name: artist,
+                  release_year: item.year?.toString() || 'Unknown',
                   source: 'YTMusic'
               };
           }).filter(Boolean);
@@ -168,10 +217,14 @@ export default async function handler(req, res) {
       if (ytMusicRes.artists) {
           const ytArtists = ytMusicRes.artists.map(item => {
               if (item.type !== 'MusicResponsiveListItem') return null;
+              
+              const name = item.name?.toString() || item.title?.toString() || 'Unknown Artist';
+              const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
+
               return {
                   id: `ytm-${item.id}`,
-                  name: item.name,
-                  image_url: item.thumbnails?.[0]?.url,
+                  name: name,
+                  image_url: thumbnail,
                   source: 'YTMusic'
               };
           }).filter(Boolean);
