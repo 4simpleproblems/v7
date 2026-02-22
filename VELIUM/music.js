@@ -2,7 +2,7 @@ const API_BASE_URL = '/music-api';
 
 function getDownloadUrl(item) {
     if (item.source === 'MusicAPI' && item.downloadUrl?.[0]?.link) {
-        return item.downloadUrl[0].link;
+        return getProxyUrl(item.downloadUrl[0].link);
     }
     
     let url = '';
@@ -27,22 +27,15 @@ function getDownloadUrl(item) {
                 url = b.link || b.url;
             } else {
                 url = `https://argon.global.ssl.fastly.net/api/download?track_url=${encodeURIComponent(p)}`; 
-                if (p.includes('soundcloud.com') || p.includes('sndcdn.com')) {
-                    url = 'https://corsproxy.io/?' + encodeURIComponent(url);
-                }
             }
         } 
     }
     
     if (!url && item.media_url) url = item.media_url;
 
-    if (url && (url.includes('soundcloud.com') || url.includes('sndcdn.com'))) {
-        if (!url.includes('corsproxy.io')) {
-            url = 'https://corsproxy.io/?' + encodeURIComponent(url);
-        }
-    }
+    if (!url) return '';
 
-    return url;
+    return getProxyUrl(url);
 }
 
 // --- Proxy Helper ---
