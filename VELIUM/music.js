@@ -240,7 +240,15 @@ async function handleSearch(query) {
         const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`);
         const data = await response.json();
 
-        renderTrackGrid(data.tracks || [], tracksGrid);
+        // Optional: Sort tracks to put global sources at the top
+        const sortedTracks = (data.tracks || []).sort((a, b) => {
+            const priority = { 'MusicAPI': 0, 'YTMusic': 1, 'JioSaavn': 2 };
+            const aPrio = priority[a.source] ?? 3;
+            const bPrio = priority[b.source] ?? 3;
+            return aPrio - bPrio;
+        });
+
+        renderTrackGrid(sortedTracks, tracksGrid);
         renderAlbumGrid(data.albums || [], albumsGrid);
         renderArtistGrid(data.artists || [], artistsGrid);
         renderPlaylistGrid(data.playlists || [], playlistsGrid);

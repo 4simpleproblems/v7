@@ -87,20 +87,29 @@ export default async function handler(req, res) {
         // Provider 3: YT Music (Local Logic via youtubei.js)
         getYoutube().then(async yt => {
             try {
-                const search = await yt.music.search(searchQuery, { type: 'song' });
-                return search.sections[0]?.contents || [];
+                // Search for multiple types to populate all grids
+                const [songs, albums, artists] = await Promise.all([
+                    yt.music.search(searchQuery, { type: 'song' }),
+                    yt.music.search(searchQuery, { type: 'album' }),
+                    yt.music.search(searchQuery, { type: 'artist' })
+                ]);
+                return { 
+                    songs: songs.sections[0]?.contents || [], 
+                    albums: albums.sections[0]?.contents || [],
+                    artists: artists.sections[0]?.contents || []
+                };
             } catch (e) {
                 console.error('YT Music search failed', e);
-                return [];
+                return { songs: [], albums: [], artists: [] };
             }
-        }).catch(() => [])
+        }).catch(() => ({ songs: [], albums: [], artists: [] }))
       ]);
 
       const [songsRes, albumsRes, artistsRes, playlistsRes] = jsRes;
 
+      // 1. Format Tracks
       let tracks = (songsRes.data?.results || []).map(formatTrack);
       
-      // If MusicAPI returned a valid song, prepend it to tracks
       if (musicApiRes && musicApiRes.SONG_NAME) {
           tracks.unshift({
               id: `mapi-${musicApiRes.ID}`,
@@ -113,9 +122,8 @@ export default async function handler(req, res) {
           });
       }
 
-      // Add YT Music tracks
-      if (ytMusicRes && Array.isArray(ytMusicRes)) {
-          const ytTracks = ytMusicRes.map(item => {
+      if (ytMusicRes.songs) {
+          const ytTracks = ytMusicRes.songs.map(item => {
               if (item.type !== 'MusicResponsiveListItem') return null;
               return {
                   id: `ytm-${item.id}`,
@@ -130,10 +138,42 @@ export default async function handler(req, res) {
           tracks.push(...ytTracks);
       }
 
+      // 2. Format Albums
+      let albums = (albumsRes.data?.results || []).map(formatAlbum);
+      if (ytMusicRes.albums) {
+          const ytAlbums = ytMusicRes.albums.map(item => {
+              if (item.type !== 'MusicResponsiveListItem') return null;
+              return {
+                  id: item.id,
+                  name: item.title,
+                  artwork_url: item.thumbnails?.[0]?.url,
+                  artist_name: item.artists?.[0]?.name || 'YT Music Artist',
+                  release_year: item.year || 'Unknown',
+                  source: 'YTMusic'
+              };
+          }).filter(Boolean);
+          albums.push(...ytAlbums);
+      }
+
+      // 3. Format Artists
+      let artists = (artistsRes.data?.results || []).map(formatArtist);
+      if (ytMusicRes.artists) {
+          const ytArtists = ytMusicRes.artists.map(item => {
+              if (item.type !== 'MusicResponsiveListItem') return null;
+              return {
+                  id: item.id,
+                  name: item.name,
+                  image_url: item.thumbnails?.[0]?.url,
+                  source: 'YTMusic'
+              };
+          }).filter(Boolean);
+          artists.push(...ytArtists);
+      }
+
       return res.status(200).json({
         tracks,
-        albums: (albumsRes.data?.results || []).map(formatAlbum),
-        artists: (artistsRes.data?.results || []).map(formatArtist),
+        albums,
+        artists,
         playlists: (playlistsRes.data?.results || []).map(formatPlaylist)
       });
     }
