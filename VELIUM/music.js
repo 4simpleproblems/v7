@@ -120,6 +120,9 @@ function setupEventListeners() {
     // Search Tabs
     document.querySelectorAll('.search-tab').forEach(tab => {
         tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            
+            // UI Update for tabs
             document.querySelectorAll('.search-tab').forEach(t => {
                 t.classList.remove('active', 'bg-accent-indigo', 'text-white');
                 t.classList.add('bg-card-dark', 'text-gray-400');
@@ -127,9 +130,16 @@ function setupEventListeners() {
             tab.classList.add('active', 'bg-accent-indigo', 'text-white');
             tab.classList.remove('bg-card-dark', 'text-gray-400');
 
-            const tabName = tab.dataset.tab;
-            document.querySelectorAll('.search-tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById(tabName + 'Tab').classList.add('active');
+            // UI Update for content containers
+            document.querySelectorAll('.search-tab-content').forEach(c => {
+                c.classList.remove('active');
+                c.style.display = 'none';
+            });
+            const activeContent = document.getElementById(tabName + 'Tab');
+            if (activeContent) {
+                activeContent.classList.add('active');
+                activeContent.style.display = 'block';
+            }
         });
     });
 
@@ -230,10 +240,10 @@ async function handleSearch(query) {
         const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`);
         const data = await response.json();
 
-        renderTrackGrid(data.tracks, tracksGrid);
-        renderAlbumGrid(data.albums, albumsGrid);
-        renderArtistGrid(data.artists, artistsGrid);
-        renderPlaylistGrid(data.playlists, playlistsGrid);
+        renderTrackGrid(data.tracks || [], tracksGrid);
+        renderAlbumGrid(data.albums || [], albumsGrid);
+        renderArtistGrid(data.artists || [], artistsGrid);
+        renderPlaylistGrid(data.playlists || [], playlistsGrid);
     } catch (e) {
         console.error('Search failed', e);
     }
