@@ -4,14 +4,18 @@ const API_BASE_URL = '/music-api';
 function getProxyUrl(url) {
     if (!url) return url;
     if (url.startsWith('data:')) return url;
-    
-    // If it looks like a relative path, make it absolute to the domain
     if (url.startsWith('//')) url = 'https:' + url;
     
+    // Using the robust solution found in VORA: 
+    // Direct pathing to UV service with Ultraviolet encoding
+    if (window.Ultraviolet && window.Ultraviolet.codec && window.Ultraviolet.codec.xor) {
+        const prefix = "/VELIUM/uv/service/";
+        return window.location.origin + prefix + window.Ultraviolet.codec.xor.encode(url);
+    }
+    
+    // Fallback if config is ready
     if (window.__uv$config && window.__uv$config.prefix && window.__uv$config.encodeUrl) {
-        // If it's already a proxied URL (starts with prefix), don't double proxy
         if (url.includes(window.__uv$config.prefix)) return url;
-        
         return window.__uv$config.prefix + window.__uv$config.encodeUrl(url);
     }
     return url;

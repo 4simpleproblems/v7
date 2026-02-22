@@ -34,12 +34,14 @@
     </script>
     <script src="/VELIUM/baremux/index.js"></script>
     <script>
+        const viraId = Math.random().toString(36).substring(2, 10);
+
         // Immediate Initialization of VERN_SYSTEM Proxy
         (async () => {
             if ("serviceWorker" in navigator) {
                 try {
                     // Register Root SW
-                    await navigator.serviceWorker.register("/VELIUM/sw.js", {
+                    await navigator.serviceWorker.register("/VELIUM/sw.js?v=" + viraId, {
                         scope: "/VELIUM/"
                     });
                     console.log("VERN_SYSTEM SW Registered");
@@ -222,6 +224,14 @@
         }
 
         .view.active {
+            display: block;
+        }
+
+        .search-tab-content {
+            display: none;
+        }
+
+        .search-tab-content.active {
             display: block;
         }
 
