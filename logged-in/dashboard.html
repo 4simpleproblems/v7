@@ -16,13 +16,12 @@
     <style>
         :root {
             --bg-page: #040404;
-            --bg-container: #000000;
-            --border-color: #333;
-            --text-primary: #c0c0c0;
-            --text-light-grey: #d1d5db;
-            --accent-color: #6366f1;
-            --text-link: #888;
-            --spinner-color: #666666;
+            --bg-container: #0a0a0a;
+            --border-color: rgba(255,255,255,0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --accent-color: #4f46e5;
+            --accent-glow: rgba(79, 70, 229, 0.3);
         }
 
         body { 
@@ -36,167 +35,237 @@
             overflow: hidden;
         }
 
-        h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-widest {
-            font-weight: 400 !important;
-        }
-
+        /* --- BENTO GRID LAYOUT --- */
         #page-content {
             flex-grow: 1;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 1.5rem;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: repeat(12, 1fr);
+            gap: 1.25rem;
             padding: 3rem;
-            position: relative;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            height: calc(100vh - 64px);
+            box-sizing: border-box;
         }
 
-        .dashboard-widget {
+        .bento-card {
+            background: var(--bg-container);
             border: 1px solid var(--border-color);
-            background-color: var(--bg-container);
+            border-radius: 24px;
             padding: 1.5rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            transition: all 0.3s ease;
-            border-radius: 28px;
             position: relative;
             overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        #main-widget {
-            border: none !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            padding-left: 0 !important;
-        }
-
-        .dashboard-widget:not(#main-widget):hover {
-            border-color: #505050;
+        .bento-card:hover {
+            border-color: rgba(255,255,255,0.15);
             transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
 
-        /* --- CLOCK STYLES --- */
-        .time-display {
-            font-size: 4rem; 
-            color: var(--text-light-grey);
-            white-space: nowrap;
-            line-height: 1;
+        /* --- SPECIFIC SLOTS --- */
+        #hero-slot {
+            grid-column: span 7;
+            grid-row: span 5;
+            background: transparent;
+            border: none;
+            padding-left: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        .date-display {
-            font-size: 1rem;
-            color: var(--text-link);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
+        #hero-slot:hover { transform: none; box-shadow: none; }
 
-        .analytics-title {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--accent-color);
-            margin-bottom: 0.75rem;
-            font-weight: 600 !important;
-        }
-
-        .stat-label { font-size: 0.75rem; color: #666; }
-        .stat-value { font-size: 1.1rem; color: #fff; font-weight: 500 !important; }
-
-        .page-link-item {
+        #weather-slot {
+            grid-column: span 5;
+            grid-row: span 5;
+            background: linear-gradient(135deg, rgba(20,20,20,0.8) 0%, rgba(10,10,10,0.8) 100%);
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.6rem 1rem;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid #1a1a1a;
-            border-radius: 14px;
-            transition: all 0.2s;
-            cursor: pointer;
-            margin-bottom: 0.4rem;
+            justify-content: space-between;
         }
-        .page-link-item:hover {
+
+        #stats-slot-1 { grid-column: span 3; grid-row: span 3; }
+        #stats-slot-2 { grid-column: span 4; grid-row: span 3; }
+        
+        #quick-access-slot {
+            grid-column: span 5;
+            grid-row: span 7;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #analytics-summary-slot {
+            grid-column: span 7;
+            grid-row: span 4;
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        /* --- TYPOGRAPHY --- */
+        .time-text {
+            font-size: 5rem;
+            font-weight: 200;
+            line-height: 1;
+            letter-spacing: -0.02em;
+            color: #fff;
+        }
+        .date-text {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 0.5rem;
+        }
+        .welcome-text {
+            font-size: 1.75rem;
+            font-weight: 300;
+            margin-top: 1.5rem;
+        }
+
+        .card-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .stat-huge {
+            font-size: 2.5rem;
+            font-weight: 500;
+            color: #fff;
+            line-height: 1.1;
+        }
+
+        /* --- RECENT PAGES --- */
+        .recent-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+        .recent-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.8rem 1rem;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            margin-bottom: 0.6rem;
+            cursor: pointer;
+        }
+        .recent-item:hover {
             background: rgba(255,255,255,0.06);
             border-color: var(--accent-color);
+            transform: translateX(4px);
         }
-        .page-link-item.disabled {
-            opacity: 0.5;
+        .recent-item.disabled {
+            opacity: 0.4;
             cursor: not-allowed;
             filter: grayscale(1);
         }
+        .recent-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
 
+        /* --- WEATHER --- */
+        .weather-temp-main { font-size: 3.5rem; font-weight: 500; color: #fff; }
+        .weather-info-box { text-align: right; }
+        
         #weather-loader {
             position: absolute;
-            bottom: 20px;
-            right: 20px;
-            color: var(--spinner-color); 
+            top: 1.5rem;
+            right: 1.5rem;
+            color: var(--accent-color);
             opacity: 0;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.3s;
         }
         #weather-loader.loading { opacity: 1; }
+
+        /* Custom Scroll */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
     </style>
 </head>
 
 <body>
     <div id="page-content">
-        <!-- TOP LEFT: Main Widget (Clock + Welcome) -->
-        <div id="main-widget" class="dashboard-widget flex flex-col justify-center">
-            <div id="clock-time" class="time-display">--:--</div>
-            <div id="clock-date" class="date-display">--------</div>
-            <div class="mt-6">
-                <h2 class="text-2xl text-white font-light">Welcome back, <span id="user-name-display" class="text-indigo-400">User</span></h2>
-                <p class="text-sm text-gray-500 mt-1">4SP V6 — Your Personal Workspace</p>
-            </div>
+        <!-- HERO SLOT -->
+        <div id="hero-slot" class="bento-card">
+            <div id="clock-date" class="date-text">--------</div>
+            <div id="clock-time" class="time-text">00:00</div>
+            <h2 class="welcome-text">Hey, <span id="user-name-display" class="text-indigo-400 font-medium">User</span>.</h2>
+            <p class="text-gray-500 mt-1 text-sm font-normal">Welcome to 4SP V6.</p>
         </div>
 
-        <!-- TOP RIGHT: Weather -->
-        <div id="weather-widget" class="dashboard-widget flex flex-col justify-center">
-            <div class="flex items-center gap-6">
-                <div id="w-icon" class="text-5xl text-gray-400"><i class="fa-solid fa-cloud"></i></div>
-                <div>
-                    <div id="w-temp" class="text-5xl text-white">--°</div>
-                    <div class="stat-label uppercase tracking-widest mt-1">Current Weather</div>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4 mt-6">
-                <div>
-                    <p class="stat-label">High / Low</p>
-                    <p class="text-sm"><span id="w-high">--°</span> / <span id="w-low">--°</span></p>
-                </div>
-                <div>
-                    <p class="stat-label">Wind Speed</p>
-                    <p id="w-wind-speed" class="text-sm">-- mph</p>
-                </div>
-            </div>
+        <!-- WEATHER SLOT -->
+        <div id="weather-slot" class="bento-card">
             <div id="weather-loader"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
-        </div>
-
-        <!-- BOTTOM LEFT: Analytics -->
-        <div id="analytics-widget" class="dashboard-widget">
-            <h3 class="analytics-title">User Analytics</h3>
-            <div class="space-y-4">
-                <div>
-                    <p class="stat-label">Most Viewed Page</p>
-                    <p id="stat-most-viewed" class="stat-value">Loading...</p>
-                </div>
-                <div>
-                    <p class="stat-label">Total Time Spent</p>
-                    <p id="stat-total-time" class="stat-value">--h --m</p>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <p class="stat-label">Sessions</p>
-                        <p id="stat-sessions" class="text-white">--</p>
-                    </div>
-                    <div>
-                        <p class="stat-label">Page Views</p>
-                        <p id="stat-pageviews" class="text-white">--</p>
-                    </div>
+            <div class="flex flex-col">
+                <div class="card-label">Local Weather</div>
+                <div id="w-temp" class="weather-temp-main">--°</div>
+                <div id="w-desc" class="text-sm text-gray-400 capitalize">Loading...</div>
+            </div>
+            <div class="weather-info-box">
+                <div id="w-icon" class="text-6xl text-gray-300 mb-4"><i class="fa-solid fa-cloud"></i></div>
+                <div class="text-xs text-gray-500 font-bold uppercase tracking-widest">
+                    H: <span id="w-high">--°</span> | L: <span id="w-low">--°</span>
                 </div>
             </div>
         </div>
 
-        <!-- BOTTOM RIGHT: Quick Access -->
-        <div id="quick-access-widget" class="dashboard-widget overflow-y-auto custom-scroll">
-            <h3 class="analytics-title">Recently Viewed</h3>
-            <div id="recent-pages-list" class="flex flex-col gap-2">
-                <p class="text-sm text-gray-600 italic">No activity data found yet.</p>
+        <!-- STATS 1 -->
+        <div id="stats-slot-1" class="bento-card flex flex-col justify-between">
+            <div class="card-label">Total Time</div>
+            <div id="stat-total-time" class="stat-huge">0h 0m</div>
+            <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-2">Active in V6</div>
+        </div>
+
+        <!-- STATS 2 -->
+        <div id="stats-slot-2" class="bento-card flex flex-col justify-between">
+            <div class="card-label">Sessions</div>
+            <div id="stat-sessions" class="stat-huge">0</div>
+            <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-2">Total Logins</div>
+        </div>
+
+        <!-- QUICK ACCESS -->
+        <div id="quick-access-slot" class="bento-card">
+            <div class="flex justify-between items-center mb-2">
+                <div class="card-label mb-0">Recently Viewed</div>
+                <i class="fa-solid fa-clock-rotate-left text-gray-700"></i>
+            </div>
+            <div id="recent-pages-list" class="recent-list custom-scroll">
+                <div class="py-10 text-center text-gray-600 italic text-sm">Waiting for data...</div>
+            </div>
+        </div>
+
+        <!-- ANALYTICS SUMMARY -->
+        <div id="analytics-summary-slot" class="bento-card bg-indigo-500/5 border-indigo-500/20">
+            <div class="flex-1 flex flex-col justify-center">
+                <div class="card-label text-indigo-400">Most Visited</div>
+                <div id="stat-most-viewed" class="text-2xl font-medium text-white truncate">None yet</div>
+                <p class="text-xs text-indigo-300/50 mt-1 uppercase tracking-tighter">Your top destination</p>
+            </div>
+            <div class="w-px bg-indigo-500/10 my-2"></div>
+            <div class="flex-1 flex flex-col justify-center">
+                <div class="card-label text-indigo-400">Page Views</div>
+                <div id="stat-pageviews" class="text-4xl font-medium text-white">0</div>
+                <p class="text-xs text-indigo-300/50 mt-1 uppercase tracking-tighter">Pages explored</p>
             </div>
         </div>
     </div>
@@ -275,7 +344,7 @@
                 if (data.visitedPages) {
                     data.visitedPages.forEach(p => {
                         const path = p.path || p.url;
-                        if (!path) return;
+                        if (!path || path === 'about:srcdoc') return;
                         const cleanTitle = getCleanTitle(path, p.title);
                         if (!pageMap[path]) pageMap[path] = { title: cleanTitle, count: 0 };
                         pageMap[path].count++;
@@ -300,9 +369,9 @@
             const isLocalClient = window._LOCAL_MODE;
             const currentOrigin = window.location.origin;
 
-            sortedPages.slice(0, 6).forEach(([path, data]) => {
+            sortedPages.slice(0, 10).forEach(([path, data]) => {
                 const item = document.createElement('div');
-                item.className = 'page-link-item';
+                item.className = 'recent-item';
                 
                 const isLocalPath = path.startsWith('file://') || (path.startsWith('/') && !path.startsWith('/logged-in') && !path.includes('.vercel.app')) || path.includes('4simpleproblems_v5_latest.html');
 
@@ -314,12 +383,12 @@
                 if (!isClickable) item.classList.add('disabled');
 
                 item.innerHTML = `
-                    <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                    <div class="recent-icon">
                         <i class="fa-solid fa-${isLocalPath ? 'hdd' : 'file-alt'}"></i>
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-white truncate">${data.title}</p>
-                        <p class="text-[10px] text-gray-500 uppercase tracking-widest">${data.count} views</p>
+                        <p class="text-[9px] text-gray-500 uppercase tracking-widest">${data.count} views</p>
                     </div>
                 `;
 
@@ -337,8 +406,6 @@
                             window.location.href = path;
                         }
                     };
-                } else {
-                    item.title = "Access restricted to original device";
                 }
 
                 listEl.appendChild(item);
@@ -359,12 +426,13 @@
             const loader = document.getElementById('weather-loader');
             loader.classList.add('loading');
             try {
-                const locRes = await fetch('https://freeipapi.com/api/json');
+                // Better HTTPS location provider
+                const locRes = await fetch('https://ipwho.is/');
                 const locData = await locRes.json();
                 const lat = locData.latitude;
                 const lon = locData.longitude;
 
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto`;
                 const res = await fetch(url);
                 const data = await res.json();
 
@@ -374,11 +442,15 @@
                 
                 const code = data.current.weather_code;
                 let icon = 'fa-cloud';
-                if (code === 0) icon = 'fa-sun';
-                else if (code < 3) icon = 'fa-cloud-sun';
-                else if (code < 50) icon = 'fa-cloud';
-                else if (code < 70) icon = 'fa-cloud-rain';
+                let desc = 'Cloudy';
+                if (code === 0) { icon = 'fa-sun'; desc = 'Clear Sky'; }
+                else if (code < 3) { icon = 'fa-cloud-sun'; desc = 'Partly Cloudy'; }
+                else if (code < 50) { icon = 'fa-cloud'; desc = 'Overcast'; }
+                else if (code < 70) { icon = 'fa-cloud-rain'; desc = 'Rain'; }
+                else if (code < 80) { icon = 'fa-snowflake'; desc = 'Snow'; }
+                
                 document.getElementById('w-icon').innerHTML = `<i class="fa-solid ${icon}"></i>`;
+                document.getElementById('w-desc').textContent = desc;
 
             } catch(e) { console.error("Weather load fail", e); }
             loader.classList.remove('loading');
