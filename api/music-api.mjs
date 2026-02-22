@@ -61,7 +61,7 @@ export default async function handler(req, res) {
       const searchQuery = q || query;
       if (!searchQuery) return res.status(400).json({ error: 'Missing query' });
       
-      const [musicApiRes, ytMusicRes] = await Promise.all([
+      const [musicApiRes, ytMusicRes, argonRes] = await Promise.all([
         // Provider 1: MusicAPI (External Fallback/Extra)
         fetch(`${MUSIC_API_BASE}/prepare/${encodeURIComponent(searchQuery)}`)
             .then(r => r.ok ? r.json() : null)
@@ -109,7 +109,11 @@ export default async function handler(req, res) {
                 console.error('YT Music search failed', e);
                 return { songs: [], albums: [], artists: [] };
             }
-        }).catch(() => ({ songs: [], albums: [], artists: [] }))
+        }).catch(() => ({ songs: [], albums: [], artists: [] })),
+        // Provider 3: Argon API
+        fetch(`https://argon.global.ssl.fastly.net/api/search?query=${encodeURIComponent(searchQuery)}&limit=20`)
+            .then(r => r.ok ? r.json() : { collection: [] })
+            .catch(() => ({ collection: [] }))
       ]);
 
       let tracks = [];
@@ -146,6 +150,20 @@ export default async function handler(req, res) {
               };
           }).filter(Boolean);
           tracks.push(...ytTracks);
+      }
+
+      // Add Argon tracks
+      if (argonRes.collection && Array.isArray(argonRes.collection)) {
+          const argonTracks = argonRes.collection.map(item => ({
+              id: `argon-${item.id}`,
+              title: item.song?.name || item.name,
+              artist_name: item.author?.name || 'Argon Artist',
+              artwork_url: item.song?.img?.big || item.song?.img?.small || (Array.isArray(item.image) ? item.image[item.image.length-1].link : item.image),
+              duration: (item.song?.duration || 0) * 1000,
+              url: item.song?.url || item.url,
+              source: 'Argon'
+          }));
+          tracks.push(...argonTracks);
       }
 
       let albums = [];

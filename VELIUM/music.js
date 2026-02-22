@@ -1,5 +1,50 @@
 const API_BASE_URL = '/music-api';
 
+function getDownloadUrl(item) {
+    if (item.source === 'MusicAPI' && item.downloadUrl?.[0]?.link) {
+        return item.downloadUrl[0].link;
+    }
+    
+    let url = '';
+    // 1. Check direct downloadUrl array
+    if (item.downloadUrl) { 
+        if (Array.isArray(item.downloadUrl) && item.downloadUrl.length > 0) { 
+            const b = item.downloadUrl.find(d => d.quality === '320kbps') || item.downloadUrl.find(d => d.quality === '160kbps') || item.downloadUrl[item.downloadUrl.length - 1]; 
+            url = b.link || b.url;
+        } else if (typeof item.downloadUrl === 'string') {
+            url = item.downloadUrl;
+        }
+    }
+    
+    // 2. Fallback to extracting from object or using Argon proxy
+    if (!url) { 
+        const p = item.url || (item.song && item.song.url); 
+        if (p) { 
+            if (typeof p === 'string' && (p.includes('saavncdn.com') || p.match(/\.(mp3|mp4|m4a)$/i))) {
+                url = p; 
+            } else if (Array.isArray(p)) { 
+                const b = p.find(d => d.quality === '320kbps') || p[p.length - 1]; 
+                url = b.link || b.url;
+            } else {
+                url = `https://argon.global.ssl.fastly.net/api/download?track_url=${encodeURIComponent(p)}`; 
+                if (p.includes('soundcloud.com') || p.includes('sndcdn.com')) {
+                    url = 'https://corsproxy.io/?' + encodeURIComponent(url);
+                }
+            }
+        } 
+    }
+    
+    if (!url && item.media_url) url = item.media_url;
+
+    if (url && (url.includes('soundcloud.com') || url.includes('sndcdn.com'))) {
+        if (!url.includes('corsproxy.io')) {
+            url = 'https://corsproxy.io/?' + encodeURIComponent(url);
+        }
+    }
+
+    return url;
+}
+
 // --- Proxy Helper ---
 function getProxyUrl(url) {
     if (!url) return url;
@@ -242,11 +287,11 @@ async function handleSearch(query) {
         const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`);
         const data = await response.json();
 
-        // Sort tracks: MusicAPI results at the very top, then YT Music
+        // Sort tracks: MusicAPI results at the very top, then YT Music, then Argon
         const sortedTracks = (data.tracks || []).sort((a, b) => {
-            const priority = { 'MusicAPI': 0, 'YTMusic': 1 };
-            const aPrio = priority[a.source] ?? 2;
-            const bPrio = priority[b.source] ?? 2;
+            const priority = { 'MusicAPI': 0, 'YTMusic': 1, 'Argon': 2 };
+            const aPrio = priority[a.source] ?? 3;
+            const bPrio = priority[b.source] ?? 3;
             return aPrio - bPrio;
         });
 
