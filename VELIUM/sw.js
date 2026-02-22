@@ -20,7 +20,8 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
     const url = event.request.url;
-    if (url.startsWith(location.origin + self.__uv$config.prefix)) {
+    // Aggressive check: if it contains the service path, intercept it
+    if (url.includes(self.__uv$config.prefix)) {
         event.respondWith(
             (async () => {
                 try {
