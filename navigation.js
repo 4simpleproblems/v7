@@ -514,7 +514,7 @@ let db;
                 padding: 0.5rem 1rem; 
                 color: var(--tab-text, #9ca3af); 
                 font-size: 0.875rem; font-weight: 400; 
-                border-radius: 16px; /* Updated to 14px */
+                border-radius: 24px; /* Updated to 24px */
                 text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
                 border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
                 flex-shrink: 0; 
@@ -547,7 +547,7 @@ let db;
             #auth-toggle {
                 border-color: var(--avatar-border);
                 transition: border-color 0.3s ease;
-                border-radius: 16px; /* Updated to 14px */
+                border-radius: 24px; /* Updated to 24px */
                 border-width: 1px; /* Explicit 1px */
                 width: 40px; height: 40px;
                 display: flex; align-items: center; justify-content: center;
@@ -560,7 +560,7 @@ let db;
                 position: absolute; right: 0; top: 55px; width: 16rem;
                 background: var(--menu-bg, #000);
                 border: 1px solid var(--menu-border, #333);
-                border-radius: 20px; 
+                border-radius: 28px; 
                 padding: 0.75rem; /* Equal spacing on edges */
                 display: flex; flex-direction: column; gap: 0.5rem; /* Flex gap for equal internal spacing */
                 box-shadow: 0 10px 30px rgba(0,0,0,0.6);
@@ -653,7 +653,7 @@ let db;
                 display: flex; align-items: center; gap: 0.75rem; width: 100%; text-align: left; 
                 padding: 0.75rem 1rem; font-size: 0.9rem; color: var(--menu-text, #d1d5db); 
                 background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); /* Default background color */
-                border-radius: 16px; 
+                border-radius: 24px; 
                 transition: all 0.2s ease; cursor: pointer;
                 /* FIXED: Border color now matches the background color */
                 border: 1px solid var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
@@ -669,7 +669,7 @@ let db;
             .logged-out-auth-toggle { 
                 background: var(--logged-out-icon-bg, #010101); border: 1px solid var(--logged-out-icon-border, #374151); 
                 transition: background-color 0.3s ease, border-color 0.3s ease;
-                border-radius: 16px; /* Updated to 16px */
+                border-radius: 24px; /* Updated to 24px */
             }
             .logged-out-auth-toggle i { color: var(--logged-out-icon-color, #DADADA); transition: color 0.3s ease; }
 
@@ -682,7 +682,7 @@ let db;
             #pin-button { 
                 border-color: var(--pin-btn-border, #4b5563); transition: background-color 0.2s, border-color 0.3s ease; 
                 display: flex; align-items: center; justify-content: center; 
-                border-radius: 16px; /* Updated to 16px */
+                border-radius: 24px; /* Updated to 24px */
                 border-width: 1px; /* Explicit 1px */
                 width: 40px; height: 40px;
             }
@@ -717,7 +717,7 @@ let db;
                 pointer-events: none;
             }
             .notification-toast {
-                background-color: #0a0a0a; border: 1px solid #333; border-radius: 16px;
+                background-color: #0a0a0a; border: 1px solid #333; border-radius: 24px;
                 padding: 0.75rem 1.25rem; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
                 display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem;
                 min-width: 200px; transform: translateX(120%);
@@ -952,11 +952,11 @@ let db;
             let avatarHtml = '';
             const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
             if (pfpType === 'custom' && userData?.customPfp) {
-                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
+                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 20px;" alt="Profile">`;
             } else if (pfpType === 'mibi' && userData?.mibiConfig) {
                 const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = userData.mibiConfig;
                 avatarHtml = `
-                    <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 14px;">
+                    <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 20px;">
                          <div class="absolute inset-0 w-full h-full" style="transform: translate(${offsetX || 0}%, ${offsetY || 0}%) rotate(${rotation || 0}deg) scale(${(size || 100) / 100}); transform-origin: center;">
                              <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
                              ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
@@ -969,38 +969,51 @@ let db;
                 const bg = userData?.pfpLetterBg || DEFAULT_THEME['avatar-gradient'];
                 const textColor = getLetterAvatarTextColor(bg); 
                 const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
-                avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
+                avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 20px;">${initial}</div>`;
             } else {
                 const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
                 const googlePhoto = googleProvider ? googleProvider.photoURL : null;
                 const displayPhoto = googlePhoto || user.photoURL;
                 if (displayPhoto) {
-                    avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 12px;" alt="Profile">`;
+                    avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 20px;" alt="Profile">`;
                 } else {
                     const bg = DEFAULT_THEME['avatar-gradient'];
                     const textColor = getLetterAvatarTextColor(bg);
                     const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
-                    avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
+                    avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 20px;">${initial}</div>`;
                 }
             }
 
-            const followers = 120; // Example count
-            const following = 45;  // Example count
-            const followersDisplay = followers > 99 ? '99+' : followers;
-            const followingDisplay = following > 99 ? '99+' : following;
+            const followers = userData?.followerCount || 0;
+            const following = userData?.followingCount || 0;
+            const followersDisplay = followers > 999 ? (followers / 1000).toFixed(1) + 'k' : followers;
+            const followingDisplay = following > 999 ? (following / 1000).toFixed(1) + 'k' : following;
+            const isOnline = userData?.isOnline || false;
+            const currentActivity = userData?.currentActivity || null;
 
             const userTagHtml = (userData?.userTag) 
                 ? `<div class="text-xs font-italic" style="color: ${userData.userTag.color}; font-style: italic; margin-top: 2px;">${userData.userTag.text}</div>`
                 : '';
 
+            const statusHtml = isOnline 
+                ? `<div class="flex items-center gap-1.5 mt-1">
+                     <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_#6366f1]"></span>
+                     <span class="text-[10px] text-indigo-400 font-medium uppercase tracking-wider">${currentActivity ? `Playing: ${currentActivity}` : 'Online'}</span>
+                   </div>`
+                : `<div class="flex items-center gap-1.5 mt-1">
+                     <span class="w-2 h-2 rounded-full bg-gray-600"></span>
+                     <span class="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Offline</span>
+                   </div>`;
+
             return `
                 <div id="profile-area-wrapper" class="relative flex-shrink-0 flex items-center">
-                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 14px;">
+                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 24px; position: relative;">
                         <i class="fa-solid fa-address-card text-gray-300"></i>
+                        ${isOnline ? '<span class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-indigo-500 border-2 border-black rounded-full shadow-[0_0_5px_#6366f1]"></span>' : ''}
                     </button>
                     <div id="profile-menu-container" class="auth-menu-container closed">
-                        <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center gap-3 pb-2">
-                            <div class="w-10 h-10 flex-shrink-0" id="auth-menu-avatar-container">
+                        <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center gap-3 pb-2 cursor-pointer hover:bg-white/5 transition rounded-2xl p-1" onclick="window.location.href='/logged-in/@${username}'">
+                            <div class="w-10 h-10 flex-shrink-0 relative" id="auth-menu-avatar-container">
                                 ${avatarHtml}
                             </div>
                             <div class="min-w-0 flex-1 overflow-hidden">
@@ -1010,15 +1023,16 @@ let db;
                                 <div class="marquee-container" id="username-marquee">
                                     <p class="text-xs auth-menu-username-handle marquee-content">@${username}</p>
                                 </div>
+                                ${statusHtml}
                                 ${userTagHtml}
                             </div>
                         </div>
                         <div class="profile-stat-container">
-                            <div class="profile-stat-item">
+                            <div class="profile-stat-item" onclick="window.location.href='/logged-in/@${username}#followers'">
                                 <span class="stat-count">${followersDisplay}</span>
                                 <span class="stat-label">Followers</span>
                             </div>
-                            <div class="profile-stat-item">
+                            <div class="profile-stat-item" onclick="window.location.href='/logged-in/@${username}#following'">
                                 <span class="stat-count">${followingDisplay}</span>
                                 <span class="stat-label">Following</span>
                             </div>
@@ -1072,11 +1086,11 @@ let db;
                 const pfpType = userData?.pfpType || 'google'; 
 
                 if (pfpType === 'custom' && userData?.customPfp) {
-                    avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
+                    avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 20px;" alt="Profile">`;
                 } else if (pfpType === 'mibi' && userData?.mibiConfig) {
                     const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = userData.mibiConfig;
                     avatarHtml = `
-                        <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 14px;">
+                        <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 20px;">
                              <div class="absolute inset-0 w-full h-full" style="transform: translate(${offsetX || 0}%, ${offsetY || 0}%) rotate(${rotation || 0}deg) scale(${(size || 100) / 100}); transform-origin: center;">
                                  <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
                                  ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
@@ -1090,19 +1104,19 @@ let db;
                     const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
                     const textColor = getLetterAvatarTextColor(bg); 
                     const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
-                    avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
+                    avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 20px;">${initial}</div>`;
                 } else {
                     const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
                     const googlePhoto = googleProvider ? googleProvider.photoURL : null;
                     const displayPhoto = googlePhoto || user.photoURL;
                     if (displayPhoto) {
-                        avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 12px;" alt="Profile">`;
+                        avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 20px;" alt="Profile">`;
                     } else {
                         const bg = DEFAULT_THEME['avatar-gradient'];
                         const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
                         const textColor = getLetterAvatarTextColor(bg);
                         const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
-                        avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
+                        avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 20px;">${initial}</div>`;
                     }
                 }
                 
@@ -1113,7 +1127,7 @@ let db;
 
                 return `
                     <div id="auth-button-container" class="relative flex-shrink-0 flex items-center">
-                        <button id="auth-toggle" class="w-10 h-10 border border-gray-600 overflow-hidden" style="border-radius: 14px;">
+                        <button id="auth-toggle" class="w-10 h-10 border border-gray-600 overflow-hidden" style="border-radius: 24px;">
                             ${avatarHtml}
                         </button>
                         <div id="auth-menu-container" class="auth-menu-container closed">
@@ -1778,6 +1792,31 @@ let db;
 
             currentIsPrivileged = isPrivilegedUser;
             renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
+
+            // --- Tracking Logic ---
+            if (user) {
+                const currentPageKey = getCurrentPageKey();
+                const activityName = currentPageKey ? allPages[currentPageKey].name : document.title.replace('4SP - ', '');
+                
+                // Set online status and activity
+                await db.collection('users').doc(user.uid).update({
+                    isOnline: true,
+                    currentActivity: activityName,
+                    lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(err => console.error("Error updating presence:", err));
+
+                // Handle Tab Closure
+                window.onbeforeunload = function() {
+                    // Note: update is async, so we use a simple set if possible or just rely on the fact that most browsers allow a quick update.
+                    // For better reliability in production, one would use Firestore Presence with Realtime Database.
+                    db.collection('users').doc(user.uid).update({
+                        isOnline: false,
+                        currentActivity: null,
+                        lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                };
+            }
+            // ----------------------
 
             // Set flag after the first check
             if (!authCheckCompleted) {

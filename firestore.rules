@@ -35,9 +35,27 @@ service cloud.firestore {
       
       allow update: if isOwner(userId) || 
                     (isAuthenticated() && 
-                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pending_requests', 'friends']));
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                        'pending_requests', 'friends', 'followerCount', 'followingCount', 
+                        'unreadChats', 'lastMessageSummary', 'lastMessageTimestamp',
+                        'isOnline', 'currentActivity', 'lastActive'
+                     ]));
 
       allow delete: if isOwner(userId);
+
+      match /followers/{followerId} {
+        allow read, write: if isAuthenticated();
+      }
+      
+      match /following/{followingId} {
+        allow read, write: if isAuthenticated();
+      }
+
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId);
+        allow create: if isAuthenticated(); 
+        allow update, delete: if isOwner(userId);
+      }
     }
 
     // ----------------------------------------------------------------------------------

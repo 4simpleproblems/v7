@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4SP - Profile</title>
+    <link rel="icon" href="/favicon.ico">
+    <meta name="description" content="4SP - User Profile">
+    <base href="/">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="navigation.js" defer></script>
+    <script src="injector.js" defer></script>
+
+    <style>
+        :root {
+            --indigo-main: #4f46e5;
+            --indigo-dark: #3730a3;
+            --ink: #ffffff;
+            --bg: #0a0a0a;
+        }
+
+        body { 
+            font-family: 'Geist', sans-serif; 
+            color: var(--ink);
+            background-color: var(--bg);
+            margin: 0;
+            padding: 0;
+        }
+
+        .grid-bg {
+            background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+
+        #dynamic-background {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(
+                circle at 50% 30%,
+                rgba(79, 70, 229, 0.1),
+                transparent 70%
+            );
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .feature-card {
+            border-radius: 28px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: #0f0f0f;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .btn-base {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.85rem;
+            border-radius: 24px;
+            border: 1px solid var(--indigo-main);
+            color: var(--indigo-main);
+            background-color: transparent;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-base:hover {
+            background-color: rgba(79, 70, 229, 0.1);
+            border-color: #6366f1;
+            color: #6366f1;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background-color: var(--indigo-main);
+            color: white;
+            border-color: var(--indigo-main);
+        }
+        .btn-primary:hover {
+            background-color: var(--indigo-dark);
+            border-color: var(--indigo-dark);
+            color: white;
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
+        @keyframes modal-fade-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes modal-fade-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
+        .modal-animate-in { animation: modal-fade-in 0.2s ease-out forwards; }
+        .modal-animate-out { animation: modal-fade-out 0.2s ease-in forwards; }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-online { background-color: #4f46e5; box-shadow: 0 0 8px #6366f1; }
+        .status-offline { background-color: #4b5563; }
+
+        .photo-grid-item {
+            aspect-ratio: 1/1;
+            overflow: hidden;
+            border-radius: 24px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .photo-grid-item:hover {
+            transform: scale(1.02);
+            border-color: var(--indigo-main);
+        }
+        .photo-grid-item img {
+            width: 100%;
+            height: 100%;
+            object-cover: cover;
+        }
+    </style>
+</head>
+<body class="grid-bg min-h-screen relative">
+
+    <div id="dynamic-background"></div>
+    <div id="navbar-container"></div>
+
+    <!-- Blocked Overlay -->
+    <div id="blocked-overlay" class="hidden fixed inset-0 z-[9998] flex flex-col items-center justify-center p-8 backdrop-blur-3xl bg-black/80 text-center">
+        <div class="w-24 h-24 bg-red-900/20 rounded-full flex items-center justify-center mb-6 border border-red-900/40 shadow-sm">
+            <i class="fa-solid fa-user-slash text-4xl text-red-500"></i>
+        </div>
+        <h2 class="text-3xl font-light text-white tracking-tight mb-2">Access Denied</h2>
+        <p id="blocked-message" class="text-gray-400 max-w-sm mb-8 leading-relaxed">
+            You cannot view this profile because you have been blocked.
+        </p>
+        <button onclick="window.location.href='/'" class="btn-base btn-primary px-10 py-3">Return Home</button>
+    </div>
+
+    <main id="profile-main-content" class="container mx-auto p-6 pt-24 max-w-6xl">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Sidebar / Info -->
+            <div class="lg:col-span-1">
+                <div class="feature-card p-8 flex flex-col items-center sticky top-24">
+                    <div class="absolute top-6 right-6">
+                        <div class="relative">
+                            <button id="profile-options-btn" class="text-gray-500 hover:text-white w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/5 transition">
+                                <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
+                            </button>
+                            <div id="profile-options-menu" class="hidden absolute top-full right-0 mt-2 w-48 bg-[#111] border border-gray-800 rounded-2xl shadow-xl z-50 p-2 overflow-hidden">
+                                <button id="btn-share-profile" class="w-full text-left p-3 hover:bg-white/5 rounded-xl transition flex items-center gap-3 text-sm font-medium text-gray-300">
+                                    <i class="fa-solid fa-share-nodes w-4 text-indigo-500"></i> Share Profile
+                                </button>
+                                <button id="btn-block-user" class="w-full text-left p-3 hover:bg-red-900/10 rounded-xl transition flex items-center gap-3 text-sm font-medium text-red-500 hidden">
+                                    <i class="fa-solid fa-ban w-4"></i> Block User
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="avatar-container" class="mb-6 relative group w-28 h-28">
+                        <div id="avatar-preview" class="w-full h-full"></div>
+                        <div id="status-indicator" class="absolute bottom-1 right-1 w-6 h-6 border-4 border-[#0f0f0f] rounded-full status-offline"></div>
+                    </div>
+                    
+                    <div class="text-center w-full">
+                        <div id="self-indicator" class="hidden mb-2">
+                            <span class="text-[9px] font-bold bg-indigo-900/30 text-indigo-400 px-2 py-0.5 rounded-full uppercase tracking-widest border border-indigo-800/50">Your Profile</span>
+                        </div>
+                        <h1 id="display-name" class="text-3xl font-light tracking-tight text-white mb-1">--</h1>
+                        <p id="username" class="text-gray-500 font-mono text-sm">@--</p>
+                        
+                        <div id="activity-label" class="mt-3 text-[11px] text-indigo-400 font-medium uppercase tracking-widest hidden">
+                            Currently Playing: <span id="current-activity-text" class="text-white">--</span>
+                        </div>
+                    </div>
+
+                    <div id="edit-profile-btn-container" class="hidden mt-6 w-full">
+                        <button id="open-edit-modal-btn" class="w-full py-3 bg-white/5 border border-gray-800 text-gray-400 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit Profile
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 w-full mt-8 pt-8 border-t border-gray-800">
+                        <div class="bg-white/5 p-4 rounded-2xl border border-gray-800 text-center cursor-pointer hover:bg-white/10 transition" id="btn-show-followers">
+                            <p class="text-2xl font-medium text-white" id="followers-count">0</p>
+                            <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Followers</p>
+                        </div>
+                        <div class="bg-white/5 p-4 rounded-2xl border border-gray-800 text-center cursor-pointer hover:bg-white/10 transition" id="btn-show-following">
+                            <p class="text-2xl font-medium text-white" id="following-count">0</p>
+                            <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Following</p>
+                        </div>
+                    </div>
+
+                    <div id="description-container" class="mt-6 text-center w-full">
+                        <p id="description" class="text-gray-400 text-sm leading-relaxed italic px-2 py-1"></p>
+                    </div>
+
+                    <div id="follow-actions" class="mt-8 w-full flex gap-3 hidden">
+                        <button id="follow-btn" class="btn-base btn-primary w-full py-3 transition-all duration-200">Follow</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="lg:col-span-2">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-2xl font-light tracking-tight text-white">Dailyphoto</h2>
+                        <p class="text-gray-500 text-sm">A daily collection of moments shared by this user.</p>
+                    </div>
+                    <a href="/logged-in/dailyphoto" class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest hover:underline">View All</a>
+                </div>
+                
+                <div id="dailyphoto-container" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <!-- Photos will be inserted here -->
+                </div>
+
+                <div class="mt-12 p-8 feature-card bg-white/5 border-dashed border-gray-800">
+                    <h3 class="text-lg font-light mb-4 text-white">About 4SP Profiles</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed">
+                        Your profile is your identity on 4SP. Connect with friends, follow your favorite creators, and share your daily moments through Dailyphoto. V6 is built to feel alive—see what your friends are playing in real-time.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- Follow List Modal -->
+    <div id="follow-list-modal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
+        <div class="bg-[#0f0f0f] rounded-[28px] border border-gray-800 w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl flex flex-col">
+            <header class="p-6 border-b border-gray-800 flex justify-between items-center bg-white/5">
+                <h3 id="follow-modal-title" class="text-xl font-light tracking-tight text-white">--</h3>
+                <button id="close-follow-modal" class="text-gray-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </header>
+            <div class="p-4 border-b border-gray-800 bg-[#0f0f0f]">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 text-sm"></i>
+                    <input type="text" id="follow-search-input" class="w-full bg-white/5 border border-gray-800 rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none" placeholder="Search users...">
+                </div>
+            </div>
+            <div id="follow-list-container" class="flex-1 overflow-y-auto custom-scroll p-4 space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="hidden fixed inset-0 z-[10002] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
+        <div class="bg-[#0f0f0f] rounded-[28px] border border-gray-800 w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
+            <header class="p-6 border-b border-gray-800 flex justify-between items-center bg-white/5">
+                <h3 class="text-xl font-light tracking-tight text-white">Edit Profile</h3>
+                <button id="close-edit-modal" class="text-gray-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </header>
+            <div class="p-8 space-y-6">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Display Name</label>
+                    <input type="text" id="edit-display-name" class="w-full bg-white/5 border border-gray-800 rounded-2xl py-3 px-4 text-sm text-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none" placeholder="Enter display name...">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">About Me</label>
+                    <textarea id="edit-description" rows="4" class="w-full bg-white/5 border border-gray-800 rounded-2xl py-3 px-4 text-sm text-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none resize-none" placeholder="Tell your story..."></textarea>
+                </div>
+            </div>
+            <div class="p-8 bg-white/5 border-t border-gray-800">
+                <button id="save-profile-btn" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-900/20">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db, auth } from "/firebase-config.js";
+        
+        // Use compat versions if that's what's available or properly import from firestore.js if modular
+        // Since project-niobium seems to use compat in some places and modular in others based on search results
+        // I will stick to compat for reliability as seen in navigation.js
+        const firebaseAuth = firebase.auth();
+        const firestore = firebase.firestore();
+
+        const avatarPreview = document.getElementById('avatar-preview');
+        const displayNameEl = document.getElementById('display-name');
+        const usernameEl = document.getElementById('username');
+        const followersCountEl = document.getElementById('followers-count');
+        const followingCountEl = document.getElementById('following-count');
+        const descriptionEl = document.getElementById('description');
+        const dailyphotoContainer = document.getElementById('dailyphoto-container');
+        const followActions = document.getElementById('follow-actions');
+        const followBtn = document.getElementById('follow-btn');
+        const selfIndicator = document.getElementById('self-indicator');
+        const editBtnContainer = document.getElementById('edit-profile-btn-container');
+        const statusIndicator = document.getElementById('status-indicator');
+        const activityLabel = document.getElementById('activity-label');
+        const activityText = document.getElementById('current-activity-text');
+
+        const optionsBtn = document.getElementById('profile-options-btn');
+        const optionsMenu = document.getElementById('profile-options-menu');
+        const shareProfileBtn = document.getElementById('btn-share-profile');
+        const blockUserBtn = document.getElementById('btn-block-user');
+
+        const editModal = document.getElementById('edit-profile-modal');
+        const closeEditBtn = document.getElementById('close-edit-modal');
+        const openEditBtn = document.getElementById('open-edit-modal-btn');
+        const saveProfileBtn = document.getElementById('save-profile-btn');
+        const editDisplayName = document.getElementById('edit-display-name');
+        const editDescription = document.getElementById('edit-description');
+
+        const followListModal = document.getElementById('follow-list-modal');
+        const closeFollowModalBtn = document.getElementById('close-follow-modal');
+        const followModalTitle = document.getElementById('follow-modal-title');
+        const followSearchInput = document.getElementById('follow-search-input');
+        const followListContainer = document.getElementById('follow-list-container');
+        const btnShowFollowers = document.getElementById('btn-show-followers');
+        const btnShowFollowing = document.getElementById('btn-show-following');
+
+        let firebaseAuthUser = null; 
+        let profileOwnerId = null; 
+        let isOwnProfile = false;
+        let isFollowing = false;
+
+        firebaseAuth.onAuthStateChanged(async (user) => {
+            if (user) {
+                firebaseAuthUser = user;
+                
+                let path = window.location.pathname;
+                let userFromPath = null;
+                if (path.includes('/@')) {
+                    userFromPath = path.substring(path.indexOf('/@') + 2);
+                }
+
+                if (userFromPath) {
+                    const snapUsername = await firestore.collection("users").where("username", "==", userFromPath).get();
+                    if (!snapUsername.empty) {
+                        profileOwnerId = snapUsername.docs[0].id;
+                    } else {
+                        profileOwnerId = user.uid;
+                    }
+                } else {
+                    profileOwnerId = user.uid;
+                }
+                
+                isOwnProfile = profileOwnerId === user.uid;
+
+                if (isOwnProfile) {
+                    selfIndicator.classList.remove('hidden');
+                    editBtnContainer.classList.remove('hidden');
+                } else {
+                    blockUserBtn.classList.remove('hidden');
+                    followActions.classList.remove('hidden');
+                    checkFollowStatus();
+                }
+
+                const userDocRef = firestore.collection("users").doc(profileOwnerId);
+                const meDocRef = firestore.collection("users").doc(firebaseAuthUser.uid);
+
+                userDocRef.onSnapshot((snap) => {
+                    if (snap.exists) {
+                        const userData = snap.data();
+                        
+                        // Check Blocking (simplified)
+                        if (userData.blockedUsers?.includes(firebaseAuthUser.uid)) {
+                            document.getElementById('blocked-overlay').classList.remove('hidden');
+                            return;
+                        }
+
+                        renderAvatar(userData);
+                        displayNameEl.textContent = userData.displayName || "Anonymous";
+                        usernameEl.textContent = `@${userData.username}`;
+                        descriptionEl.textContent = userData.description || "No bio yet.";
+                        
+                        // Presence
+                        if (userData.isOnline) {
+                            statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[#0f0f0f] rounded-full status-online";
+                            if (userData.currentActivity) {
+                                activityLabel.classList.remove('hidden');
+                                activityText.textContent = userData.currentActivity;
+                            } else {
+                                activityLabel.classList.add('hidden');
+                            }
+                        } else {
+                            statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[#0f0f0f] rounded-full status-offline";
+                            activityLabel.classList.add('hidden');
+                        }
+
+                        if (isOwnProfile) {
+                            editDisplayName.value = userData.displayName || "";
+                            editDescription.value = userData.description || "";
+                        }
+                    }
+                });
+
+                loadCounts();
+                loadDailyPhotos();
+                setupFollowModalListeners();
+                setupEditProfileListeners();
+                setupOptionsListeners();
+            } else {
+                window.location.href = '/authentication';
+            }
+        });
+
+        function renderAvatar(userData) {
+            const pfpType = userData.pfpType || 'google';
+            let html = '';
+            if (pfpType === 'custom' && userData.customPfp) {
+                html = `<img src="${userData.customPfp}" class="w-full h-full object-cover rounded-3xl" alt="PFP">`;
+            } else if (pfpType === 'letter') {
+                const bg = userData.pfpLetterBg || 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)';
+                const initial = (userData.letterAvatarText || userData.displayName?.charAt(0) || 'U').toUpperCase();
+                html = `<div class="w-full h-full flex items-center justify-center text-3xl font-bold text-white rounded-3xl" style="background: ${bg}">${initial}</div>`;
+            } else {
+                const photo = userData.photoURL || "/images/default_pfp.png";
+                html = `<img src="${photo}" class="w-full h-full object-cover rounded-3xl" alt="PFP">`;
+            }
+            avatarPreview.innerHTML = html;
+        }
+
+        async function loadDailyPhotos() {
+            const snap = await firestore.collection('dailyPhotos')
+                .where('userId', '==', profileOwnerId)
+                .orderBy('timestamp', 'desc')
+                .limit(6)
+                .get();
+            
+            dailyphotoContainer.innerHTML = '';
+            if (snap.empty) {
+                dailyphotoContainer.innerHTML = '<div class="col-span-full py-12 text-center text-gray-600 italic">No photos shared yet.</div>';
+                return;
+            }
+
+            snap.forEach(doc => {
+                const data = doc.data();
+                const div = document.createElement('div');
+                div.className = 'photo-grid-item';
+                div.innerHTML = `<img src="${data.url}" alt="Dailyphoto">`;
+                div.onclick = () => window.location.href = '/logged-in/dailyphoto';
+                dailyphotoContainer.appendChild(div);
+            });
+        }
+
+        function loadCounts() {
+            firestore.collection('users').doc(profileOwnerId).collection('followers').onSnapshot(snap => {
+                followersCountEl.textContent = snap.docs.filter(d => d.id !== '.init').length;
+            });
+            firestore.collection('users').doc(profileOwnerId).collection('following').onSnapshot(snap => {
+                followingCountEl.textContent = snap.docs.filter(d => d.id !== '.init').length;
+            });
+        }
+
+        function checkFollowStatus() {
+            firestore.collection('users').doc(profileOwnerId).collection('followers').doc(firebaseAuthUser.uid).onSnapshot(snap => {
+                isFollowing = snap.exists;
+                followBtn.textContent = isFollowing ? 'Following' : 'Follow';
+                followBtn.className = isFollowing ? 'btn-base w-full py-3 bg-white/5 border-gray-800 text-gray-400' : 'btn-base btn-primary w-full py-3';
+            });
+        }
+
+        followBtn.onclick = async () => {
+            const batch = firestore.batch();
+            const meRef = firestore.collection('users').doc(firebaseAuthUser.uid);
+            const ownerRef = firestore.collection('users').doc(profileOwnerId);
+            const myFollowingRef = meRef.collection('following').doc(profileOwnerId);
+            const theirFollowersRef = ownerRef.collection('followers').doc(firebaseAuthUser.uid);
+
+            if (isFollowing) {
+                batch.delete(myFollowingRef);
+                batch.delete(theirFollowersRef);
+                // Note: increment/decrement needs careful handling in batches if not using FieldValue
+                batch.update(meRef, { followingCount: firebase.firestore.FieldValue.increment(-1) });
+                batch.update(ownerRef, { followerCount: firebase.firestore.FieldValue.increment(-1) });
+            } else {
+                batch.set(myFollowingRef, { followedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                batch.set(theirFollowersRef, { followedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                batch.update(meRef, { followingCount: firebase.firestore.FieldValue.increment(1) });
+                batch.update(ownerRef, { followerCount: firebase.firestore.FieldValue.increment(1) });
+            }
+            await batch.commit();
+        };
+
+        function setupEditProfileListeners() {
+            openEditBtn.onclick = () => editModal.classList.remove('hidden');
+            closeEditBtn.onclick = () => editModal.classList.add('hidden');
+            saveProfileBtn.onclick = async () => {
+                saveProfileBtn.disabled = true;
+                await firestore.collection('users').doc(firebaseAuthUser.uid).update({
+                    displayName: editDisplayName.value.trim(),
+                    description: editDescription.value.trim()
+                });
+                saveProfileBtn.disabled = false;
+                editModal.classList.add('hidden');
+            };
+        }
+
+        function setupOptionsListeners() {
+            optionsBtn.onclick = (e) => {
+                e.stopPropagation();
+                optionsMenu.classList.toggle('hidden');
+            };
+            window.onclick = () => optionsMenu.classList.add('hidden');
+            
+            shareProfileBtn.onclick = () => {
+                const url = window.location.origin + "/logged-in/@" + (usernameEl.textContent.replace('@', ''));
+                navigator.clipboard.writeText(url);
+                alert("Profile link copied!");
+            };
+            
+            blockUserBtn.onclick = async () => {
+                if(confirm("Block this user?")) {
+                    await firestore.collection('users').doc(firebaseAuthUser.uid).update({
+                        blockedUsers: firebase.firestore.FieldValue.arrayUnion(profileOwnerId)
+                    });
+                    window.location.href = '/';
+                }
+            };
+        }
+
+        function setupFollowModalListeners() {
+            btnShowFollowers.onclick = () => openFollowModal('followers');
+            btnShowFollowing.onclick = () => openFollowModal('following');
+            closeFollowModalBtn.onclick = () => followListModal.classList.add('hidden');
+        }
+
+        async function openFollowModal(type) {
+            followModalTitle.textContent = type === 'followers' ? 'Followers' : 'Following';
+            followListContainer.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500"></i></div>';
+            followListModal.classList.remove('hidden');
+            
+            const snap = await firestore.collection('users').doc(profileOwnerId).collection(type).get();
+            followListContainer.innerHTML = '';
+            
+            if (snap.empty) {
+                followListContainer.innerHTML = '<div class="text-center py-8 text-gray-500">No users found.</div>';
+                return;
+            }
+
+            for (const followDoc of snap.docs) {
+                if (followDoc.id === '.init') continue;
+                const uSnap = await firestore.collection('users').doc(followDoc.id).get();
+                if (uSnap.exists) {
+                    const userData = uSnap.data();
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-3 p-3 bg-white/5 border border-gray-800 rounded-2xl cursor-pointer hover:bg-white/10 transition';
+                    div.onclick = () => window.location.href = `/logged-in/@${userData.username}`;
+                    div.innerHTML = `
+                        <div class="w-10 h-10 bg-indigo-900/30 rounded-xl flex items-center justify-center font-bold text-indigo-400">
+                            ${userData.displayName?.charAt(0) || 'U'}
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-white">${userData.displayName || 'User'}</p>
+                            <p class="text-[10px] text-gray-500 font-mono">@${userData.username}</p>
+                        </div>
+                    `;
+                    followListContainer.appendChild(div);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
+<!-- Made with ❤️ from 4SP -->
