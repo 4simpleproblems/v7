@@ -276,6 +276,8 @@ function updateFullscreenUI() {
     fsRepeat.classList.toggle('active', repeatMode !== 'off');
     fsRepeat.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat"></i><span class="absolute text-[10px] font-bold mt-2 ml-1">1</span>' : '<i class="fas fa-repeat"></i>';
 }
+
+function switchView(viewName) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
@@ -751,6 +753,26 @@ async function loadLibraryData() {
         playlists = loadFromStorage('playlists') || [];
     }
 }
+
+window.toggleLikeTrack = async function(track, btnEl) {
+    const index = favorites.findIndex(t => t.id === track.id);
+    if (index > -1) {
+        favorites.splice(index, 1);
+        if (btnEl) {
+            btnEl.classList.remove('active');
+            btnEl.querySelector('i').className = 'far fa-star';
+        }
+    } else {
+        favorites.push(track);
+        if (btnEl) {
+            btnEl.classList.add('active');
+            btnEl.querySelector('i').className = 'fas fa-star';
+        }
+    }
+    await saveLibraryData();
+    updateLikeButtonStatus();
+    if (document.getElementById('favoritesView').classList.contains('active')) renderFavorites();
+};
 
 async function saveLibraryData() {
     if (window.VeliumDB) {
