@@ -258,7 +258,6 @@ window.toggleFullscreenPlayer = function() {
         fs.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         updateFullscreenUI();
-        if (currentTrack) loadLyrics(currentTrack, true);
     } else {
         fs.classList.add('hidden');
         document.body.style.overflow = '';
@@ -587,7 +586,6 @@ async function playTrack(index) {
     const fs = document.getElementById('fullscreenPlayer');
     if (fs && !fs.classList.contains('hidden')) {
         updateFullscreenUI();
-        loadLyrics(currentTrack, true);
     }
 
     // Reset Progress UI
@@ -1152,74 +1150,6 @@ window.toggleLikeTrack = async function(track, btnEl) {
     updateLikeButtonStatus();
     if (document.getElementById('favoritesView').classList.contains('active')) renderFavorites();
 };
-
-window.toggleLyrics = function() {
-    const panel = document.getElementById('lyricsPanel');
-    if (panel) {
-        panel.classList.toggle('open');
-        if (panel.classList.contains('open') && currentTrack) {
-            loadLyrics(currentTrack);
-        }
-    }
-};
-
-window.toggleFsLyrics = function() {
-    const fsLyricsContainer = document.getElementById('fsLyricsContainer');
-    const toggleBtn = document.getElementById('fsLyricsToggle');
-    if (!fsLyricsContainer || !toggleBtn || toggleBtn.disabled) return;
-
-    fsLyricsContainer.classList.toggle('hidden');
-    toggleBtn.classList.toggle('text-accent-indigo', !fsLyricsContainer.classList.contains('hidden'));
-};
-
-let lyricsData = [];
-let lyricsInterval = null;
-
-async function loadLyrics(track, isForFullscreen = false) {
-    const container = isForFullscreen ? document.getElementById('fsLyricsContent') : document.getElementById('lyricsContent');
-    const fsLyricsContainer = document.getElementById('fsLyricsContainer');
-    const fsToggle = document.getElementById('fsLyricsToggle');
-    
-    if (!container) return;
-    
-    // Reset toggle state
-    if (isForFullscreen && fsToggle) {
-        fsToggle.disabled = true;
-        fsToggle.classList.remove('text-accent-indigo');
-    }
-
-    if (track.source === 'Argon') {
-        container.innerHTML = '<div class="py-20 text-center text-gray-500">Lyrics not available for this source.</div>';
-        if (isForFullscreen && fsLyricsContainer) fsLyricsContainer.classList.add('hidden');
-        return;
-    }
-
-    container.innerHTML = '<div class="py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
-    
-    try {
-        const lyricsId = track.lyricsId || track.id;
-        const response = await fetch(`${API_BASE_URL}/lyrics/${lyricsId}`);
-        if (!response.ok) throw new Error('No lyrics available');
-        
-        const data = await response.json();
-        if (data.lyrics) {
-            container.innerHTML = `<div class="p-4 leading-relaxed whitespace-pre-wrap">${escapeHtml(data.lyrics)}</div>`;
-            if (isForFullscreen) {
-                if (fsLyricsContainer) fsLyricsContainer.classList.remove('hidden');
-                if (fsToggle) {
-                    fsToggle.disabled = false;
-                    fsToggle.classList.add('text-accent-indigo');
-                }
-            }
-        } else {
-            container.innerHTML = '<div class="py-20 text-center text-gray-500">Lyrics not found for this track.</div>';
-            if (isForFullscreen && fsLyricsContainer) fsLyricsContainer.classList.add('hidden');
-        }
-    } catch (e) {
-        container.innerHTML = `<div class="py-20 text-center text-gray-500">Lyrics unavailable.</div>`;
-        if (isForFullscreen && fsLyricsContainer) fsLyricsContainer.classList.add('hidden');
-    }
-}
 
 
 // Made with ❤️ from 4SP

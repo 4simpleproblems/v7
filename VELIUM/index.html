@@ -590,7 +590,6 @@
 
             <!-- Volume & Extras -->
             <div class="flex items-center justify-end gap-4">
-                <button class="player-btn" onclick="toggleLyrics()"><i class="fas fa-quote-right"></i></button>
                 <div class="flex items-center gap-2 group">
                     <i class="fas fa-volume-up text-gray-500 group-hover:text-white transition-colors"></i>
                     <div class="w-24 h-1 bg-brand-border rounded-full cursor-pointer relative">
@@ -623,19 +622,6 @@
         </div>
     </div>
 
-    <!-- Lyrics Panel (Keep existing for sidebar if needed, or we'll transition to Fullscreen) -->
-    <div id="lyricsPanel" class="side-panel p-8 flex flex-col">
-        <div class="flex items-center justify-between mb-10">
-            <h2 class="text-2xl font-bold">Lyrics</h2>
-            <button class="text-2xl text-gray-500 hover:text-white" onclick="toggleLyrics()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div id="lyricsContent" class="flex-1 overflow-y-auto custom-scrollbar">
-            <!-- Lyrics will be injected here -->
-        </div>
-    </div>
-
     <!-- Full-Screen Now Playing Modal -->
     <div id="fullscreenPlayer" class="fixed inset-0 bg-black z-[9999] hidden flex-col p-12 transition-all duration-500 overflow-y-auto">
         <!-- Blurred Background -->
@@ -648,19 +634,17 @@
                 <i class="fas fa-chevron-down"></i>
             </button>
             <div class="text-xs font-bold uppercase tracking-widest text-gray-500">Now Playing</div>
-            <button id="fsLyricsToggle" onclick="toggleFsLyrics()" class="text-2xl text-gray-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                <i class="fas fa-quote-right"></i>
-            </button>
+            <div class="w-8"></div>
         </div>
 
-        <div class="flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 max-w-7xl mx-auto w-full relative z-10">
-            <!-- Left Side: Artwork & Main Controls -->
-            <div class="flex-1 flex flex-col items-center lg:items-start max-w-xl w-full">
+        <div class="flex-1 flex flex-col items-center justify-center max-w-7xl mx-auto w-full relative z-10">
+            <!-- Centered Content: Artwork & Controls -->
+            <div class="flex flex-col items-center max-w-xl w-full">
                 <div class="w-full aspect-square mb-12 shadow-[0_40px_100px_-20px_rgba(79,70,229,0.5)] rounded-3xl overflow-hidden border border-brand-border">
                     <img id="fsArtwork" src="" class="w-full h-full object-cover">
                 </div>
                 
-                <div class="w-full mb-8 text-center lg:text-left">
+                <div class="w-full mb-8 text-center">
                     <h1 id="fsTrackName" class="text-4xl lg:text-6xl font-black tracking-tighter mb-4 truncate">Not Playing</h1>
                     <p id="fsArtistName" class="text-xl lg:text-2xl text-gray-400 font-medium truncate">Select a track</p>
                 </div>
@@ -684,13 +668,6 @@
                         <button class="player-btn text-3xl" id="fsNext"><i class="fas fa-step-forward"></i></button>
                         <button class="player-btn text-2xl" id="fsRepeat"><i class="fas fa-repeat"></i></button>
                     </div>
-                </div>
-            </div>
-
-            <!-- Right Side: Lyrics -->
-            <div id="fsLyricsContainer" class="flex-1 h-full max-h-[70vh] w-full hidden lg:flex flex-col">
-                <div id="fsLyricsContent" class="flex-1 overflow-y-auto pr-8 custom-scrollbar text-3xl lg:text-5xl font-bold leading-tight space-y-8 py-10">
-                    <!-- Lyrics will be injected here -->
                 </div>
             </div>
         </div>
