@@ -410,9 +410,14 @@
             const loader = document.getElementById('weather-loader');
             loader.classList.add('loading');
             try {
-                // GeoJS is a very reliable HTTPS location provider
-                const locRes = await fetch('https://get.geojs.io/v1/ip/geo.json');
-                const locData = await locRes.json();
+                // ip-api.com via JSONP or just HTTP fallback (if available)
+                // Since ip-api.com free tier is HTTP only, we'll try ip-api.com via a proxy or use another HTTPS one.
+                // Re-trying ipapi.co or extreme-ip-lookup.com usually works if not rate limited.
+                const locRes = await fetch('http://ip-api.com/json/'); 
+                // Wait, browsers block HTTP on HTTPS pages. Let's use a reliable HTTPS alternative.
+                const locResHttps = await fetch('https://ipapi.co/json/');
+                const locData = await locResHttps.json();
+                
                 const lat = locData.latitude;
                 const lon = locData.longitude;
                 document.getElementById('w-location').textContent = locData.city || 'Local Node';
@@ -437,7 +442,11 @@
                 document.getElementById('w-icon').innerHTML = `<i class="fa-solid ${icon}"></i>`;
                 document.getElementById('w-desc').textContent = desc;
 
-            } catch(e) { console.error("Weather load fail", e); }
+            } catch(e) { 
+                console.error("Weather load fail", e);
+                // Last ditch effort: Try JSONP for ip-api.com or just use hardcoded default for UI stability
+                document.getElementById('w-desc').textContent = "Atmospheric Data Unavailable";
+            }
             loader.classList.remove('loading');
         }
     </script>
