@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       
       const page = Math.floor((parseInt(offset) || 0) / 20) + 1;
       
-      const [jsRes, musicApiRes] = await Promise.all([
+      const [jsRes, musicApiRes, ytMusicRes] = await Promise.all([
         // Provider 1: JioSaavn (Local Logic)
         Promise.all([
             useFetch({ endpoint: Endpoints.search.songs, params: { q: searchQuery, p: page, n: 20 } }),
@@ -83,7 +83,17 @@ export default async function handler(req, res) {
                 }
                 return null;
             })
-            .catch(() => null)
+            .catch(() => null),
+        // Provider 3: YT Music (Local Logic via youtubei.js)
+        getYoutube().then(async yt => {
+            try {
+                const search = await yt.music.search(searchQuery, { type: 'song' });
+                return search.sections[0]?.contents || [];
+            } catch (e) {
+                console.error('YT Music search failed', e);
+                return [];
+            }
+        }).catch(() => [])
       ]);
 
       const [songsRes, albumsRes, artistsRes, playlistsRes] = jsRes;
@@ -101,6 +111,23 @@ export default async function handler(req, res) {
               downloadUrl: [{ quality: '320kbps', link: musicApiRes.AUDIO_URL }],
               source: 'MusicAPI'
           });
+      }
+
+      // Add YT Music tracks
+      if (ytMusicRes && Array.isArray(ytMusicRes)) {
+          const ytTracks = ytMusicRes.map(item => {
+              if (item.type !== 'MusicResponsiveListItem') return null;
+              return {
+                  id: `ytm-${item.id}`,
+                  title: item.title,
+                  artist_name: item.artists?.[0]?.name || 'YT Music Artist',
+                  artwork_url: item.thumbnails?.[0]?.url,
+                  duration: (item.duration?.seconds || 0) * 1000,
+                  youtube_id: item.id,
+                  source: 'YTMusic'
+              };
+          }).filter(Boolean);
+          tracks.push(...ytTracks);
       }
 
       return res.status(200).json({
