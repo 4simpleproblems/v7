@@ -16,18 +16,16 @@
     <style>
         :root {
             --bg-page: #040404;
-            --bg-container: #0a0a0a;
-            --border-color: rgba(255,255,255,0.08);
-            --text-primary: #ffffff;
-            --text-secondary: #888888;
+            --bg-container: #080808;
+            --border-color: rgba(255,255,255,0.05);
             --accent-color: #4f46e5;
-            --accent-glow: rgba(79, 70, 229, 0.3);
+            --accent-glow: rgba(79, 70, 229, 0.4);
         }
 
         body { 
             font-family: 'Geist', sans-serif; 
             background-color: var(--bg-page);
-            color: var(--text-primary);
+            color: #fff;
             font-weight: 300;
             min-height: 100vh;
             display: flex;
@@ -35,239 +33,199 @@
             overflow: hidden;
         }
 
-        /* --- BENTO GRID LAYOUT --- */
         #page-content {
             flex-grow: 1;
             display: grid;
             grid-template-columns: repeat(12, 1fr);
             grid-template-rows: repeat(12, 1fr);
-            gap: 1.25rem;
-            padding: 2rem 1.5rem; /* Reduced padding, removed side limits */
+            gap: 1.5rem;
+            padding: 2.5rem;
             width: 100%;
             height: calc(100vh - 64px);
             box-sizing: border-box;
         }
 
-        .bento-card {
+        .dashboard-card {
             background: var(--bg-container);
             border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 1.25rem;
+            border-radius: 28px;
+            padding: 1.75rem;
             position: relative;
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .bento-card:hover {
-            border-color: rgba(255,255,255,0.15);
-            transform: translateY(-2px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        .dashboard-card:hover:not(.no-hover) {
+            border-color: rgba(255,255,255,0.1);
+            background: #0c0c0c;
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
         }
 
-        /* --- SPECIFIC SLOTS --- */
-        #hero-slot {
+        /* --- LAYOUT SLOTS --- */
+        #welcome-section {
             grid-column: span 7;
             grid-row: span 5;
             background: transparent;
             border: none;
-            padding-left: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            padding-left: 0;
         }
-        #hero-slot:hover { transform: none; box-shadow: none; }
 
-        #weather-slot {
+        #weather-section {
             grid-column: span 5;
             grid-row: span 5;
-            background: linear-gradient(135deg, rgba(20,20,20,0.8) 0%, rgba(10,10,10,0.8) 100%);
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: space-between;
+            background: linear-gradient(145deg, #0a0a0a 0%, #050505 100%);
         }
 
-        #stats-slot-1 { grid-column: span 3; grid-row: span 3; }
-        #stats-slot-2 { grid-column: span 4; grid-row: span 3; }
-        
-        #quick-access-slot {
-            grid-column: span 5;
+        #analytics-left {
+            grid-column: span 4;
+            grid-row: span 7;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        #quick-access-section {
+            grid-column: span 8;
             grid-row: span 7;
             display: flex;
             flex-direction: column;
         }
 
-        #analytics-summary-slot {
-            grid-column: span 7;
-            grid-row: span 4;
+        /* --- COMPONENTS --- */
+        .time-display { font-size: 5.5rem; font-weight: 200; line-height: 1; letter-spacing: -0.04em; }
+        .date-display { font-size: 1.2rem; color: #666; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 0.5rem; }
+        .welcome-msg { font-size: 2rem; font-weight: 300; margin-top: 1.5rem; color: #aaa; }
+
+        .stat-card {
+            background: #0a0a0a;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.25rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .label-tiny { font-size: 0.65rem; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.15em; }
+        .val-big { font-size: 1.75rem; font-weight: 500; color: #fff; margin-top: 0.25rem; }
+        .val-sub { font-size: 0.7rem; color: #555; margin-top: 0.25rem; }
+
+        .page-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-        }
-
-        /* --- TYPOGRAPHY --- */
-        .time-text {
-            font-size: 5rem;
-            font-weight: 200;
-            line-height: 1;
-            letter-spacing: -0.02em;
-            color: #fff;
-        }
-        .date-text {
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            margin-bottom: 0.5rem;
-        }
-        .welcome-text {
-            font-size: 1.75rem;
-            font-weight: 300;
-            margin-top: 1.5rem;
-        }
-
-        .card-label {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-secondary);
-            margin-bottom: 0.4rem;
-            font-weight: 600;
-        }
-
-        .stat-huge {
-            font-size: 2.25rem;
-            font-weight: 500;
-            color: #fff;
-            line-height: 1.1;
-        }
-
-        /* --- RECENT PAGES --- */
-        .recent-list {
-            flex-grow: 1;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-top: 1rem;
             overflow-y: auto;
-            margin-top: 0.75rem;
         }
-        .recent-item {
+
+        .page-btn {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            border-radius: 16px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid transparent;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.03);
+            border-radius: 18px;
             transition: all 0.2s;
-            margin-bottom: 0.5rem;
             cursor: pointer;
         }
-        .recent-item:hover {
-            background: rgba(255,255,255,0.06);
+        .page-btn:hover {
+            background: rgba(79, 70, 229, 0.05);
             border-color: var(--accent-color);
-            transform: translateX(4px);
+            transform: scale(1.02);
         }
-        .recent-item.disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            filter: grayscale(1);
-        }
-        .recent-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 10px;
-            background: rgba(79, 70, 229, 0.1);
-            color: var(--accent-color);
+        .page-btn.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+        .icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.03);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
+            color: var(--accent-color);
+            font-size: 1.2rem;
         }
 
-        /* --- WEATHER --- */
-        .weather-temp-main { font-size: 3rem; font-weight: 500; color: #fff; }
-        .weather-info-box { text-align: right; }
+        .weather-row { display: flex; align-items: flex-end; justify-content: space-between; }
+        .temp-text { font-size: 4rem; font-weight: 500; line-height: 1; }
         
-        #weather-loader {
-            position: absolute;
-            top: 1.25rem;
-            right: 1.25rem;
-            color: var(--accent-color);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
+        #weather-loader { position: absolute; top: 1.5rem; right: 1.75rem; color: var(--accent-color); opacity: 0; }
         #weather-loader.loading { opacity: 1; }
 
         .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
     </style>
 </head>
 
 <body>
     <div id="page-content">
-        <!-- HERO SLOT -->
-        <div id="hero-slot" class="bento-card">
-            <div id="clock-date" class="date-text">--------</div>
-            <div id="clock-time" class="time-text">00:00</div>
-            <h2 class="welcome-text">Hey, <span id="user-name-display" class="text-indigo-400 font-medium">User</span>.</h2>
-            <p class="text-gray-500 mt-1 text-sm font-normal">Welcome to 4SP V6.</p>
+        <!-- WELCOME SECTION -->
+        <div id="welcome-section" class="dashboard-card no-hover">
+            <div id="clock-date" class="date-display">--------</div>
+            <div id="clock-time" class="time-display">00:00</div>
+            <h2 class="welcome-msg">Good day, <span id="user-name-display" class="text-indigo-500">User</span>.</h2>
         </div>
 
-        <!-- WEATHER SLOT -->
-        <div id="weather-slot" class="bento-card">
+        <!-- WEATHER SECTION -->
+        <div id="weather-section" class="dashboard-card">
             <div id="weather-loader"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
-            <div class="flex flex-col">
-                <div class="card-label">Local Weather</div>
-                <div id="w-temp" class="weather-temp-main">--°</div>
-                <div id="w-desc" class="text-sm text-gray-400 capitalize">Loading...</div>
-            </div>
-            <div class="weather-info-box">
-                <div id="w-icon" class="text-5xl text-gray-300 mb-2"><i class="fa-solid fa-cloud"></i></div>
-                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                    H: <span id="w-high">--°</span> | L: <span id="w-low">--°</span>
+            <div class="weather-row">
+                <div>
+                    <div class="label-tiny">Local Environment</div>
+                    <div id="w-temp" class="temp-text">--°</div>
+                    <div id="w-desc" class="text-sm text-gray-500 mt-1 capitalize italic">Detecting...</div>
                 </div>
+                <div id="w-icon" class="text-7xl text-white/10"><i class="fa-solid fa-cloud"></i></div>
+            </div>
+            <div class="flex justify-between items-center mt-4 pt-4 border-t border-white/5">
+                <div class="text-xs text-gray-500 font-medium">H: <span id="w-high" class="text-white">--°</span> | L: <span id="w-low" class="text-white">--°</span></div>
+                <div id="w-location" class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">Unknown City</div>
             </div>
         </div>
 
-        <!-- STATS 1 -->
-        <div id="stats-slot-1" class="bento-card flex flex-col justify-between">
-            <div class="card-label">Total Time</div>
-            <div id="stat-total-time" class="stat-huge">0h 0m</div>
-            <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-2">Active in V6</div>
-        </div>
-
-        <!-- STATS 2 -->
-        <div id="stats-slot-2" class="bento-card flex flex-col justify-between">
-            <div class="card-label">Sessions</div>
-            <div id="stat-sessions" class="stat-huge">0</div>
-            <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-2">Total Logins</div>
-        </div>
-
-        <!-- QUICK ACCESS -->
-        <div id="quick-access-slot" class="bento-card">
-            <div class="flex justify-between items-center mb-2">
-                <div class="card-label mb-0">Recently Viewed (V6)</div>
-                <i class="fa-solid fa-clock-rotate-left text-gray-700 text-xs"></i>
+        <!-- ANALYTICS LEFT -->
+        <div id="analytics-left" class="dashboard-card no-hover">
+            <div class="stat-card">
+                <div>
+                    <div class="label-tiny">Experience Time</div>
+                    <div id="stat-total-time" class="val-big">0h 0m</div>
+                </div>
+                <div class="val-sub">Total session duration in V6</div>
             </div>
-            <div id="recent-pages-list" class="recent-list custom-scroll">
-                <div class="py-10 text-center text-gray-600 italic text-sm">Waiting for data...</div>
+            <div class="stat-card">
+                <div>
+                    <div class="label-tiny">System Analytics</div>
+                    <div id="stat-browser" class="text-sm font-medium text-indigo-400">Loading...</div>
+                    <div id="stat-os" class="text-xs text-gray-500 mt-1">Detecting OS</div>
+                </div>
+                <div id="stat-device" class="text-[10px] text-gray-700 uppercase font-bold tracking-widest">Project Niobium</div>
             </div>
         </div>
 
-        <!-- ANALYTICS SUMMARY -->
-        <div id="analytics-summary-slot" class="bento-card bg-indigo-500/5 border-indigo-500/20">
-            <div class="flex flex-col justify-center border-r border-white/5 pr-4">
-                <div class="card-label text-indigo-400">Top Page</div>
-                <div id="stat-most-viewed" class="text-lg font-medium text-white truncate">None yet</div>
-                <div id="stat-browser" class="text-[9px] text-indigo-300/40 mt-1 uppercase tracking-tighter">Unknown Browser</div>
+        <!-- QUICK ACCESS SECTION -->
+        <div id="quick-access-section" class="dashboard-card">
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="label-tiny">Recently Accessed</div>
+                    <h3 class="text-xl font-medium text-white/80 mt-1">Your V6 Pulse</h3>
+                </div>
+                <div id="stat-pageviews" class="text-3xl font-light text-white/20">0</div>
             </div>
-            <div class="flex flex-col justify-center border-r border-white/5 px-4">
-                <div class="card-label text-indigo-400">Page Views</div>
-                <div id="stat-pageviews" class="text-3xl font-medium text-white">0</div>
-                <div id="stat-os" class="text-[9px] text-indigo-300/40 mt-1 uppercase tracking-tighter">Unknown OS</div>
-            </div>
-            <div class="flex flex-col justify-center pl-4">
-                <div class="card-label text-indigo-400">Device Origin</div>
-                <div id="stat-device" class="text-sm font-medium text-white truncate">Detecting...</div>
-                <div class="text-[9px] text-indigo-300/40 mt-1 uppercase tracking-tighter">Project Niobium</div>
+            
+            <div id="recent-pages-list" class="page-grid custom-scroll flex-grow">
+                <div class="col-span-2 py-20 text-center text-gray-700 italic text-sm">Synchronizing analytics...</div>
             </div>
         </div>
     </div>
@@ -275,7 +233,7 @@
     <script type="module">
         import { firebaseConfig } from '../firebase-config.js';
 
-        const PAGE_NAME_LOOKUP = {
+        const V6_PAGES = {
             'dashboard.html': 'Dashboard',
             'soundboard.html': 'Soundboard',
             'notes.html': 'Notes',
@@ -297,18 +255,17 @@
 
         const getCleanTitle = (path, originalTitle) => {
             const fileName = path.split('/').pop().split('?')[0];
-            if (PAGE_NAME_LOOKUP[fileName]) return PAGE_NAME_LOOKUP[fileName];
+            if (V6_PAGES[fileName]) return V6_PAGES[fileName];
             if (originalTitle && !originalTitle.includes('VERSION 5 CLIENT')) return originalTitle;
             return fileName.replace('.html', '').charAt(0).toUpperCase() + fileName.replace('.html', '').slice(1);
         };
 
         const parseUA = (ua) => {
-            if (!ua) return { browser: 'Unknown', os: 'Unknown' };
+            if (!ua) return { browser: 'Browser', os: 'Operating System' };
             let browser = 'Other', os = 'Other';
             if (ua.includes('Chrome')) browser = 'Chrome';
             else if (ua.includes('Firefox')) browser = 'Firefox';
             else if (ua.includes('Safari')) browser = 'Safari';
-            
             if (ua.includes('Windows')) os = 'Windows';
             else if (ua.includes('Mac OS')) os = 'macOS';
             else if (ua.includes('CrOS')) os = 'ChromeOS';
@@ -345,7 +302,6 @@
 
         async function loadAnalytics(uid) {
             const db = firebase.firestore();
-            // Filter by Project Niobium version tag
             const snap = await db.collection('analytics')
                 .where('userId', '==', uid)
                 .where('version', '==', 'project_niobium')
@@ -356,27 +312,21 @@
             let totalTime = 0;
             let totalPageViews = 0;
             let pageMap = {}; 
-            let browsers = {};
-            let systems = {};
+            let latestUA = "";
 
             snap.forEach(doc => {
                 const data = doc.data();
                 totalTime += (data.duration || 0);
                 totalPageViews += (data.pageCount || 0);
-                
-                const ua = parseUA(data.userAgent);
-                browsers[ua.browser] = (browsers[ua.browser] || 0) + 1;
-                systems[ua.os] = (systems[ua.os] || 0) + 1;
+                if (data.userAgent) latestUA = data.userAgent;
 
                 if (data.visitedPages) {
                     data.visitedPages.forEach(p => {
                         const path = p.path || p.url;
-                        if (!path || path === 'about:srcdoc') return;
+                        if (!path || path.includes('srcdoc')) return;
                         
-                        // Filter for V6 pages only (those in our lookup or starting with /logged-in)
                         const fileName = path.split('/').pop().split('?')[0];
-                        const isV6 = PAGE_NAME_LOOKUP[fileName] || path.includes('/logged-in/');
-                        if (!isV6) return;
+                        if (!V6_PAGES[fileName] && !path.includes('/logged-in/')) return;
 
                         const cleanTitle = getCleanTitle(path, p.title);
                         if (!pageMap[path]) pageMap[path] = { title: cleanTitle, count: 0 };
@@ -386,20 +336,15 @@
             });
 
             const sortedPages = Object.entries(pageMap).sort((a, b) => b[1].count - a[1].count);
-            if (sortedPages.length > 0) {
-                document.getElementById('stat-most-viewed').textContent = sortedPages[0][1].title;
-            }
-
-            const topBrowser = Object.entries(browsers).sort((a,b) => b[1]-a[1])[0]?.[0] || 'Unknown';
-            const topOS = Object.entries(systems).sort((a,b) => b[1]-a[1])[0]?.[0] || 'Unknown';
-            document.getElementById('stat-browser').textContent = topBrowser;
-            document.getElementById('stat-os').textContent = topOS;
-            document.getElementById('stat-device').textContent = window._LOCAL_MODE ? 'Version 5 Client' : 'Web Browser';
+            
+            const uaInfo = parseUA(latestUA);
+            document.getElementById('stat-browser').textContent = uaInfo.browser;
+            document.getElementById('stat-os').textContent = uaInfo.os;
+            document.getElementById('stat-device').textContent = window._LOCAL_MODE ? 'Version 5 Client' : 'Cloud Access';
 
             const hours = Math.floor(totalTime / 3600);
             const minutes = Math.floor((totalTime % 3600) / 60);
             document.getElementById('stat-total-time').textContent = `${hours}h ${minutes}m`;
-            document.getElementById('stat-sessions').textContent = snap.size;
             document.getElementById('stat-pageviews').textContent = totalPageViews;
 
             const listEl = document.getElementById('recent-pages-list');
@@ -410,7 +355,7 @@
 
             sortedPages.slice(0, 10).forEach(([path, data]) => {
                 const item = document.createElement('div');
-                item.className = 'recent-item';
+                item.className = 'page-btn';
                 
                 const isLocalPath = path.startsWith('file://') || (path.startsWith('/') && !path.startsWith('/logged-in') && !path.includes('.vercel.app')) || path.includes('4simpleproblems_v5_latest.html');
 
@@ -422,12 +367,12 @@
                 if (!isClickable) item.classList.add('disabled');
 
                 item.innerHTML = `
-                    <div class="recent-icon">
+                    <div class="icon-box">
                         <i class="fa-solid fa-${isLocalPath ? 'hdd' : 'file-alt'}"></i>
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-white truncate">${data.title}</p>
-                        <p class="text-[9px] text-gray-500 uppercase tracking-widest">${data.count} views</p>
+                        <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">${data.count} Sessions</p>
                     </div>
                 `;
 
@@ -465,10 +410,12 @@
             const loader = document.getElementById('weather-loader');
             loader.classList.add('loading');
             try {
-                const locRes = await fetch('https://ipwho.is/');
+                // GeoJS is a very reliable HTTPS location provider
+                const locRes = await fetch('https://get.geojs.io/v1/ip/geo.json');
                 const locData = await locRes.json();
                 const lat = locData.latitude;
                 const lon = locData.longitude;
+                document.getElementById('w-location').textContent = locData.city || 'Local Node';
 
                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto`;
                 const res = await fetch(url);
