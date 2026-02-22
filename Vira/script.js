@@ -224,7 +224,12 @@ function addVideoPlayer(videoId, showLoadedFeedback = true) {
 
     videoUnitWrapper.appendChild(videoDisplay);
     videoUnitWrapper.appendChild(sizeControls);
-    videoPlayersContainer.prepend(videoUnitWrapper);
+    if (videoPlayersContainer) {
+        videoPlayersContainer.prepend(videoUnitWrapper);
+    } else {
+        // Fallback if videoPlayersContainer is null, perhaps append to embed-container or another suitable element
+        document.getElementById('embed-container').append(videoUnitWrapper);
+    }
 
     if (typeof fadeInObserver !== "undefined")
         fadeInObserver.observe(videoUnitWrapper);
