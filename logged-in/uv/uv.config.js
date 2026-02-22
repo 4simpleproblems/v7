@@ -11,6 +11,6 @@
         bundle: basePath + "uv.bundle.js",
         config: basePath + "uv.config.js",
         sw: basePath + "uv.sw.js",
-        stockSW: basePath + "sw.js",
+        stockSW: "/sw.js",
     };
 })();

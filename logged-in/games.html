@@ -57,6 +57,17 @@
         }
     </script>
     
+    <script>
+        // Initialize Service Worker at root for broad scope
+        (async () => {
+            if ('serviceWorker' in navigator) {
+                try {
+                    await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                    console.log("VERN_SYSTEM SW Registered at root");
+                } catch(e) { console.error("SW Init Error:", e); }
+            }
+        })();
+    </script>
     <style>
         /* Base styles */
         :root {

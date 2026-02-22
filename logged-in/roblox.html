@@ -66,8 +66,8 @@
             // SW Registration
             if ('serviceWorker' in navigator) {
                 try {
-                    await navigator.serviceWorker.register('/logged-in/sw.js', { scope: '/logged-in/' });
-                    console.log("VERN SW Registered");
+                    await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                    console.log("VERN SW Registered at root");
                     
                     if (navigator.serviceWorker.controller) {
                         // SW is already active, safe to load

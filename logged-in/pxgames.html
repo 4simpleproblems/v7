@@ -21,13 +21,13 @@
     <script src="/logged-in/uv/uv.config.js"></script>
 
     <script>
-        // Register UV service worker
+        // Register Service Worker at root for broad scope
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/logged-in/uv/sw.js', {
-                scope: '/logged-in/uv/service/'
+            navigator.serviceWorker.register('/sw.js', {
+                scope: '/'
             })
             .then(() => {
-                console.log('UV service worker registered.');
+                console.log('UV service worker registered at root.');
             })
             .catch(error => {
                 console.error('UV service worker registration failed:', error);

@@ -14,7 +14,7 @@
             bundle: basePath + "uv.bundle.js",
             config: basePath + "uv.config.js",
             sw: basePath + "uv.sw.js",
-            stockSW: "/VORA/VERN_SYSTEM/sw.js",
+            stockSW: "/sw.js",
         };
     </script>
     <script src="/VORA/VERN_SYSTEM/baremux/index.js"></script>
@@ -43,8 +43,8 @@
         (async () => {
             if ("serviceWorker" in navigator) {
                 try {
-                    await navigator.serviceWorker.register("/VORA/VERN_SYSTEM/sw.js", {
-                        scope: "/VORA/VERN_SYSTEM/"
+                    await navigator.serviceWorker.register("/sw.js", {
+                        scope: "/"
                     });
                 } catch (e) { console.error("VERN Proxy Error", e); }
             }

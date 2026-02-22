@@ -875,4 +875,11 @@ window.toggleLyrics = function() {
     }
 };
 
+window.toggleLyrics = function() {
+    const panel = document.getElementById('lyricsPanel');
+    if (panel) {
+        panel.classList.toggle('open');
+    }
+};
+
 // Made with ❤️ from 4SP

@@ -10,7 +10,7 @@
         bundle: basePath + "uv.bundle.js",
         config: basePath + "uv.config.js",
         sw: basePath + "uv.sw.js",
-        stockSW: "/VORA/VERN_SYSTEM/sw.js",
+        stockSW: "/sw.js",
         /**
          * @type {string}
          * @description The Bare server to use. This can be an absolute URL or a relative path.
