@@ -30,7 +30,17 @@ const popularArtists = [
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    initApp();
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(() => {
+            initApp();
+        });
+        // Fallback if ready takes too long (e.g., 2 seconds)
+        setTimeout(() => {
+            if (!currentTrack && playlist.length === 0) initApp();
+        }, 2000);
+    } else {
+        initApp();
+    }
 });
 
 async function initApp() {
@@ -326,7 +336,12 @@ function loadYouTubePlayer(videoId) {
             player = new YT.Player('audioElement', {
                 height: '0', width: '0',
                 videoId: videoId,
-                playerVars: { autoplay: 1, controls: 0, disablekb: 1 },
+                playerVars: { 
+                    autoplay: 1, 
+                    controls: 0, 
+                    disablekb: 1,
+                    origin: window.location.origin 
+                },
                 events: {
                     onReady: (e) => { e.target.setVolume(volume); e.target.playVideo(); },
                     onStateChange: onPlayerStateChange

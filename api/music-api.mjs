@@ -59,10 +59,19 @@ export default async function handler(req, res) {
       
       const page = Math.floor((parseInt(offset) || 0) / 20) + 1;
       
+      const fetchJson = async (url) => {
+        const r = await fetch(url);
+        if (!r.ok) {
+          const text = await r.text();
+          throw new Error(`API Error (${r.status}): ${text.substring(0, 100)}`);
+        }
+        return r.json();
+      };
+
       const [songsRes, albumsRes, artistsRes] = await Promise.all([
-        fetch(`${SAAVN_API}/search/songs?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`).then(r => r.json()),
-        fetch(`${SAAVN_API}/search/albums?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`).then(r => r.json()),
-        fetch(`${SAAVN_API}/search/artists?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`).then(r => r.json())
+        fetchJson(`${SAAVN_API}/search/songs?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`),
+        fetchJson(`${SAAVN_API}/search/albums?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`),
+        fetchJson(`${SAAVN_API}/search/artists?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`)
       ]);
 
       const formatTrack = (s) => ({
@@ -76,15 +85,15 @@ export default async function handler(req, res) {
       });
 
       return res.status(200).json({
-        tracks: (songsRes.data.results || []).map(formatTrack),
-        albums: (albumsRes.data.results || []).map(a => ({
+        tracks: (songsRes.data?.results || []).map(formatTrack),
+        albums: (albumsRes.data?.results || []).map(a => ({
           id: a.id,
           name: a.name,
           artwork_url: a.image?.[a.image.length - 1]?.link || a.image?.[a.image.length - 1]?.url,
           artist_name: a.primaryArtists,
           release_year: a.year
         })),
-        artists: (artistsRes.data.results || []).map(a => ({
+        artists: (artistsRes.data?.results || []).map(a => ({
           id: a.id,
           name: a.name,
           image_url: a.image?.[a.image.length - 1]?.link || a.image?.[a.image.length - 1]?.url
@@ -96,8 +105,10 @@ export default async function handler(req, res) {
     if (endpoint === 'album' || pathname.includes('/album/')) {
         const albumId = id || pathParts[pathParts.length - 1];
         const response = await fetch(`${SAAVN_API}/albums?id=${albumId}`);
+        if (!response.ok) throw new Error(`Album API Error: ${response.status}`);
         const json = await response.json();
         const data = json.data;
+        if (!data) throw new Error('No album data found');
         
         return res.status(200).json({
             id: data.id,
@@ -120,27 +131,34 @@ export default async function handler(req, res) {
     // 4. Artist Details
     if (endpoint === 'artist' || pathname.includes('/artist/')) {
         const artistId = id || pathParts[pathParts.length - 1];
+        const fetchJson = async (url) => {
+            const r = await fetch(url);
+            if (!r.ok) throw new Error(`API Error: ${r.status}`);
+            return r.json();
+        };
+
         const [detailsRes, songsRes, albumsRes] = await Promise.all([
-            fetch(`${SAAVN_API}/artists?id=${artistId}`).then(r => r.json()),
-            fetch(`${SAAVN_API}/artists/${artistId}/songs?page=1`).then(r => r.json()),
-            fetch(`${SAAVN_API}/artists/${artistId}/albums?page=1`).then(r => r.json())
+            fetchJson(`${SAAVN_API}/artists?id=${artistId}`),
+            fetchJson(`${SAAVN_API}/artists/${artistId}/songs?page=1`),
+            fetchJson(`${SAAVN_API}/artists/${artistId}/albums?page=1`)
         ]);
         
         const details = detailsRes.data;
+        if (!details) throw new Error('No artist details found');
         
         return res.status(200).json({
             id: details.id,
             name: details.name,
             followers: details.followerCount,
             image_url: details.image?.[details.image.length - 1]?.link,
-            top_tracks: (songsRes.data.results || []).map(s => ({
+            top_tracks: (songsRes.data?.results || []).map(s => ({
                 id: s.id,
                 title: s.name,
                 artist_name: s.primaryArtists,
                 duration: s.duration * 1000,
                 artwork_url: s.image?.[s.image.length - 1]?.link
             })),
-            albums: (albumsRes.data.results || []).map(a => ({
+            albums: (albumsRes.data?.results || []).map(a => ({
                 id: a.id,
                 name: a.name,
                 artwork_url: a.image?.[a.image.length - 1]?.link,
