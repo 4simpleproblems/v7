@@ -30,7 +30,7 @@
             bundle: basePath + "uv.bundle.js",
             config: basePath + "uv.config.js",
             sw: basePath + "uv.sw.js",
-            stockSW: "/VELIUM/sw.js",
+            stockSW: "/sw.js",
         };
     </script>
     <script src="/VELIUM/baremux/index.js"></script>
@@ -39,11 +39,11 @@
         (async () => {
             if ("serviceWorker" in navigator) {
                 try {
-                    // Register Root SW
-                    await navigator.serviceWorker.register("/VELIUM/sw.js", {
-                        scope: "/VELIUM/"
+                    // Register Root SW with broad scope
+                    await navigator.serviceWorker.register("/sw.js", {
+                        scope: "/"
                     });
-                    console.log("VERN_SYSTEM SW Registered");
+                    console.log("VERN_SYSTEM SW Registered at root");
                 } catch (e) {
                     console.error("SW Register Failed", e);
                 }

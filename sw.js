@@ -1,13 +1,11 @@
-const viraId = new URL(self.location).searchParams.get('v') || 'service';
-
-importScripts('./uv/uv.bundle.js');
-importScripts('./uv/uv.config.js');
+importScripts('/VELIUM/uv/uv.bundle.js');
+importScripts('/VELIUM/uv/uv.config.js');
 
 // Ensure the prefix matches what Ultraviolet expects for asset loading
 if (!self.__uv$config) self.__uv$config = {};
 self.__uv$config.prefix = "/VELIUM/uv/service/";
 
-importScripts('./uv/uv.sw.js');
+importScripts('/VELIUM/uv/uv.sw.js');
 
 const uv = new UVServiceWorker();
 
@@ -23,7 +21,7 @@ self.addEventListener('fetch', (event) => {
     const url = event.request.url;
     const prefix = self.__uv$config.prefix || "/VELIUM/uv/service/";
     
-    // Aggressive check: if it contains the service path, intercept it
+    // Intercept if it's a proxy request
     if (url.includes(prefix)) {
         event.respondWith(
             (async () => {

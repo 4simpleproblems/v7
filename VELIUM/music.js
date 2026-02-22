@@ -39,9 +39,13 @@ function getProxyUrl(url) {
     if (encoded) {
         // Ensure encoded string doesn't accidentally include prefix already
         const cleanEncoded = encoded.startsWith(prefix) ? encoded.slice(prefix.length) : encoded;
-        return prefix + cleanEncoded;
+        const finalUrl = prefix + cleanEncoded;
+        console.log("Proxied URL:", finalUrl);
+        return finalUrl;
     }
     
+    // If we failed to encode, return the original URL but warn
+    console.warn("Failed to proxy URL, returning original:", url);
     return url;
 }
 
@@ -863,5 +867,12 @@ function showCreatePlaylistModal() {
 function hideCreatePlaylistModal() {
     document.getElementById('createPlaylistModal').style.display = 'none';
 }
+
+window.toggleLyrics = function() {
+    const panel = document.getElementById('lyricsPanel');
+    if (panel) {
+        panel.classList.toggle('open');
+    }
+};
 
 // Made with ❤️ from 4SP
