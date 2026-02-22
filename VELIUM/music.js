@@ -282,6 +282,17 @@ function setupEventListeners() {
             }
         });
     }
+
+    // Close modal if native fullscreen is exited
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+            const fs = document.getElementById('fullscreenPlayer');
+            if (fs && !fs.classList.contains('hidden')) {
+                fs.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+    });
 }
 
 // --- View Logic ---

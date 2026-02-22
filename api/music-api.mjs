@@ -136,7 +136,13 @@ export default async function handler(req, res) {
               
               const title = item.title?.toString() || item.name?.toString() || 'Unknown Title';
               const artist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'YT Music Artist';
-              const artistId = item.artists?.[0]?.id || item.author?.id;
+              let artistId = item.artists?.[0]?.id || item.author?.id;
+              
+              // Handle multiple IDs if present (sometimes happens with specific backends)
+              if (typeof artistId === 'string' && artistId.includes(',')) {
+                  artistId = artistId.split(',')[0].trim();
+              }
+
               const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
               const duration = (item.duration?.seconds || 0) * 1000;
 
@@ -144,7 +150,7 @@ export default async function handler(req, res) {
                   id: `ytm-${item.id}`,
                   title: title,
                   artist_name: artist,
-                  artist_id: artistId ? `ytm-${artistId}` : null,
+                  artist_id: artistId ? (artistId.startsWith('ytm-') ? artistId : `ytm-${artistId}`) : null,
                   artwork_url: thumbnail,
                   duration: duration,
                   youtube_id: item.id,
@@ -161,11 +167,16 @@ export default async function handler(req, res) {
               let artwork = item.song?.img?.big || item.song?.img?.small || (Array.isArray(item.image) ? item.image[item.image.length-1].link : item.image);
               if (artwork && artwork.startsWith('/api/')) artwork = ARGON_BASE + artwork;
               
+              let artistId = item.author?.id;
+              if (typeof artistId === 'string' && artistId.includes(',')) {
+                  artistId = artistId.split(',')[0].trim();
+              }
+
               return {
                   id: `argon-${item.id}`,
                   title: item.song?.name || item.name,
                   artist_name: item.author?.name || 'Argon Artist',
-                  artist_id: item.author?.id ? `argon-${item.author.id}` : null,
+                  artist_id: artistId ? (artistId.startsWith('argon-') ? artistId : `argon-${artistId}`) : null,
                   artwork_url: artwork,
                   duration: (item.song?.duration || 0) * 1000,
                   url: item.song?.url || item.url,
@@ -182,7 +193,12 @@ export default async function handler(req, res) {
               
               const title = item.title?.toString() || item.name?.toString() || 'Unknown Album';
               const artist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'YT Music Artist';
-              const artistId = item.artists?.[0]?.id || item.author?.id;
+              let artistId = item.artists?.[0]?.id || item.author?.id;
+              
+              if (typeof artistId === 'string' && artistId.includes(',')) {
+                  artistId = artistId.split(',')[0].trim();
+              }
+
               const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
 
               return {
@@ -190,7 +206,7 @@ export default async function handler(req, res) {
                   name: title,
                   artwork_url: thumbnail,
                   artist_name: artist,
-                  artist_id: artistId ? `ytm-${artistId}` : null,
+                  artist_id: artistId ? (artistId.startsWith('ytm-') ? artistId : `ytm-${artistId}`) : null,
                   release_year: item.year?.toString() || 'Unknown',
                   source: 'YTMusic'
               };
@@ -203,10 +219,16 @@ export default async function handler(req, res) {
               if (item.type !== 'MusicResponsiveListItem') return null;
               
               const name = item.name?.toString() || item.title?.toString() || 'Unknown Artist';
+              let artistId = item.id;
+              
+              if (typeof artistId === 'string' && artistId.includes(',')) {
+                  artistId = artistId.split(',')[0].trim();
+              }
+
               const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
 
               return {
-                  id: `ytm-${item.id}`,
+                  id: artistId ? (artistId.startsWith('ytm-') ? artistId : `ytm-${artistId}`) : null,
                   name: name,
                   image_url: thumbnail,
                   source: 'YTMusic'
@@ -230,18 +252,18 @@ export default async function handler(req, res) {
 
     // 3. Album Details
     if (endpoint === 'album' || pathname.includes('/album/')) {
-        const albumId = id || pathParts[pathParts.length - 1];
+        let albumId = id || pathParts[pathParts.length - 1];
         
-        if (albumId.startsWith('ytm-')) {
-            const rawId = albumId.replace('ytm-', '');
+        if (albumId) {
+            const rawId = albumId.startsWith('ytm-') ? albumId.replace('ytm-', '') : albumId;
             const yt = await getYoutube();
             try {
                 const album = await yt.music.getAlbum(rawId);
                 return res.status(200).json({
-                    id: albumId,
+                    id: `ytm-${rawId}`,
                     name: album.title,
                     artwork_url: album.thumbnails?.[0]?.url,
-                    artists: album.artists.map(a => ({ id: a.id, name: a.name })),
+                    artists: album.artists.map(a => ({ id: `ytm-${a.id}`, name: a.name })),
                     total_tracks: album.contents.length,
                     release_year: album.year || 'Unknown',
                     tracks: album.contents.map(track => ({
@@ -265,15 +287,15 @@ export default async function handler(req, res) {
 
     // 4. Artist Details
     if (endpoint === 'artist' || pathname.includes('/artist/')) {
-        const artistId = id || pathParts[pathParts.length - 1];
+        let artistId = id || pathParts[pathParts.length - 1];
         
-        if (artistId.startsWith('ytm-')) {
-            const rawId = artistId.replace('ytm-', '');
+        if (artistId) {
+            const rawId = artistId.startsWith('ytm-') ? artistId.replace('ytm-', '') : artistId;
             const yt = await getYoutube();
             try {
                 const artist = await yt.music.getArtist(rawId);
                 return res.status(200).json({
-                    id: artistId,
+                    id: `ytm-${rawId}`,
                     name: artist.name,
                     followers: 0,
                     image_url: artist.thumbnails?.[0]?.url,
@@ -281,7 +303,7 @@ export default async function handler(req, res) {
                         id: `ytm-${track.id}`,
                         title: track.title,
                         artist_name: artist.name,
-                        artist_id: artistId,
+                        artist_id: `ytm-${rawId}`,
                         duration: (track.duration?.seconds || 0) * 1000,
                         artwork_url: track.thumbnails?.[0]?.url,
                         youtube_id: track.id,
