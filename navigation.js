@@ -1139,7 +1139,7 @@ let db;
 
                 return `
                     <div id="auth-button-container" class="relative flex-shrink-0 flex items-center">
-                        <button id="auth-toggle" class="w-10 h-10 border border-gray-600 overflow-hidden" style="border-radius: 24px;">
+                        <button id="auth-toggle" class="w-10 h-10 border border-gray-600 overflow-hidden" style="border-radius: 16px;">
                             ${avatarHtml}
                         </button>
                         <div id="auth-menu-container" class="auth-menu-container closed">
