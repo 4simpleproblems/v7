@@ -87,6 +87,8 @@ function getProxyUrl(url) {
 let currentTrack = null;
 let playlist = [];
 let originalPlaylist = [];
+let shuffledIndices = [];
+let shuffledCurrentIndex = 0;
 let currentIndex = 0;
 let isPlaying = false;
 let isShuffle = false;
@@ -97,10 +99,41 @@ let player = null;
 let progressInterval = null;
 let volume = parseInt(loadFromStorage('volume')) || 70;
 
-const popularArtists = [
-    'The Weeknd', 'Drake', 'Post Malone', 'Dua Lipa', 'Ed Sheeran', 
-    'Ariana Grande', 'Travis Scott', 'Olivia Rodrigo', 'Bad Bunny', 'SZA'
-];
+// ... popularArtists ...
+
+// --- Shuffle Algorithm (Inspired by Spotify/Apple Music) ---
+function generateShuffledSequence() {
+    if (playlist.length === 0) return;
+    
+    // Create an array of indices [0, 1, 2, ...]
+    let indices = playlist.map((_, i) => i);
+    
+    // Remove current song index so it stays at the start
+    const currentPos = indices.indexOf(currentIndex);
+    if (currentPos > -1) indices.splice(currentPos, 1);
+    
+    // Fisher-Yates Shuffle with clustering prevention
+    for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    
+    // Try to prevent same-artist clustering (Simple version)
+    for (let i = 0; i < indices.length - 1; i++) {
+        if (playlist[indices[i]].artist_name === playlist[indices[i+1]].artist_name) {
+            // Find a further song to swap with
+            for (let j = i + 2; j < indices.length; j++) {
+                if (playlist[indices[j]].artist_name !== playlist[indices[i]].artist_name) {
+                    [indices[i+1], indices[j]] = [indices[j], indices[i+1]];
+                    break;
+                }
+            }
+        }
+    }
+
+    shuffledIndices = [currentIndex, ...indices];
+    shuffledCurrentIndex = 0;
+}
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -316,20 +349,84 @@ function setGreeting() {
     if (el) el.textContent = greeting;
 }
 
-window.toggleMiniPlayer = function() {
+let pipWindow = null;
+
+window.toggleMiniPlayer = async function() {
+    // If Document PiP is supported, use it
+    if (window.documentPictureInPicture && window.documentPictureInPicture.requestWindow) {
+        if (pipWindow) {
+            pipWindow.close();
+            return;
+        }
+
+        try {
+            pipWindow = await window.documentPictureInPicture.requestWindow({
+                width: 300,
+                height: 150,
+            });
+
+            // Move mini player to PiP window
+            const mini = document.getElementById('miniPlayer');
+            mini.classList.add('active');
+            pipWindow.document.body.append(mini);
+
+            // Copy styles to PiP window
+            [...document.styleSheets].forEach((styleSheet) => {
+                try {
+                    const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+                    const style = document.createElement('style');
+                    style.textContent = cssRules;
+                    pipWindow.document.head.appendChild(style);
+                } catch (e) {}
+            });
+            
+            // Add Tailwind if used
+            const tw = document.querySelector('script[src*="tailwindcss"]');
+            if (tw) {
+                const script = document.createElement('script');
+                script.src = tw.src;
+                pipWindow.document.head.appendChild(script);
+            }
+
+            updateMiniPlayerUI();
+
+            pipWindow.addEventListener('pagehide', () => {
+                const mini = pipWindow.document.getElementById('miniPlayer');
+                document.body.append(mini);
+                mini.classList.remove('active');
+                pipWindow = null;
+            });
+
+        } catch (e) {
+            console.error('PiP failed', e);
+            fallbackMiniPlayer();
+        }
+    } else {
+        fallbackMiniPlayer();
+    }
+};
+
+function fallbackMiniPlayer() {
     const mini = document.getElementById('miniPlayer');
     if (!mini) return;
     mini.classList.toggle('active');
     if (mini.classList.contains('active')) updateMiniPlayerUI();
-};
+}
 
 function updateMiniPlayerUI() {
     if (!currentTrack) return;
-    document.getElementById('miniTrackName').textContent = currentTrack.title;
-    document.getElementById('miniArtistName').textContent = currentTrack.artist_name;
-    document.getElementById('miniArtwork').src = getProxyUrl(currentTrack.artwork_url);
+    // Query within both main and PiP
+    const doc = pipWindow ? pipWindow.document : document;
     
-    const miniPlayBtn = document.getElementById('miniPlayPause');
+    const trackName = doc.getElementById('miniTrackName');
+    const artistName = doc.getElementById('miniArtistName');
+    const artwork = doc.getElementById('miniArtwork');
+    const miniPlayBtn = doc.getElementById('miniPlayPause');
+
+    if (trackName) trackName.textContent = currentTrack.title;
+    if (artistName) artistName.textContent = currentTrack.artist_name;
+    if (artwork) artwork.src = getProxyUrl(currentTrack.artwork_url);
+    
     if (miniPlayBtn) {
         miniPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
     }
@@ -586,6 +683,16 @@ let activeSource = 'youtube'; // 'youtube' or 'audio'
 async function playTrack(index) {
     currentIndex = index;
     currentTrack = playlist[currentIndex];
+    
+    // Ensure we know our position in shuffled sequence if shuffle is on
+    if (isShuffle) {
+        const sIndex = shuffledIndices.indexOf(index);
+        if (sIndex > -1) {
+            shuffledCurrentIndex = sIndex;
+        } else {
+            generateShuffledSequence();
+        }
+    }
 
     // Update UI
     document.getElementById('currentTrackName').textContent = currentTrack.title;
@@ -762,21 +869,54 @@ function updatePlayPauseUI() {
 
 function playNext() {
     if (playlist.length === 0) return;
-    let nextIndex = (currentIndex + 1) % playlist.length;
-    if (isShuffle) nextIndex = Math.floor(Math.random() * playlist.length);
-    playTrack(nextIndex);
+    
+    if (repeatMode === 'one') {
+        playTrack(currentIndex);
+        return;
+    }
+
+    if (isShuffle) {
+        shuffledCurrentIndex++;
+        if (shuffledCurrentIndex >= shuffledIndices.length) {
+            if (repeatMode === 'all') {
+                generateShuffledSequence();
+                shuffledCurrentIndex = 0;
+            } else {
+                return; // Stop at end of list
+            }
+        }
+        playTrack(shuffledIndices[shuffledCurrentIndex]);
+    } else {
+        let nextIndex = (currentIndex + 1) % playlist.length;
+        if (nextIndex === 0 && repeatMode !== 'all') return;
+        playTrack(nextIndex);
+    }
 }
 
 function playPrev() {
     if (playlist.length === 0) return;
-    let prevIndex = currentIndex > 0 ? currentIndex - 1 : playlist.length - 1;
-    playTrack(prevIndex);
+    
+    if (isShuffle) {
+        if (shuffledCurrentIndex > 0) {
+            shuffledCurrentIndex--;
+            playTrack(shuffledIndices[shuffledCurrentIndex]);
+        } else {
+            playTrack(currentIndex); // Just restart current
+        }
+    } else {
+        let prevIndex = currentIndex > 0 ? currentIndex - 1 : playlist.length - 1;
+        playTrack(prevIndex);
+    }
 }
 
 function toggleShuffle() {
     isShuffle = !isShuffle;
     document.getElementById('shuffleButton').classList.toggle('active', isShuffle);
     document.getElementById('fsShuffle').classList.toggle('active', isShuffle);
+    
+    if (isShuffle) {
+        generateShuffledSequence();
+    }
 }
 
 function cycleRepeat() {
