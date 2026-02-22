@@ -800,20 +800,21 @@ function loadYouTubePlayer(videoId) {
             player.loadVideoById(videoId);
             player.playVideo();
         } else {
-            player = new YT.Player('audioElement', {
-                height: '0', width: '0',
-                videoId: videoId,
-                playerVars: { 
-                    autoplay: 1, 
-                    controls: 0, 
-                    disablekb: 1,
-                    origin: window.location.origin 
-                },
-                events: {
-                    onReady: (e) => { e.target.setVolume(volume); e.target.playVideo(); },
-                    onStateChange: onPlayerStateChange
-                }
-            });
+                        player = new YT.Player('audioElement', {
+                            height: '0',
+                            width: '0',
+                            videoId: videoId,
+                            playerVars: { 
+                                autoplay: 1, 
+                                controls: 0, 
+                                disablekb: 1,
+                                origin: window.location.origin // Ensure origin matches current domain
+                            },
+                            events: {
+                                onReady: (e) => { e.target.setVolume(volume); e.target.playVideo(); },
+                                onStateChange: onPlayerStateChange
+                            }
+                        });
         }
     } else {
         const tag = document.createElement('script');

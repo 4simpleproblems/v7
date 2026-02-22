@@ -304,9 +304,9 @@ export default async function handler(req, res) {
                 const search = await yt.music.search(rawId, { type: 'artist' });
                 const firstArtist = search.artists?.[0] || search.results?.find(r => r.type === 'Artist');
                 
-                if (firstArtist && firstArtist.id) {
-                    artist = await yt.music.getArtist(firstArtist.id);
-                    artistId = `ytm-${firstArtist.id}`;
+                if (firstArtist && firstArtist.browseId) {
+                    artist = await yt.music.getArtist(firstArtist.browseId);
+                    artistId = `ytm-${firstArtist.browseId}`;
                 } else {
                     return res.status(404).json({ error: 'Artist not found via search fallback' });
                 }
