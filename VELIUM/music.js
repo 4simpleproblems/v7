@@ -6,21 +6,26 @@ function getProxyUrl(url) {
     if (url.startsWith('data:')) return url;
     if (url.startsWith('//')) url = 'https:' + url;
     
+    // Hardcoded absolute prefix for reliability
     const prefix = "/VELIUM/uv/service/";
+    const origin = window.location.origin;
     
-    // Check if it's already proxied
+    // Check if it's already proxied (handle both relative and absolute forms)
     if (url.includes(prefix)) return url;
 
-    // Use Ultraviolet if available
+    // Direct encoding using Ultraviolet if available
     if (window.Ultraviolet && window.Ultraviolet.codec && window.Ultraviolet.codec.xor) {
-        return prefix + window.Ultraviolet.codec.xor.encode(url);
+        return origin + prefix + window.Ultraviolet.codec.xor.encode(url);
     }
     
     // Fallback to config-based encoding
     if (window.__uv$config && window.__uv$config.encodeUrl) {
         try {
             const encoded = window.__uv$config.encodeUrl(url);
-            if (encoded !== url) return prefix + encoded;
+            // If the wrapper returned the encoded version, prepend the prefix
+            if (encoded !== url) {
+                return origin + prefix + encoded;
+            }
         } catch (e) {
             console.error("Proxy encoding failed", e);
         }
