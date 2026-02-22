@@ -376,33 +376,39 @@
             if (user) {
                 firebaseAuthUser = user;
                 
-                const urlParams = new URLSearchParams(window.location.search);
-                const subpage = urlParams.get('subpage');
-                const usernameParam = urlParams.get('username');
-
-                let path = window.location.pathname;
-                let userFromPath = usernameParam;
-                if (!userFromPath && path.includes('/@')) {
-                    userFromPath = path.split('/@')[1].split('/')[0];
+                // Extract username from URL path
+                const pathParts = window.location.pathname.split('/');
+                let requestedUsername = null;
+                const atIndex = pathParts.indexOf('@');
+                if (atIndex > -1 && atIndex + 1 < pathParts.length) {
+                    requestedUsername = pathParts[atIndex + 1];
                 }
 
-                if (userFromPath) {
-                    const snapUsername = await firestore.collection("users").where("username", "==", userFromPath).get();
+                if (requestedUsername) {
+                    const snapUsername = await firestore.collection("users").where("username", "==", requestedUsername).get();
                     if (!snapUsername.empty) {
                         profileOwnerId = snapUsername.docs[0].id;
-                        ownerUsername = userFromPath;
+                        ownerUsername = requestedUsername;
                     } else {
+                        // Requested username not found, redirect to own profile or 404
+                        console.warn(`Profile for @${requestedUsername} not found. Redirecting to own profile.`);
                         profileOwnerId = user.uid;
                         const meSnap = await firestore.collection("users").doc(user.uid).get();
                         ownerUsername = meSnap.data()?.username || "";
+                        window.history.replaceState({}, '', `/logged-in/@${ownerUsername}`); // Update URL
                     }
                 } else {
+                    // No username in URL, default to own profile
                     profileOwnerId = user.uid;
                     const meSnap = await firestore.collection("users").doc(user.uid).get();
                     ownerUsername = meSnap.data()?.username || "";
+                    window.history.replaceState({}, '', `/logged-in/@${ownerUsername}`); // Update URL
                 }
                 
                 isOwnProfile = profileOwnerId === user.uid;
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const subpage = urlParams.get('subpage');
 
                 if (isOwnProfile) {
                     selfIndicator.classList.remove('hidden');
@@ -416,7 +422,8 @@
                     checkFollowStatus();
                     
                     if (subpage) {
-                        window.location.href = `/logged-in/@${ownerUsername}`;
+                        // If viewing another's profile, subpages like /followers should redirect to their main profile
+                        window.history.replaceState({}, '', `/logged-in/@${ownerUsername}`);
                     }
                 }
 
@@ -452,6 +459,18 @@
                         if (isOwnProfile) {
                             editDisplayName.value = userData.displayName || "";
                             editDescription.value = userData.description || "";
+                        }
+                    } else {
+                        // Profile not found (e.g., user deleted account)
+                        // If it's not own profile, show a generic message or redirect
+                        if (!isOwnProfile) {
+                             document.getElementById('profile-main-content').innerHTML = `
+                                <div class="text-center py-24">
+                                    <h2 class="text-3xl font-light text-white mb-4">Profile Not Found</h2>
+                                    <p class="text-gray-400">The requested profile does not exist or has been deleted.</p>
+                                    <button onclick="window.location.href='/'" class="btn-base btn-primary px-10 py-3 mt-8">Return Home</button>
+                                </div>
+                             `;
                         }
                     }
                 });
