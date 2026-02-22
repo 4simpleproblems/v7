@@ -237,9 +237,10 @@ let db;
         
         const cleanPath = (path) => {
             try {
-                const resolved = new URL(path, window.location.origin).pathname.toLowerCase();
-                if (resolved.endsWith('/index.html')) return resolved.substring(0, resolved.lastIndexOf('/')) + '/';
-                if (resolved.length > 1 && resolved.endsWith('/')) return resolved.slice(0, -1);
+                let resolved = new URL(path, window.location.origin).pathname.toLowerCase();
+                if (resolved.endsWith('/index.html')) resolved = resolved.substring(0, resolved.lastIndexOf('/')) + '/';
+                if (resolved.endsWith('.html')) resolved = resolved.slice(0, -5);
+                if (resolved.length > 1 && resolved.endsWith('/')) resolved = resolved.slice(0, -1);
                 return resolved;
             } catch (e) {
                 return path; 
@@ -250,18 +251,17 @@ let db;
         const tabCanonical = cleanPath(tabUrl);
         if (currentCanonical === tabCanonical) return true;
 
-        const tabPathSuffix = new URL(tabUrl, window.location.origin).pathname.toLowerCase();
+        const tabPathSuffix = cleanPath(tabUrl);
         const tabSuffixClean = tabPathSuffix.startsWith('/') ? tabPathSuffix.substring(1) : tabPathSuffix;
-        if (tabSuffixClean.length > 3 && currentPathname.endsWith(tabSuffixClean)) return true;
+        if (tabSuffixClean.length > 3 && currentCanonical.endsWith(tabSuffixClean)) return true;
 
         if (aliases && Array.isArray(aliases)) {
             for (const alias of aliases) {
                 const aliasCanonical = cleanPath(alias);
                 if (currentCanonical === aliasCanonical) return true;
                 
-                const aliasPathSuffix = new URL(alias, window.location.origin).pathname.toLowerCase();
-                 const aliasSuffixClean = aliasPathSuffix.startsWith('/') ? aliasPathSuffix.substring(1) : aliasPathSuffix;
-                if (aliasSuffixClean.length > 3 && currentPathname.endsWith(aliasSuffixClean)) return true;
+                const aliasSuffixClean = aliasCanonical.startsWith('/') ? aliasCanonical.startsWith('/') ? aliasCanonical.substring(1) : aliasCanonical : aliasCanonical;
+                if (aliasSuffixClean.length > 3 && currentCanonical.endsWith(aliasSuffixClean)) return true;
             }
         }
 
@@ -514,7 +514,7 @@ let db;
                 padding: 0.5rem 1rem; 
                 color: var(--tab-text, #9ca3af); 
                 font-size: 0.875rem; font-weight: 400; 
-                border-radius: 24px; /* Updated to 24px */
+                border-radius: 14px; /* Reset to 14px */
                 text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
                 border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
                 flex-shrink: 0; 
@@ -547,7 +547,7 @@ let db;
             #auth-toggle {
                 border-color: var(--avatar-border);
                 transition: border-color 0.3s ease;
-                border-radius: 24px; /* Updated to 24px */
+                border-radius: 14px; /* Reset to 14px */
                 border-width: 1px; /* Explicit 1px */
                 width: 40px; height: 40px;
                 display: flex; align-items: center; justify-content: center;
@@ -560,7 +560,7 @@ let db;
                 position: absolute; right: 0; top: 55px; width: 16rem;
                 background: var(--menu-bg, #000);
                 border: 1px solid var(--menu-border, #333);
-                border-radius: 28px; 
+                border-radius: 20px; /* Updated to 20px */
                 padding: 0.75rem; /* Equal spacing on edges */
                 display: flex; flex-direction: column; gap: 0.5rem; /* Flex gap for equal internal spacing */
                 box-shadow: 0 10px 30px rgba(0,0,0,0.6);
@@ -653,7 +653,7 @@ let db;
                 display: flex; align-items: center; gap: 0.75rem; width: 100%; text-align: left; 
                 padding: 0.75rem 1rem; font-size: 0.9rem; color: var(--menu-text, #d1d5db); 
                 background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); /* Default background color */
-                border-radius: 24px; 
+                border-radius: 12px; 
                 transition: all 0.2s ease; cursor: pointer;
                 /* FIXED: Border color now matches the background color */
                 border: 1px solid var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
@@ -669,7 +669,7 @@ let db;
             .logged-out-auth-toggle { 
                 background: var(--logged-out-icon-bg, #010101); border: 1px solid var(--logged-out-icon-border, #374151); 
                 transition: background-color 0.3s ease, border-color 0.3s ease;
-                border-radius: 24px; /* Updated to 24px */
+                border-radius: 14px; /* Reset to 14px */
             }
             .logged-out-auth-toggle i { color: var(--logged-out-icon-color, #DADADA); transition: color 0.3s ease; }
 
@@ -682,12 +682,24 @@ let db;
             #pin-button { 
                 border-color: var(--pin-btn-border, #4b5563); transition: background-color 0.2s, border-color 0.3s ease; 
                 display: flex; align-items: center; justify-content: center; 
-                border-radius: 24px; /* Updated to 24px */
+                border-radius: 14px; /* Reset to 14px */
                 border-width: 1px; /* Explicit 1px */
                 width: 40px; height: 40px;
+                background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); /* Sync with theme */
             }
             #pin-button:hover { background-color: var(--pin-btn-hover-bg, #374151); z-index: 50; }
             #pin-button-icon { color: var(--pin-btn-icon-color, #d1d5db); transition: color 0.3s ease; }
+
+            #profile-toggle {
+                border-color: var(--pin-btn-border, #4b5563); transition: background-color 0.2s, border-color 0.3s ease; 
+                display: flex; align-items: center; justify-content: center; 
+                border-radius: 14px; /* Reset to 14px */
+                border-width: 1px; /* Explicit 1px */
+                width: 40px; height: 40px;
+                background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); /* Sync with theme */
+            }
+            #profile-toggle:hover { background-color: var(--pin-btn-hover-bg, #374151); z-index: 50; }
+            #profile-toggle i { color: var(--pin-btn-icon-color, #d1d5db); transition: color 0.3s ease; }
 
             .pin-hint-container {
                 position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%) scale(0.8);
@@ -717,7 +729,7 @@ let db;
                 pointer-events: none;
             }
             .notification-toast {
-                background-color: #0a0a0a; border: 1px solid #333; border-radius: 24px;
+                background-color: #0a0a0a; border: 1px solid #333; border-radius: 14px;
                 padding: 0.75rem 1.25rem; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
                 display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem;
                 min-width: 200px; transform: translateX(120%);
@@ -788,9 +800,10 @@ let db;
 
             const cleanPath = (path) => {
                 try {
-                    const resolved = new URL(path, window.location.origin).pathname.toLowerCase();
-                    if (resolved.endsWith('/index.html')) return resolved.substring(0, resolved.lastIndexOf('/')) + '/';
-                    if (resolved.length > 1 && resolved.endsWith('/')) return resolved.slice(0, -1);
+                    let resolved = new URL(path, window.location.origin).pathname.toLowerCase();
+                    if (resolved.endsWith('/index.html')) resolved = resolved.substring(0, resolved.lastIndexOf('/')) + '/';
+                    if (resolved.endsWith('.html')) resolved = resolved.slice(0, -5);
+                    if (resolved.length > 1 && resolved.endsWith('/')) resolved = resolved.slice(0, -1);
                     return resolved;
                 } catch (e) {
                     return path; 
@@ -809,9 +822,9 @@ let db;
                     isMatch = true;
                 }
 
-                const tabPathSuffix = new URL(page.url, window.location.origin).pathname.toLowerCase();
+                const tabPathSuffix = cleanPath(page.url);
                 const tabSuffixClean = tabPathSuffix.startsWith('/') ? tabPathSuffix.substring(1) : tabPathSuffix;
-                if (!isMatch && tabSuffixClean.length > 3 && currentPathname.endsWith(tabSuffixClean)) {
+                if (!isMatch && tabSuffixClean.length > 3 && currentCanonical.endsWith(tabSuffixClean)) {
                     isMatch = true;
                 }
 
@@ -822,9 +835,8 @@ let db;
                             isMatch = true;
                             break;
                         }
-                        const aliasPathSuffix = new URL(alias, window.location.origin).pathname.toLowerCase();
-                         const aliasSuffixClean = aliasPathSuffix.startsWith('/') ? aliasPathSuffix.substring(1) : aliasPathSuffix;
-                        if (aliasSuffixClean.length > 3 && currentPathname.endsWith(aliasSuffixClean)) {
+                        const aliasSuffixClean = aliasCanonical.startsWith('/') ? aliasCanonical.substring(1) : aliasCanonical;
+                        if (aliasSuffixClean.length > 3 && currentCanonical.endsWith(aliasSuffixClean)) {
                             isMatch = true;
                             break;
                         }
@@ -1007,9 +1019,9 @@ let db;
 
             return `
                 <div id="profile-area-wrapper" class="relative flex-shrink-0 flex items-center">
-                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 24px; position: relative;">
+                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 14px; position: relative;">
                         <i class="fa-solid fa-address-card text-gray-300"></i>
-                        ${isOnline ? '<span class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-indigo-500 border-2 border-black rounded-full shadow-[0_0_5px_#6366f1]"></span>' : ''}
+                        ${isOnline ? '<span class="absolute bottom-0.5 right-0.5 w-3 h-3 bg-indigo-500 border-2 border-black rounded-full shadow-[0_0_5px_#6366f1]"></span>' : ''}
                     </button>
                     <div id="profile-menu-container" class="auth-menu-container closed">
                         <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center gap-3 pb-2 cursor-pointer hover:bg-white/5 transition rounded-2xl p-1" onclick="window.location.href='/logged-in/@${username}'">
@@ -1028,11 +1040,11 @@ let db;
                             </div>
                         </div>
                         <div class="profile-stat-container">
-                            <div class="profile-stat-item" onclick="window.location.href='/logged-in/@${username}#followers'">
+                            <div class="profile-stat-item" onclick="window.location.href='/logged-in/@${username}/followers'">
                                 <span class="stat-count">${followersDisplay}</span>
                                 <span class="stat-label">Followers</span>
                             </div>
-                            <div class="profile-stat-item" onclick="window.location.href='/logged-in/@${username}#following'">
+                            <div class="profile-stat-item" onclick="window.location.href='/logged-in/@${username}/following'">
                                 <span class="stat-count">${followingDisplay}</span>
                                 <span class="stat-label">Following</span>
                             </div>

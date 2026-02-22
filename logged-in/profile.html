@@ -127,7 +127,7 @@
         .photo-grid-item img {
             width: 100%;
             height: 100%;
-            object-cover: cover;
+            object-fit: cover;
         }
     </style>
 </head>
@@ -283,9 +283,6 @@
     <script type="module">
         import { db, auth } from "/firebase-config.js";
         
-        // Use compat versions if that's what's available or properly import from firestore.js if modular
-        // Since project-niobium seems to use compat in some places and modular in others based on search results
-        // I will stick to compat for reliability as seen in navigation.js
         const firebaseAuth = firebase.auth();
         const firestore = firebase.firestore();
 
@@ -328,26 +325,37 @@
         let profileOwnerId = null; 
         let isOwnProfile = false;
         let isFollowing = false;
+        let ownerUsername = "";
 
         firebaseAuth.onAuthStateChanged(async (user) => {
             if (user) {
                 firebaseAuthUser = user;
                 
+                const urlParams = new URLSearchParams(window.location.search);
+                const subpage = urlParams.get('subpage');
+                const usernameParam = urlParams.get('username');
+
                 let path = window.location.pathname;
-                let userFromPath = null;
-                if (path.includes('/@')) {
-                    userFromPath = path.substring(path.indexOf('/@') + 2);
+                let userFromPath = usernameParam;
+                if (!userFromPath && path.includes('/@')) {
+                    userFromPath = path.split('/@')[1].split('/')[0];
                 }
 
                 if (userFromPath) {
                     const snapUsername = await firestore.collection("users").where("username", "==", userFromPath).get();
                     if (!snapUsername.empty) {
                         profileOwnerId = snapUsername.docs[0].id;
+                        ownerUsername = userFromPath;
                     } else {
                         profileOwnerId = user.uid;
+                        // Fetch my own username
+                        const meSnap = await firestore.collection("users").doc(user.uid).get();
+                        ownerUsername = meSnap.data()?.username || "";
                     }
                 } else {
                     profileOwnerId = user.uid;
+                    const meSnap = await firestore.collection("users").doc(user.uid).get();
+                    ownerUsername = meSnap.data()?.username || "";
                 }
                 
                 isOwnProfile = profileOwnerId === user.uid;
@@ -355,20 +363,27 @@
                 if (isOwnProfile) {
                     selfIndicator.classList.remove('hidden');
                     editBtnContainer.classList.remove('hidden');
+                    
+                    // Handle Subpages (Only if own profile)
+                    if (subpage === 'followers') openFollowModal('followers');
+                    if (subpage === 'following') openFollowModal('following');
                 } else {
                     blockUserBtn.classList.remove('hidden');
                     followActions.classList.remove('hidden');
                     checkFollowStatus();
+                    
+                    // Redirect if trying to access private subpages
+                    if (subpage) {
+                        window.location.href = `/logged-in/@${ownerUsername}`;
+                    }
                 }
 
                 const userDocRef = firestore.collection("users").doc(profileOwnerId);
-                const meDocRef = firestore.collection("users").doc(firebaseAuthUser.uid);
 
                 userDocRef.onSnapshot((snap) => {
                     if (snap.exists) {
                         const userData = snap.data();
                         
-                        // Check Blocking (simplified)
                         if (userData.blockedUsers?.includes(firebaseAuthUser.uid)) {
                             document.getElementById('blocked-overlay').classList.remove('hidden');
                             return;
@@ -379,7 +394,6 @@
                         usernameEl.textContent = `@${userData.username}`;
                         descriptionEl.textContent = userData.description || "No bio yet.";
                         
-                        // Presence
                         if (userData.isOnline) {
                             statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[#0f0f0f] rounded-full status-online";
                             if (userData.currentActivity) {
@@ -476,7 +490,6 @@
             if (isFollowing) {
                 batch.delete(myFollowingRef);
                 batch.delete(theirFollowersRef);
-                // Note: increment/decrement needs careful handling in batches if not using FieldValue
                 batch.update(meRef, { followingCount: firebase.firestore.FieldValue.increment(-1) });
                 batch.update(ownerRef, { followerCount: firebase.firestore.FieldValue.increment(-1) });
             } else {
@@ -510,7 +523,7 @@
             window.onclick = () => optionsMenu.classList.add('hidden');
             
             shareProfileBtn.onclick = () => {
-                const url = window.location.origin + "/logged-in/@" + (usernameEl.textContent.replace('@', ''));
+                const url = window.location.origin + "/logged-in/@" + (ownerUsername);
                 navigator.clipboard.writeText(url);
                 alert("Profile link copied!");
             };
@@ -526,9 +539,22 @@
         }
 
         function setupFollowModalListeners() {
-            btnShowFollowers.onclick = () => openFollowModal('followers');
-            btnShowFollowing.onclick = () => openFollowModal('following');
-            closeFollowModalBtn.onclick = () => followListModal.classList.add('hidden');
+            btnShowFollowers.onclick = () => {
+                if (isOwnProfile) {
+                    window.history.pushState({}, '', `/logged-in/@${ownerUsername}/followers`);
+                    openFollowModal('followers');
+                }
+            };
+            btnShowFollowing.onclick = () => {
+                if (isOwnProfile) {
+                    window.history.pushState({}, '', `/logged-in/@${ownerUsername}/following`);
+                    openFollowModal('following');
+                }
+            };
+            closeFollowModalBtn.onclick = () => {
+                window.history.pushState({}, '', `/logged-in/@${ownerUsername}`);
+                followListModal.classList.add('hidden');
+            };
         }
 
         async function openFollowModal(type) {

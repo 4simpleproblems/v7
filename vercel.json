@@ -4,6 +4,10 @@
     {
       "source": "/logged-in/@:username",
       "destination": "/logged-in/profile"
+    },
+    {
+      "source": "/logged-in/@:username/:subpage",
+      "destination": "/logged-in/profile?username=:username&subpage=:subpage"
     }
   ],
   "headers": [
