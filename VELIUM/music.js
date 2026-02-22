@@ -99,7 +99,10 @@ let player = null;
 let progressInterval = null;
 let volume = parseInt(loadFromStorage('volume')) || 70;
 
-// ... popularArtists ...
+const popularArtists = [
+    'The Weeknd', 'Drake', 'Post Malone', 'Dua Lipa', 'Ed Sheeran', 
+    'Ariana Grande', 'Travis Scott', 'Olivia Rodrigo', 'Bad Bunny', 'SZA'
+];
 
 // --- Shuffle Algorithm (Inspired by Spotify/Apple Music) ---
 function generateShuffledSequence() {
