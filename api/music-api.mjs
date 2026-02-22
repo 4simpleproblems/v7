@@ -139,12 +139,16 @@ export default async function handler(req, res) {
       }
 
       // 2. Format Albums
-      let albums = (albumsRes.data?.results || []).map(formatAlbum);
+      let albums = (albumsRes.data?.results || []).map(a => ({ 
+          ...formatAlbum(a), 
+          artwork_url: a.image?.[a.image.length - 1]?.link || a.image?.[a.image.length - 1]?.url || a.image,
+          source: 'JioSaavn' 
+      }));
       if (ytMusicRes.albums) {
           const ytAlbums = ytMusicRes.albums.map(item => {
               if (item.type !== 'MusicResponsiveListItem') return null;
               return {
-                  id: item.id,
+                  id: `ytm-${item.id}`,
                   name: item.title,
                   artwork_url: item.thumbnails?.[0]?.url,
                   artist_name: item.artists?.[0]?.name || 'YT Music Artist',
@@ -156,12 +160,16 @@ export default async function handler(req, res) {
       }
 
       // 3. Format Artists
-      let artists = (artistsRes.data?.results || []).map(formatArtist);
+      let artists = (artistsRes.data?.results || []).map(a => ({ 
+          ...formatArtist(a), 
+          image_url: a.image?.[a.image.length - 1]?.link || a.image?.[a.image.length - 1]?.url || a.image,
+          source: 'JioSaavn' 
+      }));
       if (ytMusicRes.artists) {
           const ytArtists = ytMusicRes.artists.map(item => {
               if (item.type !== 'MusicResponsiveListItem') return null;
               return {
-                  id: item.id,
+                  id: `ytm-${item.id}`,
                   name: item.name,
                   image_url: item.thumbnails?.[0]?.url,
                   source: 'YTMusic'
@@ -201,6 +209,35 @@ export default async function handler(req, res) {
     // 3. Album Details
     if (endpoint === 'album' || pathname.includes('/album/')) {
         const albumId = id || pathParts[pathParts.length - 1];
+        
+        if (albumId.startsWith('ytm-')) {
+            const rawId = albumId.replace('ytm-', '');
+            const yt = await getYoutube();
+            try {
+                const album = await yt.music.getAlbum(rawId);
+                return res.status(200).json({
+                    id: albumId,
+                    name: album.title,
+                    artwork_url: album.thumbnails?.[0]?.url,
+                    artists: album.artists.map(a => ({ id: a.id, name: a.name })),
+                    total_tracks: album.contents.length,
+                    release_year: album.year || 'Unknown',
+                    tracks: album.contents.map(track => ({
+                        id: track.id,
+                        title: track.title,
+                        artist_name: track.artists?.[0]?.name || album.artists[0]?.name,
+                        duration: (track.duration?.seconds || 0) * 1000,
+                        artwork_url: album.thumbnails?.[0]?.url,
+                        youtube_id: track.id,
+                        source: 'YTMusic'
+                    }))
+                });
+            } catch (e) {
+                console.error('YT Music album details failed', e);
+                return res.status(500).json({ error: 'Failed to fetch YT Music album' });
+            }
+        }
+
         const { data } = await useFetch({
             endpoint: Endpoints.albums.id,
             params: { albumid: albumId }
@@ -223,6 +260,40 @@ export default async function handler(req, res) {
     if (endpoint === 'artist' || pathname.includes('/artist/')) {
         const artistId = id || pathParts[pathParts.length - 1];
         
+        if (artistId.startsWith('ytm-')) {
+            const rawId = artistId.replace('ytm-', '');
+            const yt = await getYoutube();
+            try {
+                const artist = await yt.music.getArtist(rawId);
+                return res.status(200).json({
+                    id: artistId,
+                    name: artist.name,
+                    followers: 0, // Not easily available in basic getArtist
+                    image_url: artist.thumbnails?.[0]?.url,
+                    top_tracks: (artist.sections.find(s => s.type === 'MusicShelf' && s.title?.toString().toLowerCase().includes('songs'))?.contents || []).map(track => ({
+                        id: track.id,
+                        title: track.title,
+                        artist_name: artist.name,
+                        duration: (track.duration?.seconds || 0) * 1000,
+                        artwork_url: track.thumbnails?.[0]?.url,
+                        youtube_id: track.id,
+                        source: 'YTMusic'
+                    })),
+                    albums: artist.sections.find(s => s.type === 'MusicCarouselShelf' && s.title?.toString().toLowerCase().includes('albums'))?.contents.map(album => ({
+                        id: `ytm-${album.id}`,
+                        name: album.title,
+                        artwork_url: album.thumbnails?.[0]?.url,
+                        release_year: album.year || 'Unknown',
+                        artist_name: artist.name,
+                        source: 'YTMusic'
+                    })) || []
+                });
+            } catch (e) {
+                console.error('YT Music artist details failed', e);
+                return res.status(500).json({ error: 'Failed to fetch YT Music artist' });
+            }
+        }
+
         const [detailsRes, songsRes, albumsRes] = await Promise.all([
             useFetch({ endpoint: Endpoints.artists.id, params: { artistId } }),
             useFetch({ endpoint: Endpoints.artists.songs, params: { artistId, page: 1 } }),

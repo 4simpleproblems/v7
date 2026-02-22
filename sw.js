@@ -44,17 +44,17 @@ const configs = {
     }
 };
 
-// Import all SW scripts
+// Import the base SW logic
 importScripts(configs.velium.sw);
-// Note: UVServiceWorker class is added to self by the script above
 
-const instances = {
-    velium: new UVServiceWorker({ ...configs.velium, encodeUrl: Ultraviolet.codec.xor.encode, decodeUrl: Ultraviolet.codec.xor.decode }),
-    vora: new UVServiceWorker({ ...configs.vora, encodeUrl: Ultraviolet.codec.xor.encode, decodeUrl: Ultraviolet.codec.xor.decode }),
-    vern: new UVServiceWorker({ ...configs.vern, encodeUrl: Ultraviolet.codec.xor.encode, decodeUrl: Ultraviolet.codec.xor.decode }),
-    vana: new UVServiceWorker({ ...configs.vana, encodeUrl: Ultraviolet.codec.xor.encode, decodeUrl: Ultraviolet.codec.xor.decode }),
-    games: new UVServiceWorker({ ...configs.games, encodeUrl: Ultraviolet.codec.xor.encode, decodeUrl: Ultraviolet.codec.xor.decode })
-};
+const instances = {};
+for (const key in configs) {
+    instances[key] = new UVServiceWorker({
+        ...configs[key],
+        encodeUrl: Ultraviolet.codec.xor.encode,
+        decodeUrl: Ultraviolet.codec.xor.decode
+    });
+}
 
 self.addEventListener('install', (event) => {
     event.waitUntil(self.skipWaiting());
@@ -67,21 +67,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = event.request.url;
     
-    for (const key in instances) {
-        const instance = instances[key];
-        const config = configs[key];
-        
-        if (url.includes(config.prefix)) {
-            event.respondWith(
-                (async () => {
-                    try {
-                        return await instance.fetch(event);
-                    } catch (e) {
-                        console.error(`${key.toUpperCase()} Proxy Fetch Error:`, e);
-                        return new Response("Proxy Error", { status: 408 });
-                    }
-                })()
-            );
+    // Find the matching instance based on prefix
+    for (const key in configs) {
+        if (url.includes(configs[key].prefix)) {
+            event.respondWith(instances[key].fetch(event));
             return;
         }
     }

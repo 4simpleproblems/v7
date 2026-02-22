@@ -39,7 +39,7 @@ function getProxyUrl(url) {
     if (encoded) {
         // Ensure encoded string doesn't accidentally include prefix already
         const cleanEncoded = encoded.startsWith(prefix) ? encoded.slice(prefix.length) : encoded;
-        const finalUrl = prefix + cleanEncoded;
+        const finalUrl = window.location.origin + prefix + cleanEncoded;
         console.log("Proxied URL:", finalUrl);
         return finalUrl;
     }
@@ -133,11 +133,13 @@ function setupEventListeners() {
             // UI Update for content containers
             document.querySelectorAll('.search-tab-content').forEach(c => {
                 c.classList.remove('active');
+                c.classList.add('hidden');
                 c.style.display = 'none';
             });
             const activeContent = document.getElementById(tabName + 'Tab');
             if (activeContent) {
                 activeContent.classList.add('active');
+                activeContent.classList.remove('hidden');
                 activeContent.style.display = 'block';
             }
         });
@@ -752,15 +754,16 @@ async function loadArtistDetails(artistId) {
         `;
 
         const list = document.getElementById('artistTopTracks');
-        data.top_tracks.slice(0, 5).forEach((track, index) => {
-            const item = createTrackRow(track, index, data.top_tracks);
+        const tracks = data.top_tracks || [];
+        tracks.slice(0, 5).forEach((track, index) => {
+            const item = createTrackRow(track, index, tracks);
             list.appendChild(item);
         });
 
         const albumsGrid = document.getElementById('artistAlbums');
-        renderAlbumGrid(data.albums, albumsGrid);
+        renderAlbumGrid(data.albums || [], albumsGrid);
 
-        currentDynamicPlaylist = data.top_tracks;
+        currentDynamicPlaylist = tracks;
     } catch (e) {
         console.error('Failed to load artist details', e);
     }
