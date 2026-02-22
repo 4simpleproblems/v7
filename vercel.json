@@ -2,6 +2,10 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/music-api/(.*)",
+      "destination": "/api/music-api"
+    },
+    {
       "source": "/logged-in/@:username",
       "destination": "/logged-in/profile.html"
     },

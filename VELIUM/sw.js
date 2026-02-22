@@ -22,3 +22,5 @@ self.addEventListener('fetch', event => {
         })()
     );
 });
+
+// Made with ❤️ from 4SP

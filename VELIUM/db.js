@@ -58,3 +58,5 @@ const DB = {
 
 // Export for usage in modules (or window global for script.js)
 window.VeliumDB = DB;
+
+// Made with ❤️ from 4SP
