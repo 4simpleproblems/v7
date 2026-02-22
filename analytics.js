@@ -130,8 +130,8 @@
 
     function trackPageView() {
         if (isExcluded || !db) return;
-        const path = window.location.pathname;
-        const pageName = getCleanTitle(path, document.title);
+        const path = window.location.protocol === 'file:' ? window.location.href : window.location.pathname;
+        const pageName = getCleanTitle(window.location.pathname, document.title);
         
         const docRef = db.collection('analytics').doc(sessionId);
         

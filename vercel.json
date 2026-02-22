@@ -1,13 +1,13 @@
 {
-  "cleanUrls": true,
+  "cleanUrls": false,
   "rewrites": [
     {
       "source": "/logged-in/@:username",
-      "destination": "/logged-in/profile"
+      "destination": "/logged-in/profile.html"
     },
     {
       "source": "/logged-in/@:username/:subpage",
-      "destination": "/logged-in/profile?username=:username&subpage=:subpage"
+      "destination": "/logged-in/profile.html?username=:username&subpage=:subpage"
     }
   ],
   "headers": [

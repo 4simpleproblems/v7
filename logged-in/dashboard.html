@@ -45,18 +45,18 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
-            gap: 1.5rem; /* Reduced gap */
-            padding: 3rem; /* Reduced padding */
+            gap: 1.5rem;
+            padding: 3rem;
             position: relative;
         }
 
         .dashboard-widget {
             border: 1px solid var(--border-color);
             background-color: var(--bg-container);
-            padding: 1.5rem; /* Reduced padding */
+            padding: 1.5rem;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
-            border-radius: 28px; /* Slightly tighter rounding */
+            border-radius: 28px;
             position: relative;
             overflow: hidden;
         }
@@ -135,7 +135,7 @@
 
 <body>
     <div id="page-content">
-        <!-- TOP LEFT: Main Widget (Clock + Welcome) - NO CONTAINER STYLE -->
+        <!-- TOP LEFT: Main Widget (Clock + Welcome) -->
         <div id="main-widget" class="dashboard-widget flex flex-col justify-center">
             <div id="clock-time" class="time-display">--:--</div>
             <div id="clock-date" class="date-display">--------</div>
@@ -204,7 +204,6 @@
     <script type="module">
         import { firebaseConfig } from '../firebase-config.js';
 
-        // Lookup map to fix "Version 5 Client" naming issue
         const PAGE_NAME_LOOKUP = {
             'dashboard.html': 'Dashboard',
             'soundboard.html': 'Soundboard',
@@ -231,9 +230,8 @@
             return fileName.replace('.html', '').charAt(0).toUpperCase() + fileName.replace('.html', '').slice(1);
         };
 
-        // Wait for Firebase
         const checkFirebase = setInterval(() => {
-            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
                 clearInterval(checkFirebase);
                 initDashboard();
             }
@@ -299,23 +297,25 @@
             const listEl = document.getElementById('recent-pages-list');
             listEl.innerHTML = '';
             
-            const isLocal = window._LOCAL_MODE;
+            const isLocalClient = window._LOCAL_MODE;
             const currentOrigin = window.location.origin;
 
             sortedPages.slice(0, 6).forEach(([path, data]) => {
                 const item = document.createElement('div');
                 item.className = 'page-link-item';
                 
+                const isLocalPath = path.startsWith('file://') || (path.startsWith('/') && !path.startsWith('/logged-in') && !path.includes('.vercel.app'));
+
                 let isClickable = true;
-                if (path.includes('file://')) {
-                    if (!isLocal || !currentOrigin.includes('file')) isClickable = false;
+                if (isLocalPath) {
+                    if (!isLocalClient || !currentOrigin.includes('file')) isClickable = false;
                 }
 
                 if (!isClickable) item.classList.add('disabled');
 
                 item.innerHTML = `
                     <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                        <i class="fa-solid fa-file-alt"></i>
+                        <i class="fa-solid fa-${isLocalPath ? 'hdd' : 'file-alt'}"></i>
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-white truncate">${data.title}</p>
@@ -325,9 +325,10 @@
 
                 if (isClickable) {
                     item.onclick = () => {
-                        if (path.startsWith('file://')) {
-                            // Explicitly use window.location for file:// to ensure domain switch
-                            window.location.href = path;
+                        if (isLocalPath) {
+                            let target = path;
+                            if (!target.startsWith('file://')) target = 'file://' + target;
+                            window.location.href = target;
                         } else if (window.parent && window.parent.loadPage) {
                             window.parent.loadPage(path);
                         } else if (window.loadPage) {
@@ -358,7 +359,6 @@
             const loader = document.getElementById('weather-loader');
             loader.classList.add('loading');
             try {
-                // Use a more reliable location API
                 const locRes = await fetch('https://freeipapi.com/api/json');
                 const locData = await locRes.json();
                 const lat = locData.latitude;
