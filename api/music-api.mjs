@@ -1,6 +1,8 @@
-const SAAVN_API = 'https://jiosaavn-api-privatecvc2.vercel.app';
+import { Endpoints, useFetch, formatTrack, formatAlbum, formatArtist, formatPlaylist } from './jsaavn-internal.mjs';
 
-// Helper to get YouTube search (reusing logic from search.mjs but keeping it self-contained if needed)
+const MUSIC_API_BASE = 'https://bhindi1.ddns.net/music/api';
+
+// Helper to get YouTube search
 let youtubePromise; 
 async function getYoutube() {
   if (!youtubePromise) {
@@ -40,12 +42,13 @@ export default async function handler(req, res) {
       const searchQuery = q || query;
       if (!searchQuery) return res.status(400).json({ error: 'Missing query' });
       
-      const response = await fetch(`${SAAVN_API}/search/songs?query=${encodeURIComponent(searchQuery)}&limit=5`);
-      const data = await response.json();
-      const songs = data.data.results || [];
+      const { data } = await useFetch({
+        endpoint: Endpoints.search.all,
+        params: { query: searchQuery }
+      });
       
-      const suggestions = songs.map(s => ({
-        name: s.name,
+      const suggestions = (data.songs?.data || []).map(s => ({
+        name: s.title,
         type: 'Song'
       }));
       
@@ -59,147 +62,146 @@ export default async function handler(req, res) {
       
       const page = Math.floor((parseInt(offset) || 0) / 20) + 1;
       
-      const fetchJson = async (url) => {
-        const r = await fetch(url);
-        if (!r.ok) {
-          const text = await r.text();
-          throw new Error(`API Error (${r.status}): ${text.substring(0, 100)}`);
-        }
-        return r.json();
-      };
-
-      const [songsRes, albumsRes, artistsRes, playlistsRes] = await Promise.all([
-        fetchJson(`${SAAVN_API}/search/songs?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`),
-        fetchJson(`${SAAVN_API}/search/albums?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`),
-        fetchJson(`${SAAVN_API}/search/artists?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`),
-        fetchJson(`${SAAVN_API}/search/playlists?query=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`)
+      const [jsRes, musicApiRes] = await Promise.all([
+        // Provider 1: JioSaavn (Local Logic)
+        Promise.all([
+            useFetch({ endpoint: Endpoints.search.songs, params: { q: searchQuery, p: page, n: 20 } }),
+            useFetch({ endpoint: Endpoints.search.albums, params: { q: searchQuery, p: page, n: 20 } }),
+            useFetch({ endpoint: Endpoints.search.artists, params: { q: searchQuery, p: page, n: 20 } }),
+            useFetch({ endpoint: Endpoints.search.playlists, params: { q: searchQuery, p: page, n: 20 } })
+        ]).catch(err => {
+            console.error('JioSaavn search failed', err);
+            return [ {data: {results: []}}, {data: {results: []}}, {data: {results: []}}, {data: {results: []}} ];
+        }),
+        // Provider 2: MusicAPI (External Fallback/Extra)
+        fetch(`${MUSIC_API_BASE}/prepare/${encodeURIComponent(searchQuery)}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(async data => {
+                if (data && data.ID) {
+                    const songData = await fetch(`${MUSIC_API_BASE}/fetch/${data.ID}`).then(r => r.ok ? r.json() : null);
+                    return songData;
+                }
+                return null;
+            })
+            .catch(() => null)
       ]);
 
-      const formatTrack = (s) => ({
-        id: s.id,
-        title: s.name,
-        artist_name: s.primaryArtists,
-        artist_id: s.primaryArtistsId,
-        artwork_url: s.image?.[s.image.length - 1]?.link || s.image?.[s.image.length - 1]?.url,
-        duration: s.duration * 1000, // to ms
-        album_name: s.album?.name
-      });
+      const [songsRes, albumsRes, artistsRes, playlistsRes] = jsRes;
+
+      let tracks = (songsRes.data?.results || []).map(formatTrack);
+      
+      // If MusicAPI returned a valid song, prepend it to tracks
+      if (musicApiRes && musicApiRes.SONG_NAME) {
+          tracks.unshift({
+              id: `mapi-${musicApiRes.ID}`,
+              title: musicApiRes.SONG_NAME,
+              artist_name: 'MusicAPI Result',
+              artwork_url: musicApiRes.THUMBNAIL,
+              duration: musicApiRes.DURATION * 1000,
+              downloadUrl: [{ quality: '320kbps', link: musicApiRes.AUDIO_URL }],
+              source: 'MusicAPI'
+          });
+      }
 
       return res.status(200).json({
-        tracks: (songsRes.data?.results || []).map(formatTrack),
-        albums: (albumsRes.data?.results || []).map(a => ({
-          id: a.id,
-          name: a.name,
-          artwork_url: a.image?.[a.image.length - 1]?.link || a.image?.[a.image.length - 1]?.url,
-          artist_name: a.primaryArtists,
-          release_year: a.year
-        })),
-        artists: (artistsRes.data?.results || []).map(a => ({
-          id: a.id,
-          name: a.name,
-          image_url: a.image?.[a.image.length - 1]?.link || a.image?.[a.image.length - 1]?.url
-        })),
-        playlists: (playlistsRes.data?.results || []).map(p => ({
-          id: p.id,
-          name: p.name,
-          artwork_url: p.image?.[p.image.length - 1]?.link || p.image?.[p.image.length - 1]?.url,
-          song_count: p.songCount,
-          firstname: p.firstname
-        }))
+        tracks,
+        albums: (albumsRes.data?.results || []).map(formatAlbum),
+        artists: (artistsRes.data?.results || []).map(formatArtist),
+        playlists: (playlistsRes.data?.results || []).map(formatPlaylist)
       });
     }
 
     // 2.1 Playlist Details
     if (endpoint === 'playlist' || pathname.includes('/playlist/')) {
         const playlistId = id || pathParts[pathParts.length - 1];
-        const response = await fetch(`${SAAVN_API}/playlists?id=${playlistId}`);
-        if (!response.ok) throw new Error(`Playlist API Error: ${response.status}`);
-        const json = await response.json();
-        const data = json.data;
+        const { data } = await useFetch({
+            endpoint: Endpoints.playlists.id,
+            params: { listid: playlistId }
+        });
+        
         if (!data) throw new Error('No playlist data found');
         
         return res.status(200).json({
             id: data.id,
             name: data.name,
             description: data.description,
-            artwork_url: data.image?.[data.image.length - 1]?.link,
-            song_count: data.songCount,
-            tracks: (data.songs || []).map(s => ({
-                id: s.id,
-                title: s.name,
-                artist_name: s.primaryArtists,
-                artist_id: s.primaryArtistsId,
-                duration: s.duration * 1000,
-                artwork_url: s.image?.[s.image.length - 1]?.link
-            }))
+            artwork_url: createImageLinks(data.image)?.[2]?.link,
+            song_count: data.list_count,
+            tracks: (data.songs || []).map(formatTrack)
         });
     }
 
     // 3. Album Details
     if (endpoint === 'album' || pathname.includes('/album/')) {
         const albumId = id || pathParts[pathParts.length - 1];
-        const response = await fetch(`${SAAVN_API}/albums?id=${albumId}`);
-        if (!response.ok) throw new Error(`Album API Error: ${response.status}`);
-        const json = await response.json();
-        const data = json.data;
+        const { data } = await useFetch({
+            endpoint: Endpoints.albums.id,
+            params: { albumid: albumId }
+        });
+        
         if (!data) throw new Error('No album data found');
         
         return res.status(200).json({
             id: data.id,
             name: data.name,
-            artwork_url: data.image?.[data.image.length - 1]?.link,
-            artists: [{ id: data.primaryArtistsId, name: data.primaryArtists }],
-            total_tracks: data.songCount,
+            artwork_url: createImageLinks(data.image)?.[2]?.link,
+            artists: [{ id: data.primary_artists_id, name: data.primary_artists }],
+            total_tracks: data.song_count,
             release_year: data.year,
-            tracks: (data.songs || []).map(s => ({
-                id: s.id,
-                title: s.name,
-                artist_name: s.primaryArtists,
-                artist_id: s.primaryArtistsId,
-                duration: s.duration * 1000,
-                artwork_url: s.image?.[s.image.length - 1]?.link
-            }))
+            tracks: (data.songs || []).map(formatTrack)
         });
     }
 
     // 4. Artist Details
     if (endpoint === 'artist' || pathname.includes('/artist/')) {
         const artistId = id || pathParts[pathParts.length - 1];
-        const fetchJson = async (url) => {
-            const r = await fetch(url);
-            if (!r.ok) throw new Error(`API Error: ${r.status}`);
-            return r.json();
-        };
-
+        
         const [detailsRes, songsRes, albumsRes] = await Promise.all([
-            fetchJson(`${SAAVN_API}/artists?id=${artistId}`),
-            fetchJson(`${SAAVN_API}/artists/${artistId}/songs?page=1`),
-            fetchJson(`${SAAVN_API}/artists/${artistId}/albums?page=1`)
+            useFetch({ endpoint: Endpoints.artists.id, params: { artistId } }),
+            useFetch({ endpoint: Endpoints.artists.songs, params: { artistId, page: 1 } }),
+            useFetch({ endpoint: Endpoints.artists.albums, params: { artistId, page: 1 } })
         ]);
         
         const details = detailsRes.data;
         if (!details) throw new Error('No artist details found');
         
         return res.status(200).json({
-            id: details.id,
+            id: details.artistId,
             name: details.name,
-            followers: details.followerCount,
-            image_url: details.image?.[details.image.length - 1]?.link,
-            top_tracks: (songsRes.data?.results || []).map(s => ({
-                id: s.id,
-                title: s.name,
-                artist_name: s.primaryArtists,
-                duration: s.duration * 1000,
-                artwork_url: s.image?.[s.image.length - 1]?.link
-            })),
-            albums: (albumsRes.data?.results || []).map(a => ({
-                id: a.id,
-                name: a.name,
-                artwork_url: a.image?.[a.image.length - 1]?.link,
-                release_year: a.year,
-                artist_name: a.primaryArtists
-            }))
+            followers: details.follower_count,
+            image_url: createImageLinks(details.image)?.[2]?.link,
+            top_tracks: (songsRes.data?.results || []).map(formatTrack),
+            albums: (albumsRes.data?.results || []).map(formatAlbum)
         });
+    }
+
+    // 4.1 Lyrics
+    if (endpoint === 'lyrics' || pathname.includes('/lyrics/')) {
+        const songId = id || pathParts[pathParts.length - 1];
+        
+        // Try MusicAPI first if it's a mapi ID
+        if (songId.startsWith('mapi-')) {
+            const mapiId = songId.replace('mapi-', '');
+            const songData = await fetch(`${MUSIC_API_BASE}/fetch/${mapiId}`).then(r => r.ok ? r.json() : null);
+            if (songData && songData.LYRICS) {
+                return res.status(200).json({ lyrics: songData.LYRICS, source: 'MusicAPI' });
+            }
+        }
+
+        // Try JioSaavn
+        try {
+            const { data } = await useFetch({
+                endpoint: Endpoints.songs.lyrics,
+                params: { lyrics_id: songId }
+            });
+            if (data && data.lyrics) {
+                return res.status(200).json({ lyrics: data.lyrics, source: 'JioSaavn' });
+            }
+        } catch (e) {
+            console.error('JioSaavn lyrics failed', e);
+        }
+
+        return res.status(404).json({ error: 'Lyrics not found' });
     }
 
     // 5. YouTube Search
@@ -225,3 +227,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message, stack: error.stack });
   }
 }
+
+// Made with ❤️ from 4SP

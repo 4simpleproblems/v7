@@ -897,13 +897,18 @@ async function loadLyrics(track) {
     container.innerHTML = '<div class="py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
     
     try {
-        // We need a lyrics API. Using a common one or a placeholder for now.
-        // For Velium, we can try to fetch from a lyrics service.
-        const query = encodeURIComponent(`${track.title} ${track.artist_name}`);
-        // Placeholder for lyrics fetching logic
-        container.innerHTML = '<div class="py-20 text-center text-gray-500">Lyrics syncing coming soon...</div>';
+        const lyricsId = track.lyricsId || track.id;
+        const response = await fetch(`${API_BASE_URL}/lyrics/${lyricsId}`);
+        if (!response.ok) throw new Error('No lyrics available');
+        
+        const data = await response.json();
+        if (data.lyrics) {
+            container.innerHTML = `<div class="p-4 leading-relaxed text-lg text-gray-300 whitespace-pre-wrap">${escapeHtml(data.lyrics)}</div>`;
+        } else {
+            container.innerHTML = '<div class="py-20 text-center text-gray-500">Lyrics not found for this track.</div>';
+        }
     } catch (e) {
-        container.innerHTML = '<div class="py-20 text-center text-red-500">Failed to load lyrics.</div>';
+        container.innerHTML = `<div class="py-20 text-center text-gray-500">Lyrics unavailable.</div>`;
     }
 }
 

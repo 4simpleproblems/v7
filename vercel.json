@@ -18,6 +18,10 @@
       "destination": "/api/music-api?endpoint=playlist&id=:id"
     },
     {
+      "source": "/music-api/lyrics/:id",
+      "destination": "/api/music-api?endpoint=lyrics&id=:id"
+    },
+    {
       "source": "/logged-in/@:username",
       "destination": "/logged-in/profile.html"
     },
