@@ -6,18 +6,26 @@ function getProxyUrl(url) {
     if (url.startsWith('data:')) return url;
     if (url.startsWith('//')) url = 'https:' + url;
     
-    // Using the robust solution found in VORA: 
-    // Direct pathing to UV service with Ultraviolet encoding
+    const prefix = "/VELIUM/uv/service/";
+    
+    // Check if it's already proxied
+    if (url.includes(prefix)) return url;
+
+    // Use Ultraviolet if available
     if (window.Ultraviolet && window.Ultraviolet.codec && window.Ultraviolet.codec.xor) {
-        const prefix = "/VELIUM/uv/service/";
-        return window.location.origin + prefix + window.Ultraviolet.codec.xor.encode(url);
+        return prefix + window.Ultraviolet.codec.xor.encode(url);
     }
     
-    // Fallback if config is ready
-    if (window.__uv$config && window.__uv$config.prefix && window.__uv$config.encodeUrl) {
-        if (url.includes(window.__uv$config.prefix)) return url;
-        return window.__uv$config.prefix + window.__uv$config.encodeUrl(url);
+    // Fallback to config-based encoding
+    if (window.__uv$config && window.__uv$config.encodeUrl) {
+        try {
+            const encoded = window.__uv$config.encodeUrl(url);
+            if (encoded !== url) return prefix + encoded;
+        } catch (e) {
+            console.error("Proxy encoding failed", e);
+        }
     }
+    
     return url;
 }
 
@@ -470,7 +478,7 @@ function onPlayerStateChange(event) {
 }
 
 function togglePlayPause() {
-    if (!player) return;
+    if (!player || typeof player.pauseVideo !== 'function') return;
     if (isPlaying) player.pauseVideo();
     else player.playVideo();
 }

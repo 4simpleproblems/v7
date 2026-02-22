@@ -22,8 +22,14 @@
         const basePath = "/VELIUM/uv/";
         self.__uv$config = {
             prefix: basePath + "service/",
-            encodeUrl: Ultraviolet.codec.xor.encode,
-            decodeUrl: Ultraviolet.codec.xor.decode,
+            encodeUrl: (url) => {
+                if (typeof Ultraviolet === 'undefined') return url;
+                return Ultraviolet.codec.xor.encode(url);
+            },
+            decodeUrl: (url) => {
+                if (typeof Ultraviolet === 'undefined') return url;
+                return Ultraviolet.codec.xor.decode(url);
+            },
             handler: basePath + "uv.handler.js",
             client: basePath + "uv.client.js",
             bundle: basePath + "uv.bundle.js",
