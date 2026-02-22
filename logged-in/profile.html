@@ -57,7 +57,7 @@
         }
 
         .feature-card {
-            border-radius: 32px; /* Updated to 32px */
+            border-radius: 32px;
             border: 1px solid rgba(255,255,255,0.08);
             background: #0f0f0f;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -70,7 +70,7 @@
             justify-content: center;
             padding: 0.6rem 1.2rem;
             font-size: 0.85rem;
-            border-radius: 28px; /* Updated to 28px */
+            border-radius: 28px;
             border: 1px solid var(--indigo-main);
             color: var(--indigo-main);
             background-color: transparent;
@@ -103,10 +103,13 @@
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
 
-        @keyframes modal-fade-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        @keyframes modal-fade-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
+        @keyframes modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes modal-fade-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes content-pop-in { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
         .modal-animate-in { animation: modal-fade-in 0.2s ease-out forwards; }
         .modal-animate-out { animation: modal-fade-out 0.2s ease-in forwards; }
+        .modal-content-animate-in { animation: content-pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
         .status-dot {
             width: 10px;
@@ -120,11 +123,12 @@
         .photo-grid-item {
             aspect-ratio: 1/1;
             overflow: hidden;
-            border-radius: 28px; /* Updated to 28px */
+            border-radius: 28px;
             background: #1a1a1a;
             border: 1px solid #333;
             cursor: pointer;
-            transition: transform 0.3s ease;
+            transition: all 0.3s ease;
+            position: relative;
         }
         .photo-grid-item:hover {
             transform: scale(1.02);
@@ -134,6 +138,18 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+        .photo-grid-item.see-more {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(79, 70, 229, 0.1);
+            border: 2px dashed var(--indigo-main);
+            color: var(--indigo-main);
+        }
+        .photo-grid-item.see-more:hover {
+            background: rgba(79, 70, 229, 0.2);
         }
     </style>
 </head>
@@ -154,8 +170,8 @@
         <button onclick="window.location.href='/'" class="btn-base btn-primary px-10 py-3">Return Home</button>
     </div>
 
-    <main id="profile-main-content" class="container mx-auto p-6 pt-24 max-w-6xl">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <main id="profile-main-content" class="container mx-auto p-6 pt-24 max-w-6xl flex flex-col min-h-[calc(100vh-6rem)]">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-grow">
             <!-- Sidebar / Info -->
             <div class="lg:col-span-1">
                 <div class="feature-card p-8 flex flex-col items-center sticky top-24">
@@ -188,7 +204,7 @@
                         <p id="username" class="text-gray-500 font-mono text-sm">@--</p>
                         
                         <div id="activity-label" class="mt-3 text-[11px] text-indigo-400 font-medium uppercase tracking-widest hidden">
-                            Currently Playing: <span id="current-activity-text" class="text-white">--</span>
+                            Currently On: <span id="current-activity-text" class="text-white">--</span>
                         </div>
                     </div>
 
@@ -220,33 +236,48 @@
             </div>
 
             <!-- Content Area -->
-            <div class="lg:col-span-2">
+            <div class="lg:col-span-2 flex flex-col">
                 <div class="flex justify-between items-end mb-6">
                     <div>
                         <h2 class="text-2xl font-light tracking-tight text-white">Dailyphoto</h2>
                         <p class="text-gray-500 text-sm">A daily collection of moments shared by this user.</p>
                     </div>
-                    <a href="/logged-in/dailyphoto" class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest hover:underline">View All</a>
+                    <button id="btn-view-all-photos" class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest hover:underline">View All</button>
                 </div>
                 
                 <div id="dailyphoto-container" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <!-- Photos will be inserted here -->
+                    <!-- Photos will be inserted here (max 2 + See More) -->
                 </div>
 
-                <div class="mt-12 p-8 feature-card bg-white/5 border-dashed border-gray-800">
-                    <h3 class="text-lg font-light mb-4 text-white">About 4SP Profiles</h3>
-                    <p class="text-sm text-gray-500 leading-relaxed">
-                        Your profile is your identity on 4SP. Connect with friends, follow your favorite creators, and share your daily moments through Dailyphoto. V6 is built to feel alive—see what your friends are playing in real-time.
-                    </p>
-                </div>
+                <div class="flex-grow"></div> <!-- Spacer to push About box down -->
             </div>
+        </div>
+
+        <div class="mt-12 p-8 feature-card bg-white/5 border-dashed border-gray-800 w-full">
+            <h3 class="text-lg font-light mb-4 text-white">About 4SP Profiles</h3>
+            <p class="text-sm text-gray-500 leading-relaxed">
+                Your profile is your identity on 4SP. Connect with friends, follow your favorite creators, and share your daily moments through Dailyphoto. V6 is built to feel alive—see what your friends are on in real-time.
+            </p>
         </div>
     </main>
 
     <!-- Modals -->
+    <!-- All Photos Modal -->
+    <div id="all-photos-modal" class="modal-bg hidden fixed inset-0 z-[1000] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
+        <div class="modal-content bg-[#0f0f0f] rounded-[32px] border border-gray-800 w-full max-w-4xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+            <header class="p-6 border-b border-gray-800 flex justify-between items-center bg-white/5">
+                <h3 class="text-xl font-light tracking-tight text-white">All Dailyphotos</h3>
+                <button onclick="closeModal('all-photos-modal')" class="text-gray-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </header>
+            <div id="all-photos-grid" class="flex-1 overflow-y-auto custom-scroll p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                <!-- All photos injected here -->
+            </div>
+        </div>
+    </div>
+
     <!-- Follow List Modal -->
-    <div id="follow-list-modal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
-        <div class="bg-[#0f0f0f] rounded-[32px] border border-gray-800 w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl flex flex-col">
+    <div id="follow-list-modal" class="modal-bg hidden fixed inset-0 z-[1000] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
+        <div class="modal-content bg-[#0f0f0f] rounded-[32px] border border-gray-800 w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl flex flex-col">
             <header class="p-6 border-b border-gray-800 flex justify-between items-center bg-white/5">
                 <h3 id="follow-modal-title" class="text-xl font-light tracking-tight text-white">--</h3>
                 <button id="close-follow-modal" class="text-gray-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
@@ -262,8 +293,8 @@
     </div>
 
     <!-- Edit Profile Modal -->
-    <div id="edit-profile-modal" class="hidden fixed inset-0 z-[10002] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
-        <div class="bg-[#0f0f0f] rounded-[32px] border border-gray-800 w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
+    <div id="edit-profile-modal" class="modal-bg hidden fixed inset-0 z-[10002] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
+        <div class="modal-content bg-[#0f0f0f] rounded-[32px] border border-gray-800 w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
             <header class="p-6 border-b border-gray-800 flex justify-between items-center bg-white/5">
                 <h3 class="text-xl font-light tracking-tight text-white">Edit Profile</h3>
                 <button id="close-edit-modal" class="text-gray-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
@@ -330,6 +361,10 @@
         const followListContainer = document.getElementById('follow-list-container');
         const btnShowFollowers = document.getElementById('btn-show-followers');
         const btnShowFollowing = document.getElementById('btn-show-following');
+        
+        const btnViewAllPhotos = document.getElementById('btn-view-all-photos');
+        const allPhotosModal = document.getElementById('all-photos-modal');
+        const allPhotosGrid = document.getElementById('all-photos-grid');
 
         let firebaseAuthUser = null; 
         let profileOwnerId = null; 
@@ -373,8 +408,8 @@
                     selfIndicator.classList.remove('hidden');
                     editBtnContainer.classList.remove('hidden');
                     
-                    if (subpage === 'followers') openFollowModal('followers');
-                    if (subpage === 'following') openFollowModal('following');
+                    if (subpage === 'followers') openModal('follow-list-modal', 'followers');
+                    if (subpage === 'following') openModal('follow-list-modal', 'following');
                 } else {
                     blockUserBtn.classList.remove('hidden');
                     followActions.classList.remove('hidden');
@@ -426,6 +461,7 @@
                 setupFollowModalListeners();
                 setupEditProfileListeners();
                 setupOptionsListeners();
+                setupModalClickHandlers();
             } else {
                 window.location.href = '/authentication';
             }
@@ -451,23 +487,49 @@
             const snap = await firestore.collection('dailyPhotos')
                 .where('userId', '==', profileOwnerId)
                 .orderBy('timestamp', 'desc')
-                .limit(6)
                 .get();
             
             dailyphotoContainer.innerHTML = '';
+            allPhotosGrid.innerHTML = '';
+
             if (snap.empty) {
                 dailyphotoContainer.innerHTML = '<div class="col-span-full py-12 text-center text-gray-600 italic">No photos shared yet.</div>';
                 return;
             }
 
-            snap.forEach(doc => {
+            const docs = snap.docs;
+            
+            // Preview Logic (Max 2 + See More)
+            docs.forEach((doc, index) => {
                 const data = doc.data();
-                const div = document.createElement('div');
-                div.className = 'photo-grid-item';
-                div.innerHTML = `<img src="${data.url}" alt="Dailyphoto">`;
-                div.onclick = () => window.location.href = '/logged-in/dailyphoto';
-                dailyphotoContainer.appendChild(div);
+                
+                // Add to All Photos Modal Grid
+                const allDiv = document.createElement('div');
+                allDiv.className = 'photo-grid-item';
+                allDiv.innerHTML = `<img src="${data.url}" alt="Dailyphoto">`;
+                allDiv.onclick = () => window.location.href = '/logged-in/dailyphoto';
+                allPhotosGrid.appendChild(allDiv);
+
+                // Add to Profile Preview (limit 2)
+                if (index < 2) {
+                    const div = document.createElement('div');
+                    div.className = 'photo-grid-item';
+                    div.innerHTML = `<img src="${data.url}" alt="Dailyphoto">`;
+                    div.onclick = () => window.location.href = '/logged-in/dailyphoto';
+                    dailyphotoContainer.appendChild(div);
+                }
             });
+
+            if (docs.length > 2) {
+                const seeMoreDiv = document.createElement('div');
+                seeMoreDiv.className = 'photo-grid-item see-more';
+                seeMoreDiv.innerHTML = `
+                    <i class="fa-solid fa-plus text-2xl mb-1"></i>
+                    <span class="text-xs font-bold uppercase">See More</span>
+                `;
+                seeMoreDiv.onclick = () => openModal('all-photos-modal');
+                dailyphotoContainer.appendChild(seeMoreDiv);
+            }
         }
 
         function loadCounts() {
@@ -508,9 +570,59 @@
             await batch.commit();
         };
 
+        // --- Modal Logic ---
+        window.openModal = function(modalId, type = null) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            
+            if (modalId === 'follow-list-modal' && type) {
+                renderFollowModal(type);
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.remove('modal-animate-out');
+            modal.classList.add('modal-animate-in');
+            
+            const content = modal.querySelector('.modal-content');
+            if (content) {
+                content.classList.remove('modal-animate-out'); // Not really a thing for content but just in case
+                content.classList.add('modal-content-animate-in');
+            }
+            
+            document.body.style.overflow = 'hidden';
+        }
+
+        window.closeModal = function(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+
+            modal.classList.remove('modal-animate-in');
+            modal.classList.add('modal-animate-out');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }, 200);
+
+            if (modalId === 'follow-list-modal') {
+                window.history.pushState({}, '', `/logged-in/@${ownerUsername}`);
+            }
+        }
+
+        function setupModalClickHandlers() {
+            const modals = document.querySelectorAll('.modal-bg');
+            modals.forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeModal(modal.id);
+                    }
+                });
+            });
+        }
+
         function setupEditProfileListeners() {
-            openEditBtn.onclick = () => editModal.classList.remove('hidden');
-            closeEditBtn.onclick = () => editModal.classList.add('hidden');
+            openEditBtn.onclick = () => openModal('edit-profile-modal');
+            closeEditBtn.onclick = () => closeModal('edit-profile-modal');
             saveProfileBtn.onclick = async () => {
                 saveProfileBtn.disabled = true;
                 await firestore.collection('users').doc(firebaseAuthUser.uid).update({
@@ -518,7 +630,7 @@
                     description: editDescription.value.trim()
                 });
                 saveProfileBtn.disabled = false;
-                editModal.classList.add('hidden');
+                closeModal('edit-profile-modal');
             };
         }
 
@@ -527,7 +639,7 @@
                 e.stopPropagation();
                 optionsMenu.classList.toggle('hidden');
             };
-            window.onclick = () => optionsMenu.classList.add('hidden');
+            window.addEventListener('click', () => optionsMenu.classList.add('hidden'));
             
             shareProfileBtn.onclick = () => {
                 const url = window.location.origin + "/logged-in/@" + (ownerUsername);
@@ -549,25 +661,22 @@
             btnShowFollowers.onclick = () => {
                 if (isOwnProfile) {
                     window.history.pushState({}, '', `/logged-in/@${ownerUsername}/followers`);
-                    openFollowModal('followers');
+                    openModal('follow-list-modal', 'followers');
                 }
             };
             btnShowFollowing.onclick = () => {
                 if (isOwnProfile) {
                     window.history.pushState({}, '', `/logged-in/@${ownerUsername}/following`);
-                    openFollowModal('following');
+                    openModal('follow-list-modal', 'following');
                 }
             };
-            closeFollowModalBtn.onclick = () => {
-                window.history.pushState({}, '', `/logged-in/@${ownerUsername}`);
-                followListModal.classList.add('hidden');
-            };
+            closeFollowModalBtn.onclick = () => closeModal('follow-list-modal');
+            btnViewAllPhotos.onclick = () => openModal('all-photos-modal');
         }
 
-        async function openFollowModal(type) {
+        async function renderFollowModal(type) {
             followModalTitle.textContent = type === 'followers' ? 'Followers' : 'Following';
             followListContainer.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500"></i></div>';
-            followListModal.classList.remove('hidden');
             
             const snap = await firestore.collection('users').doc(profileOwnerId).collection(type).get();
             followListContainer.innerHTML = '';
@@ -584,7 +693,9 @@
                     const userData = uSnap.data();
                     const div = document.createElement('div');
                     div.className = 'flex items-center gap-3 p-3 bg-white/5 border border-gray-800 rounded-2xl cursor-pointer hover:bg-white/10 transition';
-                    div.onclick = () => window.location.href = `/logged-in/@${userData.username}`;
+                    div.onclick = () => {
+                        window.location.href = `/logged-in/@${userData.username}`;
+                    };
                     div.innerHTML = `
                         <div class="w-10 h-10 bg-indigo-900/30 rounded-xl flex items-center justify-center font-bold text-indigo-400">
                             ${userData.displayName?.charAt(0) || 'U'}

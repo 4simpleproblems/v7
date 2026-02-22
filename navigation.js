@@ -1010,7 +1010,7 @@ let db;
             const statusHtml = isOnline 
                 ? `<div class="flex items-center gap-1.5 mt-1">
                      <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_#6366f1]"></span>
-                     <span class="text-[10px] text-indigo-400 font-medium uppercase tracking-wider">${currentActivity ? `Playing: ${currentActivity}` : 'Online'}</span>
+                     <span class="text-[10px] text-indigo-400 font-medium uppercase tracking-wider">${currentActivity ? `On: ${currentActivity}` : 'Online'}</span>
                    </div>`
                 : `<div class="flex items-center gap-1.5 mt-1">
                      <span class="w-2 h-2 rounded-full bg-gray-600"></span>
