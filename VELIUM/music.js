@@ -802,7 +802,7 @@ async function loadAlbumDetails(albumId) {
                     <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Album</span>
                     <h1 class="text-6xl font-black tracking-tighter mb-4">${escapeHtml(data.name)}</h1>
                     <div class="flex items-center gap-2">
-                        <span class="font-bold text-white hover:underline cursor-pointer" onclick="if('${data.artists[0]?.id}') loadArtistDetails('${data.artists[0].id}')">${escapeHtml(data.artists[0].name)}</span>
+                        <span class="font-bold text-white hover:underline cursor-pointer" onclick="if('${data.artists[0]?.id || ''}') loadArtistDetails('ytm-${data.artists[0].id}')">${escapeHtml(data.artists[0].name)}</span>
                         <span class="text-gray-500">•</span>
                         <span class="text-gray-500">${data.release_year}</span>
                         <span class="text-gray-500">•</span>
@@ -1018,6 +1018,12 @@ let lyricsInterval = null;
 async function loadLyrics(track) {
     const container = document.getElementById('lyricsContent');
     if (!container) return;
+    
+    if (track.source === 'Argon') {
+        container.innerHTML = '<div class="py-20 text-center text-gray-500">Lyrics not available for this source.</div>';
+        return;
+    }
+
     container.innerHTML = '<div class="py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
     
     try {

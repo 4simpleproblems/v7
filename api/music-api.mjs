@@ -136,6 +136,7 @@ export default async function handler(req, res) {
               
               const title = item.title?.toString() || item.name?.toString() || 'Unknown Title';
               const artist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'YT Music Artist';
+              const artistId = item.artists?.[0]?.id || item.author?.id;
               const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
               const duration = (item.duration?.seconds || 0) * 1000;
 
@@ -143,6 +144,7 @@ export default async function handler(req, res) {
                   id: `ytm-${item.id}`,
                   title: title,
                   artist_name: artist,
+                  artist_id: artistId ? `ytm-${artistId}` : null,
                   artwork_url: thumbnail,
                   duration: duration,
                   youtube_id: item.id,
@@ -163,6 +165,7 @@ export default async function handler(req, res) {
                   id: `argon-${item.id}`,
                   title: item.song?.name || item.name,
                   artist_name: item.author?.name || 'Argon Artist',
+                  artist_id: item.author?.id ? `argon-${item.author.id}` : null,
                   artwork_url: artwork,
                   duration: (item.song?.duration || 0) * 1000,
                   url: item.song?.url || item.url,
@@ -179,6 +182,7 @@ export default async function handler(req, res) {
               
               const title = item.title?.toString() || item.name?.toString() || 'Unknown Album';
               const artist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'YT Music Artist';
+              const artistId = item.artists?.[0]?.id || item.author?.id;
               const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
 
               return {
@@ -186,6 +190,7 @@ export default async function handler(req, res) {
                   name: title,
                   artwork_url: thumbnail,
                   artist_name: artist,
+                  artist_id: artistId ? `ytm-${artistId}` : null,
                   release_year: item.year?.toString() || 'Unknown',
                   source: 'YTMusic'
               };
@@ -240,9 +245,10 @@ export default async function handler(req, res) {
                     total_tracks: album.contents.length,
                     release_year: album.year || 'Unknown',
                     tracks: album.contents.map(track => ({
-                        id: track.id,
+                        id: `ytm-${track.id}`,
                         title: track.title,
                         artist_name: track.artists?.[0]?.name || album.artists[0]?.name,
+                        artist_id: track.artists?.[0]?.id ? `ytm-${track.artists[0].id}` : (album.artists[0]?.id ? `ytm-${album.artists[0].id}` : null),
                         duration: (track.duration?.seconds || 0) * 1000,
                         artwork_url: album.thumbnails?.[0]?.url,
                         youtube_id: track.id,
@@ -272,9 +278,10 @@ export default async function handler(req, res) {
                     followers: 0,
                     image_url: artist.thumbnails?.[0]?.url,
                     top_tracks: (artist.sections.find(s => s.type === 'MusicShelf' && s.title?.toString().toLowerCase().includes('songs'))?.contents || []).map(track => ({
-                        id: track.id,
+                        id: `ytm-${track.id}`,
                         title: track.title,
                         artist_name: artist.name,
+                        artist_id: artistId,
                         duration: (track.duration?.seconds || 0) * 1000,
                         artwork_url: track.thumbnails?.[0]?.url,
                         youtube_id: track.id,
