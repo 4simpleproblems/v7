@@ -217,6 +217,38 @@
             transform: translateY(0);
         }
 
+        .star-btn {
+            position: absolute;
+            bottom: 80px;
+            left: 24px;
+            width: 48px;
+            height: 48px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 10;
+        }
+
+        .track-card:hover .star-btn {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .star-btn.active {
+            color: #4f46e5;
+            background: rgba(79, 70, 229, 0.2);
+            border-color: rgba(79, 70, 229, 0.4);
+        }
+
         .view {
             display: none;
             padding: 32px;
@@ -520,7 +552,7 @@
         <footer class="now-playing-bar">
             <!-- Track Info -->
             <div class="flex items-center gap-4 min-width-0">
-                <div class="w-14 h-14 bg-card-dark rounded-xl overflow-hidden border border-brand-border flex-shrink-0">
+                <div class="w-14 h-14 bg-card-dark rounded-xl overflow-hidden border border-brand-border flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onclick="toggleFullscreenPlayer()">
                     <img id="currentArtwork" src="" class="w-full h-full object-cover hidden">
                     <div id="artworkPlaceholder" class="w-full h-full flex items-center justify-center">
                         <i class="fas fa-music text-gray-700"></i>
@@ -590,7 +622,7 @@
         </div>
     </div>
 
-    <!-- Lyrics Panel -->
+    <!-- Lyrics Panel (Keep existing for sidebar if needed, or we'll transition to Fullscreen) -->
     <div id="lyricsPanel" class="side-panel p-8 flex flex-col">
         <div class="flex items-center justify-between mb-10">
             <h2 class="text-2xl font-bold">Lyrics</h2>
@@ -600,6 +632,59 @@
         </div>
         <div id="lyricsContent" class="flex-1 overflow-y-auto custom-scrollbar">
             <!-- Lyrics will be injected here -->
+        </div>
+    </div>
+
+    <!-- Full-Screen Now Playing Modal -->
+    <div id="fullscreenPlayer" class="fixed inset-0 bg-black z-[1000] hidden flex-col p-12 transition-all duration-500 overflow-y-auto">
+        <div class="flex justify-between items-center mb-8">
+            <button onclick="toggleFullscreenPlayer()" class="text-2xl text-gray-400 hover:text-white transition-colors">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="text-xs font-bold uppercase tracking-widest text-gray-500">Now Playing</div>
+            <div class="w-8"></div>
+        </div>
+
+        <div class="flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 max-w-7xl mx-auto w-full">
+            <!-- Left Side: Artwork & Main Controls -->
+            <div class="flex-1 flex flex-col items-center lg:items-start max-w-xl w-full">
+                <div class="w-full aspect-square mb-12 shadow-[0_40px_100px_-20px_rgba(79,70,229,0.5)] rounded-3xl overflow-hidden border border-brand-border">
+                    <img id="fsArtwork" src="" class="w-full h-full object-cover">
+                </div>
+                
+                <div class="w-full mb-8 text-center lg:text-left">
+                    <h1 id="fsTrackName" class="text-4xl lg:text-6xl font-black tracking-tighter mb-4 truncate">Not Playing</h1>
+                    <p id="fsArtistName" class="text-xl lg:text-2xl text-gray-400 font-medium truncate">Select a track</p>
+                </div>
+
+                <!-- Fullscreen Controls -->
+                <div class="w-full flex flex-col items-center gap-8">
+                    <div class="w-full flex items-center gap-4 text-xs font-bold text-gray-500">
+                        <span id="fsCurrentTime">0:00</span>
+                        <div class="progress-bar flex-1 h-2" id="fsProgressTrack">
+                            <div class="progress-bar-fill" id="fsProgressBarFill"></div>
+                        </div>
+                        <span id="fsDuration">0:00</span>
+                    </div>
+
+                    <div class="flex items-center gap-10">
+                        <button class="player-btn text-2xl" id="fsShuffle"><i class="fas fa-shuffle"></i></button>
+                        <button class="player-btn text-3xl" id="fsPrev"><i class="fas fa-step-backward"></i></button>
+                        <button class="w-20 h-20 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-transform" id="fsPlayPause">
+                            <i class="fas fa-play text-2xl"></i>
+                        </button>
+                        <button class="player-btn text-3xl" id="fsNext"><i class="fas fa-step-forward"></i></button>
+                        <button class="player-btn text-2xl" id="fsRepeat"><i class="fas fa-repeat"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Lyrics -->
+            <div id="fsLyricsContainer" class="flex-1 h-full max-h-[70vh] w-full hidden lg:flex flex-col">
+                <div id="fsLyricsContent" class="flex-1 overflow-y-auto pr-8 custom-scrollbar text-3xl lg:text-5xl font-bold leading-tight space-y-8 py-10">
+                    <!-- Lyrics will be injected here -->
+                </div>
+            </div>
         </div>
     </div>
 

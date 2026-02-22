@@ -223,10 +223,59 @@ function setupEventListeners() {
     // Create Playlist Modal
     document.querySelector('.create-playlist-btn').addEventListener('click', showCreatePlaylistModal);
     document.getElementById('savePlaylistBtn').addEventListener('click', confirmCreatePlaylist);
+
+    // Fullscreen Modal Listeners
+    document.getElementById('fsPlayPause').addEventListener('click', togglePlayPause);
+    document.getElementById('fsNext').addEventListener('click', playNext);
+    document.getElementById('fsPrev').addEventListener('click', playPrev);
+    document.getElementById('fsShuffle').addEventListener('click', toggleShuffle);
+    document.getElementById('fsRepeat').addEventListener('click', cycleRepeat);
+
+    const fsProgressTrack = document.getElementById('fsProgressTrack');
+    if (fsProgressTrack) {
+        fsProgressTrack.addEventListener('click', (e) => {
+            const rect = fsProgressTrack.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            
+            if (activeSource === 'audio') {
+                const audio = document.getElementById('nativeAudio');
+                if (audio && audio.duration) audio.currentTime = audio.duration * percent;
+            } else {
+                if (!player || typeof player.getDuration !== 'function') return;
+                player.seekTo(player.getDuration() * percent);
+            }
+        });
+    }
 }
 
 // --- View Logic ---
-function switchView(viewName) {
+window.toggleFullscreenPlayer = function() {
+    const fs = document.getElementById('fullscreenPlayer');
+    if (!fs) return;
+    
+    if (fs.classList.contains('hidden')) {
+        fs.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        updateFullscreenUI();
+        if (currentTrack) loadLyrics(currentTrack, true);
+    } else {
+        fs.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+};
+
+function updateFullscreenUI() {
+    if (!currentTrack) return;
+    document.getElementById('fsTrackName').textContent = currentTrack.title;
+    document.getElementById('fsArtistName').textContent = currentTrack.artist_name;
+    document.getElementById('fsArtwork').src = getProxyUrl(currentTrack.artwork_url);
+    
+    // Sync Shuffle/Repeat icons
+    document.getElementById('fsShuffle').classList.toggle('active', isShuffle);
+    const fsRepeat = document.getElementById('fsRepeat');
+    fsRepeat.classList.toggle('active', repeatMode !== 'off');
+    fsRepeat.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat"></i><span class="absolute text-[10px] font-bold mt-2 ml-1">1</span>' : '<i class="fas fa-repeat"></i>';
+}
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
@@ -384,10 +433,14 @@ function renderTrackGrid(tracks, container) {
     if (!container) return;
     container.innerHTML = '';
     tracks.forEach((track, index) => {
+        const isLiked = favorites.some(f => f.id === track.id);
         const card = document.createElement('div');
         card.className = 'track-card';
         card.innerHTML = `
             <img src="${getProxyUrl(track.artwork_url)}" class="track-artwork" loading="lazy">
+            <div class="star-btn ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLikeTrack(${JSON.stringify(track).replace(/"/g, '&quot;')}, this)">
+                <i class="${isLiked ? 'fas' : 'far'} fa-star"></i>
+            </div>
             <div class="play-btn-overlay">
                 <i class="fas fa-play"></i>
             </div>
@@ -511,11 +564,23 @@ async function playTrack(index) {
     document.getElementById('artworkPlaceholder').classList.add('hidden');
 
     updateLikeButtonStatus();
+    
+    // Update Fullscreen UI if open
+    const fs = document.getElementById('fullscreenPlayer');
+    if (fs && !fs.classList.contains('hidden')) {
+        updateFullscreenUI();
+        loadLyrics(currentTrack, true);
+    }
 
     // Reset Progress UI
     document.getElementById('progressBarFill').style.width = '0%';
     document.getElementById('currentTimeLabel').textContent = '0:00';
     document.getElementById('durationLabel').textContent = '0:00';
+    
+    // Reset Fullscreen Progress
+    document.getElementById('fsProgressBarFill').style.width = '0%';
+    document.getElementById('fsCurrentTime').textContent = '0:00';
+    document.getElementById('fsDuration').textContent = '0:00';
 
     // 1. Try direct download URL first for maximum accuracy
     const directUrl = getDownloadUrl(currentTrack);
@@ -563,6 +628,14 @@ function loadAudioPlayer(url) {
                     document.getElementById('progressBarFill').style.width = percent + '%';
                     document.getElementById('currentTimeLabel').textContent = formatTime(current);
                     document.getElementById('durationLabel').textContent = formatTime(total);
+
+                    // Fullscreen sync
+                    const fsBar = document.getElementById('fsProgressBarFill');
+                    if (fsBar) fsBar.style.width = percent + '%';
+                    const fsCurrent = document.getElementById('fsCurrentTime');
+                    if (fsCurrent) fsCurrent.textContent = formatTime(current);
+                    const fsDuration = document.getElementById('fsDuration');
+                    if (fsDuration) fsDuration.textContent = formatTime(total);
                 }
             }
         });
@@ -970,6 +1043,14 @@ function startProgressUpdate() {
                     document.getElementById('progressBarFill').style.width = percent + '%';
                     document.getElementById('currentTimeLabel').textContent = formatTime(current);
                     document.getElementById('durationLabel').textContent = formatTime(total);
+                    
+                    // Fullscreen sync
+                    const fsBar = document.getElementById('fsProgressBarFill');
+                    if (fsBar) fsBar.style.width = percent + '%';
+                    const fsCurrent = document.getElementById('fsCurrentTime');
+                    if (fsCurrent) fsCurrent.textContent = formatTime(current);
+                    const fsDuration = document.getElementById('fsDuration');
+                    if (fsDuration) fsDuration.textContent = formatTime(total);
                 }
             }
         }
@@ -1002,6 +1083,26 @@ function hideCreatePlaylistModal() {
     document.getElementById('createPlaylistModal').style.display = 'none';
 }
 
+window.toggleLikeTrack = async function(track, btnEl) {
+    const index = favorites.findIndex(t => t.id === track.id);
+    if (index > -1) {
+        favorites.splice(index, 1);
+        if (btnEl) {
+            btnEl.classList.remove('active');
+            btnEl.querySelector('i').className = 'far fa-star';
+        }
+    } else {
+        favorites.push(track);
+        if (btnEl) {
+            btnEl.classList.add('active');
+            btnEl.querySelector('i').className = 'fas fa-star';
+        }
+    }
+    await saveLibraryData();
+    updateLikeButtonStatus();
+    if (document.getElementById('favoritesView').classList.contains('active')) renderFavorites();
+};
+
 window.toggleLyrics = function() {
     const panel = document.getElementById('lyricsPanel');
     if (panel) {
@@ -1015,12 +1116,15 @@ window.toggleLyrics = function() {
 let lyricsData = [];
 let lyricsInterval = null;
 
-async function loadLyrics(track) {
-    const container = document.getElementById('lyricsContent');
+async function loadLyrics(track, isForFullscreen = false) {
+    const container = isForFullscreen ? document.getElementById('fsLyricsContent') : document.getElementById('lyricsContent');
+    const fsLyricsContainer = document.getElementById('fsLyricsContainer');
+    
     if (!container) return;
     
     if (track.source === 'Argon') {
         container.innerHTML = '<div class="py-20 text-center text-gray-500">Lyrics not available for this source.</div>';
+        if (isForFullscreen && fsLyricsContainer) fsLyricsContainer.classList.add('hidden');
         return;
     }
 
@@ -1033,12 +1137,15 @@ async function loadLyrics(track) {
         
         const data = await response.json();
         if (data.lyrics) {
-            container.innerHTML = `<div class="p-4 leading-relaxed text-lg text-gray-300 whitespace-pre-wrap">${escapeHtml(data.lyrics)}</div>`;
+            container.innerHTML = `<div class="p-4 leading-relaxed whitespace-pre-wrap">${escapeHtml(data.lyrics)}</div>`;
+            if (isForFullscreen && fsLyricsContainer) fsLyricsContainer.classList.remove('hidden');
         } else {
             container.innerHTML = '<div class="py-20 text-center text-gray-500">Lyrics not found for this track.</div>';
+            if (isForFullscreen && fsLyricsContainer) fsLyricsContainer.classList.add('hidden');
         }
     } catch (e) {
         container.innerHTML = `<div class="py-20 text-center text-gray-500">Lyrics unavailable.</div>`;
+        if (isForFullscreen && fsLyricsContainer) fsLyricsContainer.classList.add('hidden');
     }
 }
 
