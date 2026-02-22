@@ -242,27 +242,17 @@ async function handleSearch(query) {
         const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`);
         const data = await response.json();
 
-        // Optional: Sort tracks to put global sources at the top
+        // Sort tracks: MusicAPI results at the very top, then YT Music
         const sortedTracks = (data.tracks || []).sort((a, b) => {
-            const priority = { 'MusicAPI': 0, 'YTMusic': 1, 'JioSaavn': 2 };
-            const aPrio = priority[a.source] ?? 3;
-            const bPrio = priority[b.source] ?? 3;
-            return aPrio - bPrio;
-        });
-
-        const sortedAlbums = (data.albums || []).sort((a, b) => {
-            const priority = { 'YTMusic': 0, 'JioSaavn': 1 };
+            const priority = { 'MusicAPI': 0, 'YTMusic': 1 };
             const aPrio = priority[a.source] ?? 2;
             const bPrio = priority[b.source] ?? 2;
             return aPrio - bPrio;
         });
 
-        const sortedArtists = (data.artists || []).sort((a, b) => {
-            const priority = { 'YTMusic': 0, 'JioSaavn': 1 };
-            const aPrio = priority[a.source] ?? 2;
-            const bPrio = priority[b.source] ?? 2;
-            return aPrio - bPrio;
-        });
+        // Albums and Artists from YT Music take precedence
+        const sortedAlbums = (data.albums || []).sort((a, b) => (a.source === 'YTMusic' ? -1 : 1));
+        const sortedArtists = (data.artists || []).sort((a, b) => (a.source === 'YTMusic' ? -1 : 1));
 
         renderTrackGrid(sortedTracks, tracksGrid);
         renderAlbumGrid(sortedAlbums, albumsGrid);

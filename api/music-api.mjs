@@ -1,5 +1,3 @@
-import { Endpoints, useFetch, formatTrack, formatAlbum, formatArtist, formatPlaylist } from './jsaavn-internal.mjs';
-
 const MUSIC_API_BASE = 'https://bhindi1.ddns.net/music/api';
 
 // Helper to get YouTube search
@@ -53,18 +51,8 @@ export default async function handler(req, res) {
               }))
           });
       } catch (e) {
-          console.error('YT Music suggestions failed, falling back to JioSaavn', e);
-          const { data } = await useFetch({
-            endpoint: Endpoints.search.all,
-            params: { query: searchQuery }
-          });
-          
-          const suggestions = (data.songs?.data || []).map(s => ({
-            name: s.title,
-            type: 'Song'
-          }));
-          
-          return res.status(200).json({ suggestions });
+          console.error('YT Music suggestions failed', e);
+          return res.status(200).json({ suggestions: [] });
       }
     }
 
@@ -73,20 +61,8 @@ export default async function handler(req, res) {
       const searchQuery = q || query;
       if (!searchQuery) return res.status(400).json({ error: 'Missing query' });
       
-      const page = Math.floor((parseInt(offset) || 0) / 20) + 1;
-      
-      const [jsRes, musicApiRes, ytMusicRes] = await Promise.all([
-        // Provider 1: JioSaavn (Local Logic)
-        Promise.all([
-            useFetch({ endpoint: Endpoints.search.songs, params: { q: searchQuery, p: page, n: 20 } }),
-            useFetch({ endpoint: Endpoints.search.albums, params: { q: searchQuery, p: page, n: 20 } }),
-            useFetch({ endpoint: Endpoints.search.artists, params: { q: searchQuery, p: page, n: 20 } }),
-            useFetch({ endpoint: Endpoints.search.playlists, params: { q: searchQuery, p: page, n: 20 } })
-        ]).catch(err => {
-            console.error('JioSaavn search failed', err);
-            return [ {data: {results: []}}, {data: {results: []}}, {data: {results: []}}, {data: {results: []}} ];
-        }),
-        // Provider 2: MusicAPI (External Fallback/Extra)
+      const [musicApiRes, ytMusicRes] = await Promise.all([
+        // Provider 1: MusicAPI (External Fallback/Extra)
         fetch(`${MUSIC_API_BASE}/prepare/${encodeURIComponent(searchQuery)}`)
             .then(r => r.ok ? r.json() : null)
             .then(async data => {
@@ -97,10 +73,9 @@ export default async function handler(req, res) {
                 return null;
             })
             .catch(() => null),
-        // Provider 3: YT Music (Local Logic via youtubei.js)
+        // Provider 2: YT Music (Local Logic via youtubei.js)
         getYoutube().then(async yt => {
             try {
-                // Use general search to get 'Top Result' and other categories
                 const search = await yt.music.search(searchQuery);
                 
                 const contents = {
@@ -109,9 +84,7 @@ export default async function handler(req, res) {
                     artists: []
                 };
 
-                // Extract from sections
                 search.sections.forEach(section => {
-                    const type = section.type; // MusicShelf or MusicCarouselShelf
                     const title = section.title?.toString().toLowerCase() || '';
                     
                     if (title.includes('songs') || title.includes('results')) {
@@ -123,16 +96,12 @@ export default async function handler(req, res) {
                     }
                 });
 
-                // Also check 'Top result' if it exists and map it
                 const topResult = search.sections.find(s => s.title?.toString().toLowerCase().includes('top result'))?.contents?.[0];
-                if (topResult) {
-                    if (topResult.type === 'MusicResponsiveListItem') {
-                        // Determine what kind of top result it is
-                        const itemType = topResult.item_type?.toLowerCase() || '';
-                        if (itemType.includes('song')) contents.songs.unshift(topResult);
-                        else if (itemType.includes('album')) contents.albums.unshift(topResult);
-                        else if (itemType.includes('artist')) contents.artists.unshift(topResult);
-                    }
+                if (topResult && topResult.type === 'MusicResponsiveListItem') {
+                    const itemType = topResult.item_type?.toLowerCase() || '';
+                    if (itemType.includes('song')) contents.songs.unshift(topResult);
+                    else if (itemType.includes('album')) contents.albums.unshift(topResult);
+                    else if (itemType.includes('artist')) contents.artists.unshift(topResult);
                 }
 
                 return contents;
@@ -143,13 +112,10 @@ export default async function handler(req, res) {
         }).catch(() => ({ songs: [], albums: [], artists: [] }))
       ]);
 
-      const [songsRes, albumsRes, artistsRes, playlistsRes] = jsRes;
-
-      // 1. Format Tracks
-      let tracks = (songsRes.data?.results || []).map(formatTrack);
+      let tracks = [];
       
       if (musicApiRes && musicApiRes.SONG_NAME) {
-          tracks.unshift({
+          tracks.push({
               id: `mapi-${musicApiRes.ID}`,
               title: musicApiRes.SONG_NAME,
               artist_name: 'MusicAPI Result',
@@ -182,14 +148,9 @@ export default async function handler(req, res) {
           tracks.push(...ytTracks);
       }
 
-      // 2. Format Albums
-      let albums = (albumsRes.data?.results || []).map(a => ({ 
-          ...formatAlbum(a), 
-          artwork_url: a.image?.[a.image.length - 1]?.link || a.image?.[a.image.length - 1]?.url || a.image,
-          source: 'JioSaavn' 
-      }));
+      let albums = [];
       if (ytMusicRes.albums) {
-          const ytAlbums = ytMusicRes.albums.map(item => {
+          albums = ytMusicRes.albums.map(item => {
               if (item.type !== 'MusicResponsiveListItem') return null;
               
               const title = item.title?.toString() || item.name?.toString() || 'Unknown Album';
@@ -205,17 +166,11 @@ export default async function handler(req, res) {
                   source: 'YTMusic'
               };
           }).filter(Boolean);
-          albums.push(...ytAlbums);
       }
 
-      // 3. Format Artists
-      let artists = (artistsRes.data?.results || []).map(a => ({ 
-          ...formatArtist(a), 
-          image_url: a.image?.[a.image.length - 1]?.link || a.image?.[a.image.length - 1]?.url || a.image,
-          source: 'JioSaavn' 
-      }));
+      let artists = [];
       if (ytMusicRes.artists) {
-          const ytArtists = ytMusicRes.artists.map(item => {
+          artists = ytMusicRes.artists.map(item => {
               if (item.type !== 'MusicResponsiveListItem') return null;
               
               const name = item.name?.toString() || item.title?.toString() || 'Unknown Artist';
@@ -228,35 +183,20 @@ export default async function handler(req, res) {
                   source: 'YTMusic'
               };
           }).filter(Boolean);
-          artists.push(...ytArtists);
       }
 
       return res.status(200).json({
         tracks,
         albums,
         artists,
-        playlists: (playlistsRes.data?.results || []).map(formatPlaylist)
+        playlists: []
       });
     }
 
     // 2.1 Playlist Details
     if (endpoint === 'playlist' || pathname.includes('/playlist/')) {
-        const playlistId = id || pathParts[pathParts.length - 1];
-        const { data } = await useFetch({
-            endpoint: Endpoints.playlists.id,
-            params: { listid: playlistId }
-        });
-        
-        if (!data) throw new Error('No playlist data found');
-        
-        return res.status(200).json({
-            id: data.id,
-            name: data.name,
-            description: data.description,
-            artwork_url: createImageLinks(data.image)?.[2]?.link,
-            song_count: data.list_count,
-            tracks: (data.songs || []).map(formatTrack)
-        });
+        // YT Music playlists would need implementation if needed
+        return res.status(404).json({ error: 'Playlist view not implemented for YT Music yet' });
     }
 
     // 3. Album Details
@@ -290,23 +230,7 @@ export default async function handler(req, res) {
                 return res.status(500).json({ error: 'Failed to fetch YT Music album' });
             }
         }
-
-        const { data } = await useFetch({
-            endpoint: Endpoints.albums.id,
-            params: { albumid: albumId }
-        });
-        
-        if (!data) throw new Error('No album data found');
-        
-        return res.status(200).json({
-            id: data.id,
-            name: data.name,
-            artwork_url: createImageLinks(data.image)?.[2]?.link,
-            artists: [{ id: data.primary_artists_id, name: data.primary_artists }],
-            total_tracks: data.song_count,
-            release_year: data.year,
-            tracks: (data.songs || []).map(formatTrack)
-        });
+        return res.status(404).json({ error: 'Album not found' });
     }
 
     // 4. Artist Details
@@ -321,7 +245,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({
                     id: artistId,
                     name: artist.name,
-                    followers: 0, // Not easily available in basic getArtist
+                    followers: 0,
                     image_url: artist.thumbnails?.[0]?.url,
                     top_tracks: (artist.sections.find(s => s.type === 'MusicShelf' && s.title?.toString().toLowerCase().includes('songs'))?.contents || []).map(track => ({
                         id: track.id,
@@ -332,45 +256,27 @@ export default async function handler(req, res) {
                         youtube_id: track.id,
                         source: 'YTMusic'
                     })),
-                    albums: artist.sections.find(s => s.type === 'MusicCarouselShelf' && s.title?.toString().toLowerCase().includes('albums'))?.contents.map(album => ({
+                    albums: (artist.sections.find(s => s.type === 'MusicCarouselShelf' && s.title?.toString().toLowerCase().includes('albums'))?.contents || []).map(album => ({
                         id: `ytm-${album.id}`,
                         name: album.title,
                         artwork_url: album.thumbnails?.[0]?.url,
                         release_year: album.year || 'Unknown',
                         artist_name: artist.name,
                         source: 'YTMusic'
-                    })) || []
+                    }))
                 });
             } catch (e) {
                 console.error('YT Music artist details failed', e);
                 return res.status(500).json({ error: 'Failed to fetch YT Music artist' });
             }
         }
-
-        const [detailsRes, songsRes, albumsRes] = await Promise.all([
-            useFetch({ endpoint: Endpoints.artists.id, params: { artistId } }),
-            useFetch({ endpoint: Endpoints.artists.songs, params: { artistId, page: 1 } }),
-            useFetch({ endpoint: Endpoints.artists.albums, params: { artistId, page: 1 } })
-        ]);
-        
-        const details = detailsRes.data;
-        if (!details) throw new Error('No artist details found');
-        
-        return res.status(200).json({
-            id: details.artistId,
-            name: details.name,
-            followers: details.follower_count,
-            image_url: createImageLinks(details.image)?.[2]?.link,
-            top_tracks: (songsRes.data?.results || []).map(formatTrack),
-            albums: (albumsRes.data?.results || []).map(formatAlbum)
-        });
+        return res.status(404).json({ error: 'Artist not found' });
     }
 
     // 4.1 Lyrics
     if (endpoint === 'lyrics' || pathname.includes('/lyrics/')) {
         const songId = id || pathParts[pathParts.length - 1];
         
-        // Try MusicAPI first if it's a mapi ID
         if (songId.startsWith('mapi-')) {
             const mapiId = songId.replace('mapi-', '');
             const songData = await fetch(`${MUSIC_API_BASE}/fetch/${mapiId}`).then(r => r.ok ? r.json() : null);
@@ -379,17 +285,16 @@ export default async function handler(req, res) {
             }
         }
 
-        // Try JioSaavn
+        // YT Music lyrics retrieval
         try {
-            const { data } = await useFetch({
-                endpoint: Endpoints.songs.lyrics,
-                params: { lyrics_id: songId }
-            });
-            if (data && data.lyrics) {
-                return res.status(200).json({ lyrics: data.lyrics, source: 'JioSaavn' });
+            const yt = await getYoutube();
+            // youtubei.js getLyrics requires the original video ID
+            const lyrics = await yt.music.getLyrics(songId);
+            if (lyrics && lyrics.description) {
+                return res.status(200).json({ lyrics: lyrics.description.toString(), source: 'YTMusic' });
             }
         } catch (e) {
-            console.error('JioSaavn lyrics failed', e);
+            console.error('YT Music lyrics failed', e);
         }
 
         return res.status(404).json({ error: 'Lyrics not found' });
