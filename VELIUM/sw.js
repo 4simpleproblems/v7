@@ -4,6 +4,7 @@ importScripts('./uv/uv.bundle.js');
 importScripts('./uv/uv.config.js');
 
 // Ensure the prefix matches what Ultraviolet expects for asset loading
+if (!self.__uv$config) self.__uv$config = {};
 self.__uv$config.prefix = "/VELIUM/uv/service/";
 
 importScripts('./uv/uv.sw.js');
@@ -20,8 +21,10 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
     const url = event.request.url;
+    const prefix = self.__uv$config.prefix || "/VELIUM/uv/service/";
+    
     // Aggressive check: if it contains the service path, intercept it
-    if (url.includes(self.__uv$config.prefix)) {
+    if (url.includes(prefix)) {
         event.respondWith(
             (async () => {
                 try {

@@ -12,11 +12,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- VERN_SYSTEM Proxy Scripts (Local) -->
-    <link rel="preload" href="/VELIUM/uv/uv.bundle.js" as="script">
-    <link rel="preload" href="/VELIUM/baremux/index.js" as="script">
-    <link rel="preload" href="/VELIUM/baremux/worker.js" as="script">
-    <link rel="preload" href="/VELIUM/sw.js" as="script">
-
     <script src="/VELIUM/uv/uv.bundle.js"></script>
     <script>
         const basePath = "/VELIUM/uv/";
@@ -56,7 +51,7 @@
             try {
                 const connection = new BareMux.BareMuxConnection("/VELIUM/baremux/worker.js");
                 const wispUrl = "wss://wisp.mercurywork.shop/";
-                connection.setTransport("/VELIUM/libcurl/index.mjs", [
+                await connection.setTransport("/VELIUM/libcurl/index.mjs", [
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);

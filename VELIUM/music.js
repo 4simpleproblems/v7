@@ -6,26 +6,40 @@ function getProxyUrl(url) {
     if (url.startsWith('data:')) return url;
     if (url.startsWith('//')) url = 'https:' + url;
     
-    // Explicit absolute prefix
     const prefix = "/VELIUM/uv/service/";
     
     // Check if it's already proxied
     if (url.includes(prefix)) return url;
 
-    // Use Ultraviolet if available
+    let encoded = null;
+
+    // 1. Try direct encoding if Ultraviolet is fully ready
     if (window.Ultraviolet && window.Ultraviolet.codec && window.Ultraviolet.codec.xor) {
-        return prefix + window.Ultraviolet.codec.xor.encode(url);
+        try {
+            encoded = window.Ultraviolet.codec.xor.encode(url);
+        } catch (e) {
+            console.error("Direct UV encoding failed", e);
+        }
     }
     
-    // Fallback to config-based encoding
-    if (window.__uv$config && window.__uv$config.encodeUrl) {
+    // 2. Fallback to config wrapper
+    if (!encoded && window.__uv$config && window.__uv$config.encodeUrl) {
         try {
-            const encoded = window.__uv$config.encodeUrl(url);
-            // If it didn't return the full path, add the prefix
-            return encoded.startsWith(prefix) ? encoded : prefix + encoded;
+            const result = window.__uv$config.encodeUrl(url);
+            // Only use if it actually encoded (didn't just return the original URL)
+            if (result !== url) {
+                encoded = result;
+            }
         } catch (e) {
-            console.error("Proxy encoding failed", e);
+            console.error("Config encoding failed", e);
         }
+    }
+
+    // 3. Final assembly: ensure prefix is present if we have an encoded string
+    if (encoded) {
+        // Ensure encoded string doesn't accidentally include prefix already
+        const cleanEncoded = encoded.startsWith(prefix) ? encoded.slice(prefix.length) : encoded;
+        return prefix + cleanEncoded;
     }
     
     return url;
@@ -480,7 +494,7 @@ function onPlayerStateChange(event) {
 }
 
 function togglePlayPause() {
-    if (!player || typeof player.pauseVideo !== 'function') return;
+    if (!player || typeof player.pauseVideo !== 'function' || typeof player.playVideo !== 'function') return;
     if (isPlaying) player.pauseVideo();
     else player.playVideo();
 }
