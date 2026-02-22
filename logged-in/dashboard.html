@@ -274,7 +274,7 @@
         };
 
         const checkFirebase = setInterval(() => {
-            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
                 clearInterval(checkFirebase);
                 initDashboard();
             }
@@ -406,22 +406,46 @@
             setInterval(update, 1000);
         }
 
+        // --- JSONP HELPER FOR ip-api.com ---
+        window.handleIpApiResponse = function(response) {
+            if (response.status === "success") {
+                const lat = response.lat;
+                const lon = response.lon;
+                document.getElementById('w-location').textContent = response.city || 'Local Node';
+                fetchWeatherData(lat, lon);
+            } else {
+                console.error("IP API Error", response);
+                fallbackLocation();
+            }
+        };
+
         async function loadWeather() {
             const loader = document.getElementById('weather-loader');
             loader.classList.add('loading');
+            
+            // ip-api.com via JSONP script injection
+            const script = document.createElement('script');
+            script.src = 'https://extreme-ip-lookup.com/json/?callback=handleIpApiResponse'; // Using another reliable one
+            // Wait, extreme-ip needs keys. Let's stick to ip-api but handle protocol.
+            // Since it's HTTP, we can't use it on Vercel. 
+            // Let's use ipapi.co with a fallback.
             try {
-                // ip-api.com via JSONP or just HTTP fallback (if available)
-                // Since ip-api.com free tier is HTTP only, we'll try ip-api.com via a proxy or use another HTTPS one.
-                // Re-trying ipapi.co or extreme-ip-lookup.com usually works if not rate limited.
-                const locRes = await fetch('http://ip-api.com/json/'); 
-                // Wait, browsers block HTTP on HTTPS pages. Let's use a reliable HTTPS alternative.
-                const locResHttps = await fetch('https://ipapi.co/json/');
-                const locData = await locResHttps.json();
-                
-                const lat = locData.latitude;
-                const lon = locData.longitude;
-                document.getElementById('w-location').textContent = locData.city || 'Local Node';
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                handleIpApiResponse({ status: 'success', lat: data.latitude, lon: data.longitude, city: data.city });
+            } catch (e) {
+                fallbackLocation();
+            }
+        }
 
+        function fallbackLocation() {
+            // Default to NYC or something stable
+            fetchWeatherData(40.7128, -74.0060);
+            document.getElementById('w-location').textContent = 'Global Relay';
+        }
+
+        async function fetchWeatherData(lat, lon) {
+            try {
                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto`;
                 const res = await fetch(url);
                 const data = await res.json();
@@ -441,13 +465,8 @@
                 
                 document.getElementById('w-icon').innerHTML = `<i class="fa-solid ${icon}"></i>`;
                 document.getElementById('w-desc').textContent = desc;
-
-            } catch(e) { 
-                console.error("Weather load fail", e);
-                // Last ditch effort: Try JSONP for ip-api.com or just use hardcoded default for UI stability
-                document.getElementById('w-desc').textContent = "Atmospheric Data Unavailable";
-            }
-            loader.classList.remove('loading');
+            } catch(e) { console.error("Final weather fetch fail", e); }
+            document.getElementById('weather-loader').classList.remove('loading');
         }
     </script>
 </body>
