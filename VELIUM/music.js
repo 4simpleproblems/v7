@@ -292,10 +292,27 @@ window.toggleFullscreenPlayer = function() {
     if (fs.classList.contains('hidden')) {
         fs.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+        
+        // Request native fullscreen
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(e => console.warn("Fullscreen request failed", e));
+        } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+        }
+
         updateFullscreenUI();
     } else {
         fs.classList.add('hidden');
         document.body.style.overflow = '';
+        
+        // Exit native fullscreen
+        if (document.fullscreenElement) {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(e => console.warn("Exit fullscreen failed", e));
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+        }
     }
 };
 
@@ -318,12 +335,12 @@ function updateFullscreenUI() {
     document.getElementById('fsShuffle').classList.toggle('active', isShuffle);
     const fsRepeat = document.getElementById('fsRepeat');
     fsRepeat.classList.toggle('active', repeatMode !== 'off');
-    fsRepeat.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat"></i><span class="absolute text-[10px] font-bold mt-2 ml-1">1</span>' : '<i class="fas fa-repeat"></i>';
+    fsRepeat.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat"></i><span class="absolute text-[8px] font-bold mt-1 ml-1">1</span>' : '<i class="fas fa-repeat"></i>';
     
     // Sync Play/Pause
     const fsPlayBtn = document.getElementById('fsPlayPause');
     if (fsPlayBtn) {
-        fsPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-2xl"></i>' : '<i class="fas fa-play text-2xl"></i>';
+        fsPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-xl"></i>' : '<i class="fas fa-play text-xl"></i>';
     }
 }
 
@@ -351,114 +368,21 @@ function setGreeting() {
     if (el) el.textContent = greeting;
 }
 
-let pipWindow = null;
-
-window.toggleMiniPlayer = async function() {
-    // If Document PiP is supported, use it
-    if (window.documentPictureInPicture && window.documentPictureInPicture.requestWindow) {
-        if (pipWindow) {
-            pipWindow.close();
-            return;
-        }
-
-        try {
-            pipWindow = await window.documentPictureInPicture.requestWindow({
-                width: 340,
-                height: 180,
-            });
-
-            // Move mini player to PiP window
-            const mini = document.getElementById('miniPlayer');
-            mini.classList.add('active');
-            pipWindow.document.body.append(mini);
-
-            // Copy all styles to PiP window
-            [...document.styleSheets].forEach((styleSheet) => {
-                try {
-                    const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
-                    const style = document.createElement('style');
-                    style.textContent = cssRules;
-                    pipWindow.document.head.appendChild(style);
-                } catch (e) {
-                    const link = document.createElement('link');
-                    if (styleSheet.href) {
-                        link.rel = 'stylesheet';
-                        link.href = styleSheet.href;
-                        pipWindow.document.head.appendChild(link);
-                    }
-                }
-            });
-            
-            // Explicitly copy Geist font and FontAwesome
-            const fontLink = document.querySelector('link[href*="fonts.googleapis.com"]');
-            if (fontLink) pipWindow.document.head.appendChild(fontLink.cloneNode(true));
-            const faLink = document.querySelector('link[href*="font-awesome"]');
-            if (faLink) pipWindow.document.head.appendChild(faLink.cloneNode(true));
-
-            // Add Tailwind from CDN if used
-            const tw = document.querySelector('script[src*="tailwindcss"]');
-            if (tw) {
-                const script = document.createElement('script');
-                script.src = tw.src;
-                pipWindow.document.head.appendChild(script);
-            }
-
-            // Simple body reset for PiP
-            pipWindow.document.body.style.background = '#000';
-            pipWindow.document.body.style.margin = '0';
-            pipWindow.document.body.style.display = 'flex';
-            pipWindow.document.body.style.alignItems = 'center';
-            pipWindow.document.body.style.justifyContent = 'center';
-            pipWindow.document.body.style.height = '100vh';
-            mini.style.position = 'static';
-            mini.style.width = '100%';
-            mini.style.boxShadow = 'none';
-
-            updateMiniPlayerUI();
-
-            pipWindow.addEventListener('pagehide', () => {
-                const mini = pipWindow.document.getElementById('miniPlayer');
-                if (mini) {
-                    document.body.append(mini);
-                    mini.classList.remove('active');
-                    mini.style.position = 'fixed';
-                    mini.style.width = '300px';
-                }
-                pipWindow = null;
-            });
-
-        } catch (e) {
-            console.error('PiP failed', e);
-            fallbackMiniPlayer();
-        }
-    } else {
-        fallbackMiniPlayer();
-    }
-};
-
-function fallbackMiniPlayer() {
-    const mini = document.getElementById('miniPlayer');
-    if (!mini) return;
-    mini.classList.toggle('active');
-    if (mini.classList.contains('active')) updateMiniPlayerUI();
-}
-
-function updateMiniPlayerUI() {
-    if (!currentTrack) return;
-    // Query within both main and PiP
-    const doc = pipWindow ? pipWindow.document : document;
+async function loadPopularArtists() {
+    const grid = document.getElementById('popularArtistsGrid');
+    if (!grid) return;
     
-    const trackName = doc.getElementById('miniTrackName');
-    const artistName = doc.getElementById('miniArtistName');
-    const artwork = doc.getElementById('miniArtwork');
-    const miniPlayBtn = doc.getElementById('miniPlayPause');
-
-    if (trackName) trackName.textContent = currentTrack.title;
-    if (artistName) artistName.textContent = currentTrack.artist_name;
-    if (artwork) artwork.src = getProxyUrl(currentTrack.artwork_url);
-    
-    if (miniPlayBtn) {
-        miniPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+    try {
+        // Just search for one of our popular artists to get a list of artists
+        const randomArtist = popularArtists[Math.floor(Math.random() * popularArtists.length)];
+        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(randomArtist)}`);
+        const data = await response.json();
+        
+        if (data.artists) {
+            renderArtistGrid(data.artists.slice(0, 6), grid);
+        }
+    } catch (e) {
+        console.error('Failed to load popular artists', e);
     }
 }
 
@@ -744,9 +668,6 @@ async function playTrack(index) {
         updateFullscreenUI();
     }
 
-    // Update Mini Player UI
-    updateMiniPlayerUI();
-
     // Reset Progress UI
     document.getElementById('progressBarFill').style.width = '0%';
     document.getElementById('currentTimeLabel').textContent = '0:00';
@@ -1022,33 +943,10 @@ async function initApp() {
     setGreeting();
     setupEventListeners();
     loadPopularTracks();
+    loadPopularArtists();
     renderSidebarPlaylists();
     renderLibrary();
     updateVolumeUI();
-
-    // Make Mini Player Draggable
-    const mini = document.getElementById('miniPlayer');
-    if (mini) {
-        let isDragging = false;
-        let offset = { x: 0, y: 0 };
-
-        mini.addEventListener('mousedown', (e) => {
-            if (e.target.closest('button')) return;
-            isDragging = true;
-            offset.x = e.clientX - mini.offsetLeft;
-            offset.y = e.clientY - mini.offsetTop;
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            mini.style.left = (e.clientX - offset.x) + 'px';
-            mini.style.top = (e.clientY - offset.y) + 'px';
-            mini.style.bottom = 'auto';
-            mini.style.right = 'auto';
-        });
-
-        document.addEventListener('mouseup', () => isDragging = false);
-    }
 }
 
 async function toggleLike() {

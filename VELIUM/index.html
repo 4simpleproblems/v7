@@ -385,25 +385,6 @@
             font-size: 1.5rem;
             font-weight: 500;
         }
-
-        .mini-player {
-            position: fixed;
-            bottom: 120px;
-            right: 32px;
-            width: 300px;
-            background: #0d0d0d;
-            border: 1px solid #333;
-            border-radius: 24px;
-            padding: 16px;
-            z-index: 5000;
-            display: none;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            cursor: move;
-        }
-
-        .mini-player.active {
-            display: block;
-        }
     </style>
 </head>
 <body>
@@ -474,10 +455,17 @@
                     </div>
                 </div>
 
-                <div>
+                <div class="mb-12">
                     <h2 class="text-xl font-bold mb-6">Popular Tracks</h2>
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="popularTracks">
                         <!-- Tracks will be injected here -->
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="text-xl font-bold mb-6">Popular Artists</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="popularArtistsGrid">
+                        <!-- Artists will be injected here -->
                     </div>
                 </div>
             </section>
@@ -608,7 +596,6 @@
 
             <!-- Volume & Extras -->
             <div class="flex items-center justify-end gap-4">
-                <button class="player-btn" onclick="toggleMiniPlayer()"><i class="fas fa-up-right-from-square"></i></button>
                 <div class="flex items-center gap-2 group">
                     <i class="fas fa-volume-up text-gray-500 group-hover:text-white transition-colors"></i>
                     <div class="w-24 h-1 bg-brand-border rounded-full cursor-pointer relative">
@@ -679,13 +666,13 @@
                     </div>
 
                     <div class="flex items-center gap-10">
-                        <button class="player-btn text-2xl" id="fsShuffle"><i class="fas fa-shuffle"></i></button>
-                        <button class="player-btn text-3xl" id="fsPrev"><i class="fas fa-step-backward"></i></button>
-                        <button class="w-20 h-20 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-transform" id="fsPlayPause">
-                            <i class="fas fa-play text-2xl"></i>
+                        <button class="player-btn text-xl" id="fsShuffle"><i class="fas fa-shuffle"></i></button>
+                        <button class="player-btn text-2xl" id="fsPrev"><i class="fas fa-step-backward"></i></button>
+                        <button class="w-16 h-16 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-transform" id="fsPlayPause">
+                            <i class="fas fa-play text-xl"></i>
                         </button>
-                        <button class="player-btn text-3xl" id="fsNext"><i class="fas fa-step-forward"></i></button>
-                        <button class="player-btn text-2xl" id="fsRepeat"><i class="fas fa-repeat"></i></button>
+                        <button class="player-btn text-2xl" id="fsNext"><i class="fas fa-step-forward"></i></button>
+                        <button class="player-btn text-xl" id="fsRepeat"><i class="fas fa-repeat"></i></button>
                     </div>
                 </div>
             </div>
@@ -694,25 +681,6 @@
 
     <!-- Audio Element (hidden) -->
     <div id="audioElement"></div>
-
-    <!-- Mini Player -->
-    <div id="miniPlayer" class="mini-player">
-        <div class="flex items-center gap-4 mb-4">
-            <img id="miniArtwork" src="" class="w-12 h-12 rounded-lg object-cover">
-            <div class="min-width-0 flex-1">
-                <div id="miniTrackName" class="text-sm font-bold text-white truncate">Not Playing</div>
-                <div id="miniArtistName" class="text-xs text-gray-500 truncate">Select a track</div>
-            </div>
-            <button onclick="toggleMiniPlayer()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="flex items-center justify-center gap-6">
-            <button class="player-btn" onclick="playPrev()"><i class="fas fa-step-backward"></i></button>
-            <button class="w-10 h-10 bg-white text-black rounded-full flex items-center justify-center" onclick="togglePlayPause()" id="miniPlayPause">
-                <i class="fas fa-play"></i>
-            </button>
-            <button class="player-btn" onclick="playNext()"><i class="fas fa-step-forward"></i></button>
-        </div>
-    </div>
 
     <script src="/VELIUM/db.js"></script>
     <script src="/VELIUM/music.js"></script>
