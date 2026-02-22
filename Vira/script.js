@@ -387,3 +387,80 @@ function showComments() {
         }
     }
 }
+
+// --- SEARCH LOGIC ---
+const searchInput = document.getElementById('searchInput');
+const videoGrid = document.getElementById('videoGrid');
+const dynamicSection = document.getElementById('dynamic-section');
+const noResultsMessage = document.getElementById('noResultsMessage');
+
+let searchTimeout;
+
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        const query = e.target.value.trim();
+        if (query) {
+            searchTimeout = setTimeout(() => handleSearch(query), 500);
+        } else {
+            videoGrid.innerHTML = '';
+            dynamicSection.classList.remove('active');
+            noResultsMessage.style.display = 'block';
+        }
+    });
+}
+
+async function handleSearch(query) {
+    if (!query) {
+        videoGrid.innerHTML = '';
+        dynamicSection.classList.remove('active');
+        noResultsMessage.style.display = 'block';
+        return;
+    }
+
+    dynamicSection.classList.add('active');
+    videoGrid.innerHTML = '<p class="text-gray-500 text-center col-span-full"><i class="fas fa-circle-notch fa-spin text-accent-red"></i> Searching...</p>';
+    noResultsMessage.style.display = 'none';
+
+    try {
+        const response = await fetch(`/music-api/youtube-search?q=${encodeURIComponent(query)}`);
+        if (!response.ok) {
+            throw new Error(`Search failed: ${response.statusText}`);
+        }
+        const data = await response.json();
+
+        if (data.results && data.results.length > 0) {
+            videoGrid.innerHTML = ''; // Clear previous results
+            data.results.forEach(video => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'video-item';
+                videoItem.onclick = () => {
+                    addVideoPlayer(video.id, true); // Use addVideoPlayer for found video
+                    // Optionally scroll to top to see the new player
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                };
+                videoItem.innerHTML = `
+                    <div class="thumbnail-container">
+                        <img src="${video.thumbnails?.[0]?.url || ''}" alt="${video.title}">
+                        <div class="play-overlay">
+                            <i class="fas fa-play text-white text-3xl"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-white text-md font-medium truncate">${video.title}</h3>
+                        <p class="text-gray-400 text-sm">${video.author?.name || 'Unknown'}</p>
+                    </div>
+                `;
+                videoGrid.appendChild(videoItem);
+            });
+            noResultsMessage.style.display = 'none';
+        } else {
+            videoGrid.innerHTML = '<p class="text-gray-500 text-center col-span-full">No videos found for your search.</p>';
+            noResultsMessage.style.display = 'block';
+        }
+    } catch (error) {
+        console.error("Error during search:", error);
+        videoGrid.innerHTML = '<p class="text-red-500 text-center col-span-full">Failed to perform search.</p>';
+        noResultsMessage.style.display = 'block';
+    }
+}

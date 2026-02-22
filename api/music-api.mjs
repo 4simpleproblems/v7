@@ -373,12 +373,14 @@ export default async function handler(req, res) {
         const yt = await getYoutube();
         const searchResults = await yt.search(searchQuery, { type: 'video' });
         
-        const firstVideo = searchResults.results.find(item => item.type === 'Video');
-        if (firstVideo) {
-            return res.status(200).json({ videoId: firstVideo.id });
-        } else {
-            return res.status(404).json({ error: 'No video found' });
-        }
+        const formattedResults = searchResults.results.map(item => ({
+            id: item.id,
+            title: item.title,
+            author: item.author,
+            thumbnails: item.thumbnails
+        }));
+
+        return res.status(200).json({ results: formattedResults });
     }
 
     return res.status(404).json({ error: 'Endpoint not found' });
