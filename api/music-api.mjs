@@ -154,15 +154,21 @@ export default async function handler(req, res) {
 
       // Add Argon tracks
       if (argonRes.collection && Array.isArray(argonRes.collection)) {
-          const argonTracks = argonRes.collection.map(item => ({
-              id: `argon-${item.id}`,
-              title: item.song?.name || item.name,
-              artist_name: item.author?.name || 'Argon Artist',
-              artwork_url: item.song?.img?.big || item.song?.img?.small || (Array.isArray(item.image) ? item.image[item.image.length-1].link : item.image),
-              duration: (item.song?.duration || 0) * 1000,
-              url: item.song?.url || item.url,
-              source: 'Argon'
-          }));
+          const ARGON_BASE = 'https://argon.global.ssl.fastly.net';
+          const argonTracks = argonRes.collection.map(item => {
+              let artwork = item.song?.img?.big || item.song?.img?.small || (Array.isArray(item.image) ? item.image[item.image.length-1].link : item.image);
+              if (artwork && artwork.startsWith('/api/')) artwork = ARGON_BASE + artwork;
+              
+              return {
+                  id: `argon-${item.id}`,
+                  title: item.song?.name || item.name,
+                  artist_name: item.author?.name || 'Argon Artist',
+                  artwork_url: artwork,
+                  duration: (item.song?.duration || 0) * 1000,
+                  url: item.song?.url || item.url,
+                  source: 'Argon'
+              };
+          });
           tracks.push(...argonTracks);
       }
 

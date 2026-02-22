@@ -17,6 +17,7 @@
         const basePath = "/VELIUM/uv/";
         self.__uv$config = {
             prefix: basePath + "service/",
+            bare: "/bare/",
             encodeUrl: (url) => {
                 if (typeof Ultraviolet === 'undefined') return url;
                 return Ultraviolet.codec.xor.encode(url);
@@ -445,7 +446,6 @@
                         <button class="search-tab active px-4 py-2 rounded-full text-sm font-bold bg-accent-indigo text-white whitespace-nowrap" data-tab="tracks">Tracks</button>
                         <button class="search-tab px-4 py-2 rounded-full text-sm font-bold bg-card-dark text-gray-400 hover:text-white transition-colors whitespace-nowrap" data-tab="albums">Albums</button>
                         <button class="search-tab px-4 py-2 rounded-full text-sm font-bold bg-card-dark text-gray-400 hover:text-white transition-colors whitespace-nowrap" data-tab="artists">Artists</button>
-                        <button class="search-tab px-4 py-2 rounded-full text-sm font-bold bg-card-dark text-gray-400 hover:text-white transition-colors whitespace-nowrap" data-tab="playlists">Playlists</button>
                     </div>
 
                     <div id="tracksTab" class="search-tab-content active">
@@ -456,9 +456,6 @@
                     </div>
                     <div id="artistsTab" class="search-tab-content hidden" style="display: none;">
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="artistsGrid"></div>
-                    </div>
-                    <div id="playlistsTab" class="search-tab-content hidden" style="display: none;">
-                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="playlistsGrid"></div>
                     </div>
                 </div>
 

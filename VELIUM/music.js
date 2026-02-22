@@ -48,12 +48,12 @@ function getDownloadUrl(item) {
 // --- Proxy Helper ---
 function getProxyUrl(url) {
     if (!url) return url;
+    if (typeof url !== 'string') return url;
     if (url.startsWith('data:')) return url;
     if (url.startsWith('//')) url = 'https:' + url;
     
-    const prefix = "/VELIUM/uv/service/";
-    
     // Check if it's already proxied
+    const prefix = "/VELIUM/uv/service/";
     if (url.includes(prefix)) return url;
 
     let encoded = null;
@@ -71,7 +71,6 @@ function getProxyUrl(url) {
     if (!encoded && window.__uv$config && window.__uv$config.encodeUrl) {
         try {
             const result = window.__uv$config.encodeUrl(url);
-            // Only use if it actually encoded (didn't just return the original URL)
             if (result !== url) {
                 encoded = result;
             }
@@ -80,17 +79,14 @@ function getProxyUrl(url) {
         }
     }
 
-    // 3. Final assembly: ensure prefix is present if we have an encoded string
+    // 3. Final assembly
     if (encoded) {
-        // Ensure encoded string doesn't accidentally include prefix already
+        if (encoded.startsWith('http')) return encoded; // Already a full URL
         const cleanEncoded = encoded.startsWith(prefix) ? encoded.slice(prefix.length) : encoded;
-        const finalUrl = window.location.origin + prefix + cleanEncoded;
-        console.log("Proxied URL:", finalUrl);
-        return finalUrl;
+        return window.location.origin + prefix + cleanEncoded;
     }
     
-    // If we failed to encode, return the original URL but warn
-    console.warn("Failed to proxy URL, returning original:", url);
+    // If we failed to encode, return the original URL
     return url;
 }
 
@@ -202,10 +198,16 @@ function setupEventListeners() {
     const progressTrack = document.getElementById('progressTrack');
     if (progressTrack) {
         progressTrack.addEventListener('click', (e) => {
-            if (!player || typeof player.getDuration !== 'function') return;
             const rect = progressTrack.getBoundingClientRect();
             const percent = (e.clientX - rect.left) / rect.width;
-            player.seekTo(player.getDuration() * percent);
+            
+            if (activeSource === 'audio') {
+                const audio = document.getElementById('nativeAudio');
+                if (audio && audio.duration) audio.currentTime = audio.duration * percent;
+            } else {
+                if (!player || typeof player.getDuration !== 'function') return;
+                player.seekTo(player.getDuration() * percent);
+            }
         });
     }
 
@@ -214,7 +216,12 @@ function setupEventListeners() {
     if (volumeSlider) {
         volumeSlider.addEventListener('input', (e) => {
             volume = parseInt(e.target.value);
-            if (player) player.setVolume(volume);
+            if (activeSource === 'audio') {
+                const audio = document.getElementById('nativeAudio');
+                if (audio) audio.volume = volume / 100;
+            } else {
+                if (player && typeof player.setVolume === 'function') player.setVolume(volume);
+            }
             document.getElementById('volumeBarFill').style.width = volume + '%';
             saveToStorage('volume', volume);
         });
@@ -392,7 +399,7 @@ function renderTrackGrid(tracks, container) {
                 <i class="fas fa-play"></i>
             </div>
             <div class="font-bold text-sm truncate text-white mb-1">${escapeHtml(track.title)}</div>
-            <div class="text-xs text-gray-500 truncate">${escapeHtml(track.artist_name)}</div>
+            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer" onclick="event.stopPropagation(); if('${track.artist_id || ''}') loadArtistDetails('${track.artist_id || ''}')">${escapeHtml(track.artist_name)}</div>
         `;
         card.addEventListener('click', () => {
             playlist = tracks;
@@ -412,7 +419,7 @@ function renderAlbumGrid(albums, container) {
         card.innerHTML = `
             <img src="${getProxyUrl(album.artwork_url)}" class="track-artwork" loading="lazy">
             <div class="font-bold text-sm truncate text-white mb-1">${escapeHtml(album.name)}</div>
-            <div class="text-xs text-gray-500 truncate">${album.release_year} • ${escapeHtml(album.artist_name)}</div>
+            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer" onclick="event.stopPropagation(); if('${album.artist_id || ''}') loadArtistDetails('${album.artist_id || ''}')">${album.release_year} • ${escapeHtml(album.artist_name)}</div>
         `;
         card.addEventListener('click', () => loadAlbumDetails(album.id));
         container.appendChild(card);
@@ -426,7 +433,7 @@ function renderArtistGrid(artists, container) {
         const card = document.createElement('div');
         card.className = 'track-card';
         card.innerHTML = `
-            <img src="${getProxyUrl(artist.image_url)}" class="track-artwork rounded-full" loading="lazy">
+            <img src="${getProxyUrl(artist.image_url || artist.artwork_url)}" class="track-artwork rounded-full" loading="lazy">
             <div class="text-center font-bold text-sm truncate text-white">${escapeHtml(artist.name)}</div>
             <div class="text-center text-xs text-gray-500">Artist</div>
         `;
@@ -478,7 +485,7 @@ function createTrackRow(track, index, trackList) {
         <img src="${getProxyUrl(track.artwork_url)}" class="w-12 h-12 rounded-lg object-cover">
         <div class="flex-1 min-width-0">
             <div class="text-sm font-bold text-white truncate">${escapeHtml(track.title)}</div>
-            <div class="text-xs text-gray-500 truncate">${escapeHtml(track.artist_name)}</div>
+            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white" onclick="event.stopPropagation(); if('${track.artist_id || ''}') loadArtistDetails('${track.artist_id || ''}')">${escapeHtml(track.artist_name)}</div>
         </div>
         <div class="text-xs text-gray-500 font-mono hidden sm:block">${formatTime(track.duration / 1000)}</div>
         <button class="text-gray-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"><i class="fas fa-ellipsis-h"></i></button>
@@ -492,13 +499,19 @@ function createTrackRow(track, index, trackList) {
 }
 
 // --- Playback Logic ---
+let activeSource = 'youtube'; // 'youtube' or 'audio'
+
 async function playTrack(index) {
     currentIndex = index;
     currentTrack = playlist[currentIndex];
 
     // Update UI
     document.getElementById('currentTrackName').textContent = currentTrack.title;
-    document.getElementById('currentArtistName').textContent = currentTrack.artist_name;
+    const artistNameEl = document.getElementById('currentArtistName');
+    artistNameEl.textContent = currentTrack.artist_name;
+    artistNameEl.className = 'text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer';
+    artistNameEl.onclick = () => { if(currentTrack.artist_id) loadArtistDetails(currentTrack.artist_id); };
+
     const artwork = document.getElementById('currentArtwork');
     artwork.src = getProxyUrl(currentTrack.artwork_url);
     artwork.classList.remove('hidden');
@@ -506,7 +519,20 @@ async function playTrack(index) {
 
     updateLikeButtonStatus();
 
-    // YouTube Search for video ID
+    // Reset Progress UI
+    document.getElementById('progressBarFill').style.width = '0%';
+    document.getElementById('currentTimeLabel').textContent = '0:00';
+    document.getElementById('durationLabel').textContent = '0:00';
+
+    // 1. Try direct download URL first for maximum accuracy
+    const directUrl = getDownloadUrl(currentTrack);
+    if (directUrl) {
+        console.log("Playing direct URL:", directUrl);
+        loadAudioPlayer(directUrl);
+        return;
+    }
+
+    // 2. Fallback to YouTube Search for video ID
     try {
         const query = `${currentTrack.title} ${currentTrack.artist_name} official audio`;
         const response = await fetch(`${API_BASE_URL}/youtube-search?q=${encodeURIComponent(query)}`);
@@ -522,7 +548,43 @@ async function playTrack(index) {
     }
 }
 
+function loadAudioPlayer(url) {
+    activeSource = 'audio';
+    if (player && typeof player.pauseVideo === 'function') player.pauseVideo();
+    
+    let audio = document.getElementById('nativeAudio');
+    if (!audio) {
+        audio = document.createElement('audio');
+        audio.id = 'nativeAudio';
+        document.getElementById('audioElement').appendChild(audio);
+        
+        audio.addEventListener('play', () => { isPlaying = true; updatePlayPauseUI(); startProgressUpdate(); });
+        audio.addEventListener('pause', () => { isPlaying = false; updatePlayPauseUI(); stopProgressUpdate(); });
+        audio.addEventListener('ended', () => playNext());
+        audio.addEventListener('timeupdate', () => {
+            if (activeSource === 'audio') {
+                const current = audio.currentTime;
+                const total = audio.duration;
+                if (total > 0) {
+                    const percent = (current / total) * 100;
+                    document.getElementById('progressBarFill').style.width = percent + '%';
+                    document.getElementById('currentTimeLabel').textContent = formatTime(current);
+                    document.getElementById('durationLabel').textContent = formatTime(total);
+                }
+            }
+        });
+    }
+    
+    audio.src = url;
+    audio.volume = volume / 100;
+    audio.play();
+}
+
 function loadYouTubePlayer(videoId) {
+    activeSource = 'youtube';
+    let audio = document.getElementById('nativeAudio');
+    if (audio) audio.pause();
+
     if (window.YT && window.YT.Player) {
         if (player && typeof player.loadVideoById === 'function') {
             player.loadVideoById(videoId);
@@ -567,9 +629,16 @@ function onPlayerStateChange(event) {
 }
 
 function togglePlayPause() {
-    if (!player || typeof player.pauseVideo !== 'function' || typeof player.playVideo !== 'function') return;
-    if (isPlaying) player.pauseVideo();
-    else player.playVideo();
+    if (activeSource === 'audio') {
+        const audio = document.getElementById('nativeAudio');
+        if (!audio) return;
+        if (isPlaying) audio.pause();
+        else audio.play();
+    } else {
+        if (!player || typeof player.pauseVideo !== 'function' || typeof player.playVideo !== 'function') return;
+        if (isPlaying) player.pauseVideo();
+        else player.playVideo();
+    }
 }
 
 function updatePlayPauseUI() {
@@ -740,7 +809,7 @@ async function loadAlbumDetails(albumId) {
                     <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Album</span>
                     <h1 class="text-6xl font-black tracking-tighter mb-4">${escapeHtml(data.name)}</h1>
                     <div class="flex items-center gap-2">
-                        <span class="font-bold text-white">${escapeHtml(data.artists[0].name)}</span>
+                        <span class="font-bold text-white hover:underline cursor-pointer" onclick="if('${data.artists[0]?.id}') loadArtistDetails('${data.artists[0].id}')">${escapeHtml(data.artists[0].name)}</span>
                         <span class="text-gray-500">•</span>
                         <span class="text-gray-500">${data.release_year}</span>
                         <span class="text-gray-500">•</span>
@@ -804,7 +873,7 @@ async function loadArtistDetails(artistId) {
 
         const list = document.getElementById('artistTopTracks');
         const tracks = data.top_tracks || [];
-        tracks.slice(0, 5).forEach((track, index) => {
+        tracks.slice(0, 10).forEach((track, index) => {
             const item = createTrackRow(track, index, tracks);
             list.appendChild(item);
         });
@@ -899,14 +968,16 @@ function formatTime(seconds) {
 function startProgressUpdate() {
     if (progressInterval) clearInterval(progressInterval);
     progressInterval = setInterval(() => {
-        if (player && typeof player.getCurrentTime === 'function') {
-            const current = player.getCurrentTime();
-            const total = player.getDuration();
-            if (total > 0) {
-                const percent = (current / total) * 100;
-                document.getElementById('progressBarFill').style.width = percent + '%';
-                document.getElementById('currentTimeLabel').textContent = formatTime(current);
-                document.getElementById('durationLabel').textContent = formatTime(total);
+        if (activeSource === 'youtube') {
+            if (player && typeof player.getCurrentTime === 'function') {
+                const current = player.getCurrentTime();
+                const total = player.getDuration();
+                if (total > 0) {
+                    const percent = (current / total) * 100;
+                    document.getElementById('progressBarFill').style.width = percent + '%';
+                    document.getElementById('currentTimeLabel').textContent = formatTime(current);
+                    document.getElementById('durationLabel').textContent = formatTime(total);
+                }
             }
         }
     }, 1000);
@@ -971,5 +1042,6 @@ async function loadLyrics(track) {
         container.innerHTML = `<div class="py-20 text-center text-gray-500">Lyrics unavailable.</div>`;
     }
 }
+
 
 // Made with ❤️ from 4SP

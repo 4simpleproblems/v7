@@ -4,6 +4,7 @@ importScripts('/VELIUM/uv/uv.bundle.js');
 const configs = {
     velium: {
         prefix: '/VELIUM/uv/service/',
+        bare: '/bare/',
         bundle: '/VELIUM/uv/uv.bundle.js',
         config: '/VELIUM/uv/uv.config.js',
         sw: '/VELIUM/uv/uv.sw.js',
@@ -12,6 +13,7 @@ const configs = {
     },
     vora: {
         prefix: '/VORA/VERN_SYSTEM/uv/service/',
+        bare: '/bare/',
         bundle: '/VORA/VERN_SYSTEM/uv/uv.bundle.js',
         config: '/VORA/VERN_SYSTEM/uv/uv.config.js',
         sw: '/VORA/VERN_SYSTEM/uv/uv.sw.js',
@@ -20,6 +22,7 @@ const configs = {
     },
     vern: {
         prefix: '/VERN/uv/service/',
+        bare: '/bare/',
         bundle: '/VERN/uv/uv.bundle.js',
         config: '/VERN/uv/uv.config.js',
         sw: '/VERN/uv/uv.sw.js',
@@ -28,6 +31,7 @@ const configs = {
     },
     vana: {
         prefix: '/logged-in/uv/service/',
+        bare: '/bare/',
         bundle: '/logged-in/uv/uv.bundle.js',
         config: '/logged-in/uv/uv.config.js',
         sw: '/logged-in/uv/uv.sw.js',
@@ -36,6 +40,7 @@ const configs = {
     },
     games: {
         prefix: '/GAMES/uv/service/',
+        bare: '/bare/',
         bundle: '/GAMES/uv/uv.bundle.js',
         config: '/GAMES/uv/uv.config.js',
         sw: '/GAMES/uv/uv.sw.js',
