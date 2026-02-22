@@ -136,13 +136,8 @@ export default async function handler(req, res) {
               
               const title = item.title?.toString() || item.name?.toString() || 'Unknown Title';
               const artist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'YT Music Artist';
-              let artistId = item.artists?.[0]?.id || item.author?.id;
+              const artistId = item.artists?.[0]?.id || item.author?.id;
               
-              // Handle multiple IDs if present (sometimes happens with specific backends)
-              if (typeof artistId === 'string' && artistId.includes(',')) {
-                  artistId = artistId.split(',')[0].trim();
-              }
-
               const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
               const duration = (item.duration?.seconds || 0) * 1000;
 
@@ -150,7 +145,7 @@ export default async function handler(req, res) {
                   id: `ytm-${item.id}`,
                   title: title,
                   artist_name: artist,
-                  artist_id: artistId ? (artistId.startsWith('ytm-') ? artistId : `ytm-${artistId}`) : null,
+                  artist_id: artistId ? `ytm-${artistId}` : null,
                   artwork_url: thumbnail,
                   duration: duration,
                   youtube_id: item.id,
@@ -167,16 +162,11 @@ export default async function handler(req, res) {
               let artwork = item.song?.img?.big || item.song?.img?.small || (Array.isArray(item.image) ? item.image[item.image.length-1].link : item.image);
               if (artwork && artwork.startsWith('/api/')) artwork = ARGON_BASE + artwork;
               
-              let artistId = item.author?.id;
-              if (typeof artistId === 'string' && artistId.includes(',')) {
-                  artistId = artistId.split(',')[0].trim();
-              }
-
               return {
                   id: `argon-${item.id}`,
                   title: item.song?.name || item.name,
                   artist_name: item.author?.name || 'Argon Artist',
-                  artist_id: artistId ? (artistId.startsWith('argon-') ? artistId : `argon-${artistId}`) : null,
+                  artist_id: item.author?.id ? `argon-${item.author.id}` : null,
                   artwork_url: artwork,
                   duration: (item.song?.duration || 0) * 1000,
                   url: item.song?.url || item.url,
@@ -193,12 +183,7 @@ export default async function handler(req, res) {
               
               const title = item.title?.toString() || item.name?.toString() || 'Unknown Album';
               const artist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'YT Music Artist';
-              let artistId = item.artists?.[0]?.id || item.author?.id;
-              
-              if (typeof artistId === 'string' && artistId.includes(',')) {
-                  artistId = artistId.split(',')[0].trim();
-              }
-
+              const artistId = item.artists?.[0]?.id || item.author?.id;
               const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
 
               return {
@@ -206,7 +191,7 @@ export default async function handler(req, res) {
                   name: title,
                   artwork_url: thumbnail,
                   artist_name: artist,
-                  artist_id: artistId ? (artistId.startsWith('ytm-') ? artistId : `ytm-${artistId}`) : null,
+                  artist_id: artistId ? `ytm-${artistId}` : null,
                   release_year: item.year?.toString() || 'Unknown',
                   source: 'YTMusic'
               };
@@ -219,16 +204,10 @@ export default async function handler(req, res) {
               if (item.type !== 'MusicResponsiveListItem') return null;
               
               const name = item.name?.toString() || item.title?.toString() || 'Unknown Artist';
-              let artistId = item.id;
-              
-              if (typeof artistId === 'string' && artistId.includes(',')) {
-                  artistId = artistId.split(',')[0].trim();
-              }
-
               const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
 
               return {
-                  id: artistId ? (artistId.startsWith('ytm-') ? artistId : `ytm-${artistId}`) : null,
+                  id: `ytm-${item.id}`,
                   name: name,
                   image_url: thumbnail,
                   source: 'YTMusic'
@@ -287,61 +266,43 @@ export default async function handler(req, res) {
 
     // 4. Artist Details
     if (endpoint === 'artist' || pathname.includes('/artist/')) {
-        let artistId = id || pathParts[pathParts.length - 1];
+        const artistId = id || pathParts[pathParts.length - 1];
         
-        if (!artistId || artistId === 'undefined' || artistId === 'null') {
-            return res.status(400).json({ error: 'Artist ID or Name required' });
-        }
-        
-        const rawId = artistId.startsWith('ytm-') ? artistId.replace('ytm-', '') : (artistId.startsWith('argon-') ? artistId.replace('argon-', '') : artistId);
-        const yt = await getYoutube();
-        try {
-            let artist;
+        if (artistId.startsWith('ytm-')) {
+            const rawId = artistId.replace('ytm-', '');
+            const yt = await getYoutube();
             try {
-                artist = await yt.music.getArtist(rawId);
+                const artist = await yt.music.getArtist(rawId);
+                return res.status(200).json({
+                    id: artistId,
+                    name: artist.name,
+                    followers: 0,
+                    image_url: artist.thumbnails?.[0]?.url,
+                    top_tracks: (artist.sections.find(s => s.type === 'MusicShelf' && s.title?.toString().toLowerCase().includes('songs'))?.contents || []).map(track => ({
+                        id: `ytm-${track.id}`,
+                        title: track.title,
+                        artist_name: artist.name,
+                        artist_id: artistId,
+                        duration: (track.duration?.seconds || 0) * 1000,
+                        artwork_url: track.thumbnails?.[0]?.url,
+                        youtube_id: track.id,
+                        source: 'YTMusic'
+                    })),
+                    albums: (artist.sections.find(s => s.type === 'MusicCarouselShelf' && s.title?.toString().toLowerCase().includes('albums'))?.contents || []).map(album => ({
+                        id: `ytm-${album.id}`,
+                        name: album.title,
+                        artwork_url: album.thumbnails?.[0]?.url,
+                        release_year: album.year || 'Unknown',
+                        artist_name: artist.name,
+                        source: 'YTMusic'
+                    }))
+                });
             } catch (e) {
-                console.warn(`Direct artist fetch failed for ${rawId}, attempting search fallback`);
-                const search = await yt.music.search(rawId, { type: 'artist' });
-                const firstArtist = search.artists?.[0] || search.results?.find(r => r.type === 'Artist');
-                
-                if (firstArtist && firstArtist.browseId) {
-                    artist = await yt.music.getArtist(firstArtist.browseId);
-                    artistId = `ytm-${firstArtist.browseId}`;
-                } else {
-                    return res.status(404).json({ error: 'Artist not found via search fallback' });
-                }
+                console.error('YT Music artist details failed', e);
+                return res.status(500).json({ error: 'Failed to fetch YT Music artist' });
             }
-
-            if (!artist) return res.status(404).json({ error: 'Artist not found' });
-
-            return res.status(200).json({
-                id: artistId.startsWith('ytm-') || artistId.startsWith('argon-') ? artistId : `ytm-${artistId}`,
-                name: artist.name,
-                followers: 0,
-                image_url: artist.thumbnails?.[0]?.url,
-                top_tracks: (artist.sections?.find(s => s.type === 'MusicShelf' && s.title?.toString().toLowerCase().includes('songs'))?.contents || []).map(track => ({
-                    id: `ytm-${track.id}`,
-                    title: track.title,
-                    artist_name: artist.name,
-                    artist_id: artistId.startsWith('ytm-') || artistId.startsWith('argon-') ? artistId : `ytm-${artistId}`,
-                    duration: (track.duration?.seconds || 0) * 1000,
-                    artwork_url: track.thumbnails?.[0]?.url,
-                    youtube_id: track.id,
-                    source: 'YTMusic'
-                })),
-                albums: (artist.sections?.find(s => s.type === 'MusicCarouselShelf' && s.title?.toString().toLowerCase().includes('albums'))?.contents || []).map(album => ({
-                    id: `ytm-${album.id}`,
-                    name: album.title,
-                    artwork_url: album.thumbnails?.[0]?.url,
-                    release_year: album.year || 'Unknown',
-                    artist_name: artist.name,
-                    source: 'YTMusic'
-                }))
-            });
-        } catch (e) {
-            console.error('Artist details failed:', e);
-            return res.status(500).json({ error: 'Internal server error fetching artist' });
         }
+        return res.status(404).json({ error: 'Artist not found' });
     }
 
     // 4.1 Lyrics
