@@ -1,4 +1,5 @@
 const MUSIC_API_BASE = 'https://bhindi1.ddns.net/music/api';
+const SAAVN_API_BASE = 'https://jiosaavn-api-privatecvc2.vercel.app';
 
 // Helper to get YouTube search
 let youtubePromise; 
