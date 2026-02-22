@@ -872,14 +872,29 @@ window.toggleLyrics = function() {
     const panel = document.getElementById('lyricsPanel');
     if (panel) {
         panel.classList.toggle('open');
+        if (panel.classList.contains('open') && currentTrack) {
+            loadLyrics(currentTrack);
+        }
     }
 };
 
-window.toggleLyrics = function() {
-    const panel = document.getElementById('lyricsPanel');
-    if (panel) {
-        panel.classList.toggle('open');
+let lyricsData = [];
+let lyricsInterval = null;
+
+async function loadLyrics(track) {
+    const container = document.getElementById('lyricsContent');
+    if (!container) return;
+    container.innerHTML = '<div class="py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
+    
+    try {
+        // We need a lyrics API. Using a common one or a placeholder for now.
+        // For Velium, we can try to fetch from a lyrics service.
+        const query = encodeURIComponent(`${track.title} ${track.artist_name}`);
+        // Placeholder for lyrics fetching logic
+        container.innerHTML = '<div class="py-20 text-center text-gray-500">Lyrics syncing coming soon...</div>';
+    } catch (e) {
+        container.innerHTML = '<div class="py-20 text-center text-red-500">Failed to load lyrics.</div>';
     }
-};
+}
 
 // Made with ❤️ from 4SP
