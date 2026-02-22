@@ -186,6 +186,7 @@ function setupEventListeners() {
     document.getElementById('shuffleButton').addEventListener('click', toggleShuffle);
     document.getElementById('repeatButton').addEventListener('click', cycleRepeat);
     document.getElementById('likeButton').addEventListener('click', toggleLike);
+    document.getElementById('starLikeButton').addEventListener('click', toggleLike);
 
     // Progress Bar
     const progressTrack = document.getElementById('progressTrack');
@@ -1093,8 +1094,15 @@ function updateVolumeUI() {
 function updateLikeButtonStatus() {
     if (!currentTrack) return;
     const isLiked = favorites.some(t => t.id === currentTrack.id);
+    
     const btn = document.getElementById('likeButton');
     if (btn) btn.innerHTML = isLiked ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="far fa-heart"></i>';
+    
+    const starBtn = document.getElementById('starLikeButton');
+    if (starBtn) {
+        starBtn.innerHTML = isLiked ? '<i class="fas fa-star text-accent-indigo"></i>' : '<i class="far fa-star"></i>';
+        starBtn.classList.toggle('active', isLiked);
+    }
 }
 
 function showCreatePlaylistModal() {
