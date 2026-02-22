@@ -377,16 +377,15 @@ function updateFullscreenTint(imageUrl) {
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
         let tintColor, progressBg;
 
-        if (brightness < 30) {
-            // Very dark/Black -> Lighten
-            tintColor = 'rgba(255, 255, 255, 0.9)';
-            progressBg = 'rgba(255, 255, 255, 0.1)';
+        if (brightness < 160) {
+            // Darker than lightish-mid grey -> use White for maximum contrast
+            tintColor = 'rgba(255, 255, 255, 1)';
+            progressBg = 'rgba(255, 255, 255, 0.2)';
         } else {
-            // Bright/Accented -> Darken
-            // We darken significantly more if it's bright
-            const factor = 0.3; 
-            tintColor = `rgba(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)}, 0.95)`;
-            progressBg = `rgba(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)}, 0.15)`;
+            // Very bright background -> use very dark version of the color
+            const factor = 0.1; // Darken by 90% for high contrast on light backgrounds
+            tintColor = `rgba(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)}, 1)`;
+            progressBg = `rgba(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)}, 0.2)`;
         }
 
         fs.style.setProperty('--tint-color', tintColor);
