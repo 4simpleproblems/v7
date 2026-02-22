@@ -22,6 +22,10 @@
       "destination": "/api/music-api?endpoint=lyrics&id=:id"
     },
     {
+      "source": "/api/comments/:videoId",
+      "destination": "/api/comments.mjs?videoId=:videoId"
+    },
+    {
       "source": "/logged-in/@:username",
       "destination": "/logged-in/profile.html"
     },

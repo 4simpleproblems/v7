@@ -110,8 +110,18 @@ function addVideoPlayer(videoId, showLoadedFeedback = true) {
 
     // --- OPTIMIZED ATTRIBUTES ---
     const iframe = document.createElement("iframe");
-    const origin = window.location.origin;
-    iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?origin=${origin}`;
+    
+    // Construct the YouTube embed URL
+    const youtubeEmbedUrl = `https://www.youtube-nocookie.com/embed/${videoId}`;
+    
+    // Proxy the YouTube embed URL using UV
+    if (self.__uv$config && Ultraviolet && Ultraviolet.codec && Ultraviolet.codec.xor) {
+        const proxiedEmbedUrl = self.__uv$config.prefix + Ultraviolet.codec.xor.encode(youtubeEmbedUrl);
+        iframe.src = proxiedEmbedUrl;
+    } else {
+        console.warn("UV proxy not fully initialized, falling back to direct embed.");
+        iframe.src = youtubeEmbedUrl;
+    }
 
     iframe.setAttribute("frameborder", "0");
     iframe.loading = "lazy";
@@ -291,6 +301,36 @@ function clearAllVideos() {
     localStorage.removeItem("savedVideos");
 }
 
+async function loadCommentsForVideo(videoId) {
+    const commentsContainer = document.getElementById('comments-container'); // Assuming an element with this ID exists
+    if (!commentsContainer) return;
+
+    commentsContainer.innerHTML = '<p class="text-gray-500 text-center">Loading comments...</p>';
+
+    try {
+        const response = await fetch(`/api/comments.mjs?videoId=${videoId}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch comments: ${response.statusText}`);
+        }
+        const data = await response.json();
+
+        if (data.comments && data.comments.length > 0) {
+            commentsContainer.innerHTML = data.comments.map(comment => `
+                <div class="comment-item border-b border-brand-border py-4">
+                    <p class="text-white font-medium">${comment.author}</p>
+                    <p class="text-gray-400 text-sm">${comment.text}</p>
+                    <p class="text-gray-600 text-xs">${comment.time}</p>
+                </div>
+            `).join('');
+        } else {
+            commentsContainer.innerHTML = '<p class="text-gray-500 text-center">No comments found.</p>';
+        }
+    } catch (error) {
+        console.error("Error loading comments:", error);
+        commentsContainer.innerHTML = '<p class="text-red-500 text-center">Failed to load comments.</p>';
+    }
+}
+
 // --- INIT for home---
 document.addEventListener("DOMContentLoaded", () => {
     // Check saved mode for switch
@@ -331,4 +371,19 @@ if (hideBtn && showBtn && instBox && settingsBox) {
         settingsBox.style.display = "block";
         showBtn.style.display = "none";
     };
+}
+
+function showComments() {
+    const commentsContainer = document.getElementById('comments-container');
+    if (commentsContainer) {
+        if (commentsContainer.classList.contains('hidden')) {
+            commentsContainer.classList.remove('hidden');
+            const currentVideoId = document.querySelector('.video-unit-wrapper.active')?.dataset.videoId || document.querySelector('#youtube-embed')?.src.match(/embed\/([\w-]{11})/)?.[1];
+            if (currentVideoId) {
+                loadCommentsForVideo(currentVideoId);
+            }
+        } else {
+            commentsContainer.classList.add('hidden');
+        }
+    }
 }
