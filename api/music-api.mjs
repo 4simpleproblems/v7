@@ -290,12 +290,27 @@ export default async function handler(req, res) {
         let artistId = id || pathParts[pathParts.length - 1];
         
         if (artistId) {
-            const rawId = artistId.startsWith('ytm-') ? artistId.replace('ytm-', '') : artistId;
+            const rawId = artistId.startsWith('ytm-') ? artistId.replace('ytm-', '') : (artistId.startsWith('argon-') ? artistId.replace('argon-', '') : artistId);
             const yt = await getYoutube();
             try {
-                const artist = await yt.music.getArtist(rawId);
+                let artist;
+                try {
+                    artist = await yt.music.getArtist(rawId);
+                } catch (e) {
+                    console.warn(`Direct artist fetch failed for ${rawId}, attempting search fallback`);
+                    // If rawId looks like a name or ID failed, try to search for the artist
+                    const search = await yt.music.search(rawId, { type: 'artist' });
+                    const firstArtist = search.results?.[0];
+                    if (firstArtist && firstArtist.id) {
+                        artist = await yt.music.getArtist(firstArtist.id);
+                        artistId = `ytm-${firstArtist.id}`;
+                    } else {
+                        throw new Error('Artist not found via search fallback');
+                    }
+                }
+
                 return res.status(200).json({
-                    id: `ytm-${rawId}`,
+                    id: artistId.startsWith('ytm-') || artistId.startsWith('argon-') ? artistId : `ytm-${artistId}`,
                     name: artist.name,
                     followers: 0,
                     image_url: artist.thumbnails?.[0]?.url,
@@ -303,7 +318,7 @@ export default async function handler(req, res) {
                         id: `ytm-${track.id}`,
                         title: track.title,
                         artist_name: artist.name,
-                        artist_id: `ytm-${rawId}`,
+                        artist_id: artistId.startsWith('ytm-') || artistId.startsWith('argon-') ? artistId : `ytm-${artistId}`,
                         duration: (track.duration?.seconds || 0) * 1000,
                         artwork_url: track.thumbnails?.[0]?.url,
                         youtube_id: track.id,
@@ -319,8 +334,8 @@ export default async function handler(req, res) {
                     }))
                 });
             } catch (e) {
-                console.error('YT Music artist details failed', e);
-                return res.status(500).json({ error: 'Failed to fetch YT Music artist' });
+                console.error('Artist details failed', e);
+                return res.status(500).json({ error: 'Failed to fetch artist' });
             }
         }
         return res.status(404).json({ error: 'Artist not found' });

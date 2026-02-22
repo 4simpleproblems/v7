@@ -383,17 +383,21 @@ async function loadPopularArtists() {
     const grid = document.getElementById('popularArtistsGrid');
     if (!grid) return;
     
+    grid.innerHTML = '<div class="col-span-full py-10 flex justify-center"><i class="fas fa-circle-notch fa-spin text-2xl text-accent-indigo"></i></div>';
+    
     try {
-        // Just search for one of our popular artists to get a list of artists
         const randomArtist = popularArtists[Math.floor(Math.random() * popularArtists.length)];
         const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(randomArtist)}`);
         const data = await response.json();
         
-        if (data.artists) {
+        if (data.artists && data.artists.length > 0) {
             renderArtistGrid(data.artists.slice(0, 6), grid);
+        } else {
+            grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">No popular artists found</div>';
         }
     } catch (e) {
         console.error('Failed to load popular artists', e);
+        grid.innerHTML = '<div class="col-span-full text-center text-red-500 py-10">Failed to load artists</div>';
     }
 }
 
@@ -543,7 +547,7 @@ function renderTrackGrid(tracks, container) {
                 <i class="fas fa-play"></i>
             </div>
             <div class="font-bold text-sm truncate text-white mb-1">${escapeHtml(track.title)}</div>
-            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer" onclick="event.stopPropagation(); if('${track.artist_id || ''}') loadArtistDetails('${track.artist_id || ''}')">${escapeHtml(track.artist_name)}</div>
+            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer" onclick="event.stopPropagation(); loadArtistDetails('${track.artist_id || ''}', '${escapeHtml(track.artist_name || '').replace(/'/g, "\\'")}')">${escapeHtml(track.artist_name)}</div>
         `;
         card.addEventListener('click', () => {
             playlist = tracks;
@@ -563,7 +567,7 @@ function renderAlbumGrid(albums, container) {
         card.innerHTML = `
             <img src="${getProxyUrl(album.artwork_url)}" class="track-artwork" loading="lazy">
             <div class="font-bold text-sm truncate text-white mb-1">${escapeHtml(album.name)}</div>
-            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer" onclick="event.stopPropagation(); if('${album.artist_id || ''}') loadArtistDetails('${album.artist_id || ''}')">${album.release_year} • ${escapeHtml(album.artist_name)}</div>
+            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer" onclick="event.stopPropagation(); loadArtistDetails('${album.artist_id || ''}', '${escapeHtml(album.artist_name || '').replace(/'/g, "\\'")}')">${album.release_year} • ${escapeHtml(album.artist_name)}</div>
         `;
         card.addEventListener('click', () => loadAlbumDetails(album.id));
         container.appendChild(card);
@@ -629,7 +633,7 @@ function createTrackRow(track, index, trackList) {
         <img src="${getProxyUrl(track.artwork_url)}" class="w-12 h-12 rounded-lg object-cover">
         <div class="flex-1 min-width-0">
             <div class="text-sm font-bold text-white truncate">${escapeHtml(track.title)}</div>
-            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white" onclick="event.stopPropagation(); if('${track.artist_id || ''}') loadArtistDetails('${track.artist_id || ''}')">${escapeHtml(track.artist_name)}</div>
+            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white" onclick="event.stopPropagation(); loadArtistDetails('${track.artist_id || ''}', '${escapeHtml(track.artist_name || '').replace(/'/g, "\\'")}')">${escapeHtml(track.artist_name)}</div>
         </div>
         <div class="text-xs text-gray-500 font-mono hidden sm:block">${formatTime(track.duration / 1000)}</div>
         <button class="text-gray-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"><i class="fas fa-ellipsis-h"></i></button>
@@ -664,7 +668,7 @@ async function playTrack(index) {
     const artistNameEl = document.getElementById('currentArtistName');
     artistNameEl.textContent = currentTrack.artist_name;
     artistNameEl.className = 'text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer';
-    artistNameEl.onclick = () => { if(currentTrack.artist_id) loadArtistDetails(currentTrack.artist_id); };
+    artistNameEl.onclick = () => { loadArtistDetails(currentTrack.artist_id, currentTrack.artist_name); };
 
     const artwork = document.getElementById('currentArtwork');
     artwork.src = getProxyUrl(currentTrack.artwork_url);
@@ -1053,7 +1057,7 @@ async function loadAlbumDetails(albumId) {
                     <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Album</span>
                     <h1 class="text-6xl font-black tracking-tighter mb-4">${escapeHtml(data.name)}</h1>
                     <div class="flex items-center gap-2">
-                        <span class="font-bold text-white hover:underline cursor-pointer" onclick="if('${data.artists[0]?.id || ''}') loadArtistDetails('ytm-${data.artists[0].id}')">${escapeHtml(data.artists[0].name)}</span>
+                        <span class="font-bold text-white hover:underline cursor-pointer" onclick="loadArtistDetails('ytm-${data.artists[0]?.id || ''}', '${escapeHtml(data.artists[0]?.name || '').replace(/'/g, "\\'")}')">${escapeHtml(data.artists[0].name)}</span>
                         <span class="text-gray-500">•</span>
                         <span class="text-gray-500">${data.release_year}</span>
                         <span class="text-gray-500">•</span>
@@ -1081,13 +1085,29 @@ async function loadAlbumDetails(albumId) {
     }
 }
 
-async function loadArtistDetails(artistId) {
+async function loadArtistDetails(artistId, artistName = null) {
+    if (!artistId && !artistName) return;
+    
+    let fetchId = artistId;
+    // Ensure ID is prefixed correctly for our API if it's an ID
+    if (fetchId && typeof fetchId === 'string' && !fetchId.startsWith('ytm-') && !fetchId.startsWith('argon-')) {
+        fetchId = 'ytm-' + fetchId;
+    }
+
     switchView('dynamic');
     const container = document.getElementById('dynamicView');
     container.innerHTML = '<div class="py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/artist/${artistId}`);
+        let response = await fetch(`${API_BASE_URL}/artist/${fetchId}`);
+        
+        // Fallback: If ID fetch fails but we have a name, try searching by name
+        if (!response.ok && artistName) {
+            console.warn(`Artist ID fetch failed for ${fetchId}, trying name search for ${artistName}`);
+            response = await fetch(`${API_BASE_URL}/artist/${encodeURIComponent(artistName)}`);
+        }
+
+        if (!response.ok) throw new Error('Artist not found');
         const data = await response.json();
 
         container.innerHTML = `
