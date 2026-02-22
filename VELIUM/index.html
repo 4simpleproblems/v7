@@ -498,24 +498,7 @@
 
                 <div id="browseCategories">
                     <h2 class="text-xl font-bold mb-6">Browse all</h2>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                        <div class="aspect-square rounded-2xl p-6 relative overflow-hidden cursor-pointer group bg-indigo-600" onclick="handleCategorySearch('Pop')">
-                            <span class="text-2xl font-bold">Pop</span>
-                            <i class="fas fa-music absolute -bottom-4 -right-4 text-8xl opacity-20 transform rotate-12 group-hover:scale-110 transition-transform"></i>
-                        </div>
-                        <div class="aspect-square rounded-2xl p-6 relative overflow-hidden cursor-pointer group bg-red-600" onclick="handleCategorySearch('Rock')">
-                            <span class="text-2xl font-bold">Rock</span>
-                            <i class="fas fa-guitar absolute -bottom-4 -right-4 text-8xl opacity-20 transform rotate-12 group-hover:scale-110 transition-transform"></i>
-                        </div>
-                        <div class="aspect-square rounded-2xl p-6 relative overflow-hidden cursor-pointer group bg-purple-600" onclick="handleCategorySearch('Hip-Hop')">
-                            <span class="text-2xl font-bold">Hip-Hop</span>
-                            <i class="fas fa-microphone absolute -bottom-4 -right-4 text-8xl opacity-20 transform rotate-12 group-hover:scale-110 transition-transform"></i>
-                        </div>
-                        <div class="aspect-square rounded-2xl p-6 relative overflow-hidden cursor-pointer group bg-green-600" onclick="handleCategorySearch('Electronic')">
-                            <span class="text-2xl font-bold">EDM</span>
-                            <i class="fas fa-bolt absolute -bottom-4 -right-4 text-8xl opacity-20 transform rotate-12 group-hover:scale-110 transition-transform"></i>
-                        </div>
-                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
                 </div>
             </section>
 
@@ -627,7 +610,7 @@
     </div>
 
     <!-- Full-Screen Now Playing Modal -->
-    <div id="fullscreenPlayer" class="fixed inset-0 bg-black z-[100000] hidden flex-col p-8 lg:p-12 transition-all duration-500 overflow-hidden" style="--tint-color: #ffffff; --progress-bg: rgba(255,255,255,0.1);">
+    <div id="fullscreenPlayer" class="fixed inset-0 bg-black z-[100000] hidden flex-col px-8 pt-6 pb-8 lg:p-12 transition-all duration-500 overflow-hidden" style="--tint-color: #ffffff; --progress-bg: rgba(255,255,255,0.1);">
         <!-- Blurred Background -->
         <div id="fsBackground" class="absolute inset-0 z-[-1] opacity-60 transition-all duration-1000"></div>
         <div class="absolute inset-0 bg-black/25 z-[-1]"></div>
@@ -675,6 +658,44 @@
                         <button class="player-btn text-lg lg:text-xl opacity-70 hover:opacity-100 transition-all" id="fsRepeat" style="color: var(--tint-color)"><i class="fas fa-repeat"></i></button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="editPlaylistModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-6">Edit Playlist</h2>
+            <input type="hidden" id="editPlaylistId">
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Name</label>
+                    <input type="text" id="editPlaylistNameInput" class="w-full bg-black border border-brand-border rounded-xl p-3 outline-none focus:border-accent-indigo text-white" placeholder="My Playlist #1">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Description</label>
+                    <textarea id="editPlaylistDescInput" class="w-full bg-black border border-brand-border rounded-xl p-3 outline-none focus:border-accent-indigo text-white h-24" placeholder="Optional description"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button class="px-6 py-3 rounded-xl font-bold text-gray-400 hover:text-white transition-colors" onclick="hideEditPlaylistModal()">Cancel</button>
+                <button class="btn-niobium" id="confirmEditPlaylistBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="playlistCoverUploadModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-6">Upload Playlist Cover</h2>
+            <input type="hidden" id="uploadPlaylistId">
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Image File</label>
+                    <input type="file" id="playlistCoverInput" accept="image/*" class="w-full text-white">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button class="px-6 py-3 rounded-xl font-bold text-gray-400 hover:text-white transition-colors" onclick="hidePlaylistCoverUploadModal()">Cancel</button>
+                <button class="btn-niobium" id="savePlaylistCoverBtn">Upload Cover</button>
             </div>
         </div>
     </div>
