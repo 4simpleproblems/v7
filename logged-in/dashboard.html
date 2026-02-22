@@ -325,9 +325,16 @@
 
                 if (isClickable) {
                     item.onclick = () => {
-                        if (window.parent && window.parent.loadPage) window.parent.loadPage(path);
-                        else if (window.loadPage) window.loadPage(path);
-                        else window.location.href = path;
+                        if (path.startsWith('file://')) {
+                            // Explicitly use window.location for file:// to ensure domain switch
+                            window.location.href = path;
+                        } else if (window.parent && window.parent.loadPage) {
+                            window.parent.loadPage(path);
+                        } else if (window.loadPage) {
+                            window.loadPage(path);
+                        } else {
+                            window.location.href = path;
+                        }
                     };
                 } else {
                     item.title = "Access restricted to original device";
