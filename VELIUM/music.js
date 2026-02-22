@@ -179,11 +179,19 @@ function setupEventListeners() {
             clearTimeout(searchTimeout);
             const query = e.target.value.trim();
             if (query) {
-                searchTimeout = setTimeout(() => handleSearch(query), 500);
+                searchTimeout = setTimeout(() => handleSearch(query, false), 500); // New search, not appending
             } else {
                 document.getElementById('searchResults').classList.add('hidden');
                 document.getElementById('browseCategories').classList.remove('hidden');
             }
+        });
+    }
+
+    // Load More Button
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', () => {
+            handleSearch(searchState.query, true); // Append more results
         });
     }
 
@@ -211,6 +219,16 @@ function setupEventListeners() {
                 activeContent.classList.add('active');
                 activeContent.classList.remove('hidden');
                 activeContent.style.display = 'block';
+            }
+
+            // Re-run search for the active tab, don't append
+            if (searchState.query) {
+                // Reset offset for the specific tab before running search
+                if (tabName === 'tracks') searchState.tracksOffset = 0;
+                else if (tabName === 'albums') searchState.albumsOffset = 0;
+                else if (tabName === 'artists') searchState.artistsOffset = 0;
+
+                handleSearch(searchState.query, false);
             }
         });
     });
@@ -464,43 +482,138 @@ async function loadPopularTracks() {
     }
 }
 
-async function handleSearch(query) {
+let searchState = {
+    query: '',
+    tracksOffset: 0,
+    albumsOffset: 0,
+    artistsOffset: 0,
+    loading: false,
+    hasMoreTracks: true,
+    hasMoreAlbums: true,
+    hasMoreArtists: true,
+    limit: 24 // 6 * 4 songs per page
+};
+
+async function handleSearch(query, append = false) {
     const resultsDiv = document.getElementById('searchResults');
     const categoriesDiv = document.getElementById('browseCategories');
     const tracksGrid = document.getElementById('searchGrid');
     const albumsGrid = document.getElementById('albumsGrid');
     const artistsGrid = document.getElementById('artistsGrid');
-    const playlistsGrid = document.getElementById('playlistsGrid');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+    if (!query || query.trim() === '') {
+        if (resultsDiv) resultsDiv.classList.add('hidden');
+        if (categoriesDiv) categoriesDiv.classList.remove('hidden');
+        if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+        searchState.query = '';
+        return;
+    }
+
+    // Reset searchState if new query
+    if (!append || query !== searchState.query) {
+        searchState = {
+            query: query,
+            tracksOffset: 0,
+            albumsOffset: 0,
+            artistsOffset: 0,
+            loading: false,
+            hasMoreTracks: true,
+            hasMoreAlbums: true,
+            hasMoreArtists: true,
+            limit: 24
+        };
+        // Clear grids only on new search
+        if (tracksGrid) tracksGrid.innerHTML = '';
+        if (albumsGrid) albumsGrid.innerHTML = '';
+        if (artistsGrid) artistsGrid.innerHTML = '';
+    }
+    
+    // Prevent multiple loads
+    if (searchState.loading) return;
+    searchState.loading = true;
+    if (loadMoreBtn) loadMoreBtn.classList.add('hidden'); // Hide during loading
 
     resultsDiv.classList.remove('hidden');
     categoriesDiv.classList.add('hidden');
 
-    [tracksGrid, albumsGrid, artistsGrid, playlistsGrid].forEach(g => {
-        if (g) g.innerHTML = '<div class="col-span-full py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
-    });
+    // Show loading spinners only on first load of a grid
+    if (!append) {
+        [tracksGrid, albumsGrid, artistsGrid].forEach(g => {
+            if (g) g.innerHTML = '<div class="col-span-full py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
+        });
+    }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`);
+        const activeTab = document.querySelector('.search-tab.active');
+        const tabName = activeTab ? activeTab.dataset.tab : 'tracks'; // Default to tracks
+
+        let offset = 0;
+        let hasMore = true;
+
+        if (tabName === 'tracks') {
+            offset = searchState.tracksOffset;
+            hasMore = searchState.hasMoreTracks;
+        } else if (tabName === 'albums') {
+            offset = searchState.albumsOffset;
+            hasMore = searchState.hasMoreAlbums;
+        } else if (tabName === 'artists') {
+            offset = searchState.artistsOffset;
+            hasMore = searchState.hasMoreArtists;
+        }
+        
+        if (!hasMore && append) {
+            searchState.loading = false;
+            return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&offset=${offset}&limit=${searchState.limit}`);
         const data = await response.json();
 
-        // Sort tracks: MusicAPI results at the very top, then YT Music, then Argon
-        const sortedTracks = (data.tracks || []).sort((a, b) => {
-            const priority = { 'MusicAPI': 0, 'YTMusic': 1, 'Argon': 2 };
-            const aPrio = priority[a.source] ?? 3;
-            const bPrio = priority[b.source] ?? 3;
-            return aPrio - bPrio;
-        });
+        // Process tracks
+        const newTracks = data.tracks || [];
+        if (tabName === 'tracks') {
+            if (!append) tracksGrid.innerHTML = ''; // Clear only if not appending
+            newTracks.forEach(track => renderTrackGrid([track], tracksGrid));
+            searchState.tracksOffset += newTracks.length;
+            searchState.hasMoreTracks = newTracks.length === searchState.limit;
+        }
 
-        // Albums and Artists from YT Music take precedence
-        const sortedAlbums = (data.albums || []).sort((a, b) => (a.source === 'YTMusic' ? -1 : 1));
-        const sortedArtists = (data.artists || []).sort((a, b) => (a.source === 'YTMusic' ? -1 : 1));
+        // Process albums
+        const newAlbums = data.albums || [];
+        if (tabName === 'albums') {
+            if (!append) albumsGrid.innerHTML = '';
+            newAlbums.forEach(album => renderAlbumGrid([album], albumsGrid));
+            searchState.albumsOffset += newAlbums.length;
+            searchState.hasMoreAlbums = newAlbums.length === searchState.limit;
+        }
 
-        renderTrackGrid(sortedTracks, tracksGrid);
-        renderAlbumGrid(sortedAlbums, albumsGrid);
-        renderArtistGrid(sortedArtists, artistsGrid);
-        renderPlaylistGrid(data.playlists || [], playlistsGrid);
+        // Process artists
+        const newArtists = data.artists || [];
+        if (tabName === 'artists') {
+            if (!append) artistsGrid.innerHTML = '';
+            newArtists.forEach(artist => renderArtistGrid([artist], artistsGrid));
+            searchState.artistsOffset += newArtists.length;
+            searchState.hasMoreArtists = newArtists.length === searchState.limit;
+        }
+
+        // Show Load More button if there are more results
+        if (loadMoreBtn && hasMore && (newTracks.length > 0 || newAlbums.length > 0 || newArtists.length > 0)) {
+            loadMoreBtn.classList.remove('hidden');
+        } else if (loadMoreBtn) {
+            loadMoreBtn.classList.add('hidden');
+        }
+
     } catch (e) {
         console.error('Search failed', e);
+        if (!append) {
+            if (tracksGrid) tracksGrid.innerHTML = '<div class="col-span-full py-20 text-center text-red-500">Failed to load search results.</div>';
+            if (albumsGrid) albumsGrid.innerHTML = '<div class="col-span-full py-20 text-center text-red-500">Failed to load search results.</div>';
+            if (artistsGrid) artistsGrid.innerHTML = '<div class="col-span-full py-20 text-center text-red-500">Failed to load search results.</div>';
+        }
+        if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+    } finally {
+        searchState.loading = false;
     }
 }
 
@@ -566,7 +679,7 @@ async function loadOfficialPlaylistDetails(playlistId) {
 // --- Rendering ---
 function renderTrackGrid(tracks, container) {
     if (!container) return;
-    container.innerHTML = '';
+    // Do not clear container here, handleSearch will clear it if not appending
     tracks.forEach((track, index) => {
         const isLiked = favorites.some(f => f.id === track.id);
         const card = document.createElement('div');
@@ -583,7 +696,7 @@ function renderTrackGrid(tracks, container) {
             <div class="text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer" onclick="event.stopPropagation(); loadArtistDetails('${track.artist_id || ''}', '${escapeHtml(track.artist_name || '').replace(/'/g, "\\'")}')">${escapeHtml(track.artist_name)}</div>
         `;
         card.addEventListener('click', () => {
-            playlist = tracks;
+            playlist = tracks; // This needs to be managed for proper playback
             originalPlaylist = [...tracks];
             playTrack(index);
         });
@@ -593,7 +706,7 @@ function renderTrackGrid(tracks, container) {
 
 function renderAlbumGrid(albums, container) {
     if (!container) return;
-    container.innerHTML = '';
+    // Do not clear container here, handleSearch will clear it if not appending
     albums.forEach(album => {
         const card = document.createElement('div');
         card.className = 'track-card';
@@ -609,7 +722,7 @@ function renderAlbumGrid(albums, container) {
 
 function renderArtistGrid(artists, container) {
     if (!container) return;
-    container.innerHTML = '';
+    // Do not clear container here, handleSearch will clear it if not appending
     artists.forEach(artist => {
         const card = document.createElement('div');
         card.className = 'track-card';
