@@ -42,9 +42,7 @@
             grid-template-columns: repeat(12, 1fr);
             grid-template-rows: repeat(12, 1fr);
             gap: 1.25rem;
-            padding: 3rem;
-            max-width: 1400px;
-            margin: 0 auto;
+            padding: 2rem 1.5rem; /* Reduced padding, removed side limits */
             width: 100%;
             height: calc(100vh - 64px);
             box-sizing: border-box;
@@ -54,7 +52,7 @@
             background: var(--bg-container);
             border: 1px solid var(--border-color);
             border-radius: 24px;
-            padding: 1.5rem;
+            padding: 1.25rem;
             position: relative;
             overflow: hidden;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -101,8 +99,9 @@
         #analytics-summary-slot {
             grid-column: span 7;
             grid-row: span 4;
-            display: flex;
-            gap: 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
         }
 
         /* --- TYPOGRAPHY --- */
@@ -127,16 +126,16 @@
         }
 
         .card-label {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
             color: var(--text-secondary);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
             font-weight: 600;
         }
 
         .stat-huge {
-            font-size: 2.5rem;
+            font-size: 2.25rem;
             font-weight: 500;
             color: #fff;
             line-height: 1.1;
@@ -146,18 +145,18 @@
         .recent-list {
             flex-grow: 1;
             overflow-y: auto;
-            margin-top: 1rem;
+            margin-top: 0.75rem;
         }
         .recent-item {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 0.8rem 1rem;
+            gap: 0.75rem;
+            padding: 0.75rem;
             border-radius: 16px;
             background: rgba(255,255,255,0.03);
             border: 1px solid transparent;
             transition: all 0.2s;
-            margin-bottom: 0.6rem;
+            margin-bottom: 0.5rem;
             cursor: pointer;
         }
         .recent-item:hover {
@@ -171,32 +170,31 @@
             filter: grayscale(1);
         }
         .recent-icon {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 10px;
             background: rgba(79, 70, 229, 0.1);
             color: var(--accent-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
 
         /* --- WEATHER --- */
-        .weather-temp-main { font-size: 3.5rem; font-weight: 500; color: #fff; }
+        .weather-temp-main { font-size: 3rem; font-weight: 500; color: #fff; }
         .weather-info-box { text-align: right; }
         
         #weather-loader {
             position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
+            top: 1.25rem;
+            right: 1.25rem;
             color: var(--accent-color);
             opacity: 0;
             transition: opacity 0.3s;
         }
         #weather-loader.loading { opacity: 1; }
 
-        /* Custom Scroll */
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
@@ -222,8 +220,8 @@
                 <div id="w-desc" class="text-sm text-gray-400 capitalize">Loading...</div>
             </div>
             <div class="weather-info-box">
-                <div id="w-icon" class="text-6xl text-gray-300 mb-4"><i class="fa-solid fa-cloud"></i></div>
-                <div class="text-xs text-gray-500 font-bold uppercase tracking-widest">
+                <div id="w-icon" class="text-5xl text-gray-300 mb-2"><i class="fa-solid fa-cloud"></i></div>
+                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
                     H: <span id="w-high">--°</span> | L: <span id="w-low">--°</span>
                 </div>
             </div>
@@ -246,8 +244,8 @@
         <!-- QUICK ACCESS -->
         <div id="quick-access-slot" class="bento-card">
             <div class="flex justify-between items-center mb-2">
-                <div class="card-label mb-0">Recently Viewed</div>
-                <i class="fa-solid fa-clock-rotate-left text-gray-700"></i>
+                <div class="card-label mb-0">Recently Viewed (V6)</div>
+                <i class="fa-solid fa-clock-rotate-left text-gray-700 text-xs"></i>
             </div>
             <div id="recent-pages-list" class="recent-list custom-scroll">
                 <div class="py-10 text-center text-gray-600 italic text-sm">Waiting for data...</div>
@@ -256,16 +254,20 @@
 
         <!-- ANALYTICS SUMMARY -->
         <div id="analytics-summary-slot" class="bento-card bg-indigo-500/5 border-indigo-500/20">
-            <div class="flex-1 flex flex-col justify-center">
-                <div class="card-label text-indigo-400">Most Visited</div>
-                <div id="stat-most-viewed" class="text-2xl font-medium text-white truncate">None yet</div>
-                <p class="text-xs text-indigo-300/50 mt-1 uppercase tracking-tighter">Your top destination</p>
+            <div class="flex flex-col justify-center border-r border-white/5 pr-4">
+                <div class="card-label text-indigo-400">Top Page</div>
+                <div id="stat-most-viewed" class="text-lg font-medium text-white truncate">None yet</div>
+                <div id="stat-browser" class="text-[9px] text-indigo-300/40 mt-1 uppercase tracking-tighter">Unknown Browser</div>
             </div>
-            <div class="w-px bg-indigo-500/10 my-2"></div>
-            <div class="flex-1 flex flex-col justify-center">
+            <div class="flex flex-col justify-center border-r border-white/5 px-4">
                 <div class="card-label text-indigo-400">Page Views</div>
-                <div id="stat-pageviews" class="text-4xl font-medium text-white">0</div>
-                <p class="text-xs text-indigo-300/50 mt-1 uppercase tracking-tighter">Pages explored</p>
+                <div id="stat-pageviews" class="text-3xl font-medium text-white">0</div>
+                <div id="stat-os" class="text-[9px] text-indigo-300/40 mt-1 uppercase tracking-tighter">Unknown OS</div>
+            </div>
+            <div class="flex flex-col justify-center pl-4">
+                <div class="card-label text-indigo-400">Device Origin</div>
+                <div id="stat-device" class="text-sm font-medium text-white truncate">Detecting...</div>
+                <div class="text-[9px] text-indigo-300/40 mt-1 uppercase tracking-tighter">Project Niobium</div>
             </div>
         </div>
     </div>
@@ -289,7 +291,8 @@
             'vern.html': 'Vern',
             'velium.html': 'Velium',
             'securly-tester.html': 'Securly Tester',
-            'settings.html': 'Settings'
+            'settings.html': 'Settings',
+            'profile.html': 'Profile'
         };
 
         const getCleanTitle = (path, originalTitle) => {
@@ -297,6 +300,20 @@
             if (PAGE_NAME_LOOKUP[fileName]) return PAGE_NAME_LOOKUP[fileName];
             if (originalTitle && !originalTitle.includes('VERSION 5 CLIENT')) return originalTitle;
             return fileName.replace('.html', '').charAt(0).toUpperCase() + fileName.replace('.html', '').slice(1);
+        };
+
+        const parseUA = (ua) => {
+            if (!ua) return { browser: 'Unknown', os: 'Unknown' };
+            let browser = 'Other', os = 'Other';
+            if (ua.includes('Chrome')) browser = 'Chrome';
+            else if (ua.includes('Firefox')) browser = 'Firefox';
+            else if (ua.includes('Safari')) browser = 'Safari';
+            
+            if (ua.includes('Windows')) os = 'Windows';
+            else if (ua.includes('Mac OS')) os = 'macOS';
+            else if (ua.includes('CrOS')) os = 'ChromeOS';
+            else if (ua.includes('Linux')) os = 'Linux';
+            return { browser, os };
         };
 
         const checkFirebase = setInterval(() => {
@@ -328,23 +345,39 @@
 
         async function loadAnalytics(uid) {
             const db = firebase.firestore();
-            const snap = await db.collection('analytics').where('userId', '==', uid).get();
+            // Filter by Project Niobium version tag
+            const snap = await db.collection('analytics')
+                .where('userId', '==', uid)
+                .where('version', '==', 'project_niobium')
+                .get();
             
             if (snap.empty) return;
 
             let totalTime = 0;
             let totalPageViews = 0;
             let pageMap = {}; 
+            let browsers = {};
+            let systems = {};
 
             snap.forEach(doc => {
                 const data = doc.data();
                 totalTime += (data.duration || 0);
                 totalPageViews += (data.pageCount || 0);
                 
+                const ua = parseUA(data.userAgent);
+                browsers[ua.browser] = (browsers[ua.browser] || 0) + 1;
+                systems[ua.os] = (systems[ua.os] || 0) + 1;
+
                 if (data.visitedPages) {
                     data.visitedPages.forEach(p => {
                         const path = p.path || p.url;
                         if (!path || path === 'about:srcdoc') return;
+                        
+                        // Filter for V6 pages only (those in our lookup or starting with /logged-in)
+                        const fileName = path.split('/').pop().split('?')[0];
+                        const isV6 = PAGE_NAME_LOOKUP[fileName] || path.includes('/logged-in/');
+                        if (!isV6) return;
+
                         const cleanTitle = getCleanTitle(path, p.title);
                         if (!pageMap[path]) pageMap[path] = { title: cleanTitle, count: 0 };
                         pageMap[path].count++;
@@ -356,6 +389,12 @@
             if (sortedPages.length > 0) {
                 document.getElementById('stat-most-viewed').textContent = sortedPages[0][1].title;
             }
+
+            const topBrowser = Object.entries(browsers).sort((a,b) => b[1]-a[1])[0]?.[0] || 'Unknown';
+            const topOS = Object.entries(systems).sort((a,b) => b[1]-a[1])[0]?.[0] || 'Unknown';
+            document.getElementById('stat-browser').textContent = topBrowser;
+            document.getElementById('stat-os').textContent = topOS;
+            document.getElementById('stat-device').textContent = window._LOCAL_MODE ? 'Version 5 Client' : 'Web Browser';
 
             const hours = Math.floor(totalTime / 3600);
             const minutes = Math.floor((totalTime % 3600) / 60);
@@ -426,7 +465,6 @@
             const loader = document.getElementById('weather-loader');
             loader.classList.add('loading');
             try {
-                // Better HTTPS location provider
                 const locRes = await fetch('https://ipwho.is/');
                 const locData = await locRes.json();
                 const lat = locData.latitude;

@@ -143,6 +143,7 @@
         docRef.set({
             sessionId: sessionId,
             userAgent: navigator.userAgent,
+            version: 'project_niobium', // Codename for 4SP V6
             lastActive: window.firebase.firestore.FieldValue.serverTimestamp(),
             visitedPages: window.firebase.firestore.FieldValue.arrayUnion({
                 path: path,
@@ -164,6 +165,7 @@
 
         docRef.set({
             userId: currentUser,
+            version: 'project_niobium', // Codename for 4SP V6
             lastActive: window.firebase.firestore.FieldValue.serverTimestamp(),
             duration: duration,
             startTime: startTime
