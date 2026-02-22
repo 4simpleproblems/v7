@@ -45,23 +45,30 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
-            gap: 2rem;
-            padding: 4rem; /* pt-24 equivalent roughly */
+            gap: 1.5rem; /* Reduced gap */
+            padding: 3rem; /* Reduced padding */
             position: relative;
         }
 
         .dashboard-widget {
             border: 1px solid var(--border-color);
             background-color: var(--bg-container);
-            padding: 2rem; 
+            padding: 1.5rem; /* Reduced padding */
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
-            border-radius: 32px;
+            border-radius: 28px; /* Slightly tighter rounding */
             position: relative;
             overflow: hidden;
         }
 
-        .dashboard-widget:hover {
+        #main-widget {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding-left: 0 !important;
+        }
+
+        .dashboard-widget:not(#main-widget):hover {
             border-color: #505050;
             transform: translateY(-2px);
         }
@@ -85,24 +92,24 @@
             text-transform: uppercase;
             letter-spacing: 0.1em;
             color: var(--accent-color);
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             font-weight: 600 !important;
         }
 
-        .stat-label { font-size: 0.8rem; color: #666; }
-        .stat-value { font-size: 1.2rem; color: #fff; font-weight: 500 !important; }
+        .stat-label { font-size: 0.75rem; color: #666; }
+        .stat-value { font-size: 1.1rem; color: #fff; font-weight: 500 !important; }
 
         .page-link-item {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 0.75rem 1rem;
+            gap: 0.75rem;
+            padding: 0.6rem 1rem;
             background: rgba(255,255,255,0.03);
             border: 1px solid #1a1a1a;
-            border-radius: 16px;
+            border-radius: 14px;
             transition: all 0.2s;
             cursor: pointer;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
         }
         .page-link-item:hover {
             background: rgba(255,255,255,0.06);
@@ -128,7 +135,7 @@
 
 <body>
     <div id="page-content">
-        <!-- TOP LEFT: Main Widget (Clock + Welcome) -->
+        <!-- TOP LEFT: Main Widget (Clock + Welcome) - NO CONTAINER STYLE -->
         <div id="main-widget" class="dashboard-widget flex flex-col justify-center">
             <div id="clock-time" class="time-display">--:--</div>
             <div id="clock-date" class="date-display">--------</div>
@@ -197,9 +204,36 @@
     <script type="module">
         import { firebaseConfig } from '../firebase-config.js';
 
+        // Lookup map to fix "Version 5 Client" naming issue
+        const PAGE_NAME_LOOKUP = {
+            'dashboard.html': 'Dashboard',
+            'soundboard.html': 'Soundboard',
+            'notes.html': 'Notes',
+            'dailyphoto.html': 'Dailyphoto',
+            'countdowns.html': 'Countdowns',
+            'weather.html': 'Weather',
+            'dictionary.html': 'Dictionary',
+            'schedule.html': 'Schedule',
+            'messenger-tutorial.html': 'Messenger',
+            'games.html': 'Games',
+            'vana.html': 'Vana',
+            'vora.html': 'Vora',
+            'vern.html': 'Vern',
+            'velium.html': 'Velium',
+            'securly-tester.html': 'Securly Tester',
+            'settings.html': 'Settings'
+        };
+
+        const getCleanTitle = (path, originalTitle) => {
+            const fileName = path.split('/').pop().split('?')[0];
+            if (PAGE_NAME_LOOKUP[fileName]) return PAGE_NAME_LOOKUP[fileName];
+            if (originalTitle && !originalTitle.includes('VERSION 5 CLIENT')) return originalTitle;
+            return fileName.replace('.html', '').charAt(0).toUpperCase() + fileName.replace('.html', '').slice(1);
+        };
+
         // Wait for Firebase
         const checkFirebase = setInterval(() => {
-            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
                 clearInterval(checkFirebase);
                 initDashboard();
             }
@@ -227,14 +261,13 @@
 
         async function loadAnalytics(uid) {
             const db = firebase.firestore();
-            // We'll look for sessions in analytics collection where userId == uid
             const snap = await db.collection('analytics').where('userId', '==', uid).get();
             
             if (snap.empty) return;
 
             let totalTime = 0;
             let totalPageViews = 0;
-            let pageMap = {}; // { path: { title, count } }
+            let pageMap = {}; 
 
             snap.forEach(doc => {
                 const data = doc.data();
@@ -245,40 +278,36 @@
                     data.visitedPages.forEach(p => {
                         const path = p.path || p.url;
                         if (!path) return;
-                        if (!pageMap[path]) pageMap[path] = { title: p.title || path, count: 0 };
+                        const cleanTitle = getCleanTitle(path, p.title);
+                        if (!pageMap[path]) pageMap[path] = { title: cleanTitle, count: 0 };
                         pageMap[path].count++;
                     });
                 }
             });
 
-            // Calculate Most Viewed
             const sortedPages = Object.entries(pageMap).sort((a, b) => b[1].count - a[1].count);
             if (sortedPages.length > 0) {
                 document.getElementById('stat-most-viewed').textContent = sortedPages[0][1].title;
             }
 
-            // Time Formatting
             const hours = Math.floor(totalTime / 3600);
             const minutes = Math.floor((totalTime % 3600) / 60);
             document.getElementById('stat-total-time').textContent = `${hours}h ${minutes}m`;
             document.getElementById('stat-sessions').textContent = snap.size;
             document.getElementById('stat-pageviews').textContent = totalPageViews;
 
-            // Recent/Most Viewed List (Bottom Right)
             const listEl = document.getElementById('recent-pages-list');
             listEl.innerHTML = '';
             
-            // Current Device Check for V5 Client (File domain safety)
             const isLocal = window._LOCAL_MODE;
             const currentOrigin = window.location.origin;
 
-            sortedPages.slice(0, 5).forEach(([path, data]) => {
+            sortedPages.slice(0, 6).forEach(([path, data]) => {
                 const item = document.createElement('div');
                 item.className = 'page-link-item';
                 
                 let isClickable = true;
                 if (path.includes('file://')) {
-                    // Only clickable if origin matches exactly (same device/local path)
                     if (!isLocal || !currentOrigin.includes('file')) isClickable = false;
                 }
 
@@ -296,7 +325,8 @@
 
                 if (isClickable) {
                     item.onclick = () => {
-                        if (window.loadPage) window.loadPage(path);
+                        if (window.parent && window.parent.loadPage) window.parent.loadPage(path);
+                        else if (window.loadPage) window.loadPage(path);
                         else window.location.href = path;
                     };
                 } else {
@@ -321,10 +351,11 @@
             const loader = document.getElementById('weather-loader');
             loader.classList.add('loading');
             try {
-                const ipRes = await fetch('https://ipapi.co/json/');
-                const ipData = await ipRes.json();
-                const lat = ipData.latitude;
-                const lon = ipData.longitude;
+                // Use a more reliable location API
+                const locRes = await fetch('https://freeipapi.com/api/json');
+                const locData = await locRes.json();
+                const lat = locData.latitude;
+                const lon = locData.longitude;
 
                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
                 const res = await fetch(url);
@@ -334,7 +365,6 @@
                 document.getElementById('w-high').textContent = `${Math.round(data.daily.temperature_2m_max[0])}°`;
                 document.getElementById('w-low').textContent = `${Math.round(data.daily.temperature_2m_min[0])}°`;
                 
-                // Simplified icon mapping
                 const code = data.current.weather_code;
                 let icon = 'fa-cloud';
                 if (code === 0) icon = 'fa-sun';

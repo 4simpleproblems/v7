@@ -102,10 +102,36 @@
         });
     }
 
+    const PAGE_NAME_LOOKUP = {
+        'dashboard.html': 'Dashboard',
+        'soundboard.html': 'Soundboard',
+        'notes.html': 'Notes',
+        'dailyphoto.html': 'Dailyphoto',
+        'countdowns.html': 'Countdowns',
+        'weather.html': 'Weather',
+        'dictionary.html': 'Dictionary',
+        'schedule.html': 'Schedule',
+        'messenger-tutorial.html': 'Messenger',
+        'games.html': 'Games',
+        'vana.html': 'Vana',
+        'vora.html': 'Vora',
+        'vern.html': 'Vern',
+        'velium.html': 'Velium',
+        'securly-tester.html': 'Securly Tester',
+        'settings.html': 'Settings'
+    };
+
+    const getCleanTitle = (path, originalTitle) => {
+        const fileName = path.split('/').pop().split('?')[0];
+        if (PAGE_NAME_LOOKUP[fileName]) return PAGE_NAME_LOOKUP[fileName];
+        if (originalTitle && !originalTitle.includes('VERSION 5 CLIENT')) return originalTitle;
+        return fileName.replace('.html', '').charAt(0).toUpperCase() + fileName.replace('.html', '').slice(1);
+    };
+
     function trackPageView() {
         if (isExcluded || !db) return;
         const path = window.location.pathname;
-        const pageName = document.title || path;
+        const pageName = getCleanTitle(path, document.title);
         
         const docRef = db.collection('analytics').doc(sessionId);
         
