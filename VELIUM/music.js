@@ -954,7 +954,8 @@ window.toggleLikeTrack = async function(track, btnEl) {
             btnEl.classList.remove('active');
             btnEl.querySelector('i').className = 'far fa-heart';
         }
-    } else {
+    }
+    else {
         favorites.push(track);
         if (btnEl) {
             btnEl.classList.add('active');
@@ -962,7 +963,7 @@ window.toggleLikeTrack = async function(track, btnEl) {
         }
     }
     await saveLibraryData();
-    updateLikeButtonStatus();
+    updateLikeButtonStatus(); // Update the main player bar button
     if (document.getElementById('favoritesView').classList.contains('active')) renderFavorites();
 };
 
@@ -1471,7 +1472,8 @@ window.toggleLikeTrack = async function(track, btnEl) {
             btnEl.classList.remove('active');
             btnEl.querySelector('i').className = 'far fa-heart';
         }
-    } else {
+    }
+    else {
         favorites.push(track);
         if (btnEl) {
             btnEl.classList.add('active');
@@ -1479,7 +1481,7 @@ window.toggleLikeTrack = async function(track, btnEl) {
         }
     }
     await saveLibraryData();
-    updateLikeButtonStatus();
+    updateLikeButtonStatus(); // Update the main player bar button
     if (document.getElementById('favoritesView').classList.contains('active')) renderFavorites();
 };
 
