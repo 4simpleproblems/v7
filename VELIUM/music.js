@@ -269,13 +269,28 @@ function updateFullscreenUI() {
     if (!currentTrack) return;
     document.getElementById('fsTrackName').textContent = currentTrack.title;
     document.getElementById('fsArtistName').textContent = currentTrack.artist_name;
-    document.getElementById('fsArtwork').src = getProxyUrl(currentTrack.artwork_url);
+    const artworkUrl = getProxyUrl(currentTrack.artwork_url);
+    document.getElementById('fsArtwork').src = artworkUrl;
+    
+    // Set Blurred Background
+    const bg = document.getElementById('fsBackground');
+    if (bg) {
+        bg.style.backgroundImage = `url('${artworkUrl}')`;
+        bg.style.backgroundSize = 'cover';
+        bg.style.backgroundPosition = 'center';
+    }
     
     // Sync Shuffle/Repeat icons
     document.getElementById('fsShuffle').classList.toggle('active', isShuffle);
     const fsRepeat = document.getElementById('fsRepeat');
     fsRepeat.classList.toggle('active', repeatMode !== 'off');
     fsRepeat.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat"></i><span class="absolute text-[10px] font-bold mt-2 ml-1">1</span>' : '<i class="fas fa-repeat"></i>';
+    
+    // Sync Play/Pause
+    const fsPlayBtn = document.getElementById('fsPlayPause');
+    if (fsPlayBtn) {
+        fsPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-2xl"></i>' : '<i class="fas fa-play text-2xl"></i>';
+    }
 }
 
 function switchView(viewName) {
@@ -712,7 +727,12 @@ function togglePlayPause() {
 
 function updatePlayPauseUI() {
     const btn = document.getElementById('playPauseButton');
-    btn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+    if (btn) btn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+    
+    const fsPlayBtn = document.getElementById('fsPlayPause');
+    if (fsPlayBtn) {
+        fsPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-2xl"></i>' : '<i class="fas fa-play text-2xl"></i>';
+    }
 }
 
 function playNext() {
@@ -1143,15 +1163,31 @@ window.toggleLyrics = function() {
     }
 };
 
+window.toggleFsLyrics = function() {
+    const fsLyricsContainer = document.getElementById('fsLyricsContainer');
+    const toggleBtn = document.getElementById('fsLyricsToggle');
+    if (!fsLyricsContainer || !toggleBtn || toggleBtn.disabled) return;
+
+    fsLyricsContainer.classList.toggle('hidden');
+    toggleBtn.classList.toggle('text-accent-indigo', !fsLyricsContainer.classList.contains('hidden'));
+};
+
 let lyricsData = [];
 let lyricsInterval = null;
 
 async function loadLyrics(track, isForFullscreen = false) {
     const container = isForFullscreen ? document.getElementById('fsLyricsContent') : document.getElementById('lyricsContent');
     const fsLyricsContainer = document.getElementById('fsLyricsContainer');
+    const fsToggle = document.getElementById('fsLyricsToggle');
     
     if (!container) return;
     
+    // Reset toggle state
+    if (isForFullscreen && fsToggle) {
+        fsToggle.disabled = true;
+        fsToggle.classList.remove('text-accent-indigo');
+    }
+
     if (track.source === 'Argon') {
         container.innerHTML = '<div class="py-20 text-center text-gray-500">Lyrics not available for this source.</div>';
         if (isForFullscreen && fsLyricsContainer) fsLyricsContainer.classList.add('hidden');
@@ -1168,7 +1204,13 @@ async function loadLyrics(track, isForFullscreen = false) {
         const data = await response.json();
         if (data.lyrics) {
             container.innerHTML = `<div class="p-4 leading-relaxed whitespace-pre-wrap">${escapeHtml(data.lyrics)}</div>`;
-            if (isForFullscreen && fsLyricsContainer) fsLyricsContainer.classList.remove('hidden');
+            if (isForFullscreen) {
+                if (fsLyricsContainer) fsLyricsContainer.classList.remove('hidden');
+                if (fsToggle) {
+                    fsToggle.disabled = false;
+                    fsToggle.classList.add('text-accent-indigo');
+                }
+            }
         } else {
             container.innerHTML = '<div class="py-20 text-center text-gray-500">Lyrics not found for this track.</div>';
             if (isForFullscreen && fsLyricsContainer) fsLyricsContainer.classList.add('hidden');
