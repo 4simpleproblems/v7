@@ -627,50 +627,52 @@
     </div>
 
     <!-- Full-Screen Now Playing Modal -->
-    <div id="fullscreenPlayer" class="fixed inset-0 bg-black z-[100000] hidden flex-col p-12 transition-all duration-500 overflow-y-auto">
+    <div id="fullscreenPlayer" class="fixed inset-0 bg-black z-[100000] hidden flex-col p-8 lg:p-12 transition-all duration-500 overflow-hidden" style="--tint-color: #ffffff; --progress-bg: rgba(255,255,255,0.1);">
         <!-- Blurred Background -->
         <div id="fsBackground" class="absolute inset-0 z-[-1] opacity-60 transition-all duration-1000"></div>
-        <div class="absolute inset-0 bg-black/15 z-[-1]"></div>
-        <div class="absolute inset-0 backdrop-blur-[100px] z-[-1]"></div>
+        <div class="absolute inset-0 bg-black/25 z-[-1]"></div>
+        <div class="absolute inset-0 backdrop-blur-[120px] z-[-1]"></div>
 
-        <div class="flex justify-between items-center mb-8 relative z-10">
-            <button onclick="toggleFullscreenPlayer()" class="text-2xl text-gray-400 hover:text-white transition-colors">
+        <div class="flex justify-between items-center mb-4 relative z-10">
+            <button onclick="toggleFullscreenPlayer()" class="text-2xl hover:scale-110 transition-transform" style="color: var(--tint-color)">
                 <i class="fas fa-chevron-down"></i>
             </button>
             <div></div>
             <div class="w-8"></div>
         </div>
 
-        <div class="flex-1 flex flex-col items-center justify-center max-w-7xl mx-auto w-full relative z-10">
+        <div class="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto w-full relative z-10 pb-12">
             <!-- Centered Content: Artwork & Controls -->
-            <div class="flex flex-col items-center max-w-xl w-full">
-                <div class="w-full aspect-square mb-12 rounded-3xl overflow-hidden border border-brand-border">
+            <div class="flex flex-col items-center max-w-md lg:max-w-xl w-full">
+                <div class="w-full aspect-square mb-8 lg:mb-12 rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
                     <img id="fsArtwork" src="" class="w-full h-full object-cover">
                 </div>
                 
-                <div class="w-full mb-8 text-center">
-                    <h1 id="fsTrackName" class="text-4xl lg:text-6xl font-black tracking-tighter mb-4 truncate">Not Playing</h1>
-                    <p id="fsArtistName" class="text-xl lg:text-2xl text-gray-400 font-medium truncate">Select a track</p>
+                <div class="w-full mb-6 lg:mb-10 text-center">
+                    <h1 id="fsTrackName" class="text-3xl lg:text-5xl font-black tracking-tighter mb-2 truncate" style="color: var(--tint-color)">Not Playing</h1>
+                    <p id="fsArtistName" class="text-lg lg:text-xl font-medium truncate opacity-70" style="color: var(--tint-color)">Select a track</p>
                 </div>
 
                 <!-- Fullscreen Controls -->
-                <div class="w-full flex flex-col items-center gap-8">
-                    <div class="w-full flex items-center gap-4 text-xs font-bold text-gray-500">
-                        <span id="fsCurrentTime">0:00</span>
-                        <div class="progress-bar flex-1 h-2" id="fsProgressTrack">
-                            <div class="progress-bar-fill" id="fsProgressBarFill"></div>
+                <div class="w-full flex flex-col items-center gap-6 lg:gap-10">
+                    <div class="w-full flex flex-col gap-2">
+                        <div class="progress-bar w-full h-1.5 lg:h-2 rounded-full overflow-hidden cursor-pointer" id="fsProgressTrack" style="background: var(--progress-bg)">
+                            <div class="progress-bar-fill h-full transition-all duration-150" id="fsProgressBarFill" style="background: var(--tint-color)"></div>
                         </div>
-                        <span id="fsDuration">0:00</span>
+                        <div class="flex justify-between text-[10px] lg:text-xs font-bold opacity-50" style="color: var(--tint-color)">
+                            <span id="fsCurrentTime">0:00</span>
+                            <span id="fsDuration">0:00</span>
+                        </div>
                     </div>
 
-                    <div class="flex items-center gap-10">
-                        <button class="player-btn text-xl" id="fsShuffle"><i class="fas fa-shuffle"></i></button>
-                        <button class="player-btn text-2xl" id="fsPrev"><i class="fas fa-step-backward"></i></button>
-                        <button class="w-16 h-16 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-transform" id="fsPlayPause">
-                            <i class="fas fa-play text-xl"></i>
+                    <div class="flex items-center gap-8 lg:gap-12">
+                        <button class="player-btn text-lg lg:text-xl opacity-70 hover:opacity-100 transition-all" id="fsShuffle" style="color: var(--tint-color)"><i class="fas fa-shuffle"></i></button>
+                        <button class="player-btn text-xl lg:text-2xl hover:scale-110 transition-all" id="fsPrev" style="color: var(--tint-color)"><i class="fas fa-step-backward"></i></button>
+                        <button class="w-14 h-14 lg:w-16 lg:h-16 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg" id="fsPlayPause">
+                            <i class="fas fa-play text-lg lg:text-xl"></i>
                         </button>
-                        <button class="player-btn text-2xl" id="fsNext"><i class="fas fa-step-forward"></i></button>
-                        <button class="player-btn text-xl" id="fsRepeat"><i class="fas fa-repeat"></i></button>
+                        <button class="player-btn text-xl lg:text-2xl hover:scale-110 transition-all" id="fsNext" style="color: var(--tint-color)"><i class="fas fa-step-forward"></i></button>
+                        <button class="player-btn text-lg lg:text-xl opacity-70 hover:opacity-100 transition-all" id="fsRepeat" style="color: var(--tint-color)"><i class="fas fa-repeat"></i></button>
                     </div>
                 </div>
             </div>

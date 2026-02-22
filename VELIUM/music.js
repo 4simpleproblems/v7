@@ -342,6 +342,9 @@ function updateFullscreenUI() {
         bg.style.backgroundPosition = 'center';
     }
     
+    // Update Tinting
+    updateFullscreenTint(artworkUrl);
+    
     // Sync Shuffle/Repeat icons
     document.getElementById('fsShuffle').classList.toggle('active', isShuffle);
     const fsRepeat = document.getElementById('fsRepeat');
@@ -353,6 +356,42 @@ function updateFullscreenUI() {
     if (fsPlayBtn) {
         fsPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-xl"></i>' : '<i class="fas fa-play text-xl"></i>';
     }
+}
+
+function updateFullscreenTint(imageUrl) {
+    const fs = document.getElementById('fullscreenPlayer');
+    if (!fs || !imageUrl) return;
+
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = imageUrl;
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 1;
+        canvas.height = 1;
+        ctx.drawImage(img, 0, 0, 1, 1);
+        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        
+        // Calculate brightness
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        let tintColor, progressBg;
+
+        if (brightness < 30) {
+            // Very dark/Black -> Lighten
+            tintColor = 'rgba(255, 255, 255, 0.9)';
+            progressBg = 'rgba(255, 255, 255, 0.1)';
+        } else {
+            // Bright/Accented -> Darken
+            // We darken significantly more if it's bright
+            const factor = 0.3; 
+            tintColor = `rgba(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)}, 0.95)`;
+            progressBg = `rgba(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)}, 0.15)`;
+        }
+
+        fs.style.setProperty('--tint-color', tintColor);
+        fs.style.setProperty('--progress-bg', progressBg);
+    };
 }
 
 function switchView(viewName) {
@@ -1087,6 +1126,10 @@ async function loadAlbumDetails(albumId) {
 
 async function loadArtistDetails(artistId, artistName = null) {
     if (!artistId && !artistName) return;
+    if (artistId === 'undefined' || artistId === '') {
+        if (artistName) artistId = artistName;
+        else return;
+    }
     
     let fetchId = artistId;
     // Ensure ID is prefixed correctly for our API if it's an ID
