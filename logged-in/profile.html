@@ -484,9 +484,9 @@
         }
 
         async function loadDailyPhotos() {
-            const snap = await firestore.collection('dailyPhotos')
-                .where('userId', '==', profileOwnerId)
-                .orderBy('timestamp', 'desc')
+            const snap = await firestore.collection('daily_photos')
+                .where('creatorUid', '==', profileOwnerId)
+                .orderBy('createdAt', 'desc')
                 .get();
             
             dailyphotoContainer.innerHTML = '';
@@ -502,11 +502,12 @@
             // Preview Logic (Max 2 + See More)
             docs.forEach((doc, index) => {
                 const data = doc.data();
+                const imgSrc = data.imageBase64 || data.url; // Support both just in case
                 
                 // Add to All Photos Modal Grid
                 const allDiv = document.createElement('div');
                 allDiv.className = 'photo-grid-item';
-                allDiv.innerHTML = `<img src="${data.url}" alt="Dailyphoto">`;
+                allDiv.innerHTML = `<img src="${imgSrc}" alt="Dailyphoto">`;
                 allDiv.onclick = () => window.location.href = '/logged-in/dailyphoto';
                 allPhotosGrid.appendChild(allDiv);
 
@@ -514,7 +515,7 @@
                 if (index < 2) {
                     const div = document.createElement('div');
                     div.className = 'photo-grid-item';
-                    div.innerHTML = `<img src="${data.url}" alt="Dailyphoto">`;
+                    div.innerHTML = `<img src="${imgSrc}" alt="Dailyphoto">`;
                     div.onclick = () => window.location.href = '/logged-in/dailyphoto';
                     dailyphotoContainer.appendChild(div);
                 }
