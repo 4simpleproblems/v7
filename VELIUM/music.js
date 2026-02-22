@@ -316,6 +316,25 @@ function setGreeting() {
     if (el) el.textContent = greeting;
 }
 
+window.toggleMiniPlayer = function() {
+    const mini = document.getElementById('miniPlayer');
+    if (!mini) return;
+    mini.classList.toggle('active');
+    if (mini.classList.contains('active')) updateMiniPlayerUI();
+};
+
+function updateMiniPlayerUI() {
+    if (!currentTrack) return;
+    document.getElementById('miniTrackName').textContent = currentTrack.title;
+    document.getElementById('miniArtistName').textContent = currentTrack.artist_name;
+    document.getElementById('miniArtwork').src = getProxyUrl(currentTrack.artwork_url);
+    
+    const miniPlayBtn = document.getElementById('miniPlayPause');
+    if (miniPlayBtn) {
+        miniPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+    }
+}
+
 // --- Data Fetching ---
 async function loadPopularTracks() {
     const grid = document.getElementById('popularTracks');
@@ -588,6 +607,9 @@ async function playTrack(index) {
         updateFullscreenUI();
     }
 
+    // Update Mini Player UI
+    updateMiniPlayerUI();
+
     // Reset Progress UI
     document.getElementById('progressBarFill').style.width = '0%';
     document.getElementById('currentTimeLabel').textContent = '0:00';
@@ -731,6 +753,11 @@ function updatePlayPauseUI() {
     if (fsPlayBtn) {
         fsPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-2xl"></i>' : '<i class="fas fa-play text-2xl"></i>';
     }
+
+    const miniPlayBtn = document.getElementById('miniPlayPause');
+    if (miniPlayBtn) {
+        miniPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+    }
 }
 
 function playNext() {
@@ -749,6 +776,7 @@ function playPrev() {
 function toggleShuffle() {
     isShuffle = !isShuffle;
     document.getElementById('shuffleButton').classList.toggle('active', isShuffle);
+    document.getElementById('fsShuffle').classList.toggle('active', isShuffle);
 }
 
 function cycleRepeat() {
@@ -756,9 +784,15 @@ function cycleRepeat() {
     const currentModeIndex = modes.indexOf(repeatMode);
     repeatMode = modes[(currentModeIndex + 1) % modes.length];
     
-    const btn = document.getElementById('repeatButton');
-    btn.classList.toggle('active', repeatMode !== 'off');
-    btn.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat"></i><span class="absolute text-[8px] font-bold mt-1">1</span>' : '<i class="fas fa-repeat"></i>';
+    const updateUI = (btnId, fontSize) => {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        btn.classList.toggle('active', repeatMode !== 'off');
+        btn.innerHTML = repeatMode === 'one' ? `<i class="fas fa-repeat"></i><span class="absolute text-[${fontSize}px] font-bold mt-1">1</span>` : '<i class="fas fa-repeat"></i>';
+    };
+
+    updateUI('repeatButton', 8);
+    updateUI('fsRepeat', 10);
 }
 
 // --- Storage & Helpers ---
@@ -821,6 +855,30 @@ async function initApp() {
     renderSidebarPlaylists();
     renderLibrary();
     updateVolumeUI();
+
+    // Make Mini Player Draggable
+    const mini = document.getElementById('miniPlayer');
+    if (mini) {
+        let isDragging = false;
+        let offset = { x: 0, y: 0 };
+
+        mini.addEventListener('mousedown', (e) => {
+            if (e.target.closest('button')) return;
+            isDragging = true;
+            offset.x = e.clientX - mini.offsetLeft;
+            offset.y = e.clientY - mini.offsetTop;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            mini.style.left = (e.clientX - offset.x) + 'px';
+            mini.style.top = (e.clientY - offset.y) + 'px';
+            mini.style.bottom = 'auto';
+            mini.style.right = 'auto';
+        });
+
+        document.addEventListener('mouseup', () => isDragging = false);
+    }
 }
 
 async function toggleLike() {
