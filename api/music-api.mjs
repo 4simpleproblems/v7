@@ -267,42 +267,56 @@ export default async function handler(req, res) {
     // 4. Artist Details
     if (endpoint === 'artist' || pathname.includes('/artist/')) {
         let artistId = id || pathParts[pathParts.length - 1];
-        
+        console.log(`API: Artist endpoint called for artistId: "${artistId}"`);
+
         if (!artistId || artistId === 'undefined' || artistId === 'null') {
+            console.error('API: Artist ID or Name is invalid or missing.');
             return res.status(400).json({ error: 'Artist ID or Name required' });
         }
         
         const rawId = artistId.startsWith('ytm-') ? artistId.replace('ytm-', '') : (artistId.startsWith('argon-') ? artistId.replace('argon-', '') : artistId);
+        console.log(`API: Extracted rawId: "${rawId}"`);
         const yt = await getYoutube();
         try {
             let artist;
+            let currentArtistId = artistId; // Keep track of the ID we successfully fetched with
+
+            console.log(`API: Attempting direct fetch for rawId: "${rawId}"`);
             try {
                 artist = await yt.music.getArtist(rawId);
+                console.log('API: Direct artist fetch successful.');
             } catch (e) {
-                console.warn(`Direct artist fetch failed for ${rawId}, attempting search fallback`);
+                console.warn(`API: Direct artist fetch failed for rawId: "${rawId}", error: ${e.message}. Attempting search fallback.`);
                 const search = await yt.music.search(rawId, { type: 'artist' });
                 const firstArtist = search.artists?.[0] || search.results?.find(r => r.type === 'Artist');
+                console.log('API: Search fallback results:', firstArtist);
                 
                 if (firstArtist && firstArtist.browseId) {
                     artist = await yt.music.getArtist(firstArtist.browseId);
-                    artistId = `ytm-${firstArtist.browseId}`;
+                    currentArtistId = `ytm-${firstArtist.browseId}`; // Update ID to the one actually used
+                    console.log(`API: Search fallback successful, fetched with browseId: "${firstArtist.browseId}"`);
                 } else {
+                    console.error('API: Artist not found via search fallback.');
                     return res.status(404).json({ error: 'Artist not found via search fallback' });
                 }
             }
 
-            if (!artist) return res.status(404).json({ error: 'Artist not found' });
+            if (!artist) {
+                console.error('API: Artist object is null after fetch attempts.');
+                return res.status(404).json({ error: 'Artist not found' });
+            }
+            console.log('API: Final artist data:', artist.name);
 
             return res.status(200).json({
-                id: artistId.startsWith('ytm-') || artistId.startsWith('argon-') ? artistId : `ytm-${artistId}`,
+                id: currentArtistId.startsWith('ytm-') || currentArtistId.startsWith('argon-') ? currentArtistId : `ytm-${currentArtistId}`,
                 name: artist.name,
-                followers: 0,
+                followers: artist.subscribers || 0, // ytmusicapi returns subscribers
                 image_url: artist.thumbnails?.[0]?.url,
                 top_tracks: (artist.sections?.find(s => s.type === 'MusicShelf' && s.title?.toString().toLowerCase().includes('songs'))?.contents || []).map(track => ({
                     id: `ytm-${track.id}`,
                     title: track.title,
                     artist_name: artist.name,
-                    artist_id: artistId.startsWith('ytm-') || artistId.startsWith('argon-') ? artistId : `ytm-${artistId}`,
+                    artist_id: currentArtistId.startsWith('ytm-') || currentArtistId.startsWith('argon-') ? currentArtistId : `ytm-${currentArtistId}`,
                     duration: (track.duration?.seconds || 0) * 1000,
                     artwork_url: track.thumbnails?.[0]?.url,
                     youtube_id: track.id,
@@ -318,7 +332,7 @@ export default async function handler(req, res) {
                 }))
             });
         } catch (e) {
-            console.error('Artist details failed:', e);
+            console.error('API: Artist details failed with unexpected error:', e);
             return res.status(500).json({ error: 'Internal server error fetching artist' });
         }
     }

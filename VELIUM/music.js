@@ -1243,10 +1243,18 @@ async function loadAlbumDetails(albumId) {
 }
 
 async function loadArtistDetails(artistId, artistName = null) {
-    if (!artistId && !artistName) return;
-    if (artistId === 'undefined' || artistId === '') {
-        if (artistName) artistId = artistName;
-        else return;
+    // Prevent calls with invalid IDs/names
+    if (!artistId && !artistName) {
+        console.warn("loadArtistDetails called without valid artistId or artistName.");
+        return;
+    }
+    if (artistId === 'undefined' || artistId === 'null' || artistId === '') {
+        if (artistName && artistName !== 'undefined' && artistName !== 'null' && artistName !== '') {
+            artistId = artistName;
+        } else {
+            console.warn("loadArtistDetails called with invalid artistId and invalid artistName.");
+            return;
+        }
     }
     
     let fetchId = artistId;
