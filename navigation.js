@@ -260,7 +260,7 @@ let db;
                 const aliasCanonical = cleanPath(alias);
                 if (currentCanonical === aliasCanonical) return true;
                 
-                const aliasSuffixClean = aliasCanonical.startsWith('/') ? aliasCanonical.startsWith('/') ? aliasCanonical.substring(1) : aliasCanonical : aliasCanonical;
+                const aliasSuffixClean = aliasCanonical.startsWith('/') ? aliasCanonical.substring(1) : aliasCanonical;
                 if (aliasSuffixClean.length > 3 && currentCanonical.endsWith(aliasSuffixClean)) return true;
             }
         }
