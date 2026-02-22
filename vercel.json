@@ -26,6 +26,10 @@
       "destination": "/api/comments.mjs?videoId=:videoId"
     },
     {
+      "source": "/api/videoDetails/:videoId",
+      "destination": "/api/videoDetails.mjs?videoId=:videoId"
+    },
+    {
       "source": "/logged-in/@:username",
       "destination": "/logged-in/profile.html"
     },
