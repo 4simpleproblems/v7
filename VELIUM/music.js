@@ -222,7 +222,6 @@ function setupEventListeners() {
     document.getElementById('shuffleButton').addEventListener('click', toggleShuffle);
     document.getElementById('repeatButton').addEventListener('click', cycleRepeat);
     document.getElementById('likeButton').addEventListener('click', toggleLike);
-    document.getElementById('starLikeButton').addEventListener('click', toggleLike);
 
     // Progress Bar
     const progressTrack = document.getElementById('progressTrack');
@@ -364,8 +363,8 @@ window.toggleMiniPlayer = async function() {
 
         try {
             pipWindow = await window.documentPictureInPicture.requestWindow({
-                width: 300,
-                height: 150,
+                width: 340,
+                height: 180,
             });
 
             // Move mini player to PiP window
@@ -373,17 +372,30 @@ window.toggleMiniPlayer = async function() {
             mini.classList.add('active');
             pipWindow.document.body.append(mini);
 
-            // Copy styles to PiP window
+            // Copy all styles to PiP window
             [...document.styleSheets].forEach((styleSheet) => {
                 try {
                     const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
                     const style = document.createElement('style');
                     style.textContent = cssRules;
                     pipWindow.document.head.appendChild(style);
-                } catch (e) {}
+                } catch (e) {
+                    const link = document.createElement('link');
+                    if (styleSheet.href) {
+                        link.rel = 'stylesheet';
+                        link.href = styleSheet.href;
+                        pipWindow.document.head.appendChild(link);
+                    }
+                }
             });
             
-            // Add Tailwind if used
+            // Explicitly copy Geist font and FontAwesome
+            const fontLink = document.querySelector('link[href*="fonts.googleapis.com"]');
+            if (fontLink) pipWindow.document.head.appendChild(fontLink.cloneNode(true));
+            const faLink = document.querySelector('link[href*="font-awesome"]');
+            if (faLink) pipWindow.document.head.appendChild(faLink.cloneNode(true));
+
+            // Add Tailwind from CDN if used
             const tw = document.querySelector('script[src*="tailwindcss"]');
             if (tw) {
                 const script = document.createElement('script');
@@ -391,12 +403,27 @@ window.toggleMiniPlayer = async function() {
                 pipWindow.document.head.appendChild(script);
             }
 
+            // Simple body reset for PiP
+            pipWindow.document.body.style.background = '#000';
+            pipWindow.document.body.style.margin = '0';
+            pipWindow.document.body.style.display = 'flex';
+            pipWindow.document.body.style.alignItems = 'center';
+            pipWindow.document.body.style.justifyContent = 'center';
+            pipWindow.document.body.style.height = '100vh';
+            mini.style.position = 'static';
+            mini.style.width = '100%';
+            mini.style.boxShadow = 'none';
+
             updateMiniPlayerUI();
 
             pipWindow.addEventListener('pagehide', () => {
                 const mini = pipWindow.document.getElementById('miniPlayer');
-                document.body.append(mini);
-                mini.classList.remove('active');
+                if (mini) {
+                    document.body.append(mini);
+                    mini.classList.remove('active');
+                    mini.style.position = 'fixed';
+                    mini.style.width = '300px';
+                }
                 pipWindow = null;
             });
 
@@ -574,8 +601,8 @@ function renderTrackGrid(tracks, container) {
         card.className = 'track-card';
         card.innerHTML = `
             <img src="${getProxyUrl(track.artwork_url)}" class="track-artwork" loading="lazy">
-            <div class="star-btn ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLikeTrack(${JSON.stringify(track).replace(/"/g, '&quot;')}, this)">
-                <i class="${isLiked ? 'fas' : 'far'} fa-star"></i>
+            <div class="heart-btn ${isLiked ? 'active' : ''}" style="position: absolute; bottom: 80px; left: 24px; width: 48px; height: 48px; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transform: translateY(10px); transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); z-index: 10;" onclick="event.stopPropagation(); toggleLikeTrack(${JSON.stringify(track).replace(/"/g, '&quot;')}, this)">
+                <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i>
             </div>
             <div class="play-btn-overlay">
                 <i class="fas fa-play"></i>
@@ -956,13 +983,13 @@ window.toggleLikeTrack = async function(track, btnEl) {
         favorites.splice(index, 1);
         if (btnEl) {
             btnEl.classList.remove('active');
-            btnEl.querySelector('i').className = 'far fa-star';
+            btnEl.querySelector('i').className = 'far fa-heart';
         }
     } else {
         favorites.push(track);
         if (btnEl) {
             btnEl.classList.add('active');
-            btnEl.querySelector('i').className = 'fas fa-star';
+            btnEl.querySelector('i').className = 'fas fa-heart';
         }
     }
     await saveLibraryData();
@@ -1313,15 +1340,8 @@ function updateVolumeUI() {
 function updateLikeButtonStatus() {
     if (!currentTrack) return;
     const isLiked = favorites.some(t => t.id === currentTrack.id);
-    
     const btn = document.getElementById('likeButton');
     if (btn) btn.innerHTML = isLiked ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="far fa-heart"></i>';
-    
-    const starBtn = document.getElementById('starLikeButton');
-    if (starBtn) {
-        starBtn.innerHTML = isLiked ? '<i class="fas fa-star text-accent-indigo"></i>' : '<i class="far fa-star"></i>';
-        starBtn.classList.toggle('active', isLiked);
-    }
 }
 
 function showCreatePlaylistModal() {
@@ -1338,13 +1358,13 @@ window.toggleLikeTrack = async function(track, btnEl) {
         favorites.splice(index, 1);
         if (btnEl) {
             btnEl.classList.remove('active');
-            btnEl.querySelector('i').className = 'far fa-star';
+            btnEl.querySelector('i').className = 'far fa-heart';
         }
     } else {
         favorites.push(track);
         if (btnEl) {
             btnEl.classList.add('active');
-            btnEl.querySelector('i').className = 'fas fa-star';
+            btnEl.querySelector('i').className = 'fas fa-heart';
         }
     }
     await saveLibraryData();
