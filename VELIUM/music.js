@@ -98,6 +98,7 @@ let playlists = []; // Loaded in initApp
 let player = null;
 let progressInterval = null;
 let volume = parseInt(localStorage.getItem('velium_v2_volume')) || 70;
+let preloadedNextTrack = null;
 
 const popularArtists = [
     'The Weeknd', 'Drake', 'Post Malone', 'Dua Lipa', 'Ed Sheeran', 
@@ -114,6 +115,50 @@ function getTrackUid(track) {
     const title = (track.title || track.name || '').trim().toLowerCase();
     const artist = (track.artist_name || '').trim().toLowerCase();
     return `f-${title}-${artist}`.replace(/[^a-z0-9]/g, '');
+}
+
+async function preloadNextTrack() {
+    if (playlist.length === 0) return;
+    
+    let nextIndex = -1;
+    if (isShuffle) {
+        if (shuffledCurrentIndex < shuffledIndices.length - 1) nextIndex = shuffledIndices[shuffledCurrentIndex + 1];
+        else if (repeatMode === 'all') nextIndex = shuffledIndices[0];
+    } else {
+        if (currentIndex < playlist.length - 1) nextIndex = currentIndex + 1;
+        else if (repeatMode === 'all') nextIndex = 0;
+    }
+
+    if (nextIndex === -1 || nextIndex === currentIndex) return;
+    
+    const nextTrack = playlist[nextIndex];
+    if (!nextTrack) return;
+
+    // Don't preload if already cached for this index
+    if (preloadedNextTrack && preloadedNextTrack.index === nextIndex) return;
+
+    try {
+        const directUrl = getDownloadUrl(nextTrack);
+        if (directUrl) {
+            preloadedNextTrack = { index: nextIndex, source: 'audio', url: directUrl };
+            let preloadAudio = document.getElementById('preloadAudio');
+            if (!preloadAudio) {
+                preloadAudio = document.createElement('audio');
+                preloadAudio.id = 'preloadAudio';
+                preloadAudio.style.display = 'none';
+                document.body.appendChild(preloadAudio);
+            }
+            preloadAudio.src = directUrl;
+            preloadAudio.load();
+        } else {
+            const query = `${nextTrack.title} ${nextTrack.artist_name} official audio`;
+            const response = await fetch(`${API_BASE_URL}/youtube-search?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            if (data.videoId) {
+                preloadedNextTrack = { index: nextIndex, source: 'youtube', videoId: data.videoId };
+            }
+        }
+    } catch (e) { console.warn('Preload failed', e); }
 }
 
 window.toggleLikeTrack = async function(track, btnEl) {
@@ -406,6 +451,15 @@ function updateFullscreenTint(imageUrl) {
         fs.style.setProperty('--progress-bg', progressBg);
         fs.style.setProperty('--accent-color', accentColor);
         fs.style.setProperty('--bg-base', `rgb(${r}, ${g}, ${b})`);
+
+        // Apply to Player Bar
+        const playerBar = document.querySelector('.now-playing-bar');
+        if (playerBar) {
+            playerBar.style.borderTopColor = accentColor.replace('1)', '0.2)');
+            const playBtn = document.getElementById('playPauseButton');
+            if (playBtn) playBtn.style.backgroundColor = accentColor;
+            document.getElementById('progressBarFill').style.backgroundColor = accentColor;
+        }
     };
 }
 
@@ -531,6 +585,7 @@ function renderTrackGrid(tracks, container) {
         card.addEventListener('click', () => {
             playlist = tracks; 
             originalPlaylist = [...tracks];
+            preloadedNextTrack = null; // Clear old preload
             playTrack(index);
         });
         container.appendChild(card);
@@ -647,14 +702,33 @@ async function playTrack(index) {
     document.getElementById('currentTimeLabel').textContent = '0:00';
     document.getElementById('durationLabel').textContent = '0:00';
 
+    // 1. Check Preload Cache
+    if (preloadedNextTrack && preloadedNextTrack.index === index) {
+        if (preloadedNextTrack.source === 'audio') {
+            loadAudioPlayer(preloadedNextTrack.url);
+        } else {
+            loadYouTubePlayer(preloadedNextTrack.videoId);
+        }
+        preloadedNextTrack = null;
+        preloadNextTrack(); // Preload the one AFTER this
+        return;
+    }
+
     const directUrl = getDownloadUrl(currentTrack);
-    if (directUrl) { loadAudioPlayer(directUrl); return; }
+    if (directUrl) { 
+        loadAudioPlayer(directUrl); 
+        preloadNextTrack();
+        return; 
+    }
 
     try {
         const query = `${currentTrack.title} ${currentTrack.artist_name} official audio`;
         const response = await fetch(`${API_BASE_URL}/youtube-search?q=${encodeURIComponent(query)}`);
         const data = await response.json();
-        if (data.videoId) loadYouTubePlayer(data.videoId);
+        if (data.videoId) {
+            loadYouTubePlayer(data.videoId);
+            preloadNextTrack();
+        }
     } catch (e) { console.error('Failed to get video ID', e); }
 }
 
@@ -892,8 +966,8 @@ async function loadPlaylistView(playlistId) {
 }
 
 let currentDynamicPlaylist = [];
-function playAllFromDynamic() { if (currentDynamicPlaylist.length > 0) { playlist = currentDynamicPlaylist; originalPlaylist = [...currentDynamicPlaylist]; playTrack(0); } }
-function playAllFavorites() { if (favorites.length > 0) { playlist = favorites; originalPlaylist = [...favorites]; playTrack(0); } }
+function playAllFromDynamic() { if (currentDynamicPlaylist.length > 0) { playlist = currentDynamicPlaylist; originalPlaylist = [...currentDynamicPlaylist]; preloadedNextTrack = null; playTrack(0); } }
+function playAllFavorites() { if (favorites.length > 0) { playlist = favorites; originalPlaylist = [...favorites]; preloadedNextTrack = null; playTrack(0); } }
 
 function createPlaylist(name, description = '', cover_url = '') {
     const newPlaylist = { id: Date.now().toString(), name: name || 'My Playlist', description: description, tracks: [], cover_url: cover_url, createdAt: new Date().toISOString() };
