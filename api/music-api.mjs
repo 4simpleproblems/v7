@@ -6,11 +6,13 @@ let youtubePromise;
 async function getYoutube() {
   if (!youtubePromise) {
     youtubePromise = (async () => {
-      const { Innertube } = await import('youtubei.js');
-      return Innertube.create({ 
-        cache: null,
-        generate_session_locally: true
-      });
+      try {
+          const { Innertube } = await import('youtubei.js');
+          return await Innertube.create();
+      } catch (e) {
+          console.error('API: Failed to initialize Innertube', e);
+          throw e;
+      }
     })();
   }
   return youtubePromise;
@@ -223,7 +225,7 @@ export default async function handler(req, res) {
 
         try {
             const yt = await getYoutube();
-            const search = await yt.music.search(searchQuery, { filter: 'artists' });
+            const search = await yt.music.search(searchQuery, { type: 'artist' });
             
             const artists = (search.artists || search.results || []).map(item => {
                 if (item.type !== 'Artist' && item.type !== 'MusicResponsiveListItem') return null;
@@ -241,7 +243,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ artists });
         } catch (e) {
             console.error('YT Music artist search failed', e);
-            return res.status(500).json({ error: 'Failed to fetch artists', details: e.message });
+            return res.status(500).json({ error: 'Failed to fetch artists', message: e.message });
         }
     }
 
@@ -252,7 +254,7 @@ export default async function handler(req, res) {
 
         try {
             const yt = await getYoutube();
-            const search = await yt.music.search(searchQuery, { filter: 'albums' });
+            const search = await yt.music.search(searchQuery, { type: 'album' });
             
             const albums = (search.albums || search.results || []).map(item => {
                 if (item.type !== 'Album' && item.type !== 'MusicResponsiveListItem') return null;
@@ -275,7 +277,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ albums });
         } catch (e) {
             console.error('YT Music album search failed', e);
-            return res.status(500).json({ error: 'Failed to fetch albums', details: e.message });
+            return res.status(500).json({ error: 'Failed to fetch albums', message: e.message });
         }
     }
 
