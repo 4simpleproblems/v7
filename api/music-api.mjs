@@ -225,7 +225,8 @@ export default async function handler(req, res) {
             const yt = await getYoutube();
             const search = await yt.music.search(searchQuery, { filter: 'artists' });
             
-            const artists = (search.artists || []).map(item => {
+            const artists = (search.artists || search.results || []).map(item => {
+                if (item.type !== 'Artist' && item.type !== 'MusicResponsiveListItem') return null;
                 const name = item.name?.toString() || item.title?.toString() || 'Unknown Artist';
                 const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
 
@@ -240,7 +241,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ artists });
         } catch (e) {
             console.error('YT Music artist search failed', e);
-            return res.status(500).json({ error: 'Failed to fetch artists' });
+            return res.status(500).json({ error: 'Failed to fetch artists', details: e.message });
         }
     }
 
@@ -253,7 +254,8 @@ export default async function handler(req, res) {
             const yt = await getYoutube();
             const search = await yt.music.search(searchQuery, { filter: 'albums' });
             
-            const albums = (search.albums || []).map(item => {
+            const albums = (search.albums || search.results || []).map(item => {
+                if (item.type !== 'Album' && item.type !== 'MusicResponsiveListItem') return null;
                 const title = item.title?.toString() || item.name?.toString() || 'Unknown Album';
                 const artist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'YT Music Artist';
                 const artistId = item.artists?.[0]?.id || item.author?.id;
@@ -273,7 +275,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ albums });
         } catch (e) {
             console.error('YT Music album search failed', e);
-            return res.status(500).json({ error: 'Failed to fetch albums' });
+            return res.status(500).json({ error: 'Failed to fetch albums', details: e.message });
         }
     }
 
@@ -287,29 +289,61 @@ export default async function handler(req, res) {
             // Extract ID from URL if necessary
             let playlistId = playlistUrl;
             if (playlistUrl.includes('list=')) {
-                playlistId = new URL(playlistUrl).searchParams.get('list');
+                try {
+                    const urlObj = new URL(playlistUrl);
+                    playlistId = urlObj.searchParams.get('list');
+                } catch (urlErr) {
+                    // Fallback if URL parsing fails
+                    const match = playlistUrl.match(/[&?]list=([^&]+)/);
+                    if (match) playlistId = match[1];
+                }
             }
 
-            const playlist = await yt.music.getPlaylist(playlistId);
-            
-            return res.status(200).json({
-                name: playlist.title,
-                description: playlist.description || '',
-                artwork_url: playlist.thumbnails?.[0]?.url,
-                tracks: playlist.contents.map(track => ({
+            if (!playlistId) return res.status(400).json({ error: 'Could not extract playlist ID' });
+
+            let playlist;
+            let tracks = [];
+
+            try {
+                console.log(`API: Attempting to fetch music playlist: ${playlistId}`);
+                playlist = await yt.music.getPlaylist(playlistId);
+                tracks = (playlist.contents || []).map(track => {
+                    if (!track.id && !track.video_id) return null;
+                    return {
+                        id: `ytm-${track.id || track.video_id}`,
+                        title: track.title?.toString() || 'Unknown Title',
+                        artist_name: track.artists?.[0]?.name || 'Unknown Artist',
+                        artist_id: track.artists?.[0]?.id ? `ytm-${track.artists[0].id}` : null,
+                        duration: (track.duration?.seconds || 0) * 1000,
+                        artwork_url: track.thumbnails?.[0]?.url,
+                        youtube_id: track.id || track.video_id,
+                        source: 'YTMusic'
+                    };
+                }).filter(Boolean);
+            } catch (musicErr) {
+                console.warn('API: YT Music playlist fetch failed, falling back to standard YouTube', musicErr);
+                playlist = await yt.getPlaylist(playlistId);
+                tracks = (playlist.videos || []).map(track => ({
                     id: `ytm-${track.id}`,
-                    title: track.title,
-                    artist_name: track.artists?.[0]?.name || 'Unknown Artist',
-                    artist_id: track.artists?.[0]?.id ? `ytm-${track.artists[0].id}` : null,
+                    title: track.title?.toString() || 'Unknown Title',
+                    artist_name: track.author?.name || 'Unknown Artist',
+                    artist_id: track.author?.id ? `ytm-${track.author.id}` : null,
                     duration: (track.duration?.seconds || 0) * 1000,
                     artwork_url: track.thumbnails?.[0]?.url,
                     youtube_id: track.id,
                     source: 'YTMusic'
-                }))
+                }));
+            }
+            
+            return res.status(200).json({
+                name: playlist.title || 'Imported Playlist',
+                description: playlist.description || '',
+                artwork_url: playlist.thumbnails?.[0]?.url,
+                tracks: tracks
             });
         } catch (e) {
             console.error('YT Music playlist import failed', e);
-            return res.status(500).json({ error: 'Failed to import playlist' });
+            return res.status(500).json({ error: 'Failed to import playlist', details: e.message });
         }
     }
 
