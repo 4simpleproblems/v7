@@ -6,7 +6,7 @@ let youtubePromise;
 async function getYoutube() {
   if (!youtubePromise) {
     youtubePromise = (async () => {
-      const { Innertube } = await import('youtubei.js');
+      const { Innertube } = await import('youtubei');
       return Innertube.create({ 
         cache: null,
         generate_session_locally: true
@@ -81,22 +81,10 @@ export default async function handler(req, res) {
                 console.log('API: Raw YT Music search results (general search):', JSON.stringify(search, null, 2)); // Add this log
                 
                 const contents = {
-                    songs: [],
-                    albums: [],
-                    artists: []
+                    songs: search.songs || [],
+                    albums: search.albums || [],
+                    artists: search.artists || []
                 };
-
-                search.sections.forEach(section => {
-                    const title = section.title?.toString().toLowerCase() || '';
-                    
-                    if (title.includes('songs') || title.includes('results')) {
-                        contents.songs.push(...(section.contents || []));
-                    } else if (title.includes('albums')) {
-                        contents.albums.push(...(section.contents || []));
-                    } else if (title.includes('artists')) {
-                        contents.artists.push(...(section.contents || []));
-                    }
-                });
 
                 const topResult = search.sections.find(s => s.title?.toString().toLowerCase().includes('top result'))?.contents?.[0];
                 if (topResult && topResult.type === 'MusicResponsiveListItem') {
@@ -337,7 +325,7 @@ export default async function handler(req, res) {
     // 4. Artist Details
     if (endpoint === 'artist' || pathname.includes('/artist/')) {
         let artistId = id || pathParts[pathParts.length - 1];
-        console.log(`API: Artist endpoint called for artistId: "${artistId}"`);
+        console.log(`API: Artist details requested for artistId: "${artistId}"`);
 
         if (!artistId || artistId === 'undefined' || artistId === 'null') {
             console.error('API: Artist ID or Name is invalid or missing.');
@@ -345,62 +333,45 @@ export default async function handler(req, res) {
         }
         
         const rawId = artistId.startsWith('ytm-') ? artistId.replace('ytm-', '') : (artistId.startsWith('argon-') ? artistId.replace('argon-', '') : artistId);
-        console.log(`API: Extracted rawId: "${rawId}"`);
+        console.log(`API: Extracted rawId for details: "${rawId}"`);
         const yt = await getYoutube();
         try {
-            let artist;
-            let currentArtistId = artistId; // Keep track of the ID we successfully fetched with
+            let artistData;
+            let currentArtistId = artistId;
 
-            console.log(`API: Attempting direct fetch for rawId: "${rawId}"`);
-            try {
-                artist = await yt.music.getArtist(rawId);
-                console.log('API: Direct artist fetch successful. Artist data:', JSON.stringify(artist, null, 2));
-            } catch (e) {
-                console.warn(`API: Direct artist fetch failed for rawId: "${rawId}", error: ${e.message}. Attempting search fallback.`);
-                const search = await yt.music.search(rawId, { type: 'artist' });
-                console.log('API: Fallback search results:', JSON.stringify(search, null, 2));
-                const firstArtist = search.artists?.[0] || search.results?.find(r => r.type === 'Artist');
-                console.log('API: Search fallback results:', firstArtist);
-                
-                if (firstArtist && firstArtist.browseId) {
-                    artist = await yt.music.getArtist(firstArtist.browseId);
-                    currentArtistId = `ytm-${firstArtist.browseId}`;
-                    console.log(`API: Search fallback successful, fetched with browseId: "${firstArtist.browseId}". Artist data:`, JSON.stringify(artist, null, 2));
-                } else {
-                    console.error('API: Artist not found via search fallback.');
-                    return res.status(404).json({ error: 'Artist not found via search fallback' });
-                }
+            // Always try to search for the artist to get up-to-date data
+            console.log(`API: Performing search for artist details with query: "${rawId}"`);
+            const searchResults = await yt.music.search(rawId, { type: 'artist' });
+            console.log('API: Raw YT Music artist details search results:', JSON.stringify(searchResults, null, 2));
+
+            // Find the most relevant artist from the search results
+            // The new youtubei library might put artists in different properties,
+            // so we check common ones.
+            const foundArtist = searchResults.artists?.[0] || searchResults.results?.[0] || searchResults.data?.[0];
+
+            if (foundArtist) {
+                artistData = foundArtist;
+                currentArtistId = `ytm-${artistData.id || artistData.browseId}`;
+                console.log('API: Artist found via search. Artist data:', JSON.stringify(artistData, null, 2));
+            } else {
+                console.error('API: Artist not found via search for details.');
+                return res.status(404).json({ error: 'Artist not found' });
             }
 
-            if (!artist) {
+            if (!artistData) {
                 console.error('API: Artist object is null after fetch attempts.');
                 return res.status(404).json({ error: 'Artist not found' });
             }
-            console.log('API: Final artist data:', artist.name);
+            console.log('API: Final artist data (before formatting):', artistData.name || artistData.title);
 
+            // Now, format the artistData into the expected response structure
             return res.status(200).json({
-                id: currentArtistId.startsWith('ytm-') || currentArtistId.startsWith('argon-') ? currentArtistId : `ytm-${currentArtistId}`,
-                name: artist.name,
-                followers: artist.subscribers || 0, // ytmusicapi returns subscribers
-                image_url: artist.thumbnails?.[0]?.url,
-                top_tracks: (artist.sections?.find(s => s.type === 'MusicShelf' && s.title?.toString().toLowerCase().includes('songs'))?.contents || []).map(track => ({
-                    id: `ytm-${track.id}`,
-                    title: track.title,
-                    artist_name: artist.name,
-                    artist_id: currentArtistId.startsWith('ytm-') || currentArtistId.startsWith('argon-') ? currentArtistId : `ytm-${currentArtistId}`,
-                    duration: (track.duration?.seconds || 0) * 1000,
-                    artwork_url: track.thumbnails?.[0]?.url,
-                    youtube_id: track.id,
-                    source: 'YTMusic'
-                })),
-                albums: (artist.sections?.find(s => s.type === 'MusicCarouselShelf' && s.title?.toString().toLowerCase().includes('albums'))?.contents || []).map(album => ({
-                    id: `ytm-${album.id}`,
-                    name: album.title,
-                    artwork_url: album.thumbnails?.[0]?.url,
-                    release_year: album.year || 'Unknown',
-                    artist_name: artist.name,
-                    source: 'YTMusic'
-                }))
+                id: currentArtistId,
+                name: artistData.name || artistData.title,
+                followers: artistData.subscribers || artistData.followerCount || 0, // Adapt property names
+                image_url: artistData.thumbnails?.[0]?.url || artistData.thumbnail?.[0]?.url, // Adapt property names
+                top_tracks: [], // Initial empty, to be populated later if possible from searchResults or another API call
+                albums: []      // Initial empty, to be populated later if possible
             });
         } catch (e) {
             console.error('API: Artist details failed with unexpected error:', e);
