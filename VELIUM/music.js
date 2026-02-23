@@ -1267,6 +1267,9 @@ async function loadAlbumDetails(albumId) {
         const response = await fetch(`${API_BASE_URL}/album/${fetchId}`);
         const data = await response.json();
 
+        const artistName = (data.artists && data.artists.length > 0) ? data.artists[0].name : 'Unknown Artist';
+        const artistId = (data.artists && data.artists.length > 0) ? data.artists[0].id : '';
+
         container.innerHTML = `
             <div class="flex flex-col md:flex-row items-end gap-8 mb-10">
                 <img src="${getProxyUrl(data.artwork_url)}" class="w-56 h-56 rounded-3xl shadow-2xl border border-brand-border">
@@ -1274,7 +1277,7 @@ async function loadAlbumDetails(albumId) {
                     <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Album</span>
                     <h1 class="text-6xl font-black tracking-tighter mb-4">${escapeHtml(data.name)}</h1>
                     <div class="flex items-center gap-2">
-                        <span class="font-bold text-white hover:underline cursor-pointer" onclick="loadArtistDetails('ytm-${data.artists[0]?.id || ''}', '${escapeHtml(data.artists[0]?.name || '').replace(/'/g, "\\'")}')">${escapeHtml(data.artists[0].name)}</span>
+                        <span class="font-bold text-white hover:underline cursor-pointer" onclick="loadArtistDetails('${artistId}', '${escapeHtml(artistName).replace(/'/g, "\\'")}')">${escapeHtml(artistName)}</span>
                         <span class="text-gray-500">•</span>
                         <span class="text-gray-500">${data.release_year}</span>
                         <span class="text-gray-500">•</span>

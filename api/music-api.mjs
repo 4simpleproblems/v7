@@ -452,17 +452,24 @@ export default async function handler(req, res) {
             const yt = await getYoutube();
             try {
                 const album = await yt.music.getAlbum(rawId);
+                const albumArtists = (album.artists || []).map(a => ({ id: `ytm-${a.id}`, name: a.name }));
+                
+                // Ensure at least one artist exists for the frontend
+                if (albumArtists.length === 0) {
+                    albumArtists.push({ id: null, name: 'Unknown Artist' });
+                }
+
                 return res.status(200).json({
                     id: `ytm-${rawId}`,
                     name: album.title,
                     artwork_url: album.thumbnails?.[0]?.url,
-                    artists: (album.artists || []).map(a => ({ id: `ytm-${a.id}`, name: a.name })),
+                    artists: albumArtists,
                     total_tracks: album.contents?.length || 0,
                     release_year: album.year || 'Unknown',
                     tracks: (album.contents || []).map(track => ({
                         id: `ytm-${track.id}`,
                         title: track.title,
-                        artist_name: track.artists?.[0]?.name || album.artists?.[0]?.name,
+                        artist_name: track.artists?.[0]?.name || album.artists?.[0]?.name || 'Unknown Artist',
                         artist_id: track.artists?.[0]?.id ? `ytm-${track.artists[0].id}` : (album.artists?.[0]?.id ? `ytm-${album.artists[0].id}` : null),
                         duration: (track.duration?.seconds || 0) * 1000,
                         artwork_url: album.thumbnails?.[0]?.url,
@@ -496,6 +503,8 @@ export default async function handler(req, res) {
             
             // If it's a numeric ID (mostly), it's likely Saavn
             const isSaavnId = /^\d+$/.test(identifier);
+
+            const isId = isYtId || isSaavnId;
 
             let tracks = [];
             let artistName = identifier;
