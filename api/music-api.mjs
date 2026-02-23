@@ -232,6 +232,7 @@ export default async function handler(req, res) {
         try {
             const yt = await getYoutube();
             const search = await yt.music.search(searchQuery, { type: 'artist' });
+            console.log('API: Raw YT Music artist search results:', JSON.stringify(search, null, 2)); // Add this log
             
             const artists = (search.artists || []).map(item => {
                 if (item.type !== 'MusicResponsiveListItem') return null;
@@ -247,6 +248,7 @@ export default async function handler(req, res) {
                 };
             }).filter(Boolean);
 
+            console.log('API: Processed artists for response:', JSON.stringify(artists, null, 2)); // Add this log
             return res.status(200).json({ artists });
         } catch (e) {
             console.error('YT Music artist search failed', e);
@@ -351,17 +353,18 @@ export default async function handler(req, res) {
             console.log(`API: Attempting direct fetch for rawId: "${rawId}"`);
             try {
                 artist = await yt.music.getArtist(rawId);
-                console.log('API: Direct artist fetch successful.');
+                console.log('API: Direct artist fetch successful. Artist data:', JSON.stringify(artist, null, 2));
             } catch (e) {
                 console.warn(`API: Direct artist fetch failed for rawId: "${rawId}", error: ${e.message}. Attempting search fallback.`);
                 const search = await yt.music.search(rawId, { type: 'artist' });
+                console.log('API: Fallback search results:', JSON.stringify(search, null, 2));
                 const firstArtist = search.artists?.[0] || search.results?.find(r => r.type === 'Artist');
                 console.log('API: Search fallback results:', firstArtist);
                 
                 if (firstArtist && firstArtist.browseId) {
                     artist = await yt.music.getArtist(firstArtist.browseId);
-                    currentArtistId = `ytm-${firstArtist.browseId}`; // Update ID to the one actually used
-                    console.log(`API: Search fallback successful, fetched with browseId: "${firstArtist.browseId}"`);
+                    currentArtistId = `ytm-${firstArtist.browseId}`;
+                    console.log(`API: Search fallback successful, fetched with browseId: "${firstArtist.browseId}". Artist data:`, JSON.stringify(artist, null, 2));
                 } else {
                     console.error('API: Artist not found via search fallback.');
                     return res.status(404).json({ error: 'Artist not found via search fallback' });
