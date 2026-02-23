@@ -140,7 +140,10 @@ export default async function handler(req, res) {
               
               const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
               const duration = (item.duration?.seconds || 0) * 1000;
-              const trackId = item.id ? `ytm-${item.id}` : `ytm-gen-${Math.random().toString(36).substr(2, 9)}`;
+              
+              // Robust ID extraction
+              const rawId = item.id || item.video_id;
+              const trackId = rawId ? `ytm-${rawId}` : `ytm-gen-${Math.random().toString(36).substr(2, 9)}`;
 
               return {
                   id: trackId,
@@ -149,7 +152,7 @@ export default async function handler(req, res) {
                   artist_id: artistId ? `ytm-${artistId}` : null,
                   artwork_url: thumbnail,
                   duration: duration,
-                  youtube_id: item.id,
+                  youtube_id: rawId,
                   source: 'YTMusic'
               };
           }).filter(Boolean);
