@@ -2,20 +2,30 @@ const MUSIC_API_BASE = 'https://bhindi1.ddns.net/music/api';
 const SAAVN_API_BASE = 'https://jiosaavn-api-privatecvc2.vercel.app';
 
 // Helper to get YouTube search
-let youtubePromise; 
+let youtubeInstance = null;
+let isInitializing = false;
+
 async function getYoutube() {
-  if (!youtubePromise) {
-    youtubePromise = (async () => {
-      try {
-          const { Innertube } = await import('youtubei.js');
-          return await Innertube.create();
-      } catch (e) {
-          console.error('API: Failed to initialize Innertube', e);
-          throw e;
-      }
-    })();
+  if (youtubeInstance) return youtubeInstance;
+  if (isInitializing) {
+      while (isInitializing) await new Promise(r => setTimeout(r, 100));
+      if (youtubeInstance) return youtubeInstance;
   }
-  return youtubePromise;
+
+  isInitializing = true;
+  try {
+      const { Innertube } = await import('youtubei.js');
+      youtubeInstance = await Innertube.create({
+          cache: null,
+          generate_session_locally: true
+      });
+      isInitializing = false;
+      return youtubeInstance;
+  } catch (e) {
+      isInitializing = false;
+      console.error('API: Critical failure initializing Innertube', e);
+      throw new Error(`Innertube initialization failed: ${e.message}`);
+  }
 }
 
 export default async function handler(req, res) {
@@ -336,7 +346,6 @@ export default async function handler(req, res) {
                     duration: v.basic_info.duration
                 }));
             } else {
-                // Standard Strategy: Try Music, then VL prefix, then Standard YT
                 try {
                     playlistData = await yt.music.getPlaylist(playlistId);
                 } catch (e1) {
@@ -346,35 +355,47 @@ export default async function handler(req, res) {
                         } catch (e2) {
                             const standard = await yt.getPlaylist(playlistId);
                             playlistData = {
-                                title: standard.info.title,
-                                description: standard.info.description,
-                                thumbnails: standard.info.thumbnails,
-                                contents: standard.videos.map(v => ({
+                                title: standard.info?.title || 'Unknown Playlist',
+                                description: standard.info?.description || '',
+                                thumbnails: standard.info?.thumbnails || [],
+                                contents: (standard.videos || []).map(v => ({
                                     id: v.id,
-                                    title: v.title.toString(),
-                                    artists: [{ name: v.author.name, id: v.author.id }],
+                                    title: v.title?.toString() || 'Unknown Video',
+                                    artists: [{ name: v.author?.name || 'Unknown Artist', id: v.author?.id }],
                                     thumbnails: v.thumbnails,
                                     duration: v.duration
                                 }))
                             };
                         }
                     } else {
-                        throw e1;
+                        const standard = await yt.getPlaylist(playlistId);
+                        playlistData = {
+                            title: standard.info?.title || 'Unknown Playlist',
+                            description: standard.info?.description || '',
+                            thumbnails: standard.info?.thumbnails || [],
+                            contents: (standard.videos || []).map(v => ({
+                                id: v.id,
+                                title: v.title?.toString() || 'Unknown Video',
+                                artists: [{ name: v.author?.name || 'Unknown Artist', id: v.author?.id }],
+                                thumbnails: v.thumbnails,
+                                duration: v.duration
+                            }))
+                        };
                     }
                 }
             }
 
             const tracks = (playlistData.contents || []).map(item => {
-                const id = item.id || item.video_id;
-                if (!id) return null;
+                const tid = item.id || item.video_id;
+                if (!tid) return null;
                 return {
-                    id: `ytm-${id}`,
+                    id: `ytm-${tid}`,
                     title: item.title?.toString() || 'Unknown Title',
                     artist_name: item.artists?.[0]?.name || item.author?.name || 'Unknown Artist',
                     artist_id: (item.artists?.[0]?.id || item.author?.id) ? `ytm-${item.artists?.[0]?.id || item.author?.id}` : null,
                     duration: (item.duration?.seconds || item.seconds || 0) * 1000,
                     artwork_url: item.thumbnails?.[0]?.url || (Array.isArray(item.thumbnail) ? item.thumbnail[0]?.url : null),
-                    youtube_id: id,
+                    youtube_id: tid,
                     source: 'YTMusic'
                 };
             }).filter(Boolean);
@@ -412,14 +433,14 @@ export default async function handler(req, res) {
                     id: `ytm-${rawId}`,
                     name: album.title,
                     artwork_url: album.thumbnails?.[0]?.url,
-                    artists: album.artists.map(a => ({ id: `ytm-${a.id}`, name: a.name })),
-                    total_tracks: album.contents.length,
+                    artists: (album.artists || []).map(a => ({ id: `ytm-${a.id}`, name: a.name })),
+                    total_tracks: album.contents?.length || 0,
                     release_year: album.year || 'Unknown',
-                    tracks: album.contents.map(track => ({
+                    tracks: (album.contents || []).map(track => ({
                         id: `ytm-${track.id}`,
                         title: track.title,
-                        artist_name: track.artists?.[0]?.name || album.artists[0]?.name,
-                        artist_id: track.artists?.[0]?.id ? `ytm-${track.artists[0].id}` : (album.artists[0]?.id ? `ytm-${album.artists[0].id}` : null),
+                        artist_name: track.artists?.[0]?.name || album.artists?.[0]?.name,
+                        artist_id: track.artists?.[0]?.id ? `ytm-${track.artists[0].id}` : (album.artists?.[0]?.id ? `ytm-${album.artists[0].id}` : null),
                         duration: (track.duration?.seconds || 0) * 1000,
                         artwork_url: album.thumbnails?.[0]?.url,
                         youtube_id: track.id,
@@ -427,8 +448,8 @@ export default async function handler(req, res) {
                     }))
                 });
             } catch (e) {
-                console.error('YT Music album details failed', e);
-                return res.status(500).json({ error: 'Failed to fetch YT Music album' });
+                console.error('YT Music album details failed', e.message);
+                return res.status(500).json({ error: 'Failed to fetch YT Music album', message: e.message });
             }
         }
         return res.status(404).json({ error: 'Album not found' });
@@ -450,7 +471,6 @@ export default async function handler(req, res) {
             // Check if it looks like an ID (starts with UC, FMe, or is a long hex-like string)
             const isId = identifier.startsWith('UC') || identifier.startsWith('FMe') || (identifier.length > 15 && !identifier.includes(' '));
             
-            let artistData = null;
             let tracks = [];
             let artistName = identifier;
             let artistImage = null;
@@ -462,7 +482,7 @@ export default async function handler(req, res) {
                     artistName = artist.name;
                     artistImage = artist.thumbnails?.[artist.thumbnails.length - 1]?.url;
                     
-                    const songSection = artist.sections.find(s => 
+                    const songSection = artist.sections?.find(s => 
                         s.type === 'MusicShelf' || 
                         s.title?.toString().toLowerCase().includes('songs') ||
                         s.title?.toString().toLowerCase().includes('top tracks')
@@ -488,7 +508,7 @@ export default async function handler(req, res) {
             // Fallback to name-based search if ID fetch failed or if it wasn't an ID
             if (tracks.length === 0) {
                 console.log(`API: Performing search for artist: "${identifier}"`);
-                const searchResults = await yt.music.search(identifier, { filter: 'songs' });
+                const searchResults = await yt.music.search(identifier, { type: 'song' });
                 
                 if (searchResults.songs && searchResults.songs.length > 0) {
                     tracks = searchResults.songs.map(item => {
@@ -519,7 +539,7 @@ export default async function handler(req, res) {
 
                 // Try to find a better artist image via artist search
                 try {
-                    const artistSearch = await yt.music.search(identifier, { filter: 'artists' });
+                    const artistSearch = await yt.music.search(identifier, { type: 'artist' });
                     const bestMatch = artistSearch.artists?.find(a => 
                         a.name?.toLowerCase() === identifier.toLowerCase().replace(/-/g, ' ') ||
                         a.name?.toLowerCase().includes(identifier.toLowerCase().replace(/-/g, ' '))
@@ -548,7 +568,7 @@ export default async function handler(req, res) {
             });
 
         } catch (e) {
-            console.error('API: Artist Details failed:', e);
+            console.error('API: Artist Details failed:', e.message);
             return res.status(500).json({ error: 'Internal server error fetching artist details', message: e.message });
         }
     }
@@ -601,11 +621,10 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: 'Endpoint not found' });
 
   } catch (error) {
-    console.error('Music API Critical Error:', error);
+    console.error('Music API Critical Error:', error.message);
     return res.status(500).json({ 
         error: 'Critical API Failure', 
-        message: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+        message: error.message
     });
   }
 }
