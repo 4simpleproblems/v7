@@ -131,14 +131,17 @@ export default async function handler(req, res) {
               const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
               const duration = (item.duration?.seconds || 0) * 1000;
 
+              // Ensure item.id is present and use it, otherwise generate a unique ID
+              const trackId = item.id ? `ytm-${item.id}` : `ytm-generated-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
               return {
-                  id: `ytm-${item.id}`,
+                  id: trackId, // Use the robustly generated trackId
                   title: title,
                   artist_name: artist,
                   artist_id: artistId ? `ytm-${artistId}` : null,
                   artwork_url: thumbnail,
                   duration: duration,
-                  youtube_id: item.id,
+                  youtube_id: item.id, // Keep original item.id as youtube_id
                   source: 'YTMusic'
               };
           }).filter(Boolean);
