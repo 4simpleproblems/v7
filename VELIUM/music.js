@@ -742,7 +742,7 @@ function renderAlbumGrid(albums, container) {
             <div class="font-bold text-sm truncate text-white mb-1">${escapeHtml(album.name)}</div>
             <div class="text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer" onclick="event.stopPropagation(); loadArtistDetails('${album.artist_id || ''}', '${escapeHtml(album.artist_name || '').replace(/'/g, "\\'")}')">${album.release_year} • ${escapeHtml(album.artist_name)}</div>
         `;
-        card.addEventListener('click', () => loadAlbumDetails(album.id));
+        card.addEventListener('click', () => loadAlbumDetails(album.id || album.browseId))
         container.appendChild(card);
     });
 }
@@ -758,7 +758,7 @@ function renderArtistGrid(artists, container) {
             <div class="text-center font-bold text-sm truncate text-white">${escapeHtml(artist.name)}</div>
             <div class="text-center text-xs text-gray-500">Artist</div>
         `;
-        card.addEventListener('click', () => loadArtistDetails(artist.id));
+        card.addEventListener('click', () => loadArtistDetails(artist.id || artist.browseId, artist.name))
         container.appendChild(card);
     });
 }
@@ -1255,8 +1255,13 @@ async function loadAlbumDetails(albumId) {
     const container = document.getElementById('dynamicView');
     container.innerHTML = '<div class="py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
 
+    let fetchId = albumId;
+    if (fetchId && typeof fetchId === 'string' && !fetchId.startsWith('ytm-') && !fetchId.startsWith('argon-')) {
+        fetchId = 'ytm-' + fetchId;
+    }
+
     try {
-        const response = await fetch(`${API_BASE_URL}/album/${albumId}`);
+        const response = await fetch(`${API_BASE_URL}/album/${fetchId}`);
         const data = await response.json();
 
         container.innerHTML = `
