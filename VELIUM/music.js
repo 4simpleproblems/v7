@@ -257,7 +257,6 @@ function setupEventListeners() {
     document.getElementById('savePlaylistBtn').addEventListener('click', () => {
         createPlaylist(document.getElementById('playlistNameInput').value.trim(), document.getElementById('playlistDescInput').value.trim());
     });
-    document.getElementById('confirmImportPlaylistBtn').addEventListener('click', importYoutubePlaylist);
     document.getElementById('confirmEditPlaylistBtn').addEventListener('click', confirmEditPlaylist);
     document.getElementById('savePlaylistCoverBtn').addEventListener('click', savePlaylistCover);
 
@@ -864,17 +863,6 @@ async function confirmEditPlaylist() { const id = document.getElementById('editP
 function showPlaylistCoverUploadModal(id) { document.getElementById('playlistCoverUploadModal').style.display = 'flex'; document.getElementById('uploadPlaylistId').value = id; document.getElementById('playlistCoverInput').value = ''; }
 function hidePlaylistCoverUploadModal() { document.getElementById('playlistCoverUploadModal').style.display = 'none'; }
 async function savePlaylistCover() { const id = document.getElementById('uploadPlaylistId').value, file = document.getElementById('playlistCoverInput').files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { const pl = playlists.find(p => p.id === id); if (pl) { updatePlaylist(id, pl.name, pl.description, e.target.result); hidePlaylistCoverUploadModal(); } }; reader.readAsDataURL(file); }
-
-async function importYoutubePlaylist() {
-    const url = document.getElementById('importPlaylistUrlInput').value.trim(), btn = document.getElementById('confirmImportPlaylistBtn');
-    if (!url) return; btn.disabled = true; btn.innerHTML = 'Importing...';
-    try {
-        const response = await fetch(`${API_BASE_URL}/import-playlist?q=${encodeURIComponent(url)}`);
-        const data = await response.json();
-        const newPlaylist = { id: Date.now().toString(), name: data.name || 'Imported', description: data.description || 'From YouTube', tracks: data.tracks || [], cover_url: data.artwork_url || '', createdAt: new Date().toISOString() };
-        playlists.push(newPlaylist); await saveLibraryData(); renderSidebarPlaylists(); renderLibrary(); hideImportPlaylistModal(); loadPlaylistView(newPlaylist.id);
-    } catch (e) { console.error('Import failed', e); } finally { btn.disabled = false; btn.innerHTML = 'Import'; }
-}
 
 function startProgressUpdate() {
     if (progressInterval) clearInterval(progressInterval);
