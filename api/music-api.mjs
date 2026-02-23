@@ -224,6 +224,72 @@ export default async function handler(req, res) {
       });
     }
 
+    // New Endpoint: Artist Search
+    if (endpoint === 'artist-search') {
+        const searchQuery = q || query;
+        if (!searchQuery) return res.status(400).json({ error: 'Missing query' });
+
+        try {
+            const yt = await getYoutube();
+            const search = await yt.music.search(searchQuery, { type: 'artist' });
+            
+            const artists = (search.artists || []).map(item => {
+                if (item.type !== 'MusicResponsiveListItem') return null;
+                
+                const name = item.name?.toString() || item.title?.toString() || 'Unknown Artist';
+                const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
+
+                return {
+                    id: `ytm-${item.id}`,
+                    name: name,
+                    image_url: thumbnail,
+                    source: 'YTMusic'
+                };
+            }).filter(Boolean);
+
+            return res.status(200).json({ artists });
+        } catch (e) {
+            console.error('YT Music artist search failed', e);
+            return res.status(500).json({ error: 'Failed to fetch artists' });
+        }
+    }
+
+    // New Endpoint: Album Search
+    if (endpoint === 'album-search') {
+        const searchQuery = q || query;
+        if (!searchQuery) return res.status(400).json({ error: 'Missing query' });
+
+        try {
+            const yt = await getYoutube();
+            const search = await yt.music.search(searchQuery, { type: 'album' });
+            
+            const albums = (search.albums || []).map(item => {
+                if (item.type !== 'MusicResponsiveListItem') return null;
+                
+                const title = item.title?.toString() || item.name?.toString() || 'Unknown Album';
+                const artist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'YT Music Artist';
+                const artistId = item.artists?.[0]?.id || item.author?.id;
+                const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
+
+                return {
+                    id: `ytm-${item.id}`,
+                    name: title,
+                    artwork_url: thumbnail,
+                    artist_name: artist,
+                    artist_id: artistId ? `ytm-${artistId}` : null,
+                    release_year: item.year?.toString() || 'Unknown',
+                    source: 'YTMusic'
+                };
+            }).filter(Boolean);
+
+            return res.status(200).json({ albums });
+        } catch (e) {
+            console.error('YT Music album search failed', e);
+            return res.status(500).json({ error: 'Failed to fetch albums' });
+        }
+    }
+
+
     // 2.1 Playlist Details
     if (endpoint === 'playlist' || pathname.includes('/playlist/')) {
         // YT Music playlists would need implementation if needed

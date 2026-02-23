@@ -83,13 +83,7 @@
         "url": "../logged-in/velium.html",
         "aliases": ["/logged-in/velium"]
     },
-    "vira": {
-        "name": "Vira",
-        "icon": "fa-brands fa-youtube",
-        "url": "../Vira/index.html",
-        "aliases": ["/Vira/index", "/Vira/"],
-        "adminOnly": true
-    },
+
     "securly-tester": {
         "name": "Securly Tester",
         "icon": "fa-solid fa-shield-alt",

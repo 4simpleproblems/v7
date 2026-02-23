@@ -550,16 +550,20 @@ async function handleSearch(query, append = false) {
 
         let offset = 0;
         let hasMore = true;
+        let endpoint = `${API_BASE_URL}/search`; // Default endpoint for tracks
 
         if (tabName === 'tracks') {
             offset = searchState.tracksOffset;
             hasMore = searchState.hasMoreTracks;
+            endpoint = `${API_BASE_URL}/search`;
         } else if (tabName === 'albums') {
             offset = searchState.albumsOffset;
             hasMore = searchState.hasMoreAlbums;
+            endpoint = `${API_BASE_URL}/album-search`; // Use dedicated album search
         } else if (tabName === 'artists') {
             offset = searchState.artistsOffset;
             hasMore = searchState.hasMoreArtists;
+            endpoint = `${API_BASE_URL}/artist-search`; // Use dedicated artist search
         }
         
         if (!hasMore && append) {
@@ -567,30 +571,24 @@ async function handleSearch(query, append = false) {
             return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&offset=${offset}&limit=${searchState.limit}`);
+        const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}&offset=${offset}&limit=${searchState.limit}`);
         const data = await response.json();
 
-        // Process tracks
-        const newTracks = data.tracks || [];
+        // Process results based on the active tab
         if (tabName === 'tracks') {
-            if (!append) tracksGrid.innerHTML = ''; // Clear only if not appending
+            const newTracks = data.tracks || [];
+            if (!append) tracksGrid.innerHTML = '';
             newTracks.forEach(track => renderTrackGrid([track], tracksGrid));
             searchState.tracksOffset += newTracks.length;
             searchState.hasMoreTracks = newTracks.length === searchState.limit;
-        }
-
-        // Process albums
-        const newAlbums = data.albums || [];
-        if (tabName === 'albums') {
+        } else if (tabName === 'albums') {
+            const newAlbums = data.albums || []; // Data structure for /album-search directly returns 'albums'
             if (!append) albumsGrid.innerHTML = '';
             newAlbums.forEach(album => renderAlbumGrid([album], albumsGrid));
             searchState.albumsOffset += newAlbums.length;
             searchState.hasMoreAlbums = newAlbums.length === searchState.limit;
-        }
-
-        // Process artists
-        const newArtists = data.artists || [];
-        if (tabName === 'artists') {
+        } else if (tabName === 'artists') {
+            const newArtists = data.artists || []; // Data structure for /artist-search directly returns 'artists'
             if (!append) artistsGrid.innerHTML = '';
             newArtists.forEach(artist => renderArtistGrid([artist], artistsGrid));
             searchState.artistsOffset += newArtists.length;
@@ -598,7 +596,17 @@ async function handleSearch(query, append = false) {
         }
 
         // Show Load More button if there are more results
-        if (loadMoreBtn && hasMore && (newTracks.length > 0 || newAlbums.length > 0 || newArtists.length > 0)) {
+        // This logic remains mostly the same, but now it's per tab
+        const currentTabHasMore = (tabName === 'tracks' && searchState.hasMoreTracks) ||
+                                  (tabName === 'albums' && searchState.hasMoreAlbums) ||
+                                  (tabName === 'artists' && searchState.hasMoreArtists);
+        
+        const currentTabNewResults = (tabName === 'tracks' && (data.tracks || []).length > 0) ||
+                                     (tabName === 'albums' && (data.albums || []).length > 0) ||
+                                     (tabName === 'artists' && (data.artists || []).length > 0);
+
+
+        if (loadMoreBtn && currentTabHasMore && currentTabNewResults) {
             loadMoreBtn.classList.remove('hidden');
         } else if (loadMoreBtn) {
             loadMoreBtn.classList.add('hidden');
@@ -1050,14 +1058,31 @@ function cycleRepeat() {
 
 // --- Storage & Helpers ---
 async function loadLibraryData() {
-    if (window.VeliumDB) {
-        const lib = await window.VeliumDB.getLibrary();
-        favorites = lib.likedSongs || [];
-        playlists = lib.playlists || [];
-    } else {
-        favorites = loadFromStorage('favorites') || [];
-        playlists = loadFromStorage('playlists') || [];
+    let loadedFavorites = [];
+    let loadedPlaylists = [];
+
+    try {
+        if (window.VeliumDB) {
+            const lib = await window.VeliumDB.getLibrary();
+            loadedFavorites = lib.likedSongs || [];
+            loadedPlaylists = lib.playlists || [];
+            console.log("VELIUM: Loaded library from IndexedDB.");
+        } else {
+            console.warn("VELIUM: VeliumDB not available, falling back to localStorage for loading library.");
+            const storedFavorites = loadFromStorage('favorites');
+            if (storedFavorites) loadedFavorites = storedFavorites;
+            const storedPlaylists = loadFromStorage('playlists');
+            if (storedPlaylists) loadedPlaylists = storedPlaylists;
+        }
+    } catch (e) {
+        console.error("VELIUM: Error loading library from IndexedDB, falling back to localStorage.", e);
+        const storedFavorites = loadFromStorage('favorites');
+        if (storedFavorites) loadedFavorites = storedFavorites;
+        const storedPlaylists = loadFromStorage('playlists');
+        if (storedPlayplaylists) loadedPlaylists = storedPlaylists;
     }
+    favorites = loadedFavorites;
+    playlists = loadedPlaylists;
 }
 
 window.toggleLikeTrack = async function(track, btnEl) {
@@ -1082,9 +1107,17 @@ window.toggleLikeTrack = async function(track, btnEl) {
 };
 
 async function saveLibraryData() {
-    if (window.VeliumDB) {
-        await window.VeliumDB.saveLibrary({ likedSongs: favorites, playlists: playlists });
-    } else {
+    try {
+        if (window.VeliumDB) {
+            await window.VeliumDB.saveLibrary({ likedSongs: favorites, playlists: playlists });
+            console.log("VELIUM: Saved library to IndexedDB.");
+        } else {
+            console.warn("VELIUM: VeliumDB not available, falling back to localStorage for saving library.");
+            saveToStorage('favorites', favorites);
+            saveToStorage('playlists', playlists);
+        }
+    } catch (e) {
+        console.error("VELIUM: Error saving library to IndexedDB, falling back to localStorage.", e);
         saveToStorage('favorites', favorites);
         saveToStorage('playlists', playlists);
     }
