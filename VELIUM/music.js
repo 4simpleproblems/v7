@@ -107,13 +107,39 @@ const popularArtists = [
 // --- Helpers ---
 function getTrackUid(track) {
     if (!track) return null;
-    // Prefer unique ID if available and looks valid (not a generic one)
-    if (track.id && !track.id.includes('gen-') && !track.id.includes('generated-')) {
+    if (track.youtube_id) return `ytm-${track.youtube_id}`;
+    if (track.id && (track.id.startsWith('ytm-') || track.id.startsWith('saavn-')) && !track.id.includes('gen-')) {
         return track.id;
     }
-    // Fallback to a normalized combination of title and artist
-    return `${track.title?.trim()}-${track.artist_name?.trim()}`.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const title = (track.title || track.name || '').trim().toLowerCase();
+    const artist = (track.artist_name || '').trim().toLowerCase();
+    return `f-${title}-${artist}`.replace(/[^a-z0-9]/g, '');
 }
+
+window.toggleLikeTrack = async function(track, btnEl) {
+    const trackUid = getTrackUid(track);
+    const index = favorites.findIndex(t => getTrackUid(t) === trackUid);
+    
+    if (index > -1) {
+        favorites.splice(index, 1);
+        if (btnEl) {
+            btnEl.classList.remove('active');
+            const icon = btnEl.querySelector('i');
+            if (icon) icon.className = 'far fa-heart';
+        }
+    }
+    else {
+        favorites.push(track);
+        if (btnEl) {
+            btnEl.classList.add('active');
+            const icon = btnEl.querySelector('i');
+            if (icon) icon.className = 'fas text-red-500 fa-heart';
+        }
+    }
+    await saveLibraryData();
+    updateLikeButtonStatus(); 
+    if (document.getElementById('favoritesView').classList.contains('active')) renderFavorites();
+};
 
 function escapeHtml(text) {
     if (!text) return '';
@@ -352,21 +378,34 @@ function updateFullscreenTint(imageUrl) {
     img.onload = () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = 1; canvas.height = 1;
-        ctx.drawImage(img, 0, 0, 1, 1);
-        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        canvas.width = 50; canvas.height = 50; 
+        ctx.drawImage(img, 0, 0, 50, 50);
+        const data = ctx.getImageData(0, 0, 50, 50).data;
+        
+        let r=0, g=0, b=0, count=0;
+        for(let i=0; i<data.length; i+=4) {
+            r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+        }
+        r = Math.round(r/count); g = Math.round(g/count); b = Math.round(b/count);
+        
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-        let tintColor, progressBg;
+        let tintColor, progressBg, accentColor;
+
         if (brightness < 160) {
             tintColor = 'rgba(255, 255, 255, 1)';
             progressBg = 'rgba(255, 255, 255, 0.2)';
+            accentColor = `rgba(${Math.min(255, r+40)}, ${Math.min(255, g+40)}, ${Math.min(255, b+40)}, 1)`;
         } else {
-            const factor = 0.1;
+            const factor = 0.15;
             tintColor = `rgba(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)}, 1)`;
             progressBg = `rgba(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)}, 0.2)`;
+            accentColor = `rgba(${Math.round(r * 0.5)}, ${Math.round(g * 0.5)}, ${Math.round(b * 0.5)}, 1)`;
         }
+
         fs.style.setProperty('--tint-color', tintColor);
         fs.style.setProperty('--progress-bg', progressBg);
+        fs.style.setProperty('--accent-color', accentColor);
+        fs.style.setProperty('--bg-base', `rgb(${r}, ${g}, ${b})`);
     };
 }
 
@@ -463,18 +502,32 @@ function renderTrackGrid(tracks, container) {
         const trackUid = getTrackUid(track);
         const isLiked = favorites.some(f => getTrackUid(f) === trackUid);
         const card = document.createElement('div');
-        card.className = 'track-card';
+        card.className = 'track-card relative aspect-square p-0 overflow-hidden group';
+        
+        const artworkUrl = getProxyUrl(track.artwork_url);
+        
         card.innerHTML = `
-            <img src="${getProxyUrl(track.artwork_url)}" class="track-artwork" loading="lazy">
-            <div class="heart-btn ${isLiked ? 'active' : ''}" style="position: absolute; bottom: 80px; left: 24px; width: 48px; height: 48px; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transform: translateY(10px); transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); z-index: 10;" onclick="event.stopPropagation(); toggleLikeTrack(${JSON.stringify(track).replace(/"/g, '&quot;')}, this)">
-                <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i>
+            <img src="${artworkUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
+            
+            <!-- Bottom Blur Overlay -->
+            <div class="absolute inset-x-0 bottom-0 h-1/3 bg-black/20 backdrop-blur-md border-t border-white/10 flex flex-col justify-center px-4 transition-transform duration-300 translate-y-2 group-hover:translate-y-0">
+                <div class="font-bold text-sm truncate text-white mb-0.5">${escapeHtml(track.title)}</div>
+                <div class="text-[10px] text-gray-300 truncate uppercase tracking-wider font-medium">${escapeHtml(track.artist_name)}</div>
             </div>
-            <div class="play-btn-overlay">
-                <i class="fas fa-play"></i>
+
+            <!-- Heart Button (Top Right) -->
+            <div class="heart-btn ${isLiked ? 'active' : ''} absolute top-3 right-3 w-10 h-10 bg-black/40 backdrop-blur-sm text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 border border-white/10 z-20" onclick="event.stopPropagation(); toggleLikeTrack(${JSON.stringify(track).replace(/"/g, '&quot;')}, this)">
+                <i class="${isLiked ? 'fas text-red-500' : 'far'} fa-heart"></i>
             </div>
-            <div class="font-bold text-sm truncate text-white mb-1">${escapeHtml(track.title)}</div>
-            <div class="text-xs text-gray-500 truncate">${escapeHtml(track.artist_name)}</div>
+
+            <!-- Play Button Overlay (Center) -->
+            <div class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                <div class="w-14 h-14 bg-accent-indigo text-white rounded-full flex items-center justify-center shadow-2xl transform scale-90 group-hover:scale-100 transition-transform duration-300">
+                    <i class="fas fa-play text-xl ml-1"></i>
+                </div>
+            </div>
         `;
+        
         card.addEventListener('click', () => {
             playlist = tracks; 
             originalPlaylist = [...tracks];
@@ -489,11 +542,13 @@ function renderPlaylistGrid(playlistsData, container) {
     container.innerHTML = '';
     playlistsData.forEach(pl => {
         const card = document.createElement('div');
-        card.className = 'track-card';
+        card.className = 'track-card relative aspect-square p-0 overflow-hidden group';
         card.innerHTML = `
-            <img src="${getProxyUrl(pl.artwork_url)}" class="track-artwork" loading="lazy">
-            <div class="font-bold text-sm truncate text-white mb-1">${escapeHtml(pl.name)}</div>
-            <div class="text-xs text-gray-500 truncate">${pl.song_count} songs</div>
+            <img src="${getProxyUrl(pl.artwork_url)}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
+            <div class="absolute inset-x-0 bottom-0 h-1/3 bg-black/20 backdrop-blur-md border-t border-white/10 flex flex-col justify-center px-4 transition-transform duration-300 translate-y-2 group-hover:translate-y-0">
+                <div class="font-bold text-sm truncate text-white mb-0.5">${escapeHtml(pl.name)}</div>
+                <div class="text-[10px] text-gray-300 truncate uppercase tracking-wider font-medium">${pl.song_count} songs</div>
+            </div>
         `;
         card.addEventListener('click', () => loadOfficialPlaylistDetails(pl.id));
         container.appendChild(card);
@@ -747,13 +802,22 @@ window.toggleLikeTrack = async function(track, btnEl) {
     const index = favorites.findIndex(t => getTrackUid(t) === trackUid);
     if (index > -1) {
         favorites.splice(index, 1);
-        if (btnEl) { btnEl.classList.remove('active'); btnEl.querySelector('i').className = 'far fa-heart'; }
-    } else {
+        if (btnEl) {
+            btnEl.classList.remove('active');
+            const icon = btnEl.querySelector('i');
+            if (icon) icon.className = 'far fa-heart';
+        }
+    }
+    else {
         favorites.push(track);
-        if (btnEl) { btnEl.classList.add('active'); btnEl.querySelector('i').className = 'fas fa-heart'; }
+        if (btnEl) {
+            btnEl.classList.add('active');
+            const icon = btnEl.querySelector('i');
+            if (icon) icon.className = 'fas text-red-500 fa-heart';
+        }
     }
     await saveLibraryData();
-    updateLikeButtonStatus();
+    updateLikeButtonStatus(); 
     if (document.getElementById('favoritesView').classList.contains('active')) renderFavorites();
 };
 
@@ -793,12 +857,12 @@ function renderSidebarPlaylists() {
 function renderLibrary() {
     const container = document.getElementById('libraryContent'); if (!container) return;
     container.innerHTML = '';
-    const likedCard = document.createElement('div'); likedCard.className = 'track-card';
-    likedCard.innerHTML = `<div class="w-full aspect-square bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl flex items-center justify-center mb-4"><i class="fas fa-heart text-white text-5xl"></i></div><div class="font-bold text-white">Liked Songs</div><div class="text-xs text-gray-500">${favorites.length} songs</div>`;
+    const likedCard = document.createElement('div'); likedCard.className = 'track-card relative aspect-square p-0 overflow-hidden group';
+    likedCard.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center"><i class="fas fa-heart text-white text-5xl"></i></div><div class="absolute inset-x-0 bottom-0 h-1/3 bg-black/20 backdrop-blur-md border-t border-white/10 flex flex-col justify-center px-4"><div class="font-bold text-white">Liked Songs</div><div class="text-[10px] text-gray-300 uppercase">${favorites.length} songs</div></div>`;
     likedCard.onclick = () => switchView('favorites'); container.appendChild(likedCard);
     playlists.forEach(pl => {
-        const card = document.createElement('div'); card.className = 'track-card';
-        card.innerHTML = `<div class="w-full aspect-square bg-card-dark border border-brand-border rounded-2xl flex items-center justify-center mb-4"><i class="fas fa-music text-gray-700 text-5xl"></i></div><div class="font-bold text-white truncate">${escapeHtml(pl.name)}</div><div class="text-xs text-gray-500">${pl.tracks.length} songs</div>`;
+        const card = document.createElement('div'); card.className = 'track-card relative aspect-square p-0 overflow-hidden group';
+        card.innerHTML = `<div class="w-full h-full bg-card-dark flex items-center justify-center"><i class="fas fa-music text-gray-700 text-5xl"></i></div><div class="absolute inset-x-0 bottom-0 h-1/3 bg-black/20 backdrop-blur-md border-t border-white/10 flex flex-col justify-center px-4"><div class="font-bold text-white truncate">${escapeHtml(pl.name)}</div><div class="text-[10px] text-gray-300 uppercase">${pl.tracks.length} songs</div></div>`;
         card.onclick = () => loadPlaylistView(pl.id); container.appendChild(card);
     });
 }
