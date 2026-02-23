@@ -286,64 +286,105 @@ export default async function handler(req, res) {
 
         try {
             const yt = await getYoutube();
-            // Extract ID from URL if necessary
             let playlistId = playlistUrl;
+            
+            // Extract playlist ID from various YouTube URL formats
             if (playlistUrl.includes('list=')) {
                 try {
-                    const urlObj = new URL(playlistUrl);
+                    const urlObj = new URL(playlistUrl.startsWith('http') ? playlistUrl : `https://${playlistUrl}`);
                     playlistId = urlObj.searchParams.get('list');
                 } catch (urlErr) {
-                    // Fallback if URL parsing fails
                     const match = playlistUrl.match(/[&?]list=([^&]+)/);
                     if (match) playlistId = match[1];
                 }
+            } else if (playlistUrl.includes('youtu.be/')) {
+                 // Check if it's a shortened URL with a playlist parameter
+                 try {
+                     const urlObj = new URL(playlistUrl.startsWith('http') ? playlistUrl : `https://${playlistUrl}`);
+                     playlistId = urlObj.searchParams.get('list');
+                 } catch(e) {}
             }
 
-            if (!playlistId) return res.status(400).json({ error: 'Could not extract playlist ID' });
+            if (!playlistId || playlistId === playlistUrl && playlistUrl.includes('/')) {
+                // If it still looks like a URL or we couldn't find a list param
+                return res.status(400).json({ error: 'Invalid playlist URL or ID' });
+            }
 
-            let playlist;
+            console.log(`API: Final Playlist ID to fetch: ${playlistId}`);
+
+            let playlistData = null;
             let tracks = [];
 
+            // Strategy 1: Try YT Music getPlaylist (direct)
             try {
-                console.log(`API: Attempting to fetch music playlist: ${playlistId}`);
-                playlist = await yt.music.getPlaylist(playlistId);
-                tracks = (playlist.contents || []).map(track => {
-                    if (!track.id && !track.video_id) return null;
-                    return {
-                        id: `ytm-${track.id || track.video_id}`,
-                        title: track.title?.toString() || 'Unknown Title',
-                        artist_name: track.artists?.[0]?.name || 'Unknown Artist',
-                        artist_id: track.artists?.[0]?.id ? `ytm-${track.artists[0].id}` : null,
-                        duration: (track.duration?.seconds || 0) * 1000,
-                        artwork_url: track.thumbnails?.[0]?.url,
-                        youtube_id: track.id || track.video_id,
-                        source: 'YTMusic'
-                    };
-                }).filter(Boolean);
-            } catch (musicErr) {
-                console.warn('API: YT Music playlist fetch failed, falling back to standard YouTube', musicErr);
-                playlist = await yt.getPlaylist(playlistId);
-                tracks = (playlist.videos || []).map(track => ({
-                    id: `ytm-${track.id}`,
-                    title: track.title?.toString() || 'Unknown Title',
-                    artist_name: track.author?.name || 'Unknown Artist',
-                    artist_id: track.author?.id ? `ytm-${track.author.id}` : null,
-                    duration: (track.duration?.seconds || 0) * 1000,
-                    artwork_url: track.thumbnails?.[0]?.url,
-                    youtube_id: track.id,
-                    source: 'YTMusic'
-                }));
+                console.log(`API: Trying yt.music.getPlaylist for ${playlistId}`);
+                playlistData = await yt.music.getPlaylist(playlistId);
+            } catch (e1) {
+                console.warn(`API: music.getPlaylist failed for ${playlistId}, trying with VL prefix`);
+                // Strategy 2: Try with VL prefix (common for YT Music)
+                if (!playlistId.startsWith('VL')) {
+                    try {
+                        playlistData = await yt.music.getPlaylist('VL' + playlistId);
+                    } catch (e2) {
+                        console.warn(`API: music.getPlaylist with VL prefix failed for ${playlistId}`);
+                    }
+                }
             }
-            
+
+            // Strategy 3: Fallback to standard YouTube getPlaylist
+            if (!playlistData || !playlistData.contents) {
+                try {
+                    console.log(`API: Falling back to standard yt.getPlaylist for ${playlistId}`);
+                    const standardPlaylist = await yt.getPlaylist(playlistId);
+                    playlistData = {
+                        title: standardPlaylist.info.title,
+                        description: standardPlaylist.info.description,
+                        thumbnails: standardPlaylist.info.thumbnails,
+                        contents: standardPlaylist.videos.map(v => ({
+                            id: v.id,
+                            title: v.title.toString(),
+                            artists: [{ name: v.author.name, id: v.author.id }],
+                            thumbnails: v.thumbnails,
+                            duration: v.duration
+                        }))
+                    };
+                } catch (e3) {
+                    console.error(`API: All playlist fetch attempts failed for ${playlistId}`, e3);
+                    throw new Error(`Failed to fetch playlist data from YouTube: ${e3.message}`);
+                }
+            }
+
+            // Map tracks from whatever format we got
+            tracks = (playlistData.contents || []).map(item => {
+                const id = item.id || item.video_id;
+                if (!id) return null;
+
+                return {
+                    id: `ytm-${id}`,
+                    title: item.title?.toString() || 'Unknown Title',
+                    artist_name: item.artists?.[0]?.name || item.author?.name || 'Unknown Artist',
+                    artist_id: (item.artists?.[0]?.id || item.author?.id) ? `ytm-${item.artists?.[0]?.id || item.author?.id}` : null,
+                    duration: (item.duration?.seconds || 0) * 1000,
+                    artwork_url: item.thumbnails?.[0]?.url,
+                    youtube_id: id,
+                    source: 'YTMusic'
+                };
+            }).filter(Boolean);
+
             return res.status(200).json({
-                name: playlist.title || 'Imported Playlist',
-                description: playlist.description || '',
-                artwork_url: playlist.thumbnails?.[0]?.url,
+                name: playlistData.title || 'Imported Playlist',
+                description: playlistData.description || '',
+                artwork_url: playlistData.thumbnails?.[0]?.url,
                 tracks: tracks
             });
-        } catch (e) {
-            console.error('YT Music playlist import failed', e);
-            return res.status(500).json({ error: 'Failed to import playlist', details: e.message });
+
+        } catch (error) {
+            console.error('Music API Playlist Import Error:', error);
+            return res.status(500).json({ 
+                error: 'Failed to import playlist', 
+                message: error.message,
+                stack: error.stack 
+            });
         }
     }
 
