@@ -6,7 +6,7 @@ let youtubePromise;
 async function getYoutube() {
   if (!youtubePromise) {
     youtubePromise = (async () => {
-      const { Innertube } = await import('youtubei');
+      const { Innertube } = await import('youtubei.js');
       return Innertube.create({ 
         cache: null,
         generate_session_locally: true
@@ -223,12 +223,9 @@ export default async function handler(req, res) {
 
         try {
             const yt = await getYoutube();
-            const search = await yt.music.search(searchQuery, { type: 'artist' });
-            console.log('API: Raw YT Music artist search results:', JSON.stringify(search, null, 2)); // Add this log
+            const search = await yt.music.search(searchQuery, { filter: 'artists' });
             
             const artists = (search.artists || []).map(item => {
-                if (item.type !== 'MusicResponsiveListItem') return null;
-                
                 const name = item.name?.toString() || item.title?.toString() || 'Unknown Artist';
                 const thumbnail = item.thumbnails?.[0]?.url || item.thumbnail?.url;
 
@@ -240,7 +237,6 @@ export default async function handler(req, res) {
                 };
             }).filter(Boolean);
 
-            console.log('API: Processed artists for response:', JSON.stringify(artists, null, 2)); // Add this log
             return res.status(200).json({ artists });
         } catch (e) {
             console.error('YT Music artist search failed', e);
@@ -255,11 +251,9 @@ export default async function handler(req, res) {
 
         try {
             const yt = await getYoutube();
-            const search = await yt.music.search(searchQuery, { type: 'album' });
+            const search = await yt.music.search(searchQuery, { filter: 'albums' });
             
             const albums = (search.albums || []).map(item => {
-                if (item.type !== 'MusicResponsiveListItem') return null;
-                
                 const title = item.title?.toString() || item.name?.toString() || 'Unknown Album';
                 const artist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'YT Music Artist';
                 const artistId = item.artists?.[0]?.id || item.author?.id;
@@ -280,6 +274,42 @@ export default async function handler(req, res) {
         } catch (e) {
             console.error('YT Music album search failed', e);
             return res.status(500).json({ error: 'Failed to fetch albums' });
+        }
+    }
+
+    // New Endpoint: Import YouTube Playlist
+    if (endpoint === 'import-playlist') {
+        const playlistUrl = q || query || id;
+        if (!playlistUrl) return res.status(400).json({ error: 'Missing playlist URL' });
+
+        try {
+            const yt = await getYoutube();
+            // Extract ID from URL if necessary
+            let playlistId = playlistUrl;
+            if (playlistUrl.includes('list=')) {
+                playlistId = new URL(playlistUrl).searchParams.get('list');
+            }
+
+            const playlist = await yt.music.getPlaylist(playlistId);
+            
+            return res.status(200).json({
+                name: playlist.title,
+                description: playlist.description || '',
+                artwork_url: playlist.thumbnails?.[0]?.url,
+                tracks: playlist.contents.map(track => ({
+                    id: `ytm-${track.id}`,
+                    title: track.title,
+                    artist_name: track.artists?.[0]?.name || 'Unknown Artist',
+                    artist_id: track.artists?.[0]?.id ? `ytm-${track.artists[0].id}` : null,
+                    duration: (track.duration?.seconds || 0) * 1000,
+                    artwork_url: track.thumbnails?.[0]?.url,
+                    youtube_id: track.id,
+                    source: 'YTMusic'
+                }))
+            });
+        } catch (e) {
+            console.error('YT Music playlist import failed', e);
+            return res.status(500).json({ error: 'Failed to import playlist' });
         }
     }
 
@@ -325,93 +355,102 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Album not found' });
     }
 
-    // 4. Artist Details (Custom: Search for songs by artist name)
+    // 4. Artist Details (Custom: Search for songs by artist name or use ID)
     if (endpoint === 'artist' || pathname.includes('/artist/')) {
-        let artistName = id || pathParts[pathParts.length - 1]; // Treat id as artistName
-        // Decode URI component for names that contain spaces or special characters
-        artistName = decodeURIComponent(artistName.replace('ytm-', '').replace('argon-', ''));
+        let identifier = id || pathParts[pathParts.length - 1]; 
+        identifier = decodeURIComponent(identifier.replace('ytm-', '').replace('argon-', ''));
 
-        console.log(`API: Custom Artist Details requested for artistName: "${artistName}"`);
+        console.log(`API: Artist Details requested for: "${identifier}"`);
 
-        if (!artistName || artistName === 'undefined' || artistName === 'null') {
-            console.error('API: Artist Name is invalid or missing.');
-            return res.status(400).json({ error: 'Artist Name required' });
+        if (!identifier || identifier === 'undefined' || identifier === 'null') {
+            return res.status(400).json({ error: 'Artist identifier required' });
         }
         
         const yt = await getYoutube();
         try {
-            console.log(`API: Performing general search for songs by artist: "${artistName}"`);
-            const searchResults = await yt.music.search(artistName); // General search for songs
-            console.log('API: Raw YT Music search results for artist songs:', JSON.stringify(searchResults, null, 2));
+            // Check if it looks like an ID (e.g., starts with UC or FMe...)
+            const isId = identifier.startsWith('UC') || identifier.startsWith('FMe');
+            
+            if (isId) {
+                console.log(`API: Fetching artist by ID: "${identifier}"`);
+                const artist = await yt.music.getArtist(identifier);
+                
+                const tracks = (artist.sections.find(s => s.type === 'MusicShelf' || s.title?.toString().toLowerCase().includes('songs'))?.contents || []).map(item => ({
+                    id: `ytm-${item.id}`,
+                    title: item.title?.toString() || 'Unknown Title',
+                    artist_name: artist.name,
+                    artist_id: `ytm-${artist.id}`,
+                    artwork_url: item.thumbnails?.[0]?.url || artist.thumbnails?.[0]?.url,
+                    duration: (item.duration?.seconds || 0) * 1000,
+                    youtube_id: item.id,
+                    source: 'YTMusic'
+                }));
 
-            const tracks = [];
-            let artistImageUrl = null;
-            let foundArtistName = artistName; // Default to input name
+                return res.status(200).json({
+                    artist_name: artist.name,
+                    artist_image_url: artist.thumbnails?.[artist.thumbnails.length - 1]?.url,
+                    most_recent_song: tracks[0],
+                    all_songs: tracks
+                });
+            } else {
+                // Fallback to name-based search
+                console.log(`API: Performing search for artist name: "${identifier}"`);
+                const searchResults = await yt.music.search(identifier, { filter: 'songs' });
+                
+                let tracks = [];
+                let artistImageUrl = null;
+                let foundArtistName = identifier;
 
-            // Process search results to extract songs and potentially an artist image
-            // This is a simplified approach, assuming searchResults.songs exists.
-            if (searchResults.songs) {
-                const ytTracks = searchResults.songs.map(item => {
-                    // Filter to only include songs where artist name matches, case-insensitive
-                    const currentArtist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'Unknown Artist';
-                    if (currentArtist.toLowerCase() !== artistName.toLowerCase()) return null;
+                if (searchResults.songs && searchResults.songs.length > 0) {
+                    tracks = searchResults.songs.map(item => {
+                        const currentArtist = item.artists?.[0]?.name?.toString() || item.author?.name?.toString() || 'Unknown Artist';
+                        if (!currentArtist.toLowerCase().includes(identifier.toLowerCase()) && 
+                            !identifier.toLowerCase().includes(currentArtist.toLowerCase())) return null;
 
-                    // Try to get artist image from the first valid track
-                    if (!artistImageUrl && item.thumbnails?.[0]?.url) {
-                        artistImageUrl = item.thumbnails[0].url;
-                    }
-                    if (!artistImageUrl && item.author?.thumbnails?.[0]?.url) {
-                        artistImageUrl = item.author.thumbnails[0].url;
-                    }
+                        if (!artistImageUrl && item.thumbnails?.[0]?.url) artistImageUrl = item.thumbnails[0].url;
 
-                    const trackId = item.id ? `ytm-${item.id}` : `ytm-generated-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-                    return {
-                        id: trackId,
-                        title: item.title?.toString() || item.name?.toString() || 'Unknown Title',
-                        artist_name: currentArtist,
-                        artist_id: item.artists?.[0]?.id ? `ytm-${item.artists[0].id}` : null,
-                        artwork_url: item.thumbnails?.[0]?.url || item.thumbnail?.url,
-                        duration: (item.duration?.seconds || 0) * 1000,
-                        youtube_id: item.id,
-                        source: 'YTMusic'
-                    };
-                }).filter(Boolean);
-                tracks.push(...ytTracks);
-            }
-            // Also check for a dedicated artist entry in the search results to get name/image
-            if (searchResults.artists && searchResults.artists.length > 0) {
-                const primaryArtist = searchResults.artists[0];
-                foundArtistName = primaryArtist.name || primaryArtist.title || artistName;
-                if (!artistImageUrl && (primaryArtist.thumbnails?.[0]?.url || primaryArtist.image_url)) {
-                    artistImageUrl = primaryArtist.thumbnails?.[0]?.url || primaryArtist.image_url;
+                        return {
+                            id: item.id ? `ytm-${item.id}` : `ytm-gen-${Math.random().toString(36).substr(2, 9)}`,
+                            title: item.title?.toString() || 'Unknown Title',
+                            artist_name: currentArtist,
+                            artist_id: item.artists?.[0]?.id ? `ytm-${item.artists[0].id}` : null,
+                            artwork_url: item.thumbnails?.[0]?.url,
+                            duration: (item.duration?.seconds || 0) * 1000,
+                            youtube_id: item.id,
+                            source: 'YTMusic'
+                        };
+                    }).filter(Boolean);
                 }
+
+                // Also try to find a proper artist image
+                try {
+                    const artistSearch = await yt.music.search(identifier, { filter: 'artists' });
+                    if (artistSearch.artists && artistSearch.artists.length > 0) {
+                        const bestMatch = artistSearch.artists[0];
+                        foundArtistName = bestMatch.name || foundArtistName;
+                        if (bestMatch.thumbnails?.[0]?.url) {
+                            artistImageUrl = bestMatch.thumbnails[bestMatch.thumbnails.length - 1].url;
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Artist specific search failed', err);
+                }
+
+                if (tracks.length === 0) {
+                    return res.status(404).json({ error: `No songs found for artist: ${identifier}` });
+                }
+
+                return res.status(200).json({
+                    artist_name: foundArtistName,
+                    artist_image_url: artistImageUrl,
+                    most_recent_song: tracks[0],
+                    all_songs: tracks
+                });
             }
-
-
-            if (tracks.length === 0) {
-                console.warn(`API: No songs found for artist: "${artistName}"`);
-                return res.status(404).json({ error: `No songs found for artist: ${artistName}` });
-            }
-
-            // Sort tracks to get "most recent" (this is a placeholder, actual recency might need more data)
-            // For now, let's just sort alphabetically by title as a simple sort.
-            tracks.sort((a, b) => a.title.localeCompare(b.title));
-
-            const mostRecentSong = tracks[0]; // Assuming first after sort is "most recent" for now
-            const otherSongs = tracks.slice(1);
-
-            return res.status(200).json({
-                artist_name: foundArtistName,
-                artist_image_url: artistImageUrl,
-                most_recent_song: mostRecentSong,
-                other_songs: otherSongs,
-                all_songs: tracks // Provide all songs for flexibility
-            });
 
         } catch (e) {
-            console.error('API: Custom Artist Details failed with unexpected error:', e);
-            return res.status(500).json({ error: 'Internal server error fetching custom artist details' });
+            console.error('API: Artist Details failed:', e);
+            return res.status(500).json({ error: 'Internal server error fetching artist details', details: e.message });
         }
     }
 

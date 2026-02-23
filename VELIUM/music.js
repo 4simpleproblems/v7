@@ -278,6 +278,9 @@ function setupEventListeners() {
     document.querySelector('.create-playlist-btn').addEventListener('click', showCreatePlaylistModal);
     document.getElementById('savePlaylistBtn').addEventListener('click', () => createPlaylist(document.getElementById('playlistNameInput').value.trim(), document.getElementById('playlistDescInput').value.trim()));
 
+    // Import Playlist Modal
+    document.getElementById('confirmImportPlaylistBtn').addEventListener('click', importYoutubePlaylist);
+
     // Edit Playlist Modal
     document.getElementById('confirmEditPlaylistBtn').addEventListener('click', confirmEditPlaylist);
 
@@ -1629,6 +1632,60 @@ function getBase64Image(imgUrl, callback) {
         callback(dataURL);
     };
     img.src = imgUrl;
+}
+
+window.showImportPlaylistModal = function() {
+    document.getElementById('importPlaylistModal').style.display = 'flex';
+    document.getElementById('importPlaylistUrlInput').value = '';
+};
+
+window.hideImportPlaylistModal = function() {
+    document.getElementById('importPlaylistModal').style.display = 'none';
+};
+
+async function importYoutubePlaylist() {
+    const urlInput = document.getElementById('importPlaylistUrlInput');
+    const url = urlInput.value.trim();
+    const btn = document.getElementById('confirmImportPlaylistBtn');
+
+    if (!url) {
+        alert('Please enter a YouTube playlist URL.');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Importing...';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/import-playlist?q=${encodeURIComponent(url)}`);
+        if (!response.ok) throw new Error('Failed to fetch playlist data');
+        
+        const data = await response.json();
+        
+        const newPlaylist = {
+            id: Date.now().toString(),
+            name: data.name || 'Imported Playlist',
+            description: data.description || 'Imported from YouTube',
+            tracks: data.tracks || [],
+            cover_url: data.artwork_url || '',
+            createdAt: new Date().toISOString()
+        };
+        
+        playlists.push(newPlaylist);
+        await saveLibraryData();
+        renderSidebarPlaylists();
+        renderLibrary();
+        hideImportPlaylistModal();
+        
+        // Switch to the newly imported playlist
+        loadPlaylistView(newPlaylist.id);
+    } catch (e) {
+        console.error('Import failed:', e);
+        alert('Failed to import playlist. Please check the URL and try again.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Import';
+    }
 }
 
 window.toggleLikeTrack = async function(track, btnEl) {
