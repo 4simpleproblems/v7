@@ -78,6 +78,7 @@ export default async function handler(req, res) {
         getYoutube().then(async yt => {
             try {
                 const search = await yt.music.search(searchQuery);
+                console.log('API: Raw YT Music search results (general search):', JSON.stringify(search, null, 2)); // Add this log
                 
                 const contents = {
                     songs: [],
