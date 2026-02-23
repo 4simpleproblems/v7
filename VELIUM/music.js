@@ -1305,19 +1305,11 @@ async function loadArtistDetails(artistId, artistName = null) {
         console.warn("loadArtistDetails called without valid artistId or artistName.");
         return;
     }
-    if (artistId === 'undefined' || artistId === 'null' || artistId === '') {
-        if (artistName && artistName !== 'undefined' && artistName !== 'null' && artistName !== '') {
-            artistId = artistName;
-        } else {
-            console.warn("loadArtistDetails called with invalid artistId and invalid artistName.");
-            return;
-        }
-    }
-    
-    let fetchId = artistId;
-    // Ensure ID is prefixed correctly for our API if it's an ID
+    // Prioritize artistName for fetching, as the backend now handles song search by artist name
+    let fetchId = artistName || artistId; 
+    // Ensure ID is prefixed correctly for our API if it's an ID AND it's not already prefixed
     if (fetchId && typeof fetchId === 'string' && !fetchId.startsWith('ytm-') && !fetchId.startsWith('argon-')) {
-        fetchId = 'ytm-' + fetchId;
+        fetchId = `ytm-${fetchId}`; // Prepend ytm- for consistency, backend will remove
     }
 
     switchView('dynamic');
@@ -1325,55 +1317,51 @@ async function loadArtistDetails(artistId, artistName = null) {
     container.innerHTML = '<div class="py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
 
     try {
-        let response = await fetch(`${API_BASE_URL}/artist/${fetchId}`);
-        
-        // Fallback: If ID fetch fails but we have a name, try searching by name
-        if (!response.ok && artistName) {
-            console.warn(`Artist ID fetch failed for ${fetchId}, trying name search for ${artistName}`);
-            response = await fetch(`${API_BASE_URL}/artist/${encodeURIComponent(artistName)}`);
-        }
-
+        const response = await fetch(`${API_BASE_URL}/artist/${encodeURIComponent(fetchId)}`);
         if (!response.ok) throw new Error('Artist not found');
-        const data = await response.json();
+        const data = await response.json(); // This data will now contain: artist_name, artist_image_url, most_recent_song, other_songs, all_songs
 
         container.innerHTML = `
             <div class="relative h-[40vh] -mx-8 -mt-8 mb-10 overflow-hidden">
-                <img src="${getProxyUrl(data.image_url)}" class="w-full h-full object-cover">
+                <img src="${getProxyUrl(data.artist_image_url || '')}" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
                 <div class="absolute bottom-10 left-10">
                     <div class="flex items-center gap-2 text-accent-indigo mb-2">
                         <i class="fas fa-check-circle"></i>
                         <span class="text-xs font-bold uppercase tracking-widest">Verified Artist</span>
                     </div>
-                    <h1 class="text-8xl font-black tracking-tighter text-white mb-4">${escapeHtml(data.name)}</h1>
-                    <div class="text-gray-300 font-bold">${formatNumber(data.followers)} followers</div>
+                    <h1 class="text-8xl font-black tracking-tighter text-white mb-4">${escapeHtml(data.artist_name)}</h1>
                 </div>
             </div>
             
             <div class="mb-12">
-                <h2 class="text-2xl font-bold mb-6">Popular</h2>
-                <div id="artistTopTracks" class="space-y-2"></div>
+                <h2 class="text-2xl font-bold mb-6">Most Recent</h2>
+                <div id="artistMostRecentSong" class="space-y-2"></div>
             </div>
 
             <div>
-                <h2 class="text-2xl font-bold mb-6">Albums</h2>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="artistAlbums"></div>
+                <h2 class="text-2xl font-bold mb-6">All Songs</h2>
+                <div id="artistAllSongs" class="space-y-2"></div>
             </div>
         `;
 
-        const list = document.getElementById('artistTopTracks');
-        const tracks = data.top_tracks || [];
-        tracks.slice(0, 10).forEach((track, index) => {
-            const item = createTrackRow(track, index, tracks);
-            list.appendChild(item);
+        const mostRecentList = document.getElementById('artistMostRecentSong');
+        if (data.most_recent_song) {
+            const item = createTrackRow(data.most_recent_song, 0, [data.most_recent_song]);
+            mostRecentList.appendChild(item);
+        }
+
+        const allSongsList = document.getElementById('artistAllSongs');
+        const allTracks = data.all_songs || [];
+        allTracks.forEach((track, index) => {
+            const item = createTrackRow(track, index, allTracks);
+            allSongsList.appendChild(item);
         });
 
-        const albumsGrid = document.getElementById('artistAlbums');
-        renderAlbumGrid(data.albums || [], albumsGrid);
-
-        currentDynamicPlaylist = tracks;
+        currentDynamicPlaylist = allTracks; // Set the playlist for playback
     } catch (e) {
-        console.error('Failed to load artist details', e);
+        console.error('Failed to load artist details:', e);
+        container.innerHTML = `<div class="py-20 text-center text-red-500">Failed to load artist details: ${e.message}</div>`;
     }
 }
 
