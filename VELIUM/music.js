@@ -1303,17 +1303,11 @@ async function loadAlbumDetails(albumId) {
 }
 
 async function loadArtistDetails(artistId, artistName = null) {
-    // Prevent calls with invalid IDs/names
-    if (!artistId && !artistName) {
-        console.warn("loadArtistDetails called without valid artistId or artistName.");
-        return;
-    }
-    // Prioritize artistName for fetching, as the backend now handles song search by artist name
-    let fetchId = artistName || artistId; 
-    // Ensure ID is prefixed correctly for our API if it's an ID AND it's not already prefixed
-    if (fetchId && typeof fetchId === 'string' && !fetchId.startsWith('ytm-') && !fetchId.startsWith('argon-')) {
-        fetchId = `ytm-${fetchId}`; // Prepend ytm- for consistency, backend will remove
-    }
+    if (!artistId && !artistName) return;
+    
+    let fetchId = artistId;
+    // If it's a name search, try to use it as is
+    if (!fetchId && artistName) fetchId = artistName;
 
     switchView('dynamic');
     const container = document.getElementById('dynamicView');
@@ -1322,10 +1316,10 @@ async function loadArtistDetails(artistId, artistName = null) {
     try {
         const response = await fetch(`${API_BASE_URL}/artist/${encodeURIComponent(fetchId)}`);
         if (!response.ok) throw new Error('Artist not found');
-        const data = await response.json(); // This data will now contain: artist_name, artist_image_url, most_recent_song, other_songs, all_songs
+        const data = await response.json(); 
 
         container.innerHTML = `
-            <div class="relative h-[40vh] -mx-8 -mt-8 mb-10 overflow-hidden">
+            <div class="relative h-[45vh] -mx-8 -mt-8 mb-10 overflow-hidden">
                 <img src="${getProxyUrl(data.artist_image_url || '')}" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
                 <div class="absolute bottom-10 left-10">
@@ -1333,26 +1327,39 @@ async function loadArtistDetails(artistId, artistName = null) {
                         <i class="fas fa-check-circle"></i>
                         <span class="text-xs font-bold uppercase tracking-widest">Verified Artist</span>
                     </div>
-                    <h1 class="text-8xl font-black tracking-tighter text-white mb-4">${escapeHtml(data.artist_name)}</h1>
+                    <h1 class="text-8xl font-black tracking-tighter text-white mb-2">${escapeHtml(data.artist_name || data.name)}</h1>
+                    ${data.followers ? `<p class="text-gray-300 font-bold">${formatNumber(data.followers)} followers</p>` : ''}
                 </div>
             </div>
             
             <div class="mb-12">
-                <h2 class="text-2xl font-bold mb-6">Most Recent</h2>
-                <div id="artistMostRecentSong" class="space-y-2"></div>
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-3xl font-bold">Popular</h2>
+                </div>
+                <div id="artistTopTracks" class="space-y-1"></div>
             </div>
 
+            ${data.albums && data.albums.length > 0 ? `
+            <div class="mb-12">
+                <h2 class="text-3xl font-bold mb-6">Albums</h2>
+                <div id="artistAlbums" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"></div>
+            </div>
+            ` : ''}
+
             <div>
-                <h2 class="text-2xl font-bold mb-6">All Songs</h2>
-                <div id="artistAllSongs" class="space-y-2"></div>
+                <h2 class="text-3xl font-bold mb-6">All Songs</h2>
+                <div id="artistAllSongs" class="space-y-1"></div>
             </div>
         `;
 
-        const mostRecentList = document.getElementById('artistMostRecentSong');
-        if (data.most_recent_song) {
-            const item = createTrackRow(data.most_recent_song, 0, [data.most_recent_song]);
-            mostRecentList.appendChild(item);
-        }
+        const topTracksList = document.getElementById('artistTopTracks');
+        const topTracks = data.top_tracks || [];
+        
+        // Render initial Saavn/YT tracks
+        topTracks.forEach((track, index) => {
+            const item = createTrackRow(track, index, topTracks);
+            topTracksList.appendChild(item);
+        });
 
         const allSongsList = document.getElementById('artistAllSongs');
         const allTracks = data.all_songs || [];
@@ -1361,7 +1368,50 @@ async function loadArtistDetails(artistId, artistName = null) {
             allSongsList.appendChild(item);
         });
 
-        currentDynamicPlaylist = allTracks; // Set the playlist for playback
+        if (data.albums && data.albums.length > 0) {
+            const albumsGrid = document.getElementById('artistAlbums');
+            renderAlbumGrid(data.albums, albumsGrid);
+        }
+
+        currentDynamicPlaylist = allTracks;
+
+        // --- Seamless Integration Script ---
+        // Take songs from the artist and use our current backend to enrich them
+        async function enrichTrack(track, index, listId) {
+            if (track.source !== 'Saavn') return;
+            try {
+                // Use current backend search to find "native" version
+                const query = `${track.title} ${track.artist_name} official audio`;
+                const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&limit=1`);
+                const data = await response.json();
+                
+                if (data.tracks && data.tracks.length > 0) {
+                    const native = data.tracks[0];
+                    // Update track object in our dynamic list
+                    track.youtube_id = native.youtube_id || native.id.replace('ytm-', '');
+                    track.artwork_url = native.artwork_url || track.artwork_url;
+                    track.duration = native.duration || track.duration;
+                    
+                    // Update UI row if it exists
+                    const rows = document.querySelectorAll(`#${listId} .flex.items-center.gap-4`);
+                    const row = rows[index];
+                    if (row) {
+                        const img = row.querySelector('img');
+                        if (img && native.artwork_url) img.src = getProxyUrl(native.artwork_url);
+                        const durationEl = row.querySelector('.font-mono');
+                        if (durationEl && native.duration) durationEl.textContent = formatTime(native.duration / 1000);
+                    }
+                }
+            } catch (e) {
+                console.warn('Metadata enrichment failed for', track.title, e);
+            }
+        }
+
+        // Enrich top tracks first for best first impression
+        topTracks.forEach((track, index) => {
+            setTimeout(() => enrichTrack(track, index, 'artistTopTracks'), index * 500);
+        });
+
     } catch (e) {
         console.error('Failed to load artist details:', e);
         container.innerHTML = `<div class="py-20 text-center text-red-500">Failed to load artist details: ${e.message}</div>`;
