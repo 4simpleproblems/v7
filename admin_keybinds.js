@@ -165,10 +165,17 @@
 
     // Auth & Role Check
     onAuthStateChanged(auth, (user) => {
+        const updateVeliumUI = () => {
+            window.isAdmin = isAdmin;
+            const adminTab = document.getElementById('admin-test-tab');
+            if (adminTab && isAdmin) adminTab.classList.remove('hidden');
+        };
+
         if (user) {
             if (user.email && user.email.toLowerCase() === OWNER_EMAIL) {
                 console.log(`[Admin Keybinds] Owner recognized: ${OWNER_EMAIL}`);
                 isAdmin = true;
+                updateVeliumUI();
                 return;
             }
 
@@ -188,12 +195,15 @@
                 } else {
                     isAdmin = false;
                 }
+                updateVeliumUI();
             }, (error) => {
                 console.error("[Admin Keybinds] Admin check error:", error);
                 isAdmin = false;
+                updateVeliumUI();
             });
         } else {
             cleanupListeners();
+            updateVeliumUI();
         }
     });
 

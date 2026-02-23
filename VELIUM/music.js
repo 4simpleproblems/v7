@@ -596,39 +596,15 @@ async function handleSearch(query, append = false) {
         const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}&offset=${offset}&limit=${searchState.limit}`);
         const data = await response.json();
 
-        // Process results based on the active tab
-        if (tabName === 'tracks') {
-            const newTracks = data.tracks || [];
-            if (!append) tracksGrid.innerHTML = '';
-            newTracks.forEach(track => renderTrackGrid([track], tracksGrid));
-            searchState.tracksOffset += newTracks.length;
-            searchState.hasMoreTracks = newTracks.length === searchState.limit;
-        } else if (tabName === 'albums') {
-            const newAlbums = data.albums || []; // Data structure for /album-search directly returns 'albums'
-            if (!append) albumsGrid.innerHTML = '';
-            newAlbums.forEach(album => renderAlbumGrid([album], albumsGrid));
-            searchState.albumsOffset += newAlbums.length;
-            searchState.hasMoreAlbums = newAlbums.length === searchState.limit;
-        } else if (tabName === 'artists') {
-            const newArtists = data.artists || []; // Data structure for /artist-search directly returns 'artists'
-            if (!append) artistsGrid.innerHTML = '';
-            newArtists.forEach(artist => renderArtistGrid([artist], artistsGrid));
-            searchState.artistsOffset += newArtists.length;
-            searchState.hasMoreArtists = newArtists.length === searchState.limit;
-        }
+        // Process results based on tracks only
+        const newTracks = data.tracks || [];
+        if (!append) tracksGrid.innerHTML = '';
+        newTracks.forEach(track => renderTrackGrid([track], tracksGrid));
+        searchState.tracksOffset += newTracks.length;
+        searchState.hasMoreTracks = newTracks.length === searchState.limit;
 
         // Show Load More button if there are more results
-        // This logic remains mostly the same, but now it's per tab
-        const currentTabHasMore = (tabName === 'tracks' && searchState.hasMoreTracks) ||
-                                  (tabName === 'albums' && searchState.hasMoreAlbums) ||
-                                  (tabName === 'artists' && searchState.hasMoreArtists);
-        
-        const currentTabNewResults = (tabName === 'tracks' && (data.tracks || []).length > 0) ||
-                                     (tabName === 'albums' && (data.albums || []).length > 0) ||
-                                     (tabName === 'artists' && (data.artists || []).length > 0);
-
-
-        if (loadMoreBtn && currentTabHasMore && currentTabNewResults) {
+        if (loadMoreBtn && searchState.hasMoreTracks && newTracks.length > 0) {
             loadMoreBtn.classList.remove('hidden');
         } else if (loadMoreBtn) {
             loadMoreBtn.classList.add('hidden');
@@ -723,45 +699,13 @@ function renderTrackGrid(tracks, container) {
                 <i class="fas fa-play"></i>
             </div>
             <div class="font-bold text-sm truncate text-white mb-1">${escapeHtml(track.title)}</div>
-            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer" onclick="event.stopPropagation(); loadArtistDetails('${track.artist_id || ''}', '${escapeHtml(track.artist_name || '').replace(/'/g, "\\'")}')">${escapeHtml(track.artist_name)}</div>
+            <div class="text-xs text-gray-500 truncate">${escapeHtml(track.artist_name)}</div>
         `;
         card.addEventListener('click', () => {
             playlist = tracks; // This needs to be managed for proper playback
             originalPlaylist = [...tracks];
             playTrack(index);
         });
-        container.appendChild(card);
-    });
-}
-
-function renderAlbumGrid(albums, container) {
-    if (!container) return;
-    // Do not clear container here, handleSearch will clear it if not appending
-    albums.forEach(album => {
-        const card = document.createElement('div');
-        card.className = 'track-card';
-        card.innerHTML = `
-            <img src="${getProxyUrl(album.artwork_url)}" class="track-artwork" loading="lazy">
-            <div class="font-bold text-sm truncate text-white mb-1">${escapeHtml(album.name)}</div>
-            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer" onclick="event.stopPropagation(); loadArtistDetails('${album.artist_id || ''}', '${escapeHtml(album.artist_name || '').replace(/'/g, "\\'")}')">${album.release_year} • ${escapeHtml(album.artist_name)}</div>
-        `;
-        card.addEventListener('click', () => loadAlbumDetails(album.id || album.browseId))
-        container.appendChild(card);
-    });
-}
-
-function renderArtistGrid(artists, container) {
-    if (!container) return;
-    // Do not clear container here, handleSearch will clear it if not appending
-    artists.forEach(artist => {
-        const card = document.createElement('div');
-        card.className = 'track-card';
-        card.innerHTML = `
-            <img src="${getProxyUrl(artist.image_url || artist.artwork_url)}" class="track-artwork rounded-full" loading="lazy">
-            <div class="text-center font-bold text-sm truncate text-white">${escapeHtml(artist.name)}</div>
-            <div class="text-center text-xs text-gray-500">Artist</div>
-        `;
-        card.addEventListener('click', () => loadArtistDetails(artist.id || artist.browseId, artist.name))
         container.appendChild(card);
     });
 }
@@ -809,7 +753,7 @@ function createTrackRow(track, index, trackList) {
         <img src="${getProxyUrl(track.artwork_url)}" class="w-12 h-12 rounded-lg object-cover">
         <div class="flex-1 min-w-0">
             <div class="text-sm font-bold text-white truncate">${escapeHtml(track.title)}</div>
-            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white" onclick="event.stopPropagation(); loadArtistDetails('${track.artist_id || ''}', '${escapeHtml(track.artist_name || '').replace(/'/g, "\\'")}')">${escapeHtml(track.artist_name)}</div>
+            <div class="text-xs text-gray-500 truncate">${escapeHtml(track.artist_name)}</div>
         </div>
         <div class="text-xs text-gray-500 font-mono hidden sm:block">${formatTime(track.duration / 1000)}</div>
         <button class="text-gray-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"><i class="fas fa-ellipsis-h"></i></button>
@@ -843,8 +787,8 @@ async function playTrack(index) {
     document.getElementById('currentTrackName').textContent = currentTrack.title;
     const artistNameEl = document.getElementById('currentArtistName');
     artistNameEl.textContent = currentTrack.artist_name;
-    artistNameEl.className = 'text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer';
-    artistNameEl.onclick = () => { loadArtistDetails(currentTrack.artist_id, currentTrack.artist_name); };
+    artistNameEl.className = 'text-xs text-gray-500 truncate';
+    artistNameEl.onclick = null;
 
     const artwork = document.getElementById('currentArtwork');
     artwork.src = getProxyUrl(currentTrack.artwork_url);
@@ -1165,6 +1109,12 @@ async function initApp() {
     renderSidebarPlaylists();
     renderLibrary();
     updateVolumeUI();
+
+    // Admin Logic
+    if (window.isAdmin) {
+        const adminTab = document.getElementById('admin-test-tab');
+        if (adminTab) adminTab.classList.remove('hidden');
+    }
 }
 
 async function toggleLike() {
