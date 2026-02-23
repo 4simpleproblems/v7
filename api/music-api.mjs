@@ -499,9 +499,9 @@ export default async function handler(req, res) {
         const yt = await getYoutube();
         try {
             // Check if it's a YouTube Channel ID or a generic YT Music ID
-            const isYtId = identifier.startsWith('UC') || identifier.startsWith('FMe') || (identifier.length > 15 && !identifier.includes(' '));
+            const isYtId = identifier.startsWith('UC') || identifier.startsWith('FMe') || (identifier.length > 10 && !identifier.includes(' ') && !/^\d+$/.test(identifier));
             
-            // If it's a numeric ID (mostly), it's likely Saavn
+            // If it's a numeric ID, it's likely Saavn
             const isSaavnId = /^\d+$/.test(identifier);
 
             const isId = isYtId || isSaavnId;

@@ -1384,14 +1384,15 @@ async function loadArtistDetails(artistId, artistName = null) {
             if (track.source !== 'Saavn') return;
             try {
                 // Use current backend search to find "native" version
-                const query = `${track.title} ${track.artist_name} official audio`;
+                const trackArtist = track.artist_name || track.name;
+                const query = `${track.title} ${trackArtist} official audio`;
                 const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&limit=1`);
                 const data = await response.json();
                 
                 if (data.tracks && data.tracks.length > 0) {
                     const native = data.tracks[0];
                     // Update track object in our dynamic list
-                    track.youtube_id = native.youtube_id || native.id.replace('ytm-', '');
+                    track.youtube_id = native.youtube_id || native.id?.replace('ytm-', '');
                     track.artwork_url = native.artwork_url || track.artwork_url;
                     track.duration = native.duration || track.duration;
                     
