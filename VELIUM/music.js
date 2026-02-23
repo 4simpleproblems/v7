@@ -318,6 +318,25 @@ function setupEventListeners() {
             }
         }
     });
+
+    // Sidebar Toggle for small screens
+    const sidebarToggleBtn = document.getElementById('sidebarToggle');
+    const sidebar = document.querySelector('.sidebar');
+    const appContainer = document.querySelector('.app-container'); // Get app container for closing sidebar
+
+    if (sidebarToggleBtn && sidebar && appContainer) {
+        sidebarToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent immediate closing from appContainer listener
+            sidebar.classList.toggle('open');
+        });
+
+        // Close sidebar when clicking on the main content area (only on small screens)
+        appContainer.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !sidebarToggleBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+    }
 }
 
 // --- View Logic ---
@@ -785,7 +804,7 @@ function createTrackRow(track, index, trackList) {
         <div class="w-10 text-center text-gray-500 font-bold group-hover:hidden">${index + 1}</div>
         <div class="w-10 text-center text-accent-indigo hidden group-hover:block"><i class="fas fa-play"></i></div>
         <img src="${getProxyUrl(track.artwork_url)}" class="w-12 h-12 rounded-lg object-cover">
-        <div class="flex-1 min-width-0">
+        <div class="flex-1 min-w-0">
             <div class="text-sm font-bold text-white truncate">${escapeHtml(track.title)}</div>
             <div class="text-xs text-gray-500 truncate hover:underline hover:text-white" onclick="event.stopPropagation(); loadArtistDetails('${track.artist_id || ''}', '${escapeHtml(track.artist_name || '').replace(/'/g, "\\'")}')">${escapeHtml(track.artist_name)}</div>
         </div>

@@ -109,8 +109,30 @@
             grid-template-columns: 280px 1fr;
             grid-template-rows: 1fr 100px;
             height: 100vh;
-            width: 100vw;
+            width: 100%;
             background: #000000;
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr; /* Main content takes full width */
+                grid-template-areas: 
+                    "main"
+                    "playbar";
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -280px; /* Hide sidebar by default */
+                height: 100vh;
+                z-index: 1000;
+                transition: left 0.3s ease-in-out;
+            }
+
+            .sidebar.open {
+                left: 0; /* Show sidebar when open */
+            }
         }
 
         .sidebar {
@@ -383,6 +405,16 @@
             font-size: 1.5rem;
             font-weight: 500;
         }
+
+        .sidebar-toggle-btn {
+            display: none; /* Hidden by default */
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-toggle-btn {
+                display: block; /* Show on small screens */
+            }
+        }
     </style>
 </head>
 <body>
@@ -429,6 +461,10 @@
 
         <!-- Main View -->
         <main class="main-view">
+            <!-- New sidebar toggle button for small screens -->
+            <button id="sidebarToggle" class="sidebar-toggle-btn fixed top-6 left-6 z-[1001] p-3 bg-card-dark rounded-full text-white text-xl md:hidden">
+                <i class="fas fa-bars"></i>
+            </button>
             <!-- Home View -->
             <section class="view active" id="homeView">
                 <div class="mb-10">
@@ -542,14 +578,14 @@
         <!-- Player Bar -->
         <footer class="now-playing-bar">
             <!-- Track Info -->
-            <div class="flex items-center gap-4 min-width-0">
+            <div class="flex items-center gap-4 min-w-0">
                 <div class="w-14 h-14 bg-card-dark rounded-xl overflow-hidden border border-brand-border flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onclick="toggleFullscreenPlayer()">
                     <img id="currentArtwork" src="" class="w-full h-full object-cover hidden">
                     <div id="artworkPlaceholder" class="w-full h-full flex items-center justify-center">
                         <i class="fas fa-music text-gray-700"></i>
                     </div>
                 </div>
-                <div class="min-width-0">
+                <div class="min-w-0">
                     <div id="currentTrackName" class="text-sm font-bold text-white truncate">Not Playing</div>
                     <div id="currentArtistName" class="text-xs text-gray-500 truncate">Select a track</div>
                 </div>
