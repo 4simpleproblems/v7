@@ -115,6 +115,11 @@ const popularArtists = [
 function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');
     if (!container) return;
+
+    // Prevent duplicate active toasts with the same message
+    const existingToasts = Array.from(container.querySelectorAll('div'));
+    if (existingToasts.some(t => t.textContent === message)) return;
+
     const toast = document.createElement('div');
     toast.className = `px-6 py-3 rounded-2xl bg-black/80 backdrop-blur-md border border-white/10 text-white text-sm font-medium shadow-2xl animate-in slide-in-from-bottom-4 duration-300`;
     if (type === 'success') toast.classList.add('border-green-500/50');

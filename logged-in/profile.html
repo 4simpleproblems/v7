@@ -381,20 +381,16 @@
                 let requestedUsername = urlParams.get('username');
 
                 if (!requestedUsername) {
-                    const pathParts = window.location.pathname.split('/');
-                    const atIndex = pathParts.indexOf('@');
-                    if (atIndex > -1 && atIndex + 1 < pathParts.length) {
-                        requestedUsername = pathParts[atIndex + 1];
-                    } else {
-                        // Fallback for /logged-in/username
-                        const lastPart = pathParts[pathParts.length - 1];
-                        if (lastPart && lastPart !== 'logged-in' && lastPart !== 'profile.html' && lastPart !== 'profile') {
-                            requestedUsername = lastPart.startsWith('@') ? lastPart.substring(1) : lastPart;
-                        }
+                    const pathParts = window.location.pathname.split('/').filter(p => p);
+                    // Look for part starting with @ or being the part after 'logged-in'
+                    const loggedInIndex = pathParts.indexOf('logged-in');
+                    if (loggedInIndex > -1 && loggedInIndex + 1 < pathParts.length) {
+                        const candidate = pathParts[loggedInIndex + 1];
+                        requestedUsername = candidate.startsWith('@') ? candidate.substring(1) : candidate;
                     }
                 }
 
-                if (requestedUsername) {
+                if (requestedUsername && requestedUsername !== 'profile.html' && requestedUsername !== 'profile') {
                     const snapUsername = await firestore.collection("users").where("username", "==", requestedUsername).get();
                     if (!snapUsername.empty) {
                         profileOwnerId = snapUsername.docs[0].id;
