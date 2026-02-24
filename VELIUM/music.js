@@ -245,6 +245,7 @@ async function initApp() {
     renderSidebarPlaylists();
     renderLibrary();
     updateVolumeUI();
+    initCropper();
 
     // Admin Logic
     if (window.isAdmin) {
@@ -329,7 +330,6 @@ function setupEventListeners() {
         createPlaylist(document.getElementById('playlistNameInput').value.trim(), document.getElementById('playlistDescInput').value.trim());
     });
     document.getElementById('confirmEditPlaylistBtn').addEventListener('click', confirmEditPlaylist);
-    document.getElementById('savePlaylistCoverBtn').addEventListener('click', savePlaylistCover);
 
     // Fullscreen
     document.getElementById('fsPlayPause').addEventListener('click', togglePlayPause);
@@ -998,9 +998,142 @@ function hideCreatePlaylistModal() { document.getElementById('createPlaylistModa
 function showEditPlaylistModal(playlistId) { const pl = playlists.find(p => p.id === playlistId); if (!pl) return; document.getElementById('editPlaylistModal').style.display = 'flex'; document.getElementById('editPlaylistId').value = pl.id; document.getElementById('editPlaylistNameInput').value = pl.name; document.getElementById('editPlaylistDescInput').value = pl.description; }
 function hideEditPlaylistModal() { document.getElementById('editPlaylistModal').style.display = 'none'; }
 async function confirmEditPlaylist() { const id = document.getElementById('editPlaylistId').value, name = document.getElementById('editPlaylistNameInput').value.trim(), desc = document.getElementById('editPlaylistDescInput').value.trim(); const pl = playlists.find(p => p.id === id); if (pl && name) { updatePlaylist(id, name, desc, pl.cover_url); hideEditPlaylistModal(); } }
-function showPlaylistCoverUploadModal(id) { document.getElementById('playlistCoverUploadModal').style.display = 'flex'; document.getElementById('uploadPlaylistId').value = id; document.getElementById('playlistCoverInput').value = ''; }
-function hidePlaylistCoverUploadModal() { document.getElementById('playlistCoverUploadModal').style.display = 'none'; }
-async function savePlaylistCover() { const id = document.getElementById('uploadPlaylistId').value, file = document.getElementById('playlistCoverInput').files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { const pl = playlists.find(p => p.id === id); if (pl) { updatePlaylist(id, pl.name, pl.description, e.target.result); hidePlaylistCoverUploadModal(); } }; reader.readAsDataURL(file); }
+// --- Cropper Logic ---
+let cropperImage = null;
+let cropState = { x: 0, y: 0, radius: 100 };
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+
+function initCropper() {
+    const cropperCanvas = document.getElementById('cropperCanvas');
+    if (!cropperCanvas) return;
+    const ctx = cropperCanvas.getContext('2d');
+
+    const drawCropper = () => {
+        if (!cropperImage) return;
+        const w = cropperCanvas.width;
+        const h = cropperCanvas.height;
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(cropperImage, 0, 0, w, h);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.beginPath();
+        ctx.rect(0, 0, w, h);
+        ctx.fill();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        const r = cropState.radius;
+        const size = r * 2;
+        const cornerRadius = size * 0.15;
+        if (ctx.roundRect) ctx.roundRect(cropState.x - r, cropState.y - r, size, size, cornerRadius);
+        else ctx.rect(cropState.x - r, cropState.y - r, size, size);
+        ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(cropState.x - r, cropState.y - r, size, size, cornerRadius);
+        else ctx.rect(cropState.x - r, cropState.y - r, size, size);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    };
+
+    const handleStart = (x, y) => {
+        const r = cropState.radius;
+        if (x >= cropState.x - r && x <= cropState.x + r && y >= cropState.y - r && y <= cropState.y + r) {
+            isDragging = true;
+            dragStart = { x, y };
+        }
+    };
+    const handleMove = (x, y) => {
+        if (isDragging) {
+            const dx = x - dragStart.x;
+            const dy = y - dragStart.y;
+            let newX = cropState.x + dx;
+            let newY = cropState.y + dy;
+            const r = cropState.radius;
+            const w = cropperCanvas.width;
+            const h = cropperCanvas.height;
+            newX = Math.max(r, Math.min(newX, w - r));
+            newY = Math.max(r, Math.min(newY, h - r));
+            cropState.x = newX;
+            cropState.y = newY;
+            dragStart = { x, y };
+            requestAnimationFrame(drawCropper);
+        }
+    };
+    const handleEnd = () => { isDragging = false; };
+    const handleScroll = (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -5 : 5;
+        let newRadius = cropState.radius + delta;
+        const w = cropperCanvas.width, h = cropperCanvas.height;
+        const maxPossibleRadius = Math.min(w, h) / 2;
+        newRadius = Math.max(20, Math.min(newRadius, maxPossibleRadius));
+        const minX = newRadius, maxX = w - newRadius, minY = newRadius, maxY = h - newRadius;
+        cropState.x = Math.max(minX, Math.min(cropState.x, maxX));
+        cropState.y = Math.max(minY, Math.min(cropState.y, maxY));
+        cropState.radius = newRadius;
+        requestAnimationFrame(drawCropper);
+    };
+
+    cropperCanvas.addEventListener('mousedown', e => handleStart(e.offsetX, e.offsetY));
+    cropperCanvas.addEventListener('mousemove', e => handleMove(e.offsetX, e.offsetY));
+    cropperCanvas.addEventListener('mouseup', handleEnd);
+    cropperCanvas.addEventListener('mouseleave', handleEnd);
+    cropperCanvas.addEventListener('wheel', handleScroll);
+
+    document.getElementById('playlistCoverInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            cropperImage = new Image();
+            cropperImage.onload = () => {
+                const fixedHeight = 400;
+                const scale = fixedHeight / cropperImage.height;
+                cropperCanvas.height = fixedHeight;
+                cropperCanvas.width = cropperImage.width * scale;
+                cropState = { x: cropperCanvas.width / 2, y: cropperCanvas.height / 2, radius: Math.min(cropperCanvas.width, cropperCanvas.height) / 3 };
+                document.getElementById('cropperModal').style.display = 'flex';
+                requestAnimationFrame(drawCropper);
+            };
+            cropperImage.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('cancelCropBtn').addEventListener('click', () => {
+        document.getElementById('cropperModal').style.display = 'none';
+        document.getElementById('playlistCoverInput').value = '';
+    });
+
+    document.getElementById('submitCropBtn').addEventListener('click', async () => {
+        const tempCanvas = document.createElement('canvas');
+        const size = 512;
+        tempCanvas.width = size;
+        tempCanvas.height = size;
+        const tCtx = tempCanvas.getContext('2d');
+        const scale = cropperCanvas.height / cropperImage.height;
+        const sourceX = (cropState.x - cropState.radius) / scale;
+        const sourceY = (cropState.y - cropState.radius) / scale;
+        const sourceSize = (cropState.radius * 2) / scale;
+        tCtx.drawImage(cropperImage, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+        const base64 = tempCanvas.toDataURL('image/jpeg', 0.8);
+        
+        const id = document.getElementById('uploadPlaylistId').value;
+        const pl = playlists.find(p => p.id === id);
+        if (pl) {
+            updatePlaylist(id, pl.name, pl.description, base64);
+            document.getElementById('cropperModal').style.display = 'none';
+        }
+    });
+}
+
+function showPlaylistCoverUploadModal(id) { 
+    document.getElementById('uploadPlaylistId').value = id; 
+    document.getElementById('playlistCoverInput').click(); 
+}
 
 function startProgressUpdate() {
     if (progressInterval) clearInterval(progressInterval);
@@ -1021,5 +1154,3 @@ function startProgressUpdate() {
 }
 function stopProgressUpdate() { clearInterval(progressInterval); }
 function updateVolumeUI() { const bar = document.getElementById('volumeBarFill'); if (bar) bar.style.width = volume + '%'; const slider = document.getElementById('volumeSlider'); if (slider) slider.value = volume; }
-
-// Made with ❤️ from 4SP

@@ -376,12 +376,22 @@
             if (user) {
                 firebaseAuthUser = user;
                 
-                // Extract username from URL path
-                const pathParts = window.location.pathname.split('/');
-                let requestedUsername = null;
-                const atIndex = pathParts.indexOf('@');
-                if (atIndex > -1 && atIndex + 1 < pathParts.length) {
-                    requestedUsername = pathParts[atIndex + 1];
+                // Extract username from query or path
+                const urlParams = new URLSearchParams(window.location.search);
+                let requestedUsername = urlParams.get('username');
+
+                if (!requestedUsername) {
+                    const pathParts = window.location.pathname.split('/');
+                    const atIndex = pathParts.indexOf('@');
+                    if (atIndex > -1 && atIndex + 1 < pathParts.length) {
+                        requestedUsername = pathParts[atIndex + 1];
+                    } else {
+                        // Fallback for /logged-in/username
+                        const lastPart = pathParts[pathParts.length - 1];
+                        if (lastPart && lastPart !== 'logged-in' && lastPart !== 'profile.html' && lastPart !== 'profile') {
+                            requestedUsername = lastPart.startsWith('@') ? lastPart.substring(1) : lastPart;
+                        }
+                    }
                 }
 
                 if (requestedUsername) {
