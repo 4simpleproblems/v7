@@ -202,6 +202,12 @@ window.toggleLikeTrack = async function(track, btnEl) {
         }
     }
     else {
+        // Fetch artwork as base64 before saving
+        if (track.artwork_url && !track.local_artwork) {
+            const b64 = await urlToBase64(track.artwork_url);
+            if (b64) track.local_artwork = b64;
+        }
+        
         favorites.push(track);
         if (btnEl) {
             btnEl.classList.add('active');
@@ -250,6 +256,25 @@ async function saveTrackDuration(track, duration) {
     });
 
     await saveLibraryData();
+}
+
+async function urlToBase64(url) {
+    if (!url) return null;
+    if (url.startsWith('data:')) return url;
+    try {
+        const response = await fetch(getProxyUrl(url));
+        const blob = await response.json().then(() => null).catch(() => response.blob()); // Try blob first
+        if (!blob) return null;
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (e) {
+        console.warn('Failed to convert image to base64', e);
+        return null;
+    }
 }
 
 // --- Shuffle Algorithm ---
@@ -467,11 +492,11 @@ function updateFullscreenUI() {
     if (!currentTrack) return;
     document.getElementById('fsTrackName').textContent = currentTrack.title;
     document.getElementById('fsArtistName').textContent = currentTrack.artist_name;
-    const artworkUrl = getProxyUrl(currentTrack.artwork_url);
+    const artworkUrl = currentTrack.local_artwork || getProxyUrl(currentTrack.artwork_url);
     document.getElementById('fsArtwork').src = artworkUrl;
     
     // Background optimized for blur
-    const bgUrl = getProxyUrl(currentTrack.artwork_url, '50x50');
+    const bgUrl = currentTrack.local_artwork || getProxyUrl(currentTrack.artwork_url, '50x50');
     const bg = document.getElementById('fsBackground');
     if (bg) { bg.style.backgroundImage = `url('${bgUrl}')`; bg.style.backgroundSize = 'cover'; bg.style.backgroundPosition = 'center'; }
     updateFullscreenTint(artworkUrl);
@@ -628,7 +653,7 @@ function renderTrackGrid(tracks, container) {
         const card = document.createElement('div');
         card.className = 'track-card relative aspect-square p-0 overflow-hidden group';
         
-        const artworkUrl = getProxyUrl(track.artwork_url);
+        const artworkUrl = track.local_artwork || getProxyUrl(track.artwork_url);
         
         card.innerHTML = `
             <img src="${artworkUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
@@ -736,7 +761,7 @@ function createTrackRow(track, index, trackList, hideEllipsis = false) {
     div.innerHTML = `
         <div class="w-10 text-center text-gray-500 font-bold group-hover:hidden">${index + 1}</div>
         <div class="w-10 text-center text-accent-indigo hidden group-hover:block"><i class="fas fa-play"></i></div>
-        <img src="${getProxyUrl(track.artwork_url)}" class="w-12 h-12 rounded-lg object-cover">
+        <img src="${track.local_artwork || getProxyUrl(track.artwork_url)}" class="w-12 h-12 rounded-lg object-cover">
         <div class="flex-1 min-w-0">
             <div class="text-sm font-bold text-white truncate">${escapeHtml(track.title)}</div>
             <div class="text-xs text-gray-500 truncate">${escapeHtml(track.artist_name)}</div>
@@ -777,7 +802,7 @@ async function playTrack(index) {
     artistNameEl.onclick = null;
 
     const artwork = document.getElementById('currentArtwork');
-    artwork.src = getProxyUrl(currentTrack.artwork_url);
+    artwork.src = currentTrack.local_artwork || getProxyUrl(currentTrack.artwork_url);
     artwork.classList.remove('hidden');
     document.getElementById('artworkPlaceholder').classList.add('hidden');
 
@@ -1016,7 +1041,14 @@ async function toggleLike() {
     const trackUid = getTrackUid(currentTrack);
     const index = favorites.findIndex(t => getTrackUid(t) === trackUid);
     if (index > -1) favorites.splice(index, 1);
-    else favorites.push(currentTrack);
+    else {
+        // Fetch artwork as base64 before saving
+        if (currentTrack.artwork_url && !currentTrack.local_artwork) {
+            const b64 = await urlToBase64(currentTrack.artwork_url);
+            if (b64) currentTrack.local_artwork = b64;
+        }
+        favorites.push(currentTrack);
+    }
     await saveLibraryData();
     updateLikeButtonStatus();
     if (document.getElementById('favoritesView').classList.contains('active')) renderFavorites();
