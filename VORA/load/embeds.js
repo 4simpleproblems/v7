@@ -239,23 +239,21 @@ function createMediaCard(item) {
     const hashValue = isSPA ? `${effectiveType}/${item.id}` : item.id;
 
     const card = document.createElement('div');
-    card.className = 'video-item group relative';
+    card.className = 'video-card group relative';
     const isFav = isLiked(item.id);
     const heartClass = isFav ? 'far text-purple-500 scale-110' : 'far opacity-40 group-hover:opacity-100';
 
     card.innerHTML = `
-        <div class="thumbnail-container">
-            <img src="${poster}" loading="lazy" onerror="this.closest('.video-item').style.display='none'">
-            <a href="${link}#${hashValue}" class="play-overlay">
-                <i class="fas fa-play text-4xl text-white"></i>
-            </a>
-            <button class="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/10 hover:scale-110 transition-all fav-trigger z-10" data-id="${item.id}" title="Like">
-                <i class="${heartClass} fa-star"></i>
-            </button>
-        </div>
-        <div class="p-4">
+        <img src="${poster}" loading="lazy" onerror="this.closest('.video-card').style.display='none'">
+        <a href="${link}#${hashValue}" class="play-overlay">
+            <i class="fas fa-play text-4xl text-white"></i>
+        </a>
+        <button class="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/10 hover:scale-110 transition-all fav-trigger z-10" data-id="${item.id}" title="Like">
+            <i class="${heartClass} fa-star"></i>
+        </button>
+        <div class="overlay-grad">
             <h3 class="text-white text-sm truncate mb-1 font-normal">${title}</h3>
-            <p class="text-xs text-gray-500">${formatFullDate(item.release_date || item.first_air_date) || ''}</p>
+            <p class="text-[10px] text-gray-500">${formatFullDate(item.release_date || item.first_air_date) || ''}</p>
         </div>
     `;
 
@@ -279,9 +277,9 @@ function createViewAllCard(link) {
         card.href = link;
     }
     
-    card.className = 'video-item group flex flex-col items-center justify-center min-h-[300px] border-dashed border-2 border-brand-border hover:border-solid hover:border-purple-500 bg-white/5 hover:bg-white/10 transition-all rounded-[16px] cursor-pointer';
+    card.className = 'video-card group flex flex-col items-center justify-center min-h-[300px] border-dashed border-2 border-brand-border hover:border-solid hover:border-accent-purple bg-white/5 hover:bg-white/10 transition-all rounded-[22px] cursor-pointer';
     card.innerHTML = `
-        <i class="fas fa-arrow-right text-3xl mb-4 text-purple-500 group-hover:translate-x-2 transition-transform"></i>
+        <i class="fas fa-arrow-right text-3xl mb-4 text-accent-purple group-hover:translate-x-2 transition-transform"></i>
         <span class="text-white font-medium">View All</span>
     `;
     return card;
