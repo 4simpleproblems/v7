@@ -66,10 +66,10 @@
             theme: {
                 extend: {
                     colors: {
-                        'deep-black': '#040404',
+                        'deep-black': '#000000',
                         'card-dark': '#0d0d0d',
-                        'accent-red': '#a855f7',
-                        'brand-border': '#222222',
+                        'accent-purple': '#a855f7',
+                        'brand-border': '#1a1a1a',
                     },
                     fontFamily: {
                         sans: ['Geist', 'sans-serif'],
@@ -82,111 +82,100 @@
     <style>
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: #040404; 
-            color: #c0c0c0; 
+            background-color: #000000; 
+            color: #c0c0c0;
             font-weight: 300; 
-            margin: 0;
-            display: flex;
-            min-height: 100vh;
-            padding-top: 64px;
+            overflow: hidden;
         }
 
-        /* Sidebar Styles */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 200 !important;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+        }
+
+        /* --- Global Scrollbar --- */
+        ::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .app-container {
+            display: grid;
+            grid-template-areas: "sidebar main";
+            grid-template-columns: 280px 1fr;
+            height: 100vh;
+            width: 100%;
+            background: #000000;
+        }
+
         .sidebar {
-            width: 260px;
-            background-color: #080808;
+            grid-area: sidebar;
+            background: #000000;
             border-right: 1px solid #1a1a1a;
-            height: calc(100vh - 64px);
-            position: fixed;
-            left: 0;
-            top: 64px;
             display: flex;
             flex-direction: column;
-            padding: 24px;
-            z-index: 100;
+            padding: 32px 0;
+            overflow-y: auto;
         }
 
-        .main-content {
-            margin-left: 260px;
-            flex-grow: 1;
-            padding: 48px;
-            min-height: 100vh;
-            width: calc(100% - 260px);
+        .main-view {
+            grid-area: main;
+            background: #000000;
+            overflow-y: auto;
+            position: relative;
+            padding: 32px;
         }
 
-        .nav-link {
+        .nav-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            color: #888;
-            text-decoration: none;
-            border-radius: 12px;
-            margin-bottom: 4px;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .nav-link:hover, .nav-link.active {
-            background-color: rgba(168, 85, 247, 0.1);
-            color: #a855f7;
-        }
-
-        .nav-link i {
-            font-size: 18px;
-            width: 24px;
-            text-align: center;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                display: none;
-            }
-            .main-content {
-                margin-left: 0;
-                padding: 24px;
-                width: 100%;
-            }
-        }
-
-        h1, h2, h3, .font-bold, .font-semibold, strong {
-            font-weight: 400 !important;
-        }
-
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .video-item {
-            background-color: #0d0d0d;
-            border: 1px solid #222;
-            border-radius: 16px;
-            overflow: hidden;
+            gap: 16px;
+            padding: 12px 24px;
+            color: #666;
+            font-size: 0.9rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border-radius: 20px;
+            margin: 0 16px;
+            font-weight: 300;
         }
 
-        .video-item:hover {
+        .nav-item:hover, .nav-item.active {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .nav-item.active {
+            color: #a855f7;
+            background: rgba(168, 85, 247, 0.08);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+        }
+
+        .video-card {
+            background: #050505;
+            border: 1px solid #111;
+            border-radius: 24px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 2/3;
+        }
+
+        .video-card:hover {
             border-color: #a855f7;
             transform: translateY(-4px);
-            box-shadow: 0 10px 30px rgba(168, 85, 247, 0.15);
+            box-shadow: 0 20px 40px -20px rgba(168, 85, 247, 0.4);
         }
 
-        .thumbnail-container {
-            position: relative;
-            width: 100%;
-            padding-bottom: 150%; 
-        }
-
-        .thumbnail-container img {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .video-card img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .video-card:hover img {
+            transform: scale(1.05);
         }
 
         .play-overlay {
@@ -200,34 +189,31 @@
             transition: opacity 0.3s ease;
         }
 
-        .video-item:hover .play-overlay {
+        .video-card:hover .play-overlay {
             opacity: 1;
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #040404; }
-        ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #333; }
-
-        .search-input {
+        .search-box {
             background: #0d0d0d;
-            border: 1px solid #222;
-            color: white;
-            transition: all 0.3s ease;
-        }
-        .search-input:focus {
-            border-color: #a855f7;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.1);
+            border: 1px solid #333;
+            border-radius: 500px;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 600px;
+            transition: all 0.3s;
         }
 
-        /* MODIFIED: Removed 'border-radius: 12px !important' 
-           This allows navigation.js to apply its own rounded corners (16px/20px).
-        */
-        button, a, .rounded-xl {
-            transition: all 0.2s ease;
+        .search-box:focus-within {
+            border-color: #a855f7;
+            background: #111;
+            box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.1);
         }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 10px; }
     </style>
     
     <script>
@@ -241,96 +227,100 @@
     <script src="/VORA/load/embeds.js"></script>
     <script src="/injector.js"></script>
 </head>
-<body class="bg-deep-black">
-    <nav class="sidebar">
-        <div class="logo flex items-center gap-3 mb-10 px-2">
-            <img src="/VORA/images/logo.png" class="w-8 h-8 object-contain" alt="4SP Logo">
-            <h1 class="text-xl tracking-tight text-white">VORA</h1>
-        </div>
-        
-        <div class="flex-grow">
-            <a onclick="switchView('index')" class="nav-link active">
-                <i class="fas fa-house"></i>
-                <span>Dashboard</span>
-            </a>
-            <a onclick="switchView('movies')" class="nav-link">
-                <i class="fas fa-film"></i>
-                <span>Movies</span>
-            </a>
-            <a onclick="switchView('series')" class="nav-link">
-                <i class="fas fa-tv"></i>
-                <span>Series</span>
-            </a>
-        </div>
-
-        <div class="mt-auto pt-6 border-t border-brand-border">
-            <a href="https://discord.com/invite/zcADhddGQz" target="_blank" class="nav-link">
-                <i class="fab fa-discord"></i>
-                <span>Discord</span>
-            </a>
-        </div>
-    </nav>
-
-    <div class="main-content">
-        <header class="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
-            <div class="flex flex-col">
-                <h2 class="text-2xl text-white font-medium">Welcome back</h2>
-                <p class="text-gray-500 text-sm">Find your next favorite media.</p>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="px-8 mb-10">
+                <div class="flex items-center gap-3">
+                    <img src="../images/logo.png" class="w-10 h-10 object-contain">
+                    <span class="text-xl font-bold tracking-tighter text-white">VORA</span>
+                </div>
             </div>
-            <div class="relative w-full md:w-96">
-                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="searchInput" placeholder="Search movies or series..." class="search-input w-full pl-12 pr-4 py-3 rounded-[12px] text-sm">
+
+            <nav class="flex-1">
+                <div class="nav-item active" onclick="switchView('index')" id="nav-index">
+                    <i class="fas fa-house"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" onclick="switchView('movies')" id="nav-movies">
+                    <i class="fas fa-film"></i>
+                    <span>Movies</span>
+                </div>
+                <div class="nav-item" onclick="switchView('series')" id="nav-series">
+                    <i class="fas fa-tv"></i>
+                    <span>Series</span>
+                </div>
+
+                <div class="h-px bg-brand-border my-6 mx-8"></div>
+
+                <div class="mt-auto pt-6">
+                    <a href="https://discord.com/invite/zcADhddGQz" target="_blank" class="nav-item !bg-transparent !border-none">
+                        <i class="fab fa-discord"></i>
+                        <span>Discord</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main View -->
+        <main class="main-view custom-scroll">
+            <div class="max-w-6xl mx-auto">
+                <header class="mb-12 flex flex-col items-center">
+                    <h1 class="text-5xl font-black mb-8 tracking-tighter">Find your next favorite.</h1>
+                    <div class="search-box">
+                        <i class="fas fa-search text-gray-500"></i>
+                        <input type="text" id="searchInput" placeholder="Search movies or series..." class="bg-transparent border-none outline-none flex-1 text-white">
+                    </div>
+                </header>
+
+                <main>
+                    <section id="favorites-section" class="mb-12 hidden">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-star text-yellow-500 text-sm"></i> Liked Media</h2>
+                        <div id="favoritesGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"></div>
+                        <div class="h-px bg-brand-border my-12"></div>
+                    </section>
+
+                    <section id="movies-section" class="mb-12">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-ticket text-purple-500 text-sm"></i> Featured Movies</h2>
+                        <div id="moviesGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"></div>
+                    </section>
+
+                    <section id="series-section" class="mb-12">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-tv text-purple-500 text-sm"></i> Popular Series</h2>
+                        <div id="seriesGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"></div>
+                    </section>
+
+                    <section id="dynamic-section" class="hidden">
+                        <h2 id="dynamic-title" class="text-xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-search text-purple-500 text-sm"></i> Results</h2>
+                        <div id="videoGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"></div>
+                    </section>
+                </main>
+
+                <footer class="mt-24 pt-12 border-t border-brand-border text-center text-xs text-gray-600">
+                    <p class="mb-4">Content provided by non-affiliated third parties. Modified by 4SP.</p>
+                    <div class="flex justify-center gap-6">
+                        <a href="https://discord.gg/VDA8Ngx38Z" class="hover:text-purple-500 transition-colors">Discord</a>
+                        <a href="#" class="hover:text-purple-500 transition-colors">Back to top</a>
+                    </div>
+                </footer>
             </div>
-        </header>
-
-        <main>
-            <section id="favorites-section" class="mb-12 hidden">
-                <div class="flex items-center gap-3 mb-6">
-                    <i class="fas fa-star text-yellow-500"></i>
-                    <h2 class="text-xl text-white">Liked Media</h2>
-                </div>
-                <div id="favoritesGrid" class="video-grid"></div>
-                <hr class="border-brand-border my-12">
-            </section>
-
-            <section id="movies-section" class="mb-12">
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center gap-3">
-                        <i class="fas fa-ticket text-purple-500"></i>
-                        <h2 class="text-xl text-white">Featured Movies</h2>
-                    </div>
-                </div>
-                <div id="moviesGrid" class="video-grid">
-                    </div>
-            </section>
-
-            <section id="series-section" class="mb-12">
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center gap-3">
-                        <i class="fas fa-tv text-purple-500"></i>
-                        <h2 class="text-xl text-white">Popular Series</h2>
-                    </div>
-                </div>
-                <div id="seriesGrid" class="video-grid">
-                    </div>
-            </section>
-
-            <section id="dynamic-section" class="hidden">
-                <div id="dynamic-header" class="flex items-center gap-3 mb-6">
-                    <i class="fas fa-search text-purple-500"></i>
-                    <h2 id="dynamic-title" class="text-xl text-white">Results</h2>
-                </div>
-                <div id="videoGrid" class="video-grid"></div>
-            </section>
         </main>
-
-        <footer class="mt-24 pt-12 border-t border-brand-border text-center text-xs text-gray-600">
-            <p class="mb-4">Content provided by non-affiliated third parties. Modified by 4SP.</p>
-            <div class="flex justify-center gap-6">
-                <a href="https://discord.gg/VDA8Ngx38Z" class="hover:text-purple-500 transition-colors">Discord</a>
-                <a href="#" class="hover:text-purple-500 transition-colors">Back to top</a>
-            </div>
-        </footer>
     </div>
+
+    <!-- Update switchView to handle sidebar active state -->
+    <script>
+        const originalSwitchView = window.switchView;
+        window.switchView = function(view, push = true) {
+            if (typeof originalSwitchView === 'function') {
+                originalSwitchView(view, push);
+            }
+            // Update sidebar UI
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            const activeNav = document.getElementById('nav-' + view);
+            if (activeNav) activeNav.classList.add('active');
+        };
+    </script>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->
