@@ -84,6 +84,7 @@ function getProxyUrl(url) {
 }
 
 // --- State ---
+let isInitialized = false;
 let currentTrack = null;
 let playlist = [];
 let originalPlaylist = [];
@@ -238,6 +239,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initApp() {
+    if (isInitialized) return;
+    isInitialized = true;
+    
     await loadLibraryData();
     setGreeting();
     setupEventListeners();
@@ -489,10 +493,10 @@ async function loadPopularTracks() {
     const grid = document.getElementById('popularTracks');
     if (!grid) return;
     try {
-        const randomArtist = popularArtists[Math.floor(Math.random() * popularArtists.length)];
-        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(randomArtist)}`);
+        const query = "Travis Scott 2025";
+        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&limit=12`);
         const data = await response.json();
-        if (data.tracks) renderTrackGrid(data.tracks.slice(0, 6), grid);
+        if (data.tracks) renderTrackGrid(data.tracks.slice(0, 12), grid);
     } catch (e) { console.error('Failed to load popular tracks', e); }
 }
 
