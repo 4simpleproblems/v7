@@ -20,8 +20,8 @@
     let db = null;
     let auth = null;
     let currentUser = 'anonymous';
-    // Check previous session state to avoid tracking admins on page reload
-    let isExcluded = sessionStorage.getItem('analytics_is_admin') === 'true';
+    // Always track all users including admins
+    let isExcluded = false;
     let isTracking = false;
 
     // Wait for Firebase to be available
@@ -45,8 +45,9 @@
         // Track user
         auth.onAuthStateChanged(async (user) => {
             if (user) {
+                currentUser = user.uid;
                 try {
-                    // Check if Superadmin or Admin
+                    // Check if Superadmin or Admin to tag them in session
                     const isSuperAdmin = user.email === '4simpleproblems@gmail.com';
                     let isAdmin = false;
                     
@@ -56,24 +57,17 @@
                     }
 
                     if (isSuperAdmin || isAdmin) {
-                        console.log("Analytics: Admin detected. Tracking disabled.");
-                        isExcluded = true;
+                        console.log("Analytics: Admin detected. Tracking as admin.");
                         sessionStorage.setItem('analytics_is_admin', 'true');
-                        return; // Stop processing
                     } else {
-                        // User is logged in but not admin
-                        isExcluded = false;
                         sessionStorage.removeItem('analytics_is_admin');
                     }
                 } catch (e) {
                     console.error("Analytics: Error checking admin status", e);
                 }
-                
-                currentUser = user.uid;
             } else {
                 // Logged out
                 currentUser = 'anonymous';
-                isExcluded = false;
                 sessionStorage.removeItem('analytics_is_admin');
             }
             updateSession();
@@ -162,13 +156,15 @@
         let startTime = parseInt(sessionStorage.getItem('analytics_start_time') || Date.now());
         const now = Date.now();
         const duration = (now - startTime) / 1000; // seconds
+        const isAdmin = sessionStorage.getItem('analytics_is_admin') === 'true';
 
         docRef.set({
             userId: currentUser,
             version: 'project_niobium', // Codename for 4SP V6
             lastActive: window.firebase.firestore.FieldValue.serverTimestamp(),
             duration: duration,
-            startTime: startTime
+            startTime: startTime,
+            isAdmin: isAdmin
         }, { merge: true });
     }
 
