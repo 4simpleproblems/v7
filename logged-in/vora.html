@@ -148,7 +148,7 @@
             font-size: 0.9rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-            border-radius: 18px; /* 2px less than 20px */
+            border-radius: 18px; /* 20 - 2 */
             margin: 0 16px;
             font-weight: 300;
         }
@@ -167,7 +167,7 @@
         .video-card {
             background: #050505;
             border: 1px solid #111;
-            border-radius: 22px; /* 2px less than 24px */
+            border-radius: 22px; /* 24 - 2 */
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             position: relative;
@@ -211,7 +211,7 @@
         .search-box {
             background: #0d0d0d;
             border: 1px solid #333;
-            border-radius: 498px; /* 2px less than 500px */
+            border-radius: 498px; /* 500 - 2 */
             padding: 12px 24px;
             display: flex;
             align-items: center;
@@ -240,6 +240,16 @@
             transition: color 0.2s;
         }
         .see-all-btn:hover { color: #ffffff; }
+
+        /* --- Notifications --- */
+        #notification-container { position: fixed; bottom: 2rem; right: 2rem; display: flex; flex-direction: column; gap: 0.75rem; z-index: 1000; pointer-events: none; }
+        .notification-toast { background-color: #000000; border: 1px solid #333; border-radius: 12px; padding: 0.75rem 1.25rem; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem; min-width: 200px; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease, background-color 0.2s; opacity: 0; pointer-events: auto; cursor: default; }
+        .notification-toast.show { transform: translateX(0); opacity: 1; }
+        .notification-toast.show:hover { transform: scale(1.05) translateX(-5px); background-color: #151515; border-color: #555; box-shadow: 0 8px 25px rgba(0,0,0,0.7); }
+        .notification-icon { font-size: 1.1rem; }
+        .notification-icon.success { color: #4ade80; }
+        .notification-icon.info { color: #60a5fa; }
+        .notification-icon.warning { color: #fbbf24; }
     </style>
     
     <script>
@@ -341,11 +351,22 @@
 
         <!-- Translucent Bottom Bar -->
         <footer class="bottom-bar">
-            <div class="flex items-center gap-4">
-                <img src="../images/logo.png" class="w-8 h-8 opacity-20 grayscale">
-                <div class="flex flex-col">
-                    <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Powered by VORA Engine</span>
-                    <span class="text-[9px] text-gray-700">Encrypted streaming node active</span>
+            <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-4">
+                    <img src="../images/logo.png" class="w-8 h-8 opacity-20 grayscale">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Powered by VORA Engine</span>
+                        <span class="text-[9px] text-gray-700">Encrypted streaming node active</span>
+                    </div>
+                </div>
+                <div id="now-watching-container" class="hidden items-center gap-4">
+                    <div class="text-right">
+                        <p id="watching-title" class="text-xs font-bold text-white truncate max-w-[200px]">Loading...</p>
+                        <p class="text-[9px] text-gray-500 uppercase tracking-widest">Now Watching</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-card-dark border border-brand-border flex items-center justify-center">
+                        <i class="fas fa-play text-[10px] text-accent-purple"></i>
+                    </div>
                 </div>
             </div>
         </footer>
@@ -363,7 +384,22 @@
             const activeNav = document.getElementById('nav-' + view);
             if (activeNav) activeNav.classList.add('active');
         };
+
+        // Integration for "Now Watching" bar
+        const originalPlayVideo = window.playVideo; // Assuming playVideo is defined in external scripts
+        window.playVideo = function(videoData) {
+            if (typeof originalPlayVideo === 'function') originalPlayVideo(videoData);
+            
+            const bar = document.getElementById('now-watching-container');
+            const title = document.getElementById('watching-title');
+            if (bar && title) {
+                bar.classList.remove('hidden');
+                bar.classList.add('flex');
+                title.textContent = videoData.title || "Unknown Title";
+            }
+        };
     </script>
+    <div id="notification-container"></div>
 </body>
 </html>
 <!-- Made with ❤️ from 4SP -->
