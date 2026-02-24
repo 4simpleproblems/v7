@@ -363,8 +363,8 @@
                                 location.reload();
                             };
                         }
+                        loadAnalytics(user.uid, pageConfig, data);
                     }
-                    loadAnalytics(user.uid, pageConfig);
                 } else if (!window._LOCAL_MODE) {
                     window.location.replace('../index.html');
                 }
@@ -431,16 +431,13 @@
             container.innerHTML = avatarHtml;
         }
 
-        async function loadAnalytics(uid, pageConfig = {}) {
+        async function loadAnalytics(uid, pageConfig = {}, userData = {}) {
             const db = firebase.firestore();
             const snap = await db.collection('analytics')
                 .where('userId', '==', uid)
                 .where('version', '==', 'project_niobium')
                 .get();
             
-            if (snap.empty) return;
-
-            let totalTime = 0;
             let totalPageViews = 0;
             let pageMap = {}; 
             let latestUA = "";
@@ -464,7 +461,6 @@
 
             snap.forEach(doc => {
                 const data = doc.data();
-                totalTime += (data.duration || 0);
                 totalPageViews += (data.pageCount || 0);
                 if (data.userAgent) latestUA = data.userAgent;
 
@@ -493,10 +489,20 @@
             document.getElementById('stat-os').textContent = uaInfo.os;
             document.getElementById('stat-device').textContent = window._LOCAL_MODE ? 'Version 5 Client' : 'Cloud Access';
 
-            const hours = Math.floor(totalTime / 3600);
-            const minutes = Math.floor((totalTime % 3600) / 60);
-            document.getElementById('stat-total-time').textContent = `${hours}h ${minutes}m`;
+            // Use the "CORRECT" time from user doc
+            const displayTime = (timeInSecs) => {
+                const hours = Math.floor(timeInSecs / 3600);
+                const minutes = Math.floor((timeInSecs % 3600) / 60);
+                document.getElementById('stat-total-time').textContent = `${hours}h ${minutes}m`;
+            };
+
+            displayTime(userData.totalV6Time || 0);
             document.getElementById('stat-pageviews').textContent = totalPageViews;
+
+            // Listen for real-time updates to time
+            db.collection('users').doc(uid).onSnapshot(doc => {
+                if (doc.exists) displayTime(doc.data().totalV6Time || 0);
+            });
 
             const listEl = document.getElementById('recent-pages-list');
             listEl.innerHTML = '';
