@@ -39,12 +39,17 @@ function getDownloadUrl(item) {
 }
 
 // --- Proxy Helper ---
-function getProxyUrl(url) {
+function getProxyUrl(url, size = null) {
     if (!url) return url;
     if (typeof url !== 'string') return url;
     if (url.startsWith('data:')) return url;
     if (url.startsWith('//')) url = 'https:' + url;
     
+    // Optimization for Saavn images if size is requested
+    if (size && url.includes('saavncdn.com')) {
+        url = url.replace(/_([0-9]+x[0-9]+|500)\.jpg/i, `_${size}.jpg`);
+    }
+
     // Check if it's already proxied
     const prefix = "/VELIUM/uv/service/";
     if (url.includes(prefix)) return url;
@@ -428,6 +433,18 @@ function setupEventListeners() {
             }
         });
     }
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+            const active = document.activeElement;
+            const isInput = active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
+            if (!isInput) {
+                e.preventDefault();
+                togglePlayPause();
+            }
+        }
+    });
 }
 
 // --- View Logic ---
@@ -453,8 +470,10 @@ function updateFullscreenUI() {
     const artworkUrl = getProxyUrl(currentTrack.artwork_url);
     document.getElementById('fsArtwork').src = artworkUrl;
     
+    // Background optimized for blur
+    const bgUrl = getProxyUrl(currentTrack.artwork_url, '50x50');
     const bg = document.getElementById('fsBackground');
-    if (bg) { bg.style.backgroundImage = `url('${artworkUrl}')`; bg.style.backgroundSize = 'cover'; bg.style.backgroundPosition = 'center'; }
+    if (bg) { bg.style.backgroundImage = `url('${bgUrl}')`; bg.style.backgroundSize = 'cover'; bg.style.backgroundPosition = 'center'; }
     updateFullscreenTint(artworkUrl);
     
     document.getElementById('fsShuffle').classList.toggle('active', isShuffle);
