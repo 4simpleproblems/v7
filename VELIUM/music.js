@@ -328,6 +328,7 @@ function setupEventListeners() {
     document.querySelector('.create-playlist-btn').addEventListener('click', showCreatePlaylistModal);
     document.getElementById('savePlaylistBtn').addEventListener('click', () => {
         createPlaylist(document.getElementById('playlistNameInput').value.trim(), document.getElementById('playlistDescInput').value.trim());
+        hideCreatePlaylistModal();
     });
     document.getElementById('confirmEditPlaylistBtn').addEventListener('click', confirmEditPlaylist);
 
@@ -1122,10 +1123,12 @@ function initCropper() {
         const base64 = tempCanvas.toDataURL('image/jpeg', 0.8);
         
         const id = document.getElementById('uploadPlaylistId').value;
-        const pl = playlists.find(p => p.id === id);
+        const pl = playlists.find(p => p.id.toString() === id.toString());
         if (pl) {
-            updatePlaylist(id, pl.name, pl.description, base64);
+            updatePlaylist(pl.id, pl.name, pl.description, base64);
             document.getElementById('cropperModal').style.display = 'none';
+        } else {
+            console.error('Playlist not found for ID:', id);
         }
     });
 }
