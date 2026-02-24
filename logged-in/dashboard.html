@@ -63,7 +63,7 @@
 
         /* --- LAYOUT SLOTS --- */
         #welcome-section {
-            grid-column: span 12;
+            grid-column: span 9;
             grid-row: span 5;
             background: transparent;
             border: none;
@@ -109,7 +109,38 @@
 
         .label-tiny { font-size: 0.65rem; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.15em; }
         .val-big { font-size: 1.75rem; font-weight: 500; color: #fff; margin-top: 0.25rem; }
+        #stat-total-time { font-size: 3rem; }
         .val-sub { font-size: 0.7rem; color: #555; margin-top: 0.25rem; }
+
+        /* --- LEADERBOARD WIDGET --- */
+        #leaderboard-widget {
+            grid-column: span 3;
+            grid-row: span 5;
+            background: #0a0a0a;
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+        #leaderboard-widget.greyed-out {
+            opacity: 0.5;
+            filter: grayscale(1);
+            pointer-events: none;
+        }
+        #leaderboard-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
 
         .page-grid {
             display: grid;
@@ -174,6 +205,31 @@
             <h2 class="welcome-msg">Good day, <span id="user-name-display" class="text-indigo-500">User</span>.</h2>
         </div>
 
+        <!-- LEADERBOARD WIDGET -->
+        <div id="leaderboard-widget" class="dashboard-card greyed-out">
+            <div id="leaderboard-status">
+                <div class="label-tiny">Global Rank</div>
+                <div id="leaderboard-rank" class="val-big">#--</div>
+                <div class="text-[10px] text-gray-500 mt-2 uppercase tracking-widest font-bold">V6 Leaderboard</div>
+            </div>
+            
+            <a href="leaderboard.html" class="mt-4 inline-flex items-center justify-center py-2 px-4 bg-indigo-600/20 border border-indigo-500/50 rounded-xl text-xs font-medium text-indigo-400 hover:bg-indigo-600/30 transition">
+                View Full Rankings <i class="fas fa-trophy ml-2"></i>
+            </a>
+
+            <div id="leaderboard-overlay">
+                <div class="text-center p-4">
+                    <p class="text-xs text-gray-400 mb-3">Join the leaderboard to see your rank</p>
+                    <button id="accept-leaderboard-btn" class="py-2 px-4 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-xs font-medium transition">
+                        Accept Terms
+                    </button>
+                    <div class="mt-2">
+                        <a href="../legal.html#leaderboard-terms" target="_blank" class="text-[10px] text-indigo-400 hover:underline">View Terms</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ANALYTICS LEFT -->
         <div id="analytics-left" class="dashboard-card no-hover">
             <div class="stat-card">
@@ -198,7 +254,7 @@
             <div class="flex justify-between items-center">
                 <div>
                     <div class="label-tiny">Recently Accessed</div>
-                    <h3 class="text-xl font-medium text-white/80 mt-1">Your V6 Pulse</h3>
+                    <h3 class="text-xl font-medium text-white/80 mt-1">Most Opened Pages</h3>
                 </div>
                 <div id="stat-pageviews" class="text-3xl font-light text-white/20">0</div>
             </div>
@@ -274,7 +330,24 @@
                 if (user) {
                     const userDoc = await db.collection('users').doc(user.uid).get();
                     if (userDoc.exists) {
-                        document.getElementById('user-name-display').textContent = userDoc.data().displayName || userDoc.data().username || "User";
+                        const data = userDoc.data();
+                        document.getElementById('user-name-display').textContent = data.displayName || data.username || "User";
+                        
+                        // Leaderboard handling
+                        if (data.leaderboardAccepted) {
+                            document.getElementById('leaderboard-widget').classList.remove('greyed-out');
+                            document.getElementById('leaderboard-overlay').style.display = 'none';
+                            // Fetch rank (placeholder logic for now)
+                            fetchUserRank(user.uid);
+                        } else {
+                            document.getElementById('accept-leaderboard-btn').onclick = async () => {
+                                await db.collection('users').doc(user.uid).update({
+                                    leaderboardAccepted: true,
+                                    leaderboardOptOut: false
+                                });
+                                location.reload();
+                            };
+                        }
                     }
                     loadAnalytics(user.uid, pageConfig);
                 } else if (!window._LOCAL_MODE) {
@@ -283,6 +356,26 @@
             });
 
             startClock();
+        }
+
+        async function fetchUserRank(uid) {
+            const db = firebase.firestore();
+            // This is a simple rank fetch based on total duration in V6
+            // In a real scenario, you'd probably have a cloud function or a more optimized query
+            const snap = await db.collection('users')
+                .where('leaderboardAccepted', '==', true)
+                .where('leaderboardOptOut', '==', false)
+                .orderBy('totalV6Time', 'desc')
+                .limit(100) // Just check top 100 for now
+                .get();
+            
+            let rank = '--';
+            let i = 1;
+            snap.forEach(doc => {
+                if (doc.id === uid) rank = `#${i}`;
+                i++;
+            });
+            document.getElementById('leaderboard-rank').textContent = rank;
         }
 
         async function loadAnalytics(uid, pageConfig = {}) {

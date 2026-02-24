@@ -1,4 +1,4 @@
-# 4SP MAX
+# 4SP V6
 
 **4SP Max** is the next-generation, evolutionary enhancement of the renowned **4SP** platform. While the original 4SP is designed for static efficiency, 4SP Max is a high-powered deployment for those who need a range of integrated tools, a professional interface, and unhindered access to restricted networks.
 

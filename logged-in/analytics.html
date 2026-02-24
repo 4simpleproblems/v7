@@ -349,6 +349,7 @@
                                     <th>User / Email</th>
                                     <th>Time Ago</th>
                                     <th>Duration</th>
+                                    <th>Version</th>
                                     <th>Pages</th>
                                 </tr>
                             </thead>
@@ -1846,6 +1847,14 @@
                         }
                     }
 
+                    // Version Labeling
+                    let verName = 'V5 / MAX';
+                    if (s.version === 'project_niobium') verName = 'Version 6';
+                    // Check if it's the DV client (indicator in session storage or path)
+                    if (s.isDV || (s.visitedPages && s.visitedPages.some(p => p.path && p.path.includes('4simpleproblems_v5_latest.html')))) {
+                        verName = 'Version 5 Client';
+                    }
+
                     return `
                     <tr>
                         <td>
@@ -1856,6 +1865,7 @@
                         </td>
                         <td class="text-gray-400 text-sm">${formatTimeAgo(s.startTime)}</td>
                         <td class="text-gray-300 text-sm font-mono">${formatDuration(s.duration)}</td>
+                        <td class="text-gray-400 text-sm">${verName}</td>
                         <td class="text-gray-400 text-sm font-mono">${s.visitedPages ? s.visitedPages.length : (s.pageCount || 0)}</td>
                     </tr>
                 `}).join('');
@@ -2431,3 +2441,4 @@
     </script>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->

@@ -50,7 +50,8 @@ service cloud.firestore {
                      request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                         'pending_requests', 'friends', 'navbarTheme', 'navbarPosition', 'username', 
                         'pfpType', 'customPfp', 'pfpLetterBg', 'letterAvatarColor', 'letterAvatarText',
-                        'followerCount', 'followingCount', 'isOnline', 'currentActivity', 'lastActive'
+                        'followerCount', 'followingCount', 'isOnline', 'currentActivity', 'lastActive',
+                        'totalV6Time', 'leaderboardAccepted', 'leaderboardOptOut'
                      ])) ||
                     (!isAuthenticated() && 
                      request.resource.data.diff(resource.data).affectedKeys().hasOnly([

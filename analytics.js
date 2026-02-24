@@ -62,6 +62,13 @@
                     } else {
                         sessionStorage.removeItem('analytics_is_admin');
                     }
+
+                    // Ensure totalV6Time exists
+                    const userRef = db.collection('users').doc(user.uid);
+                    const userDoc = await userRef.get();
+                    if (userDoc.exists && userDoc.data().totalV6Time === undefined) {
+                        await userRef.update({ totalV6Time: 0 });
+                    }
                 } catch (e) {
                     console.error("Analytics: Error checking admin status", e);
                 }
@@ -73,9 +80,12 @@
             updateSession();
         });
 
-        // Initialize Start Time if new session
+        // Initialize Start Time and Active Duration
         if (!sessionStorage.getItem('analytics_start_time')) {
             sessionStorage.setItem('analytics_start_time', Date.now());
+        }
+        if (!sessionStorage.getItem('analytics_active_duration')) {
+            sessionStorage.setItem('analytics_active_duration', '0');
         }
 
         // Track Page View
@@ -84,6 +94,17 @@
 
         // Heartbeat to update duration
         setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                let activeSecs = parseInt(sessionStorage.getItem('analytics_active_duration') || '0');
+                activeSecs += 10;
+                sessionStorage.setItem('analytics_active_duration', activeSecs.toString());
+
+                if (currentUser !== 'anonymous') {
+                    db.collection('users').doc(currentUser).update({
+                        totalV6Time: window.firebase.firestore.FieldValue.increment(10)
+                    }).catch(() => {});
+                }
+            }
             updateSession();
             trackActivity();
         }, 10000); 
@@ -204,8 +225,7 @@
         const docRef = db.collection('analytics').doc(sessionId);
         
         let startTime = parseInt(sessionStorage.getItem('analytics_start_time') || Date.now());
-        const now = Date.now();
-        const duration = (now - startTime) / 1000; // seconds
+        const duration = parseInt(sessionStorage.getItem('analytics_active_duration') || '0');
         const isAdmin = sessionStorage.getItem('analytics_is_admin') === 'true';
 
         docRef.set({

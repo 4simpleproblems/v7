@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4SP - LEADERBOARD</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="../injector.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --bg-page: #040404;
+            --bg-container: #080808;
+            --border-color: rgba(255,255,255,0.05);
+            --accent-color: #4f46e5;
+        }
+
+        body { 
+            font-family: 'Geist', sans-serif; 
+            background-color: var(--bg-page);
+            color: #fff;
+            font-weight: 300;
+            min-height: 100vh;
+            padding: 2.5rem;
+        }
+
+        .leaderboard-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .section-card {
+            background: var(--bg-container);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .label-tiny { font-size: 0.7rem; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
+        .section-title { font-size: 2rem; font-weight: 200; letter-spacing: -0.02em; margin-bottom: 1.5rem; }
+
+        .leader-item {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+        .leader-item:hover { background: rgba(255,255,255,0.02); }
+        .leader-item:last-child { border-bottom: none; }
+
+        .rank-num { font-size: 1.25rem; font-weight: 500; width: 40px; color: #444; }
+        .rank-1 { color: #fbbf24; font-size: 2rem; }
+        .rank-2 { color: #cbd5e1; font-size: 1.5rem; }
+        .rank-3 { color: #d97706; font-size: 1.25rem; }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .follow-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+        }
+        .follow-btn.following {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .page-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        .page-stat-item {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .highlight-card {
+            background: linear-gradient(135deg, #1e1b4b 0%, #000000 100%);
+            border-color: rgba(79, 70, 229, 0.3);
+            text-align: center;
+            padding: 3rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="leaderboard-container">
+        <header class="mb-12">
+            <h1 class="text-5xl font-light tracking-tighter mb-2">V6 Leaderboard</h1>
+            <p class="text-gray-500 text-lg font-light">The global rankings of 4SP's most active users.</p>
+        </header>
+
+        <!-- TOP 1 SECTION -->
+        <div id="top-user-section" class="section-card highlight-card">
+            <div class="label-tiny">Global Champion</div>
+            <div id="champion-avatar" class="user-avatar w-24 h-24 mx-auto mb-4 border-2 border-indigo-500/50">
+                <i class="fas fa-user text-3xl text-gray-700"></i>
+            </div>
+            <h2 id="champion-name" class="text-4xl font-light mb-1">---</h2>
+            <p id="champion-time" class="text-indigo-400 font-mono">0h 0m total experience</p>
+        </div>
+
+        <!-- TOP PAGES -->
+        <div class="section-card">
+            <div class="label-tiny">System Pulse</div>
+            <h2 class="section-title">Most Used Pages</h2>
+            <div id="top-pages-list" class="page-stat-grid">
+                <p class="text-gray-600 italic">Calculating activity metrics...</p>
+            </div>
+        </div>
+
+        <!-- GLOBAL RANKINGS -->
+        <div class="section-card">
+            <div class="label-tiny">Active Roster</div>
+            <h2 class="section-title">Top 50 Users</h2>
+            <div id="rankings-list">
+                <p class="text-gray-600 italic p-4">Synchronizing ranking data...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../firebase-config.js';
+
+        const checkFirebase = setInterval(() => {
+            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+                clearInterval(checkFirebase);
+                initLeaderboard();
+            }
+        }, 100);
+
+        async function initLeaderboard() {
+            const db = firebase.firestore();
+            const auth = firebase.auth();
+
+            auth.onAuthStateChanged(async (user) => {
+                if (!user && !window._LOCAL_MODE) {
+                    window.location.replace('../index.html');
+                    return;
+                }
+                
+                loadUserRankings(user ? user.uid : null);
+                loadPageStats();
+            });
+        }
+
+        async function loadUserRankings(currentUid) {
+            const db = firebase.firestore();
+            const rankingsEl = document.getElementById('rankings-list');
+            
+            // Get current user's following list
+            let following = new Set();
+            if (currentUid) {
+                const followSnap = await db.collection('users').doc(currentUid).collection('following').get();
+                followSnap.forEach(doc => following.add(doc.id));
+            }
+
+            const snap = await db.collection('users')
+                .where('leaderboardAccepted', '==', true)
+                .where('leaderboardOptOut', '==', false)
+                .orderBy('totalV6Time', 'desc')
+                .limit(50)
+                .get();
+            
+            if (snap.empty) {
+                rankingsEl.innerHTML = '<p class="text-gray-600 italic p-4">No users have joined the leaderboard yet.</p>';
+                return;
+            }
+
+            rankingsEl.innerHTML = '';
+            let i = 1;
+            
+            snap.forEach(doc => {
+                const data = doc.data();
+                const uid = doc.id;
+                const hours = Math.floor((data.totalV6Time || 0) / 3600);
+                const minutes = Math.floor(((data.totalV6Time || 0) % 3600) / 60);
+
+                if (i === 1) {
+                    updateChampion(data);
+                }
+
+                const item = document.createElement('div');
+                item.className = 'leader-item';
+                
+                const isFollowing = following.has(uid);
+
+                item.innerHTML = `
+                    <div class="rank-num ${i <= 3 ? 'rank-'+i : ''}">${i}</div>
+                    <div class="user-avatar" id="avatar-${uid}">
+                        <i class="fas fa-user text-gray-700"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <div class="text-lg font-medium">${data.displayName || data.username || "Anonymous"}</div>
+                        <div class="text-xs text-gray-500 font-mono">${hours}h ${minutes}m</div>
+                    </div>
+                    ${uid !== currentUid ? `
+                        <button class="follow-btn ${isFollowing ? 'following' : ''}" data-uid="${uid}">
+                            ${isFollowing ? 'Following' : 'Follow'}
+                        </button>
+                    ` : '<span class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">You</span>'}
+                `;
+
+                rankingsEl.appendChild(item);
+                renderAvatar(data, `avatar-${uid}`);
+
+                const fBtn = item.querySelector('.follow-btn');
+                if (fBtn) {
+                    fBtn.onclick = () => toggleFollow(fBtn, uid, currentUid);
+                }
+
+                i++;
+            });
+        }
+
+        async function toggleFollow(btn, targetUid, currentUid) {
+            if (!currentUid) return;
+            const db = firebase.firestore();
+            const isFollowing = btn.classList.contains('following');
+
+            try {
+                const batch = db.batch();
+                const myFollowRef = db.collection('users').doc(currentUid).collection('following').doc(targetUid);
+                const theirFollowerRef = db.collection('users').doc(targetUid).collection('followers').doc(currentUid);
+
+                if (isFollowing) {
+                    batch.delete(myFollowRef);
+                    batch.delete(theirFollowerRef);
+                    
+                    // Increment/Decrement counts
+                    batch.update(db.collection('users').doc(currentUid), { followingCount: firebase.firestore.FieldValue.increment(-1) });
+                    batch.update(db.collection('users').doc(targetUid), { followerCount: firebase.firestore.FieldValue.increment(-1) });
+
+                    await batch.commit();
+                    btn.classList.remove('following');
+                    btn.textContent = 'Follow';
+                } else {
+                    batch.set(myFollowRef, { timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                    batch.set(theirFollowerRef, { timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                    
+                    batch.update(db.collection('users').doc(currentUid), { followingCount: firebase.firestore.FieldValue.increment(1) });
+                    batch.update(db.collection('users').doc(targetUid), { followerCount: firebase.firestore.FieldValue.increment(1) });
+
+                    await batch.commit();
+                    btn.classList.add('following');
+                    btn.textContent = 'Following';
+                }
+            } catch (e) { console.error("Follow toggle failed", e); }
+        }
+
+        function updateChampion(data) {
+            document.getElementById('champion-name').textContent = data.displayName || data.username || "Anonymous";
+            const hours = Math.floor((data.totalV6Time || 0) / 3600);
+            const minutes = Math.floor(((data.totalV6Time || 0) % 3600) / 60);
+            document.getElementById('champion-time').textContent = `${hours}h ${minutes}m total experience`;
+            renderAvatar(data, 'champion-avatar');
+        }
+
+        function renderAvatar(userData, containerId) {
+            const container = document.getElementById(containerId);
+            const username = userData.username || 'User';
+            const initial = (userData.username || '?').charAt(0).toUpperCase();
+            const pfpType = userData.pfpType || 'google';
+
+            let avatarHtml = '';
+
+            if (pfpType === 'custom' && userData.customPfp) {
+                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover">`;
+            } else if (pfpType === 'mibi' && userData.mibiConfig) {
+                // Simplified mibi for leaderboard
+                avatarHtml = `<div class="w-full h-full" style="background-color: ${userData.mibiConfig.bgColor || '#3B82F6'};"></div>`;
+            } else if (pfpType === 'letter') {
+                const bg = userData.pfpLetterBg || '#333';
+                avatarHtml = `<div class="w-full h-full flex items-center justify-center font-bold text-white" style="background: ${bg};">${initial}</div>`;
+            } else {
+                if (userData.photoURL) {
+                    avatarHtml = `<img src="${userData.photoURL}" class="w-full h-full object-cover">`;
+                } else {
+                    avatarHtml = `<div class="w-full h-full bg-indigo-600 flex items-center justify-center font-bold text-white">${initial}</div>`;
+                }
+            }
+
+            container.innerHTML = avatarHtml;
+        }
+
+        async function loadPageStats() {
+            const db = firebase.firestore();
+            const snap = await db.collection('analytics')
+                .where('version', '==', 'project_niobium')
+                .get();
+            
+            let pageMap = {};
+            snap.forEach(doc => {
+                const data = doc.data();
+                if (data.visitedPages) {
+                    data.visitedPages.forEach(p => {
+                        const path = p.path || p.url;
+                        if (!path || path.includes('srcdoc')) return;
+                        const title = p.title || path;
+                        if (!pageMap[path]) pageMap[path] = { title, count: 0, totalDuration: 0, sessions: 0 };
+                        pageMap[path].count++;
+                    });
+                }
+                // Also count session duration per page is harder, let's just do session count for now
+            });
+
+            const sorted = Object.entries(pageMap).sort((a,b) => b[1].count - a[1].count).slice(0, 6);
+            const listEl = document.getElementById('top-pages-list');
+            listEl.innerHTML = '';
+
+            sorted.forEach(([path, data]) => {
+                const item = document.createElement('div');
+                item.className = 'page-stat-item';
+                item.innerHTML = `
+                    <div>
+                        <div class="text-sm font-medium text-white">${data.title}</div>
+                        <div class="text-[10px] text-gray-600 uppercase tracking-widest">${path}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-light text-indigo-400">${data.count}</div>
+                        <div class="text-[10px] text-gray-700 uppercase">Sessions</div>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+    </script>
+</body>
+</html>
+<!-- Made with ❤️ from 4SP -->

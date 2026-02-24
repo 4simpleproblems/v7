@@ -915,6 +915,14 @@
                             </div>
                             <input type="checkbox" id="trackGamesToggle" checked class="w-5 h-5 accent-indigo-500">
                         </div>
+
+                        <div class="flex items-center justify-between border-t border-[#252525] pt-6">
+                            <div>
+                                <p class="text-emphasis">Leaderboard Participation</p>
+                                <p class="text-xs font-light text-gray-400">Show your profile and activity on the global leaderboard.</p>
+                            </div>
+                            <input type="checkbox" id="leaderboardToggle" checked class="w-5 h-5 accent-indigo-500">
+                        </div>
                         
                         <div class="flex justify-between items-center pt-4 border-t border-[#252525]">
                             <p id="activityPresenceMessage" class="general-message-area text-sm"></p>
@@ -1615,7 +1623,7 @@
                     
                     <h3 class="text-xl font-bold text-white mt-6 mb-2">Version</h3>
                     <p class="text-gray-400">
-                        Current Version: <span class="text-blue-400 text-emphasis">5.0.17</span>
+                        Current Version: <span class="text-blue-400 text-emphasis">6.0.0</span>
                     </p>
 
                     <h3 class="text-xl font-bold text-white mt-6 mb-3">Connect & Support</h3>
@@ -3592,6 +3600,7 @@ const performAccountDeletion = async (credential) => {
             // --- 4. Activity Presence Logic ---
             const showOfflineToggle = document.getElementById('showOfflineToggle');
             const trackGamesToggle = document.getElementById('trackGamesToggle');
+            const leaderboardToggle = document.getElementById('leaderboardToggle');
             const saveActivityPresenceBtn = document.getElementById('saveActivityPresenceBtn');
             const activityPresenceMessage = document.getElementById('activityPresenceMessage');
 
@@ -3603,6 +3612,7 @@ const performAccountDeletion = async (credential) => {
                         const userData = snap.data();
                         showOfflineToggle.checked = !!userData.showOffline;
                         trackGamesToggle.checked = !userData.disableActivityTracking;
+                        leaderboardToggle.checked = !userData.leaderboardOptOut;
                     }
                 } catch (e) { console.error("Error loading activity presence:", e); }
 
@@ -3613,7 +3623,8 @@ const performAccountDeletion = async (credential) => {
                         
                         await updateDoc(userDocRef, {
                             showOffline: showOfflineToggle.checked,
-                            disableActivityTracking: !trackGamesToggle.checked
+                            disableActivityTracking: !trackGamesToggle.checked,
+                            leaderboardOptOut: !leaderboardToggle.checked
                         });
                         
                         showMessage(activityPresenceMessage, 'Presence settings saved!', 'success');
