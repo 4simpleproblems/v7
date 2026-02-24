@@ -12,12 +12,12 @@
     // 1. DEFINE YOUR SCRIPTS HERE
     // Update this array (and ONLY this array) to manage your application's scripts.
     const scriptsToLoad = [
-      '../ban-enforcer.js',
-      '../tab-disguiser.js',
-      '../panic-key.js',
-      '../analytics.js',
-      '../navigation.js',
-      '../admin_keybinds.js'
+      '/ban-enforcer.js',
+      '/tab-disguiser.js',
+      '/panic-key.js',
+      '/analytics.js',
+      '/navigation.js',
+      '/admin_keybinds.js'
     ];
 
     // 2. CORE DYNAMIC LOADING FUNCTION
