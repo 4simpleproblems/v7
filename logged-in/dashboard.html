@@ -63,7 +63,7 @@
 
         /* --- LAYOUT SLOTS --- */
         #welcome-section {
-            grid-column: span 9;
+            grid-column: span 4;
             grid-row: span 5;
             background: transparent;
             border: none;
@@ -114,16 +114,19 @@
 
         /* --- LEADERBOARD WIDGET --- */
         #leaderboard-widget {
-            grid-column: span 3;
+            grid-column: span 8;
             grid-row: span 5;
             background: #0a0a0a;
             border: 1px solid var(--border-color);
             border-radius: 28px;
             padding: 1.5rem;
             display: flex;
-            flex-direction: column;
+            flex-direction: row; /* Horizontal layout */
+            align-items: center;
             justify-content: space-between;
+            gap: 2rem;
             transition: all 0.3s ease;
+            position: relative;
         }
         #leaderboard-widget.greyed-out {
             opacity: 0.5;
@@ -207,24 +210,37 @@
 
         <!-- LEADERBOARD WIDGET -->
         <div id="leaderboard-widget" class="dashboard-card greyed-out">
-            <div id="leaderboard-status">
-                <div class="label-tiny">Global Rank</div>
-                <div id="leaderboard-rank" class="val-big">#--</div>
-                <div class="text-[10px] text-gray-500 mt-2 uppercase tracking-widest font-bold">V6 Leaderboard</div>
+            <div class="flex flex-col justify-center border-r border-white/5 pr-8 h-full">
+                <div class="label-tiny">Your Status</div>
+                <div id="leaderboard-rank" class="val-big text-indigo-400">#--</div>
+                <div class="text-[10px] text-gray-500 mt-1 uppercase tracking-widest font-bold">Global Rank</div>
+            </div>
+
+            <div class="flex-grow flex items-center gap-6 px-4">
+                <div id="champion-avatar-widget" class="w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <i class="fas fa-crown text-indigo-500"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="label-tiny">Global Champion</div>
+                    <div id="champion-name-widget" class="text-xl font-medium text-white truncate">Loading...</div>
+                    <div id="champion-time-widget" class="text-[10px] text-indigo-400/70 font-mono mt-0.5">0h 0m total</div>
+                </div>
             </div>
             
-            <a href="leaderboard.html" class="mt-4 inline-flex items-center justify-center py-2 px-4 bg-indigo-600/20 border border-indigo-500/50 rounded-xl text-xs font-medium text-indigo-400 hover:bg-indigo-600/30 transition">
-                View Full Rankings <i class="fas fa-trophy ml-2"></i>
-            </a>
+            <div class="flex flex-col gap-2">
+                <a href="leaderboard.html" class="inline-flex items-center justify-center py-2.5 px-6 bg-indigo-600/10 border border-indigo-500/30 rounded-2xl text-xs font-medium text-indigo-400 hover:bg-indigo-600/20 transition group">
+                    Rankings <i class="fas fa-trophy ml-2 group-hover:scale-110 transition-transform"></i>
+                </a>
+            </div>
 
             <div id="leaderboard-overlay">
                 <div class="text-center p-4">
                     <p class="text-xs text-gray-400 mb-3">Join the leaderboard to see your rank</p>
-                    <button id="accept-leaderboard-btn" class="py-2 px-4 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-xs font-medium transition">
+                    <button id="accept-leaderboard-btn" class="py-2.5 px-6 bg-indigo-600 hover:bg-indigo-700 rounded-2xl text-xs font-medium transition shadow-lg shadow-indigo-600/20">
                         Accept Terms
                     </button>
                     <div class="mt-2">
-                        <a href="../legal.html#leaderboard-terms" target="_blank" class="text-[10px] text-indigo-400 hover:underline">View Terms</a>
+                        <a href="../legal.html#leaderboard-terms" target="_blank" class="text-[10px] text-indigo-400/60 hover:text-indigo-400 hover:underline">View Terms</a>
                     </div>
                 </div>
             </div>
@@ -360,22 +376,60 @@
 
         async function fetchUserRank(uid) {
             const db = firebase.firestore();
-            // This is a simple rank fetch based on total duration in V6
-            // In a real scenario, you'd probably have a cloud function or a more optimized query
             const snap = await db.collection('users')
                 .where('leaderboardAccepted', '==', true)
                 .where('leaderboardOptOut', '==', false)
                 .orderBy('totalV6Time', 'desc')
-                .limit(100) // Just check top 100 for now
+                .limit(100)
                 .get();
             
             let rank = '--';
             let i = 1;
+            let champion = null;
+
             snap.forEach(doc => {
+                const data = doc.data();
+                if (i === 1) champion = { id: doc.id, ...data };
                 if (doc.id === uid) rank = `#${i}`;
                 i++;
             });
+
             document.getElementById('leaderboard-rank').textContent = rank;
+
+            if (champion) {
+                document.getElementById('champion-name-widget').textContent = champion.displayName || champion.username || "Anonymous";
+                const hours = Math.floor((champion.totalV6Time || 0) / 3600);
+                const minutes = Math.floor(((champion.totalV6Time || 0) % 3600) / 60);
+                document.getElementById('champion-time-widget').textContent = `${hours}h ${minutes}m total`;
+                renderAvatar(champion, 'champion-avatar-widget');
+            }
+        }
+
+        function renderAvatar(userData, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const username = userData.username || 'User';
+            const initial = (userData.username || '?').charAt(0).toUpperCase();
+            const pfpType = userData.pfpType || 'google';
+
+            let avatarHtml = '';
+
+            if (pfpType === 'custom' && userData.customPfp) {
+                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover">`;
+            } else if (pfpType === 'mibi' && userData.mibiConfig) {
+                avatarHtml = `<div class="w-full h-full" style="background-color: ${userData.mibiConfig.bgColor || '#3B82F6'};"></div>`;
+            } else if (pfpType === 'letter') {
+                const bg = userData.pfpLetterBg || '#333';
+                avatarHtml = `<div class="w-full h-full flex items-center justify-center font-bold text-white" style="background: ${bg};">${initial}</div>`;
+            } else {
+                if (userData.photoURL) {
+                    avatarHtml = `<img src="${userData.photoURL}" class="w-full h-full object-cover">`;
+                } else {
+                    avatarHtml = `<div class="w-full h-full bg-indigo-600 flex items-center justify-center font-bold text-white">${initial}</div>`;
+                }
+            }
+
+            container.innerHTML = avatarHtml;
         }
 
         async function loadAnalytics(uid, pageConfig = {}) {
