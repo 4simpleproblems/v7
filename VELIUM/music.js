@@ -477,6 +477,10 @@ window.toggleFullscreenPlayer = function() {
     const fs = document.getElementById('fullscreenPlayer');
     if (!fs) return;
     if (fs.classList.contains('hidden')) {
+        if (!currentTrack) {
+            showToast('No track playing', 'info');
+            return;
+        }
         fs.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
@@ -487,6 +491,13 @@ window.toggleFullscreenPlayer = function() {
         if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
     }
 };
+
+function closeFullscreenIfNoTrack() {
+    const fs = document.getElementById('fullscreenPlayer');
+    if (fs && !fs.classList.contains('hidden')) {
+        window.toggleFullscreenPlayer();
+    }
+}
 
 function updateFullscreenUI() {
     if (!currentTrack) return;
@@ -942,24 +953,36 @@ function updatePlayPauseUI() {
 }
 
 function playNext() {
-    if (playlist.length === 0) return;
+    if (playlist.length === 0) {
+        closeFullscreenIfNoTrack();
+        return;
+    }
     if (repeatMode === 'one') { playTrack(currentIndex); return; }
     if (isShuffle) {
         shuffledCurrentIndex++;
         if (shuffledCurrentIndex >= shuffledIndices.length) {
             if (repeatMode === 'all') { generateShuffledSequence(); shuffledCurrentIndex = 0; }
-            else return;
+            else {
+                closeFullscreenIfNoTrack();
+                return;
+            }
         }
         playTrack(shuffledIndices[shuffledCurrentIndex]);
     } else {
         let nextIndex = (currentIndex + 1) % playlist.length;
-        if (nextIndex === 0 && repeatMode !== 'all') return;
+        if (nextIndex === 0 && repeatMode !== 'all') {
+            closeFullscreenIfNoTrack();
+            return;
+        }
         playTrack(nextIndex);
     }
 }
 
 function playPrev() {
-    if (playlist.length === 0) return;
+    if (playlist.length === 0) {
+        closeFullscreenIfNoTrack();
+        return;
+    }
     if (isShuffle) {
         if (shuffledCurrentIndex > 0) { shuffledCurrentIndex--; playTrack(shuffledIndices[shuffledCurrentIndex]); }
         else playTrack(currentIndex);
