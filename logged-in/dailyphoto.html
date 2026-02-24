@@ -17,231 +17,308 @@
     <script src="../navigation.js" defer></script>
     <script src="../injector.js" defer></script>
 
-    <style>
-        :root {
-            --bg-page: #040404;
-            --bg-container: #080808;
-            --border-color: rgba(255,255,255,0.05);
-            --accent-color: #4f46e5;
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-black': '#000000',
+                        'card-dark': '#0d0d0d',
+                        'accent-indigo': '#4f46e5',
+                        'brand-border': '#1a1a1a',
+                    },
+                    fontFamily: {
+                        sans: ['Geist', 'sans-serif'],
+                    },
+                }
+            }
         }
+    </script>
 
+    <style>
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: var(--bg-page);
-            color: #fff;
-            font-weight: 300;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            background-color: #000000; 
+            color: #c0c0c0;
+            font-weight: 300; 
             overflow: hidden;
         }
 
-        #page-content {
-            flex-grow: 1;
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            grid-template-rows: repeat(12, 1fr);
-            gap: 1.5rem;
-            padding: 2.5rem;
-            width: 100%;
-            height: calc(100vh - 64px);
-            box-sizing: border-box;
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 200 !important;
+            color: #ffffff;
+            letter-spacing: -0.02em;
         }
 
-        .dashboard-card {
-            background: var(--bg-container);
-            border: 1px solid var(--border-color);
-            border-radius: 28px;
-            padding: 1.75rem;
-            position: relative;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        /* --- Global Scrollbar --- */
+        ::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .app-container {
+            display: grid;
+            grid-template-areas: "sidebar main";
+            grid-template-columns: 280px 1fr;
+            height: 100vh;
+            width: 100%;
+            background: #000000;
+        }
+
+        .sidebar {
+            grid-area: sidebar;
+            background: #000000;
+            border-right: 1px solid #1a1a1a;
             display: flex;
             flex-direction: column;
+            padding: 32px 0;
+            overflow-y: auto;
         }
 
-        .label-tiny { font-size: 0.65rem; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
-        
-        /* --- SLOTS --- */
-        #upload-section {
-            grid-column: span 4;
-            grid-row: span 5;
+        .main-view {
+            grid-area: main;
+            background: #000000;
+            overflow-y: auto;
+            position: relative;
+            padding: 32px;
         }
 
-        #social-section {
-            grid-column: span 4;
-            grid-row: span 7;
-        }
-
-        #feed-section {
-            grid-column: span 8;
-            grid-row: span 12;
-        }
-
-        /* --- COMPONENTS --- */
-        .photo-slot {
-            background: rgba(255,255,255,0.02);
-            border: 1px solid var(--border-color);
-            border-radius: 18px;
-            padding: 1rem;
+        .nav-item {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-            transition: all 0.2s;
-        }
-        .photo-slot:hover { border-color: var(--accent-color); background: rgba(79,70,229,0.05); }
-
-        .btn-icon-small {
-            width: 32px; height: 32px; border-radius: 10px;
-            background: rgba(255,255,255,0.03);
-            display: flex; align-items: center; justify-content: center;
-            color: var(--accent-color); transition: all 0.2s;
-        }
-        .btn-icon-small:hover { background: var(--accent-color); color: white; transform: scale(1.1); }
-
-        .feed-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1rem;
-            overflow-y: auto;
-            padding-right: 0.5rem;
-        }
-        .feed-grid::-webkit-scrollbar { width: 4px; }
-        .feed-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-
-        .post-card {
-            aspect-ratio: 1/1;
-            border-radius: 20px;
-            overflow: hidden;
-            background: #0a0a0a;
-            border: 1px solid var(--border-color);
-            position: relative;
+            gap: 16px;
+            padding: 12px 24px;
+            color: #666;
+            font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-            transition: transform 0.3s;
+            border-radius: 20px;
+            margin: 0 16px;
+            font-weight: 300;
         }
-        .post-card:hover { transform: scale(1.03); border-color: var(--accent-color); }
-        .post-card img { width: 100%; height: 100%; object-fit: cover; }
-        .post-overlay {
+
+        .nav-item:hover, .nav-item.active {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .nav-item.active {
+            color: #4f46e5;
+            background: rgba(79, 70, 229, 0.08);
+            border: 1px solid rgba(79, 70, 229, 0.15);
+        }
+
+        .photo-card {
+            background: #050505;
+            border: 1px solid #111;
+            border-radius: 24px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 1/1;
+        }
+
+        .photo-card:hover {
+            border-color: #4f46e5;
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -20px rgba(79, 70, 229, 0.4);
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .photo-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .overlay-grad {
             position: absolute; inset: 0;
             background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%);
             display: flex; flex-direction: column; justify-content: flex-end;
-            padding: 1rem; opacity: 0; transition: opacity 0.3s;
+            padding: 1.25rem; opacity: 0; transition: opacity 0.3s;
         }
-        .post-card:hover .post-overlay { opacity: 1; }
+        .photo-card:hover .overlay-grad { opacity: 1; }
 
-        .user-item {
-            display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem;
-            border-radius: 16px; transition: all 0.2s; cursor: pointer;
+        .search-box {
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 500px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
         }
-        .user-item:hover { background: rgba(255,255,255,0.03); }
 
-        .modal-bg {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px); z-index: 1000;
+        .search-box:focus-within {
+            border-color: #4f46e5;
+            background: #111;
+        }
+
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(12px);
             display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
             opacity: 0; pointer-events: none; transition: all 0.3s;
         }
-        .modal-bg.open { opacity: 1; pointer-events: auto; }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
         .modal-content {
-            background: var(--bg-container); border: 1px solid var(--border-color);
-            border-radius: 32px; padding: 2rem; width: 90%; max-width: 500px;
-            transform: scale(0.9); transition: transform 0.3s;
+            background: #0d0d0d;
+            border: 1px solid #1a1a1a;
+            border-radius: 32px;
+            width: 90%;
+            max-width: 900px;
+            height: 80vh;
+            display: flex;
+            overflow: hidden;
         }
-        .modal-bg.open .modal-content { transform: scale(1); }
+
+        .slot-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 20px; border-radius: 16px;
+            background: rgba(255,255,255,0.02); border: 1px solid transparent;
+            margin: 0 16px 8px 16px; transition: all 0.2s;
+        }
+        .slot-item:hover { background: rgba(255,255,255,0.04); border-color: #333; }
+
+        .btn-circle {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;
+            color: #666; transition: all 0.2s;
+        }
+        .btn-circle:hover { background: #4f46e5; color: white; transform: scale(1.1); }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 10px; }
     </style>
 </head>
 <body>
-    <div id="page-content">
-        <!-- UPLOAD SECTION -->
-        <div id="upload-section" class="dashboard-card">
-            <div class="label-tiny">Your Daily Slots</div>
-            <h2 class="text-xl font-light mb-4">Post a Moment</h2>
-            <div id="slots-container" class="flex-grow overflow-y-auto custom-scroll">
-                <!-- Slots injected here -->
-            </div>
-            <p class="text-[10px] text-gray-600 uppercase tracking-widest mt-4">5 Slots / Day • Resets at Midnight</p>
-        </div>
-
-        <!-- SOCIAL SECTION -->
-        <div id="social-section" class="dashboard-card">
-            <div class="label-tiny">Network</div>
-            <h2 class="text-xl font-light mb-4">Follow Users</h2>
-            
-            <div class="relative mb-4">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
-                <input type="text" id="user-search" placeholder="Search usernames..." class="w-full bg-black border border-white/5 rounded-xl py-2 pl-9 pr-4 text-xs outline-none focus:border-indigo-500 transition-all">
-            </div>
-
-            <div id="search-results" class="flex-grow overflow-y-auto custom-scroll">
-                <!-- Results -->
-            </div>
-        </div>
-
-        <!-- FEED SECTION -->
-        <div id="feed-section" class="dashboard-card">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <div class="label-tiny">Global Pulse</div>
-                    <h2 class="text-2xl font-light">Today's Feed</h2>
-                </div>
-                <div class="flex gap-2">
-                    <button id="toggle-feed-following" class="px-4 py-2 rounded-xl text-xs font-medium border border-white/5 bg-white/5 text-gray-400 hover:text-white transition active">Following</button>
-                    <button id="toggle-feed-global" class="px-4 py-2 rounded-xl text-xs font-medium border border-white/5 text-gray-400 hover:text-white transition">Global</button>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="px-8 mb-10">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-camera-retro text-indigo-500 text-2xl"></i>
+                    <span class="text-xl font-bold tracking-tighter text-white">DAILYPHOTO</span>
                 </div>
             </div>
 
-            <div id="photo-feed" class="feed-grid flex-grow">
-                <!-- Photos -->
+            <nav class="flex-1 overflow-y-auto custom-scroll">
+                <div class="nav-item active" data-mode="following">
+                    <i class="fas fa-user-friends"></i>
+                    <span>Following</span>
+                </div>
+                <div class="nav-item" data-mode="global">
+                    <i class="fas fa-globe"></i>
+                    <span>Global Pulse</span>
+                </div>
+
+                <div class="h-px bg-brand-border my-6 mx-8"></div>
+
+                <div class="px-8 mb-4">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Discover</span>
+                </div>
+                <div class="px-4 mb-6">
+                    <div class="search-box">
+                        <i class="fas fa-search text-gray-600 text-xs"></i>
+                        <input type="text" id="user-search" placeholder="Search usernames..." class="bg-transparent border-none outline-none flex-1 text-xs text-white">
+                    </div>
+                    <div id="search-results" class="mt-4 space-y-1"></div>
+                </div>
+
+                <div class="h-px bg-brand-border my-6 mx-8"></div>
+
+                <div class="px-8 mb-4">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Your Moments</span>
+                </div>
+                <div id="slots-container">
+                    <!-- Slots -->
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main View -->
+        <main class="main-view custom-scroll">
+            <div class="max-w-6xl mx-auto">
+                <header class="mb-10 flex justify-between items-end">
+                    <div>
+                        <h1 id="feed-title" class="text-4xl font-bold mb-2">Following</h1>
+                        <p id="feed-desc" class="text-gray-500">Moments from people you follow.</p>
+                    </div>
+                </header>
+
+                <div id="photo-feed" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                    <!-- Feed items -->
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <!-- Upload Modal -->
-    <div id="upload-modal" class="modal-bg">
-        <div class="modal-content">
-            <h3 class="text-xl font-light mb-6">Create Post</h3>
-            <div id="upload-preview" class="aspect-square rounded-2xl bg-black border border-white/5 mb-6 overflow-hidden flex items-center justify-center">
-                <i class="fas fa-image text-4xl text-gray-800"></i>
+    <div id="upload-modal" class="modal-overlay">
+        <div class="modal-content max-w-md flex-col p-8 h-auto">
+            <h2 class="text-2xl font-bold mb-6">Share a Moment</h2>
+            <div id="upload-preview" class="aspect-square rounded-3xl bg-black border border-white/5 mb-6 overflow-hidden flex items-center justify-center cursor-pointer hover:border-indigo-500 transition-colors">
+                <i class="fas fa-cloud-upload-alt text-4xl text-gray-800"></i>
             </div>
             <input type="file" id="file-input" class="hidden" accept="image/*">
-            <input type="text" id="post-title" placeholder="Give it a title..." class="w-full bg-black border border-white/5 rounded-xl p-3 text-sm outline-none focus:border-indigo-500 mb-4">
             
-            <div class="flex justify-between items-center mb-6">
-                <span class="text-xs text-gray-500">Public Visibility</span>
-                <input type="checkbox" id="post-public" class="w-5 h-5 accent-indigo-500">
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Caption</label>
+                    <input type="text" id="post-title" class="w-full bg-black border border-brand-border rounded-xl p-3 outline-none focus:border-indigo-500 text-white text-sm" placeholder="Give it a title...">
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-gray-500">Public Visibility</span>
+                    <input type="checkbox" id="post-public" class="w-5 h-5 accent-indigo-500">
+                </div>
             </div>
 
             <div class="flex gap-3">
-                <button id="close-upload-modal" class="flex-1 py-3 rounded-xl bg-white/5 text-xs font-bold uppercase tracking-widest text-gray-400 hover:bg-white/10 transition">Cancel</button>
-                <button id="confirm-upload-btn" class="flex-1 py-3 rounded-xl bg-indigo-600 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-indigo-900/20 hover:bg-indigo-700 transition">Post</button>
+                <button onclick="closeModal('upload-modal')" class="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:text-white transition-colors">Cancel</button>
+                <button id="confirm-upload-btn" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-900/20 hover:bg-indigo-700 transition-all">Post Moment</button>
             </div>
         </div>
     </div>
 
-    <!-- Photo View Modal -->
-    <div id="view-modal" class="modal-bg">
-        <div class="modal-content max-w-4xl p-0 overflow-hidden flex flex-col md:flex-row h-[80vh]">
-            <div class="flex-grow bg-black flex items-center justify-center relative">
-                <img id="modal-img" class="max-w-full max-h-full object-contain">
-                <button id="close-view-modal" class="absolute top-4 left-4 w-10 h-10 rounded-full bg-black/50 border border-white/10 flex items-center justify-center text-white"><i class="fas fa-times"></i></button>
+    <!-- View Modal -->
+    <div id="view-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex-1 bg-black flex items-center justify-center relative overflow-hidden">
+                <img id="modal-img" class="w-full h-full object-contain">
+                <button onclick="closeModal('view-modal')" class="absolute top-6 left-6 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <div class="w-full md:w-80 bg-[#080808] border-l border-white/5 p-6 flex flex-col">
-                <div class="flex items-center gap-3 mb-6">
-                    <div id="modal-author-avatar" class="w-10 h-10 rounded-xl overflow-hidden bg-gray-800"></div>
-                    <div>
-                        <p id="modal-author-name" class="text-sm font-medium text-white truncate"></p>
-                        <p id="modal-post-date" class="text-[10px] text-gray-600 font-mono"></p>
+            <div class="w-80 border-l border-white/5 flex flex-col p-8">
+                <div class="flex items-center gap-4 mb-8">
+                    <div id="modal-author-avatar" class="w-12 h-12 rounded-2xl overflow-hidden bg-gray-900"></div>
+                    <div class="min-w-0">
+                        <p id="modal-author-name" class="text-sm font-bold text-white truncate"></p>
+                        <p id="modal-post-date" class="text-[10px] text-gray-500 font-mono"></p>
                     </div>
                 </div>
-                <h3 id="modal-post-title" class="text-lg font-light text-white mb-4"></h3>
                 
-                <div id="modal-comments" class="flex-grow overflow-y-auto custom-scroll mb-4 space-y-3">
+                <h3 id="modal-post-title" class="text-lg font-medium text-white mb-6"></h3>
+
+                <div id="modal-comments" class="flex-1 overflow-y-auto custom-scroll space-y-4 mb-6">
                     <!-- Comments -->
                 </div>
 
-                <div class="flex items-center gap-2 pt-4 border-t border-white/5">
-                    <input type="text" id="comment-input" placeholder="Add comment..." class="flex-grow bg-black border border-white/5 rounded-lg p-2 text-xs outline-none focus:border-indigo-500">
-                    <button id="send-comment-btn" class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white"><i class="fas fa-paper-plane text-xs"></i></button>
+                <div class="mt-auto">
+                    <div class="flex gap-2">
+                        <input type="text" id="comment-input" placeholder="Add a comment..." class="flex-1 bg-black border border-white/5 rounded-xl p-3 text-xs outline-none focus:border-indigo-500 text-white">
+                        <button id="send-comment-btn" class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-700 transition-colors">
+                            <i class="fas fa-paper-plane text-xs"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -258,7 +335,7 @@
         let currentUser = null;
         let activeSlot = 0;
         let pendingImgData = null;
-        let feedMode = 'following'; // 'following' or 'global'
+        let feedMode = 'following';
 
         auth.onAuthStateChanged(async (user) => {
             if (user) {
@@ -269,37 +346,37 @@
             }
         });
 
-        async function initUI() {
+        function initUI() {
             loadSlots();
             setupSearch();
             setupFeed();
-            setupFeedToggles();
+            setupNav();
         }
 
         function loadSlots() {
             const container = document.getElementById('slots-container');
             db.collection('users').doc(currentUser.uid).onSnapshot(snap => {
-                const data = snap.data();
+                const data = snap.data() || {};
                 const slots = data.dailySlotsUsed || [];
                 container.innerHTML = '';
 
                 for (let i = 0; i < 5; i++) {
-                    const div = document.createElement('div');
-                    div.className = 'photo-slot';
                     const postId = slots[i];
+                    const div = document.createElement('div');
+                    div.className = 'slot-item';
 
                     if (postId && postId !== 'DELETED') {
                         div.innerHTML = `
-                            <span class="text-sm text-gray-400 truncate max-w-[150px]">Slot ${i+1}: Active</span>
-                            <div class="flex gap-2">
-                                <button onclick="viewPost('${postId}')" class="btn-icon-small"><i class="fas fa-eye"></i></button>
-                                <button onclick="deletePost('${postId}', ${i})" class="btn-icon-small text-red-500"><i class="fas fa-trash"></i></button>
+                            <span class="text-xs text-gray-500 truncate max-w-[140px]">Active Moment</span>
+                            <div class="flex gap-1">
+                                <button onclick="viewPost('${postId}')" class="btn-circle" title="View"><i class="fas fa-eye text-[10px]"></i></button>
+                                <button onclick="deletePost('${postId}', ${i})" class="btn-circle text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-[10px]"></i></button>
                             </div>
                         `;
                     } else {
                         div.innerHTML = `
-                            <span class="text-sm text-gray-600 italic">Slot ${i+1}: Empty</span>
-                            <button onclick="triggerUpload(${i})" class="btn-icon-small"><i class="fas fa-plus"></i></button>
+                            <span class="text-xs text-gray-700 italic">Empty Slot</span>
+                            <button onclick="openUploadModal(${i})" class="btn-circle" title="Post"><i class="fas fa-plus text-[10px]"></i></button>
                         `;
                     }
                     container.appendChild(div);
@@ -307,20 +384,20 @@
             });
         }
 
-        window.triggerUpload = (idx) => {
+        window.openUploadModal = (idx) => {
             activeSlot = idx;
-            document.getElementById('file-input').click();
+            document.getElementById('upload-modal').classList.add('open');
         };
+
+        document.getElementById('upload-preview').onclick = () => document.getElementById('file-input').click();
 
         document.getElementById('file-input').onchange = (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = (evt) => {
                 pendingImgData = evt.target.result;
                 document.getElementById('upload-preview').innerHTML = `<img src="${pendingImgData}" class="w-full h-full object-cover">`;
-                document.getElementById('upload-modal').classList.add('open');
             };
             reader.readAsDataURL(file);
         };
@@ -328,77 +405,73 @@
         document.getElementById('confirm-upload-btn').onclick = async () => {
             const title = document.getElementById('post-title').value.trim();
             const isPublic = document.getElementById('post-public').checked;
-            if (!pendingImgData) return;
+            if (!pendingImgData) return alert("Select an image first!");
 
             const btn = document.getElementById('confirm-upload-btn');
             btn.disabled = true;
-            btn.textContent = 'Posting...';
+            btn.textContent = 'Sharing...';
 
-            const postRef = await db.collection('daily_photos').add({
-                creatorUid: currentUser.uid,
-                creatorUsername: (await db.collection('users').doc(currentUser.uid).get()).data().username,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                imageBase64: pendingImgData,
-                title: title || "Daily Moment",
-                isPublic: isPublic,
-                status: 'active',
-                hearts: [],
-                comments: []
-            });
+            try {
+                const userSnap = await db.collection('users').doc(currentUser.uid).get();
+                const postRef = await db.collection('daily_photos').add({
+                    creatorUid: currentUser.uid,
+                    creatorUsername: userSnap.data().username,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    imageBase64: pendingImgData,
+                    title: title || "Daily Moment",
+                    isPublic: isPublic,
+                    status: 'active',
+                    hearts: [],
+                    comments: []
+                });
 
-            const userRef = db.collection('users').doc(currentUser.uid);
-            const userSnap = await userRef.get();
-            let slots = userSnap.data().dailySlotsUsed || [];
-            while (slots.length <= activeSlot) slots.push(null);
-            slots[activeSlot] = postRef.id;
-            await userRef.update({ dailySlotsUsed: slots });
+                let slots = userSnap.data().dailySlotsUsed || [];
+                while (slots.length <= activeSlot) slots.push(null);
+                slots[activeSlot] = postRef.id;
+                await db.collection('users').doc(currentUser.uid).update({ dailySlotsUsed: slots });
 
+                closeModal('upload-modal');
+                // Clear fields
+                document.getElementById('post-title').value = '';
+                document.getElementById('upload-preview').innerHTML = '<i class="fas fa-cloud-upload-alt text-4xl text-gray-800"></i>';
+                pendingImgData = null;
+            } catch(e) { console.error(e); }
             btn.disabled = false;
-            btn.textContent = 'Post';
-            closeModal('upload-modal');
+            btn.textContent = 'Post Moment';
         };
 
         window.deletePost = async (postId, idx) => {
-            if (!confirm("Delete this post?")) return;
-            const batch = db.batch();
-            batch.delete(db.collection('daily_photos').doc(postId));
-            
+            if (!confirm("Remove this moment?")) return;
             const userRef = db.collection('users').doc(currentUser.uid);
             const slots = (await userRef.get()).data().dailySlotsUsed || [];
             slots[idx] = 'DELETED';
-            batch.update(userRef, { dailySlotsUsed: slots });
-            
-            await batch.commit();
+            await db.collection('daily_photos').doc(postId).delete();
+            await userRef.update({ dailySlotsUsed: slots });
         };
 
         function setupSearch() {
             const input = document.getElementById('user-search');
             const results = document.getElementById('search-results');
-
             input.oninput = async (e) => {
                 const term = e.target.value.trim().toLowerCase();
-                if (term.length < 2) {
-                    results.innerHTML = '';
-                    return;
-                }
-
+                if (term.length < 2) return results.innerHTML = '';
+                
                 const snap = await db.collection('users')
                     .where('username', '>=', term)
                     .where('username', '<=', term + '\uf8ff')
-                    .limit(5)
-                    .get();
+                    .limit(5).get();
                 
                 results.innerHTML = '';
                 snap.forEach(doc => {
                     if (doc.id === currentUser.uid) return;
-                    const data = doc.data();
+                    const d = doc.data();
                     const div = document.createElement('div');
-                    div.className = 'user-item';
+                    div.className = 'nav-item !mx-0 !px-4 !py-2 hover:!bg-white/5';
                     div.innerHTML = `
-                        <div class="w-8 h-8 rounded-lg overflow-hidden">${getAvatarHTML(data, "w-full h-full", false, currentUser)}</div>
-                        <span class="text-xs text-gray-300">@${data.username}</span>
+                        <div class="w-6 h-6 rounded-lg overflow-hidden">${getAvatarHTML(d, "w-full h-full", false, currentUser)}</div>
+                        <span class="text-[11px] text-gray-400">@${d.username}</span>
                     `;
-                    div.onclick = () => window.location.href = `/logged-in/@${data.username}`;
+                    div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
                     results.appendChild(div);
                 });
             };
@@ -408,71 +481,62 @@
         function setupFeed() {
             feedUnsub();
             const grid = document.getElementById('photo-feed');
-            grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin text-indigo-500"></i></div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin text-indigo-500/20 text-2xl"></i></div>';
 
             const today = new Date(); today.setHours(0,0,0,0);
             let q = db.collection('daily_photos').where('status', '==', 'active').where('createdAt', '>=', today);
 
             if (feedMode === 'global') {
                 q = q.where('isPublic', '==', true).orderBy('createdAt', 'desc').limit(50);
+                feedUnsub = q.onSnapshot(renderFeedGrid);
             } else {
-                // Following feed requires fetching following list first
                 db.collection('users').doc(currentUser.uid).collection('following').get().then(snap => {
                     const uids = [currentUser.uid, ...snap.docs.map(d => d.id)].slice(0, 10);
                     if (uids.length === 0) {
-                        grid.innerHTML = '<p class="text-gray-600 col-span-full text-center py-20">Follow users to see their posts here.</p>';
+                        grid.innerHTML = '<p class="text-gray-700 col-span-full text-center py-20 text-sm">Follow users to see their moments here.</p>';
                         return;
                     }
                     q = q.where('creatorUid', 'in', uids).orderBy('createdAt', 'desc');
                     feedUnsub = q.onSnapshot(renderFeedGrid);
                 });
-                return;
             }
-            feedUnsub = q.onSnapshot(renderFeedGrid);
         }
 
         function renderFeedGrid(snap) {
             const grid = document.getElementById('photo-feed');
             grid.innerHTML = '';
             if (snap.empty) {
-                grid.innerHTML = '<p class="text-gray-600 col-span-full text-center py-20">No moments shared today yet.</p>';
+                grid.innerHTML = '<p class="text-gray-800 col-span-full text-center py-20 text-sm italic">No moments shared today yet.</p>';
                 return;
             }
             snap.forEach(doc => {
                 const data = doc.data();
-                const card = document.createElement('div');
-                card.className = 'post-card';
-                card.innerHTML = `
+                const div = document.createElement('div');
+                div.className = 'photo-card';
+                div.innerHTML = `
                     <img src="${data.imageBase64}" loading="lazy">
-                    <div class="post-overlay">
+                    <div class="overlay-grad">
                         <p class="text-xs font-bold text-white">@${data.creatorUsername}</p>
                         <p class="text-[10px] text-gray-400 truncate">${data.title}</p>
                     </div>
                 `;
-                card.onclick = () => viewPost(doc.id);
-                grid.appendChild(card);
+                div.onclick = () => viewPost(doc.id);
+                grid.appendChild(div);
             });
         }
 
-        function setupFeedToggles() {
-            const btnFollowing = document.getElementById('toggle-feed-following');
-            const btnGlobal = document.getElementById('toggle-feed-global');
-
-            btnFollowing.onclick = () => {
-                if (feedMode === 'following') return;
-                feedMode = 'following';
-                btnFollowing.classList.add('bg-white/5', 'active');
-                btnGlobal.classList.remove('bg-white/5', 'active');
-                setupFeed();
-            };
-
-            btnGlobal.onclick = () => {
-                if (feedMode === 'global') return;
-                feedMode = 'global';
-                btnGlobal.classList.add('bg-white/5', 'active');
-                btnFollowing.classList.remove('bg-white/5', 'active');
-                setupFeed();
-            };
+        function setupNav() {
+            document.querySelectorAll('.nav-item[data-mode]').forEach(btn => {
+                btn.onclick = () => {
+                    if (btn.classList.contains('active')) return;
+                    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    feedMode = btn.dataset.mode;
+                    document.getElementById('feed-title').textContent = feedMode === 'following' ? 'Following' : 'Global Pulse';
+                    document.getElementById('feed-desc').textContent = feedMode === 'following' ? 'Moments from people you follow.' : 'Discover shared moments from across the network.';
+                    setupFeed();
+                };
+            });
         }
 
         window.viewPost = async (postId) => {
@@ -483,7 +547,7 @@
             document.getElementById('modal-img').src = data.imageBase64;
             document.getElementById('modal-post-title').textContent = data.title;
             document.getElementById('modal-author-name').textContent = `@${data.creatorUsername}`;
-            document.getElementById('modal-post-date').textContent = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString() : "Just now";
+            document.getElementById('modal-post-date').textContent = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Just now";
             
             const authorSnap = await db.collection('users').doc(data.creatorUid).get();
             document.getElementById('modal-author-avatar').innerHTML = getAvatarHTML(authorSnap.data(), "w-full h-full", false, currentUser);
@@ -496,9 +560,10 @@
                 const text = input.value.trim();
                 if (!text) return;
                 
+                const userSnap = await db.collection('users').doc(currentUser.uid).get();
                 const comment = {
                     uid: currentUser.uid,
-                    username: (await db.collection('users').doc(currentUser.uid).get()).data().username,
+                    username: userSnap.data().username,
                     text: text,
                     timestamp: new Date()
                 };
@@ -515,18 +580,15 @@
         function renderComments(comments) {
             const container = document.getElementById('modal-comments');
             container.innerHTML = comments.map(c => `
-                <div class="text-xs">
-                    <span class="font-bold text-indigo-400">@${c.username}</span>
+                <div class="text-[11px] leading-relaxed">
+                    <span class="font-bold text-indigo-400 mr-1">@${c.username}</span>
                     <span class="text-gray-400">${c.text}</span>
                 </div>
-            `).join('') || '<p class="text-[10px] text-gray-600 italic">No comments yet.</p>';
+            `).join('') || '<p class="text-[10px] text-gray-700 italic">No comments yet.</p>';
+            container.scrollTop = container.scrollHeight;
         }
 
-        window.closeModal = (id) => {
-            document.getElementById(id).classList.remove('open');
-        };
-        document.getElementById('close-upload-modal').onclick = () => closeModal('upload-modal');
-        document.getElementById('close-view-modal').onclick = () => closeModal('view-modal');
+        window.closeModal = (id) => document.getElementById(id).classList.remove('open');
     </script>
 </body>
 </html>
