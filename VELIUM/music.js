@@ -837,6 +837,17 @@ function loadAudioPlayer(url) {
         audio.addEventListener('play', () => { isPlaying = true; updatePlayPauseUI(); startProgressUpdate(); });
         audio.addEventListener('pause', () => { isPlaying = false; updatePlayPauseUI(); stopProgressUpdate(); });
         audio.addEventListener('ended', () => playNext());
+        audio.addEventListener('error', async () => {
+            console.warn('Audio playback error, falling back to YouTube');
+            if (currentTrack) {
+                const query = `${currentTrack.title} ${currentTrack.artist_name} official audio`;
+                try {
+                    const response = await fetch(`${API_BASE_URL}/youtube-search?q=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    if (data.videoId) loadYouTubePlayer(data.videoId);
+                } catch (e) { console.error('Fallback failed', e); }
+            }
+        });
         audio.addEventListener('timeupdate', () => {
             if (activeSource === 'audio' && audio.duration) {
                 const percent = (audio.currentTime / audio.duration) * 100;
@@ -850,7 +861,16 @@ function loadAudioPlayer(url) {
             }
         });
     }
-    audio.src = url; audio.volume = volume / 100; audio.play();
+    audio.src = url; 
+    audio.volume = volume / 100;
+    
+    // Properly handle play() promise to avoid AbortError
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+        playPromise.catch(error => {
+            if (error.name !== 'AbortError') console.error('Playback failed:', error);
+        });
+    }
 }
 
 function loadYouTubePlayer(videoId) {
