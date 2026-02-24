@@ -116,7 +116,8 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 0.75rem;
             margin-top: 1rem;
-            overflow-y: auto;
+            /* Hide scrollbars and allow overflow for hover effects */
+            overflow: visible;
         }
 
         .page-btn {
@@ -129,11 +130,15 @@
             border-radius: 18px;
             transition: all 0.2s;
             cursor: pointer;
+            /* Ensure the button stays above others during animation */
+            position: relative;
+            z-index: 1;
         }
         .page-btn:hover {
             background: rgba(79, 70, 229, 0.05);
             border-color: var(--accent-color);
-            transform: scale(1.02);
+            transform: scale(1.05);
+            z-index: 10;
         }
         .page-btn.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
 
@@ -198,7 +203,7 @@
                 <div id="stat-pageviews" class="text-3xl font-light text-white/20">0</div>
             </div>
             
-            <div id="recent-pages-list" class="page-grid custom-scroll flex-grow">
+            <div id="recent-pages-list" class="page-grid flex-grow">
                 <div class="col-span-2 py-20 text-center text-gray-700 italic text-sm">Synchronizing analytics...</div>
             </div>
         </div>
@@ -256,13 +261,22 @@
             const db = firebase.firestore();
             const auth = firebase.auth();
 
+            // Load page identification config
+            let pageConfig = {};
+            try {
+                const response = await fetch('../page-identification.json');
+                pageConfig = await response.json();
+            } catch (e) {
+                console.error("Failed to load page identification config", e);
+            }
+
             auth.onAuthStateChanged(async (user) => {
                 if (user) {
                     const userDoc = await db.collection('users').doc(user.uid).get();
                     if (userDoc.exists) {
                         document.getElementById('user-name-display').textContent = userDoc.data().displayName || userDoc.data().username || "User";
                     }
-                    loadAnalytics(user.uid);
+                    loadAnalytics(user.uid, pageConfig);
                 } else if (!window._LOCAL_MODE) {
                     window.location.replace('../index.html');
                 }
@@ -271,7 +285,7 @@
             startClock();
         }
 
-        async function loadAnalytics(uid) {
+        async function loadAnalytics(uid, pageConfig = {}) {
             const db = firebase.firestore();
             const snap = await db.collection('analytics')
                 .where('userId', '==', uid)
@@ -285,6 +299,23 @@
             let pageMap = {}; 
             let latestUA = "";
 
+            // Create a helper to find config by path
+            const findConfigByPath = (path) => {
+                const clean = (p) => p.toLowerCase().replace(/^(..\/|logged-in\/)/, '').replace('.html', '');
+                const target = clean(path);
+                
+                for (const key in pageConfig) {
+                    const page = pageConfig[key];
+                    if (clean(page.url) === target) return page;
+                    if (page.aliases) {
+                        for (const alias of page.aliases) {
+                            if (clean(alias) === target) return page;
+                        }
+                    }
+                }
+                return null;
+            };
+
             snap.forEach(doc => {
                 const data = doc.data();
                 totalTime += (data.duration || 0);
@@ -296,11 +327,14 @@
                         const path = p.path || p.url;
                         if (!path || path.includes('srcdoc')) return;
                         
-                        const fileName = path.split('/').pop().split('?')[0];
-                        if (!V6_PAGES[fileName] && !path.includes('/logged-in/')) return;
+                        // Check if page exists in config
+                        const config = findConfigByPath(path);
+                        if (!config) return;
 
-                        const cleanTitle = getCleanTitle(path, p.title);
-                        if (!pageMap[path]) pageMap[path] = { title: cleanTitle, count: 0 };
+                        const cleanTitle = config.name;
+                        const icon = config.icon || 'fa-solid fa-file-alt';
+                        
+                        if (!pageMap[path]) pageMap[path] = { title: cleanTitle, icon: icon, count: 0 };
                         pageMap[path].count++;
                     });
                 }
@@ -321,25 +355,16 @@
             const listEl = document.getElementById('recent-pages-list');
             listEl.innerHTML = '';
             
-            const isLocalClient = window._LOCAL_MODE;
             const currentOrigin = window.location.origin;
 
-            sortedPages.slice(0, 10).forEach(([path, data]) => {
+            // Only show top 6
+            sortedPages.slice(0, 6).forEach(([path, data]) => {
                 const item = document.createElement('div');
                 item.className = 'page-btn';
                 
-                const isLocalPath = path.startsWith('file://') || (path.startsWith('/') && !path.startsWith('/logged-in') && !path.includes('.vercel.app')) || path.includes('4simpleproblems_v5_latest.html');
-
-                let isClickable = true;
-                if (isLocalPath) {
-                    if (!isLocalClient || !currentOrigin.includes('file')) isClickable = false;
-                }
-
-                if (!isClickable) item.classList.add('disabled');
-
                 item.innerHTML = `
                     <div class="icon-box">
-                        <i class="fa-solid fa-${isLocalPath ? 'hdd' : 'file-alt'}"></i>
+                        <i class="${data.icon}"></i>
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-white truncate">${data.title}</p>
@@ -347,21 +372,15 @@
                     </div>
                 `;
 
-                if (isClickable) {
-                    item.onclick = () => {
-                        if (isLocalPath) {
-                            let target = path;
-                            if (!target.startsWith('file://')) target = 'file://' + target;
-                            window.location.href = target;
-                        } else if (window.parent && window.parent.loadPage) {
-                            window.parent.loadPage(path);
-                        } else if (window.loadPage) {
-                            window.loadPage(path);
-                        } else {
-                            window.location.href = path;
-                        }
-                    };
-                }
+                item.onclick = () => {
+                    if (window.parent && window.parent.loadPage) {
+                        window.parent.loadPage(path);
+                    } else if (window.loadPage) {
+                        window.loadPage(path);
+                    } else {
+                        window.location.href = path;
+                    }
+                };
 
                 listEl.appendChild(item);
             });
