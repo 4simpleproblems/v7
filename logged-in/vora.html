@@ -100,8 +100,11 @@
 
         .app-container {
             display: grid;
-            grid-template-areas: "sidebar main";
+            grid-template-areas: 
+                "sidebar main"
+                "bottombar bottombar";
             grid-template-columns: 280px 1fr;
+            grid-template-rows: 1fr 80px;
             height: 100vh;
             width: 100%;
             background: #000000;
@@ -125,6 +128,17 @@
             padding: 32px;
         }
 
+        .bottom-bar {
+            grid-area: bottombar;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid #1a1a1a;
+            display: flex;
+            align-items: center;
+            padding: 0 32px;
+            z-index: 100;
+        }
+
         .nav-item {
             display: flex;
             align-items: center;
@@ -134,7 +148,7 @@
             font-size: 0.9rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-            border-radius: 20px;
+            border-radius: 18px; /* 2px less than 20px */
             margin: 0 16px;
             font-weight: 300;
         }
@@ -153,7 +167,7 @@
         .video-card {
             background: #050505;
             border: 1px solid #111;
-            border-radius: 24px;
+            border-radius: 22px; /* 2px less than 24px */
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             position: relative;
@@ -172,6 +186,7 @@
             height: 100%;
             object-fit: cover;
             transition: transform 0.5s ease;
+            border-radius: 22px; /* Matching card radius */
         }
 
         .video-card:hover img {
@@ -196,7 +211,7 @@
         .search-box {
             background: #0d0d0d;
             border: 1px solid #333;
-            border-radius: 500px;
+            border-radius: 498px; /* 2px less than 500px */
             padding: 12px 24px;
             display: flex;
             align-items: center;
@@ -214,6 +229,17 @@
 
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 10px; }
+
+        .see-all-btn {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .see-all-btn:hover { color: #ffffff; }
     </style>
     
     <script>
@@ -282,12 +308,18 @@
                     </section>
 
                     <section id="movies-section" class="mb-12">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-ticket text-purple-500 text-sm"></i> Featured Movies</h2>
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold flex items-center gap-2"><i class="fas fa-ticket text-purple-500 text-sm"></i> Featured Movies</h2>
+                            <span class="see-all-btn" onclick="switchView('movies')">See All</span>
+                        </div>
                         <div id="moviesGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"></div>
                     </section>
 
                     <section id="series-section" class="mb-12">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-tv text-purple-500 text-sm"></i> Popular Series</h2>
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold flex items-center gap-2"><i class="fas fa-tv text-purple-500 text-sm"></i> Popular Series</h2>
+                            <span class="see-all-btn" onclick="switchView('series')">See All</span>
+                        </div>
                         <div id="seriesGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"></div>
                     </section>
 
@@ -306,6 +338,17 @@
                 </footer>
             </div>
         </main>
+
+        <!-- Translucent Bottom Bar -->
+        <footer class="bottom-bar">
+            <div class="flex items-center gap-4">
+                <img src="../images/logo.png" class="w-8 h-8 opacity-20 grayscale">
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Powered by VORA Engine</span>
+                    <span class="text-[9px] text-gray-700">Encrypted streaming node active</span>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <!-- Update switchView to handle sidebar active state -->
