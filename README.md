@@ -1,18 +1,18 @@
 # 4SP V6
 
-**4SP Max** is the next-generation, evolutionary enhancement of the renowned **4SP** platform. While the original 4SP is designed for static efficiency, 4SP Max is a high-powered deployment for those who need a range of integrated tools, a professional interface, and unhindered access to restricted networks.
+**4SP V6** is the next-generation, evolutionary enhancement of the renowned **4SP** platform. While the original 4SP is designed for static efficiency, V6 is a high-powered deployment for those who need a range of integrated tools, a professional interface, and unhindered access to restricted networks.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/4simpleproblems/4sp-max/)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/4simpleproblems/v6/)
 
 ---
 
 ## The V-Suite Ecosystem
 
-**4SP Max** offers the **V-Suite**, a collection of connected apps designed to handle everything from media consumption to artificial intelligence.
+**4SP V6** offers the **V-Suite**, a collection of connected apps designed to handle everything from media consumption to artificial intelligence.
 
 ### <i class="fa-solid fa-globe"></i> Vern: Advanced Proxy
 
-The backbone of the Max platform. *Vern* is a dynamic proxy that circumvents network restrictions in a more reliable way than static proxies.
+The backbone of the V6 platform. *Vern* is a dynamic proxy that circumvents network restrictions in a more reliable way than static proxies.
 
 *   **Dynamic Routing**: Requires a dynamic host (e.g., Vercel, Railway) to function.
 *   **Optimized Protocol**: Built for speed and low-latency browsing.
@@ -20,14 +20,14 @@ The backbone of the Max platform. *Vern* is a dynamic proxy that circumvents net
 
 ### <i class="fa-solid fa-music"></i> Velium: Integrated Music
 
-An integrated music player that eliminates the need to open external tabs. *Note: This feature is currently available to select users.*
+An integrated music player that eliminates the need to open external tabs.
 
 *   **Background Playback**: Listen to music while you use other tools or play games.
 *   **UI Integration**: Matches the sleek, dark design scheme of the platform.
 
 ### <i class="fa-solid fa-tv"></i> Vora: Media & Movies
 
-The "Movie App" for the inner circle. **Vora** offers curated movies and TV shows for high-quality streaming. *Note: This feature is currently available to select users.*
+The "Movie App" for the inner circle. **Vora** offers curated movies and TV shows for high-quality streaming.
 
 *   **Sleek Library View**: A clean interface designed to display large content libraries.
 *   **Optimized Player**: Engineered for minimal buffering, even on restricted school networks.
@@ -37,13 +37,13 @@ The "Movie App" for the inner circle. **Vora** offers curated movies and TV show
 A personal AI collaborator integrated into the dashboard.
 
 *   **Social & Dev Assistant**: Use **Vana** for debugging code or understanding social variables in real-time.
-*   **Dynamic Response**: Powered by advanced LLM backends (including Llama and GPT-OSS) for a grounded, authentic experience.
+*   **Dynamic Response**: Powered by advanced LLM backends for a grounded, authentic experience.
 
 ---
 
 ## UI & Design Philosophy
 
-4SP Max isn’t just a product—it’s a design upgrade.
+4SP V6 isn’t just a product—it’s a design upgrade.
 
 *   **Professional & Minimalist**: A "locked-in" dark theme inspired by Vercel and modern development environments.
 *   **Geist Typography**: Uses Geist and Inter fonts to provide an elegant, premium look.
@@ -53,13 +53,13 @@ A personal AI collaborator integrated into the dashboard.
 
 ## Hosting & Capability Comparison
 
-| Feature             | 4SP (Standard) | 4SP Max                    |
+| Feature             | 4SP (Standard) | 4SP V6                     |
 | ------------------- | -------------- | -------------------------- |
 | **Hosting Mode**    | Fully Static   | Dynamic Required           |
 | **Vern Proxy**      | No             | Yes                        |
 | **Velium Music**    | No             | Yes                        |   
 | **Vora Media**      | No             | Yes                        |
 | **Vana AI**         | No             | Yes                        |
-| **Design Language** | Original       | Designed like DV           |
+| **Design Language** | Original       | V6 Aesthetic               |
 
-> **Developer Note:** 4SP Max is designed to run on dynamic environments like **Vercel**. GitHub Pages can be used to preview the UI; however, for **Vern** and **Vana** to be operational, a dynamic backend is required.
+> **Developer Note:** 4SP V6 is designed to run on dynamic environments like **Vercel**. GitHub Pages can be used to preview the UI; however, for **Vern** and **Vana** to be operational, a dynamic backend is required.

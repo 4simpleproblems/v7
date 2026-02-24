@@ -14,11 +14,6 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Firebase SDKs (Compat) -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
     <script src="navigation.js" defer></script>
     <script src="injector.js" defer></script>
@@ -28,15 +23,14 @@
             --indigo-main: #4f46e5;
             --indigo-dark: #3730a3;
             --ink: #ffffff;
-            --bg: #0a0a0a;
+            --bg: #040404;
         }
 
         body { 
             font-family: 'Geist', sans-serif; 
             color: var(--ink);
             background-color: var(--bg);
-            margin: 0;
-            padding: 0;
+            font-weight: 300;
         }
 
         .grid-bg {
@@ -59,7 +53,7 @@
         .feature-card {
             border-radius: 32px;
             border: 1px solid rgba(255,255,255,0.08);
-            background: #0f0f0f;
+            background: #080808;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
@@ -70,15 +64,13 @@
             justify-content: center;
             padding: 0.6rem 1.2rem;
             font-size: 0.85rem;
-            border-radius: 28px;
+            border-radius: 14px;
             border: 1px solid var(--indigo-main);
             color: var(--indigo-main);
             background-color: transparent;
             transition: all 0.2s ease;
             cursor: pointer;
             font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
         }
 
         .btn-base:hover {
@@ -88,69 +80,40 @@
             transform: translateY(-1px);
         }
 
-        .btn-primary {
-            background-color: var(--indigo-main);
-            color: white;
-            border-color: var(--indigo-main);
-        }
-        .btn-primary:hover {
-            background-color: var(--indigo-dark);
-            border-color: var(--indigo-dark);
-            color: white;
+        .primary-cta {
+            background-color: rgba(79, 70, 229, 0.1);
         }
 
         .custom-scroll::-webkit-scrollbar { width: 5px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 10px; }
 
-        @keyframes modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes modal-fade-out { from { opacity: 1; } to { opacity: 0; } }
-        @keyframes content-pop-in { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
+        @keyframes modal-fade-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes modal-fade-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
         .modal-animate-in { animation: modal-fade-in 0.2s ease-out forwards; }
         .modal-animate-out { animation: modal-fade-out 0.2s ease-in forwards; }
-        .modal-content-animate-in { animation: content-pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             display: inline-block;
+            border: 2px solid #080808;
         }
         .status-online { background-color: #4f46e5; box-shadow: 0 0 8px #6366f1; }
-        .status-offline { background-color: #4b5563; }
+        .status-offline { background-color: #333; }
 
         .photo-grid-item {
             aspect-ratio: 1/1;
             overflow: hidden;
-            border-radius: 28px;
-            background: #1a1a1a;
-            border: 1px solid #333;
+            border-radius: 24px;
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
             cursor: pointer;
             transition: all 0.3s ease;
-            position: relative;
         }
-        .photo-grid-item:hover {
-            transform: scale(1.02);
-            border-color: var(--indigo-main);
-        }
-        .photo-grid-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .photo-grid-item.see-more {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(79, 70, 229, 0.1);
-            border: 2px dashed var(--indigo-main);
-            color: var(--indigo-main);
-        }
-        .photo-grid-item.see-more:hover {
-            background: rgba(79, 70, 229, 0.2);
-        }
+        .photo-grid-item:hover { transform: scale(1.02); border-color: var(--indigo-main); }
+        .photo-grid-item img { width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
 <body class="grid-bg min-h-screen relative">
@@ -167,24 +130,26 @@
         <p id="blocked-message" class="text-gray-400 max-w-sm mb-8 leading-relaxed">
             You cannot view this profile because you have been blocked.
         </p>
-        <button onclick="window.location.href='/'" class="btn-base btn-primary px-10 py-3">Return Home</button>
+        <button onclick="window.location.href='/logged-in/dashboard.html'" class="btn-base primary-cta px-10 py-3 font-bold">
+            Return to Dashboard
+        </button>
     </div>
 
-    <main id="profile-main-content" class="container mx-auto px-6 py-24 max-w-6xl flex flex-col min-h-[calc(100vh-6rem)]">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-grow">
+    <main id="profile-main-content" class="container mx-auto p-8 pt-24 max-w-6xl">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Sidebar / Info -->
             <div class="lg:col-span-1">
                 <div class="feature-card p-8 flex flex-col items-center sticky top-24">
-                    <div class="absolute top-6 right-6">
+                    <div class="absolute top-6 right-6 flex gap-2">
                         <div class="relative">
                             <button id="profile-options-btn" class="text-gray-500 hover:text-white w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/5 transition">
                                 <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
                             </button>
-                            <div id="profile-options-menu" class="hidden absolute top-full right-0 mt-2 w-48 bg-[#111] border border-gray-800 rounded-2xl shadow-xl z-50 p-2 overflow-hidden">
+                            <div id="profile-options-menu" class="hidden absolute top-full right-0 mt-2 w-48 bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-xl z-50 p-2 overflow-hidden">
                                 <button id="btn-share-profile" class="w-full text-left p-3 hover:bg-white/5 rounded-xl transition flex items-center gap-3 text-sm font-medium text-gray-300">
                                     <i class="fa-solid fa-share-nodes w-4 text-indigo-500"></i> Share Profile
                                 </button>
-                                <button id="btn-block-user" class="w-full text-left p-3 hover:bg-red-900/10 rounded-xl transition flex items-center gap-3 text-sm font-medium text-red-500 hidden">
+                                <button id="btn-block-user" class="w-full text-left p-3 hover:bg-red-900/20 rounded-xl transition flex items-center gap-3 text-sm font-medium text-red-500 hidden">
                                     <i class="fa-solid fa-ban w-4"></i> Block User
                                 </button>
                             </div>
@@ -193,99 +158,85 @@
 
                     <div id="avatar-container" class="mb-6 relative group w-28 h-28">
                         <div id="avatar-preview" class="w-full h-full"></div>
-                        <div id="status-indicator" class="absolute bottom-1 right-1 w-6 h-6 border-4 border-[#0f0f0f] rounded-full status-offline"></div>
+                        <div id="status-indicator" class="absolute bottom-1 right-1 w-6 h-6 border-4 border-[#080808] rounded-full status-offline"></div>
                     </div>
                     
                     <div class="text-center w-full">
                         <div id="self-indicator" class="hidden mb-2">
                             <span class="text-[9px] font-bold bg-indigo-900/30 text-indigo-400 px-2 py-0.5 rounded-full uppercase tracking-widest border border-indigo-800/50">Your Profile</span>
                         </div>
-                        <h1 id="display-name" class="text-3xl font-light tracking-tight text-white mb-1">--</h1>
-                        <p id="username" class="text-gray-500 font-mono text-sm">@--</p>
+                        <div class="flex items-center justify-center gap-1">
+                            <h1 id="display-name" class="text-3xl font-light tracking-tight text-white px-2 py-1">--</h1>
+                        </div>
+                        <p id="username" class="text-gray-500 font-mono text-sm mt-1">@--</p>
                         
-                        <div id="activity-label" class="mt-3 text-[11px] text-indigo-400 font-medium uppercase tracking-widest hidden">
-                            Currently On: <span id="current-activity-text" class="text-white">--</span>
+                        <div id="activity-label" class="mt-3 text-[10px] text-indigo-400 font-medium uppercase tracking-widest hidden">
+                            On: <span id="current-activity-text" class="text-white">--</span>
                         </div>
                     </div>
 
                     <div id="edit-profile-btn-container" class="hidden mt-6 w-full">
-                        <button id="open-edit-modal-btn" class="w-full py-3 bg-white/5 border border-gray-800 text-gray-400 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition flex items-center justify-center gap-2">
+                        <button id="open-edit-modal-btn" class="w-full py-2.5 bg-white/5 border border-white/5 text-gray-400 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition flex items-center justify-center gap-2">
                             <i class="fa-solid fa-pen-to-square"></i> Edit Profile
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 w-full mt-8 pt-8 border-t border-gray-800">
-                        <div class="bg-white/5 p-4 rounded-2xl border border-gray-800 text-center cursor-pointer hover:bg-white/10 transition" id="btn-show-followers">
+                    <div class="grid grid-cols-2 gap-4 w-full mt-8 pt-8 border-t border-white/5">
+                        <div class="bg-white/5 p-4 rounded-2xl border border-white/5 text-center cursor-pointer hover:bg-white/10 transition" id="btn-show-followers">
                             <p class="text-2xl font-medium text-white" id="followers-count">0</p>
                             <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Followers</p>
                         </div>
-                        <div class="bg-white/5 p-4 rounded-2xl border border-gray-800 text-center cursor-pointer hover:bg-white/10 transition" id="btn-show-following">
+                        <div class="bg-white/5 p-4 rounded-2xl border border-white/5 text-center cursor-pointer hover:bg-white/10 transition" id="btn-show-following">
                             <p class="text-2xl font-medium text-white" id="following-count">0</p>
                             <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Following</p>
                         </div>
                     </div>
 
                     <div id="description-container" class="mt-6 text-center w-full">
-                        <p id="description" class="text-gray-400 text-sm leading-relaxed italic px-2 py-1"></p>
+                        <p id="description" class="text-gray-400 text-sm leading-relaxed px-2 py-1 italic"></p>
                     </div>
 
                     <div id="follow-actions" class="mt-8 w-full flex gap-3 hidden">
-                        <button id="follow-btn" class="btn-base btn-primary w-full py-3 transition-all duration-200">Follow</button>
+                        <button id="follow-btn" class="btn-base primary-cta w-full py-3 transition-all duration-200">Follow</button>
                     </div>
                 </div>
             </div>
 
             <!-- Content Area -->
-            <div class="lg:col-span-2 flex flex-col">
+            <div class="lg:col-span-2">
                 <div class="flex justify-between items-end mb-6">
                     <div>
                         <h2 class="text-2xl font-light tracking-tight text-white">Dailyphoto</h2>
-                        <p class="text-gray-500 text-sm">A daily collection of moments shared by this user.</p>
+                        <p class="text-gray-500 text-sm">A collection of moments shared today.</p>
                     </div>
-                    <button id="btn-view-all-photos" class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest hover:underline">View All</button>
+                    <a href="/logged-in/dailyphoto.html" class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest hover:underline">View Feed</a>
                 </div>
                 
                 <div id="dailyphoto-container" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <!-- Photos will be inserted here (max 2 + See More) -->
+                    <!-- Photos will be dynamically inserted here -->
                 </div>
 
-                <div class="flex-grow"></div> <!-- Spacer to push About box down -->
+                <div class="mt-12 p-8 feature-card bg-white/5 border-dashed border-white/10">
+                    <h3 class="text-lg font-light mb-4">About 4SP Profiles</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed">
+                        4SP profiles connect you with your peers. Follow users to see their activity, total experience time, and daily moments.
+                    </p>
+                </div>
             </div>
-        </div>
-
-        <div class="mt-12 p-8 feature-card bg-white/5 border-dashed border-gray-800 w-full">
-            <h3 class="text-lg font-light mb-4 text-white">About 4SP Profiles</h3>
-            <p class="text-sm text-gray-500 leading-relaxed">
-                Your profile is your identity on 4SP. Connect with friends, follow your favorite creators, and share your daily moments through Dailyphoto. V6 is built to feel alive—see what your friends are on in real-time.
-            </p>
         </div>
     </main>
 
-    <!-- Modals -->
-    <!-- All Photos Modal -->
-    <div id="all-photos-modal" class="modal-bg hidden fixed inset-0 z-[1000] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
-        <div class="modal-content bg-[#0f0f0f] rounded-[32px] border border-gray-800 w-full max-w-4xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
-            <header class="p-6 border-b border-gray-800 flex justify-between items-center bg-white/5">
-                <h3 class="text-xl font-light tracking-tight text-white">All Dailyphotos</h3>
-                <button onclick="closeModal('all-photos-modal')" class="text-gray-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </header>
-            <div id="all-photos-grid" class="flex-1 overflow-y-auto custom-scroll p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                <!-- All photos injected here -->
-            </div>
-        </div>
-    </div>
-
     <!-- Follow List Modal -->
-    <div id="follow-list-modal" class="modal-bg hidden fixed inset-0 z-[1000] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
-        <div class="modal-content bg-[#0f0f0f] rounded-[32px] border border-gray-800 w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl flex flex-col">
-            <header class="p-6 border-b border-gray-800 flex justify-between items-center bg-white/5">
+    <div id="follow-list-modal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
+        <div class="bg-[#080808] rounded-[40px] w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl flex flex-col border border-white/10">
+            <header class="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
                 <h3 id="follow-modal-title" class="text-xl font-light tracking-tight text-white">--</h3>
                 <button id="close-follow-modal" class="text-gray-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
             </header>
-            <div class="p-4 border-b border-gray-800 bg-[#0f0f0f]">
+            <div class="p-4 border-b border-white/5 bg-black">
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 text-sm"></i>
-                    <input type="text" id="follow-search-input" class="w-full bg-white/5 border border-gray-800 rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none" placeholder="Search users...">
+                    <input type="text" id="follow-search-input" class="w-full bg-white/5 border border-white/5 rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none" placeholder="Search usernames...">
                 </div>
             </div>
             <div id="follow-list-container" class="flex-1 overflow-y-auto custom-scroll p-4 space-y-2"></div>
@@ -293,24 +244,24 @@
     </div>
 
     <!-- Edit Profile Modal -->
-    <div id="edit-profile-modal" class="modal-bg hidden fixed inset-0 z-[10002] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
-        <div class="modal-content bg-[#0f0f0f] rounded-[32px] border border-gray-800 w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
-            <header class="p-6 border-b border-gray-800 flex justify-between items-center bg-white/5">
+    <div id="edit-profile-modal" class="hidden fixed inset-0 z-[10002] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
+        <div class="bg-[#080808] rounded-[40px] w-full max-w-md overflow-hidden shadow-2xl flex flex-col border border-white/10">
+            <header class="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
                 <h3 class="text-xl font-light tracking-tight text-white">Edit Profile</h3>
                 <button id="close-edit-modal" class="text-gray-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
             </header>
-            <div class="p-8 space-y-6">
+            <div class="p-8 space-y-6 overflow-y-auto custom-scroll max-h-[70vh]">
                 <div>
                     <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Display Name</label>
-                    <input type="text" id="edit-display-name" class="w-full bg-white/5 border border-gray-800 rounded-2xl py-3 px-4 text-sm text-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none" placeholder="Enter display name...">
+                    <input type="text" id="edit-display-name" class="w-full bg-white/5 border border-white/5 rounded-2xl py-3 px-4 text-sm text-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none" placeholder="Enter display name...">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">About Me</label>
-                    <textarea id="edit-description" rows="4" class="w-full bg-white/5 border border-gray-800 rounded-2xl py-3 px-4 text-sm text-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none resize-none" placeholder="Tell your story..."></textarea>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Description</label>
+                    <textarea id="edit-description" rows="3" class="w-full bg-white/5 border border-white/5 rounded-2xl py-3 px-4 text-sm text-white focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none outline-none" placeholder="Tell your story..."></textarea>
                 </div>
             </div>
-            <div class="p-8 bg-white/5 border-t border-gray-800">
-                <button id="save-profile-btn" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-900/20">
+            <div class="p-8 bg-black border-t border-white/5">
+                <button id="save-profile-btn" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-900/20 hover:bg-indigo-700 transition-all">
                     Save Changes
                 </button>
             </div>
@@ -319,13 +270,11 @@
 
     <script type="module">
         import { firebaseConfig } from "/firebase-config.js";
-        
-        // Proper Firebase initialization
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const firebaseAuth = firebase.auth();
-        const firestore = firebase.firestore();
+        import { getAvatarHTML } from "/utils.js";
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
         const avatarPreview = document.getElementById('avatar-preview');
         const displayNameEl = document.getElementById('display-name');
@@ -333,19 +282,14 @@
         const followersCountEl = document.getElementById('followers-count');
         const followingCountEl = document.getElementById('following-count');
         const descriptionEl = document.getElementById('description');
+        const statusIndicator = document.getElementById('status-indicator');
+        const activityLabel = document.getElementById('activity-label');
+        const activityText = document.getElementById('current-activity-text');
         const dailyphotoContainer = document.getElementById('dailyphoto-container');
         const followActions = document.getElementById('follow-actions');
         const followBtn = document.getElementById('follow-btn');
         const selfIndicator = document.getElementById('self-indicator');
         const editBtnContainer = document.getElementById('edit-profile-btn-container');
-        const statusIndicator = document.getElementById('status-indicator');
-        const activityLabel = document.getElementById('activity-label');
-        const activityText = document.getElementById('current-activity-text');
-
-        const optionsBtn = document.getElementById('profile-options-btn');
-        const optionsMenu = document.getElementById('profile-options-menu');
-        const shareProfileBtn = document.getElementById('btn-share-profile');
-        const blockUserBtn = document.getElementById('btn-block-user');
 
         const editModal = document.getElementById('edit-profile-modal');
         const closeEditBtn = document.getElementById('close-edit-modal');
@@ -361,122 +305,82 @@
         const followListContainer = document.getElementById('follow-list-container');
         const btnShowFollowers = document.getElementById('btn-show-followers');
         const btnShowFollowing = document.getElementById('btn-show-following');
-        
-        const btnViewAllPhotos = document.getElementById('btn-view-all-photos');
-        const allPhotosModal = document.getElementById('all-photos-modal');
-        const allPhotosGrid = document.getElementById('all-photos-grid');
 
         let firebaseAuthUser = null; 
         let profileOwnerId = null; 
         let isOwnProfile = false;
         let isFollowing = false;
-        let ownerUsername = "";
+        let currentUsername = "";
 
-        firebaseAuth.onAuthStateChanged(async (user) => {
+        auth.onAuthStateChanged(async (user) => {
             if (user) {
                 firebaseAuthUser = user;
                 
-                // Extract username from query or path
-                const urlParams = new URLSearchParams(window.location.search);
-                let requestedUsername = urlParams.get('username');
-
-                if (!requestedUsername) {
-                    const pathParts = window.location.pathname.split('/').filter(p => p);
-                    // Look for part starting with @ or being the part after 'logged-in'
-                    const loggedInIndex = pathParts.indexOf('logged-in');
-                    if (loggedInIndex > -1 && loggedInIndex + 1 < pathParts.length) {
-                        const candidate = pathParts[loggedInIndex + 1];
-                        requestedUsername = candidate.startsWith('@') ? candidate.substring(1) : candidate;
-                    }
+                // Extract username from URL path: /logged-in/@username
+                let path = window.location.pathname;
+                let requestedUsername = null;
+                if (path.includes('/@')) {
+                    requestedUsername = path.split('/@')[1];
                 }
 
-                if (requestedUsername && requestedUsername !== 'profile.html' && requestedUsername !== 'profile') {
-                    const snapUsername = await firestore.collection("users").where("username", "==", requestedUsername).get();
+                if (requestedUsername) {
+                    const snapUsername = await db.collection("users").where("username", "==", requestedUsername).get();
                     if (!snapUsername.empty) {
                         profileOwnerId = snapUsername.docs[0].id;
-                        ownerUsername = requestedUsername;
+                        currentUsername = requestedUsername;
                     } else {
-                        // Requested username not found, redirect to own profile or 404
-                        console.warn(`Profile for @${requestedUsername} not found. Redirecting to own profile.`);
                         profileOwnerId = user.uid;
-                        const meSnap = await firestore.collection("users").doc(user.uid).get();
-                        ownerUsername = meSnap.data()?.username || "";
-                        window.history.replaceState({}, '', `/logged-in/@${ownerUsername}`); // Update URL
                     }
                 } else {
-                    // No username in URL, default to own profile
                     profileOwnerId = user.uid;
-                    const meSnap = await firestore.collection("users").doc(user.uid).get();
-                    ownerUsername = meSnap.data()?.username || "";
-                    window.history.replaceState({}, '', `/logged-in/@${ownerUsername}`); // Update URL
+                    const meSnap = await db.collection("users").doc(user.uid).get();
+                    if (meSnap.exists() && meSnap.data().username) {
+                        window.history.replaceState({}, '', `/logged-in/@${meSnap.data().username}`);
+                    }
                 }
                 
                 isOwnProfile = profileOwnerId === user.uid;
 
-                const urlParams = new URLSearchParams(window.location.search);
-                const subpage = urlParams.get('subpage');
-
                 if (isOwnProfile) {
                     selfIndicator.classList.remove('hidden');
                     editBtnContainer.classList.remove('hidden');
-                    
-                    if (subpage === 'followers') openModal('follow-list-modal', 'followers');
-                    if (subpage === 'following') openModal('follow-list-modal', 'following');
                 } else {
-                    blockUserBtn.classList.remove('hidden');
                     followActions.classList.remove('hidden');
                     checkFollowStatus();
-                    
-                    if (subpage) {
-                        // If viewing another's profile, subpages like /followers should redirect to their main profile
-                        window.history.replaceState({}, '', `/logged-in/@${ownerUsername}`);
-                    }
                 }
 
-                const userDocRef = firestore.collection("users").doc(profileOwnerId);
-
-                userDocRef.onSnapshot((snap) => {
-                    if (snap.exists) {
+                const userDocRef = db.collection("users").doc(profileOwnerId);
+                const meDocRef = db.collection("users").doc(firebaseAuthUser.uid);
+                
+                onSnapshot(userDocRef, (snap) => {
+                    if (snap.exists()) {
                         const userData = snap.data();
                         
                         if (userData.blockedUsers?.includes(firebaseAuthUser.uid)) {
                             document.getElementById('blocked-overlay').classList.remove('hidden');
+                            document.getElementById('profile-main-content').classList.add('blur-2xl', 'pointer-events-none');
                             return;
                         }
 
-                        renderAvatar(userData);
+                        avatarPreview.innerHTML = getAvatarHTML(userData, "w-full h-full", false, firebaseAuthUser);
                         displayNameEl.textContent = userData.displayName || "Anonymous";
                         usernameEl.textContent = `@${userData.username}`;
-                        descriptionEl.textContent = userData.description || "No bio yet.";
+                        descriptionEl.textContent = userData.description || "";
                         
                         if (userData.isOnline) {
-                            statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[#0f0f0f] rounded-full status-online";
+                            statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[#080808] rounded-full status-online";
                             if (userData.currentActivity) {
                                 activityLabel.classList.remove('hidden');
                                 activityText.textContent = userData.currentActivity;
-                            } else {
-                                activityLabel.classList.add('hidden');
                             }
                         } else {
-                            statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[#0f0f0f] rounded-full status-offline";
+                            statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[#080808] rounded-full status-offline";
                             activityLabel.classList.add('hidden');
                         }
 
                         if (isOwnProfile) {
                             editDisplayName.value = userData.displayName || "";
                             editDescription.value = userData.description || "";
-                        }
-                    } else {
-                        // Profile not found (e.g., user deleted account)
-                        // If it's not own profile, show a generic message or redirect
-                        if (!isOwnProfile) {
-                             document.getElementById('profile-main-content').innerHTML = `
-                                <div class="text-center py-24">
-                                    <h2 class="text-3xl font-light text-white mb-4">Profile Not Found</h2>
-                                    <p class="text-gray-400">The requested profile does not exist or has been deleted.</p>
-                                    <button onclick="window.location.href='/'" class="btn-base btn-primary px-10 py-3 mt-8">Return Home</button>
-                                </div>
-                             `;
                         }
                     }
                 });
@@ -486,103 +390,88 @@
                 setupFollowModalListeners();
                 setupEditProfileListeners();
                 setupOptionsListeners();
-                setupModalClickHandlers();
             } else {
-                window.location.href = '/authentication';
+                window.location.href = '/authentication.html';
             }
         });
 
-        function renderAvatar(userData) {
-            const pfpType = userData.pfpType || 'google';
-            let html = '';
-            if (pfpType === 'custom' && userData.customPfp) {
-                html = `<img src="${userData.customPfp}" class="w-full h-full object-cover rounded-3xl" alt="PFP">`;
-            } else if (pfpType === 'letter') {
-                const bg = userData.pfpLetterBg || 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)';
-                const initial = (userData.letterAvatarText || userData.displayName?.charAt(0) || 'U').toUpperCase();
-                html = `<div class="w-full h-full flex items-center justify-center text-3xl font-bold text-white rounded-3xl" style="background: ${bg}">${initial}</div>`;
-            } else {
-                const photo = userData.photoURL || "/images/default_pfp.png";
-                html = `<img src="${photo}" class="w-full h-full object-cover rounded-3xl" alt="PFP">`;
-            }
-            avatarPreview.innerHTML = html;
+        const openModal = (modalEl) => {
+            modalEl.classList.remove('hidden');
+            modalEl.classList.add('modal-animate-in');
+            document.body.style.overflow = 'hidden';
+        };
+
+        const closeModal = (modalEl) => {
+            modalEl.classList.add('modal-animate-out');
+            setTimeout(() => {
+                modalEl.classList.add('hidden');
+                modalEl.classList.remove('modal-animate-out', 'modal-animate-in');
+                document.body.style.overflow = 'auto';
+            }, 200);
+        };
+
+        function setupEditProfileListeners() {
+            openEditBtn.onclick = () => openModal(editModal);
+            closeEditBtn.onclick = () => closeModal(editModal);
+            saveProfileBtn.onclick = async () => {
+                saveProfileBtn.disabled = true;
+                await db.collection('users').doc(firebaseAuthUser.uid).update({
+                    displayName: editDisplayName.value.trim(),
+                    description: editDescription.value.trim()
+                });
+                saveProfileBtn.disabled = false;
+                closeModal(editModal);
+            };
         }
 
-        async function loadDailyPhotos() {
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
-            const snap = await firestore.collection('daily_photos')
-                .where('creatorUid', '==', profileOwnerId)
-                .where('createdAt', '>=', startOfDay)
-                .orderBy('createdAt', 'desc')
-                .get();
-            
-            dailyphotoContainer.innerHTML = '';
-            allPhotosGrid.innerHTML = '';
+        function setupOptionsListeners() {
+            const optionsBtn = document.getElementById('profile-options-btn');
+            const optionsMenu = document.getElementById('profile-options-menu');
+            const shareBtn = document.getElementById('btn-share-profile');
+            const blockBtn = document.getElementById('btn-block-user');
 
-            if (snap.empty) {
-                dailyphotoContainer.innerHTML = '<div class="col-span-full py-12 text-center text-gray-600 italic">No photos shared today.</div>';
-                return;
-            }
+            optionsBtn.onclick = (e) => {
+                e.stopPropagation();
+                optionsMenu.classList.toggle('hidden');
+            };
+            window.onclick = () => optionsMenu.classList.add('hidden');
 
-            const docs = snap.docs;
-            
-            // Preview Logic (Max 2 + See More)
-            docs.forEach((doc, index) => {
-                const data = doc.data();
-                const imgSrc = data.imageBase64 || data.url; // Support both just in case
-                
-                // Add to All Photos Modal Grid
-                const allDiv = document.createElement('div');
-                allDiv.className = 'photo-grid-item';
-                allDiv.innerHTML = `<img src="${imgSrc}" alt="Dailyphoto">`;
-                allDiv.onclick = () => window.location.href = '/logged-in/dailyphoto';
-                allPhotosGrid.appendChild(allDiv);
+            shareBtn.onclick = () => {
+                navigator.clipboard.writeText(window.location.href);
+                alert("Profile link copied!");
+            };
 
-                // Add to Profile Preview (limit 2)
-                if (index < 2) {
-                    const div = document.createElement('div');
-                    div.className = 'photo-grid-item';
-                    div.innerHTML = `<img src="${imgSrc}" alt="Dailyphoto">`;
-                    div.onclick = () => window.location.href = '/logged-in/dailyphoto';
-                    dailyphotoContainer.appendChild(div);
+            blockBtn.onclick = async () => {
+                if (confirm("Block this user?")) {
+                    await db.collection('users').doc(firebaseAuthUser.uid).update({
+                        blockedUsers: firebase.firestore.FieldValue.arrayUnion(profileOwnerId)
+                    });
+                    location.reload();
                 }
-            });
-
-            if (docs.length > 2) {
-                const seeMoreDiv = document.createElement('div');
-                seeMoreDiv.className = 'photo-grid-item see-more';
-                seeMoreDiv.innerHTML = `
-                    <i class="fa-solid fa-plus text-2xl mb-1"></i>
-                    <span class="text-xs font-bold uppercase">See More</span>
-                `;
-                seeMoreDiv.onclick = () => openModal('all-photos-modal');
-                dailyphotoContainer.appendChild(seeMoreDiv);
-            }
+            };
         }
 
         function loadCounts() {
-            firestore.collection('users').doc(profileOwnerId).collection('followers').onSnapshot(snap => {
+            db.collection('users').doc(profileOwnerId).collection('followers').onSnapshot(snap => {
                 followersCountEl.textContent = snap.docs.filter(d => d.id !== '.init').length;
             });
-            firestore.collection('users').doc(profileOwnerId).collection('following').onSnapshot(snap => {
+            db.collection('users').doc(profileOwnerId).collection('following').onSnapshot(snap => {
                 followingCountEl.textContent = snap.docs.filter(d => d.id !== '.init').length;
             });
         }
 
         function checkFollowStatus() {
-            firestore.collection('users').doc(profileOwnerId).collection('followers').doc(firebaseAuthUser.uid).onSnapshot(snap => {
+            db.collection('users').doc(profileOwnerId).collection('followers').doc(firebaseAuthUser.uid).onSnapshot(snap => {
                 isFollowing = snap.exists;
                 followBtn.textContent = isFollowing ? 'Following' : 'Follow';
-                followBtn.className = isFollowing ? 'btn-base w-full py-3 bg-white/5 border-gray-800 text-gray-400' : 'btn-base btn-primary w-full py-3';
+                followBtn.classList.toggle('primary-cta', !isFollowing);
             });
         }
 
         followBtn.onclick = async () => {
-            const batch = firestore.batch();
-            const meRef = firestore.collection('users').doc(firebaseAuthUser.uid);
-            const ownerRef = firestore.collection('users').doc(profileOwnerId);
+            const batch = db.batch();
+            const meRef = db.collection('users').doc(firebaseAuthUser.uid);
+            const ownerRef = db.collection('users').doc(profileOwnerId);
             const myFollowingRef = meRef.collection('following').doc(profileOwnerId);
             const theirFollowersRef = ownerRef.collection('followers').doc(firebaseAuthUser.uid);
 
@@ -600,142 +489,60 @@
             await batch.commit();
         };
 
-        // --- Modal Logic ---
-        window.openModal = function(modalId, type = null) {
-            const modal = document.getElementById(modalId);
-            if (!modal) return;
+        async function loadDailyPhotos() {
+            const snap = await db.collection('daily_photos')
+                .where('creatorUid', '==', profileOwnerId)
+                .where('status', '==', 'active')
+                .orderBy('createdAt', 'desc')
+                .limit(6)
+                .get();
             
-            if (modalId === 'follow-list-modal' && type) {
-                renderFollowModal(type);
-            }
-
-            modal.classList.remove('hidden');
-            modal.classList.remove('modal-animate-out');
-            modal.classList.add('modal-animate-in');
-            
-            const content = modal.querySelector('.modal-content');
-            if (content) {
-                content.classList.remove('modal-animate-out'); // Not really a thing for content but just in case
-                content.classList.add('modal-content-animate-in');
-            }
-            
-            document.body.style.overflow = 'hidden';
-        }
-
-        window.closeModal = function(modalId) {
-            const modal = document.getElementById(modalId);
-            if (!modal) return;
-
-            modal.classList.remove('modal-animate-in');
-            modal.classList.add('modal-animate-out');
-            
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                document.body.style.overflow = 'auto';
-            }, 200);
-
-            if (modalId === 'follow-list-modal') {
-                window.history.pushState({}, '', `/logged-in/@${ownerUsername}`);
-            }
-        }
-
-        function setupModalClickHandlers() {
-            const modals = document.querySelectorAll('.modal-bg');
-            modals.forEach(modal => {
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        closeModal(modal.id);
-                    }
-                });
-            });
-        }
-
-        function setupEditProfileListeners() {
-            openEditBtn.onclick = () => openModal('edit-profile-modal');
-            closeEditBtn.onclick = () => closeModal('edit-profile-modal');
-            saveProfileBtn.onclick = async () => {
-                saveProfileBtn.disabled = true;
-                await firestore.collection('users').doc(firebaseAuthUser.uid).update({
-                    displayName: editDisplayName.value.trim(),
-                    description: editDescription.value.trim()
-                });
-                saveProfileBtn.disabled = false;
-                closeModal('edit-profile-modal');
-            };
-        }
-
-        function setupOptionsListeners() {
-            optionsBtn.onclick = (e) => {
-                e.stopPropagation();
-                optionsMenu.classList.toggle('hidden');
-            };
-            window.addEventListener('click', () => optionsMenu.classList.add('hidden'));
-            
-            shareProfileBtn.onclick = () => {
-                const url = window.location.origin + "/logged-in/@" + (ownerUsername);
-                navigator.clipboard.writeText(url);
-                alert("Profile link copied!");
-            };
-            
-            blockUserBtn.onclick = async () => {
-                if(confirm("Block this user?")) {
-                    await firestore.collection('users').doc(firebaseAuthUser.uid).update({
-                        blockedUsers: firebase.firestore.FieldValue.arrayUnion(profileOwnerId)
-                    });
-                    window.location.href = '/';
-                }
-            };
-        }
-
-        function setupFollowModalListeners() {
-            btnShowFollowers.onclick = () => {
-                if (isOwnProfile) {
-                    window.history.pushState({}, '', `/logged-in/@${ownerUsername}/followers`);
-                    openModal('follow-list-modal', 'followers');
-                }
-            };
-            btnShowFollowing.onclick = () => {
-                if (isOwnProfile) {
-                    window.history.pushState({}, '', `/logged-in/@${ownerUsername}/following`);
-                    openModal('follow-list-modal', 'following');
-                }
-            };
-            closeFollowModalBtn.onclick = () => closeModal('follow-list-modal');
-            btnViewAllPhotos.onclick = () => openModal('all-photos-modal');
-        }
-
-        async function renderFollowModal(type) {
-            followModalTitle.textContent = type === 'followers' ? 'Followers' : 'Following';
-            followListContainer.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500"></i></div>';
-            
-            const snap = await firestore.collection('users').doc(profileOwnerId).collection(type).get();
-            followListContainer.innerHTML = '';
-            
+            dailyphotoContainer.innerHTML = '';
             if (snap.empty) {
-                followListContainer.innerHTML = '<div class="text-center py-8 text-gray-500">No users found.</div>';
+                dailyphotoContainer.innerHTML = '<p class="text-gray-600 italic py-8 col-span-full text-center">No photos shared yet.</p>';
                 return;
             }
 
-            for (const followDoc of snap.docs) {
-                if (followDoc.id === '.init') continue;
-                const uSnap = await firestore.collection('users').doc(followDoc.id).get();
+            snap.forEach(doc => {
+                const data = doc.data();
+                const div = document.createElement('div');
+                div.className = 'photo-grid-item';
+                div.innerHTML = `<img src="${data.imageBase64}" loading="lazy">`;
+                div.onclick = () => window.location.href = `/logged-in/dailyphoto.html?post=${doc.id}`;
+                dailyphotoContainer.appendChild(div);
+            });
+        }
+
+        function setupFollowModalListeners() {
+            btnShowFollowers.onclick = () => openFollowListModal('followers');
+            btnShowFollowing.onclick = () => openFollowListModal('following');
+            closeFollowModalBtn.onclick = () => closeModal(followListModal);
+        }
+
+        async function openFollowListModal(type) {
+            followModalTitle.textContent = type === 'followers' ? 'Followers' : 'Following';
+            followListContainer.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-indigo-500"></i></div>';
+            openModal(followListModal);
+
+            const snap = await db.collection('users').doc(profileOwnerId).collection(type).get();
+            followListContainer.innerHTML = '';
+            
+            for (const doc of snap.docs) {
+                if (doc.id === '.init') continue;
+                const uSnap = await db.collection('users').doc(doc.id).get();
                 if (uSnap.exists) {
-                    const userData = uSnap.data();
-                    const div = document.createElement('div');
-                    div.className = 'flex items-center gap-3 p-3 bg-white/5 border border-gray-800 rounded-2xl cursor-pointer hover:bg-white/10 transition';
-                    div.onclick = () => {
-                        window.location.href = `/logged-in/@${userData.username}`;
-                    };
-                    div.innerHTML = `
-                        <div class="w-10 h-10 bg-indigo-900/30 rounded-xl flex items-center justify-center font-bold text-indigo-400">
-                            ${userData.displayName?.charAt(0) || 'U'}
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-white">${userData.displayName || 'User'}</p>
-                            <p class="text-[10px] text-gray-500 font-mono">@${userData.username}</p>
+                    const uData = uSnap.data();
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition';
+                    item.onclick = () => window.location.href = `/logged-in/@${uData.username}`;
+                    item.innerHTML = `
+                        <div class="w-10 h-10 rounded-xl overflow-hidden">${getAvatarHTML(uData, "w-full h-full", false, firebaseAuthUser)}</div>
+                        <div class="flex-grow">
+                            <p class="text-sm font-medium text-white">${uData.displayName || uData.username}</p>
+                            <p class="text-[10px] text-gray-500 font-mono">@${uData.username}</p>
                         </div>
                     `;
-                    followListContainer.appendChild(div);
+                    followListContainer.appendChild(item);
                 }
             }
         }

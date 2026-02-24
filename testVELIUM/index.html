@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4SP - VELIUM V2</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- VERN_SYSTEM Proxy Scripts (Local) -->
+    <script src="/VELIUM/uv/uv.bundle.js"></script>
+    <script>
+        const basePath = "/VELIUM/uv/";
+        self.__uv$config = {
+            prefix: basePath + "service/",
+            encodeUrl: (url) => {
+                if (typeof Ultraviolet === 'undefined') return url;
+                return Ultraviolet.codec.xor.encode(url);
+            },
+            decodeUrl: (url) => {
+                if (typeof Ultraviolet === 'undefined') return url;
+                return Ultraviolet.codec.xor.decode(url);
+            },
+            handler: basePath + "uv.handler.js",
+            client: basePath + "uv.client.js",
+            bundle: basePath + "uv.bundle.js",
+            config: basePath + "uv.config.js",
+            sw: basePath + "uv.sw.js",
+            stockSW: "/sw.js",
+        };
+    </script>
+    <script src="/VELIUM/baremux/index.js"></script>
+    <script>
+        // Immediate Initialization of VERN_SYSTEM Proxy
+        (async () => {
+            if ("serviceWorker" in navigator) {
+                try {
+                    // Register Root SW with broad scope
+                    await navigator.serviceWorker.register("/sw.js", {
+                        scope: "/"
+                    });
+                    console.log("VERN_SYSTEM SW Registered at root");
+                } catch (e) {
+                    console.error("SW Register Failed", e);
+                }
+            }
+            try {
+                const connection = new BareMux.BareMuxConnection("/VELIUM/baremux/worker.js");
+                const wispUrl = "wss://wisp.mercurywork.shop/";
+                await connection.setTransport("/VELIUM/libcurl/index.mjs", [
+                    { websocket: wispUrl },
+                    { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                ]);
+                console.log("BareMux Initialized");
+            } catch (e) {
+                console.error("BareMux Init Failed", e);
+            }
+        })();
+    </script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-black': '#000000',
+                        'card-dark': '#0d0d0d',
+                        'accent-indigo': '#4f46e5',
+                        'brand-border': '#333333',
+                    },
+                    fontFamily: {
+                        sans: ['Geist', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { 
+            font-family: 'Geist', sans-serif; 
+            background-color: #000000; 
+            color: #c0c0c0;
+            font-weight: 300; 
+            overflow: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 200 !important;
+            color: #ffffff;
+            tracking-tighter;
+        }
+
+        /* --- Global Scrollbar --- */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
+
+        .app-container {
+            display: grid;
+            grid-template-areas: 
+                "sidebar main"
+                "playbar playbar";
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: 1fr 100px;
+            height: 100vh;
+            width: 100vw;
+            background: #000000;
+        }
+
+        .sidebar {
+            grid-area: sidebar;
+            background: #000000;
+            border-right: 1px solid #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            padding: 32px 0;
+            overflow-y: auto;
+        }
+
+        .main-view {
+            grid-area: main;
+            background: #000000;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .now-playing-bar {
+            grid-area: playbar;
+            background: #000000;
+            border-top: 1px solid #1a1a1a;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            padding: 0 32px;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 24px;
+            color: #666;
+            font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border-radius: 20px;
+            margin: 0 16px;
+            font-weight: 300;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .nav-item.active {
+            color: #4f46e5;
+            background: rgba(79, 70, 229, 0.08);
+            border: 1px solid rgba(79, 70, 229, 0.15);
+        }
+
+        .track-card {
+            background: #050505;
+            border: 1px solid #111;
+            border-radius: 32px;
+            padding: 20px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .track-card:hover {
+            border-color: #4f46e5;
+            transform: translateY(-6px);
+            background: #0a0a0a;
+            box-shadow: 0 20px 40px -20px rgba(79, 70, 229, 0.3);
+        }
+
+        .track-artwork {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 20px;
+            object-fit: cover;
+            margin-bottom: 16px;
+            border: 1px solid #1a1a1a;
+        }
+
+        .play-btn-overlay {
+            position: absolute;
+            bottom: 80px;
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            background: #4f46e5;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .track-card:hover .play-btn-overlay {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .view {
+            display: none;
+            padding: 32px;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .search-tab-content {
+            display: none;
+        }
+
+        .search-tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .search-box {
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 500px;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 600px;
+            transition: all 0.3s;
+        }
+
+        .search-box:focus-within {
+            border-color: #4f46e5;
+            background: #111;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .player-btn {
+            color: #9ca3af;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .player-btn:hover {
+            color: #ffffff;
+            transform: scale(1.1);
+        }
+
+        .player-btn.active {
+            color: #4f46e5;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #4f46e5;
+            border-radius: 2px;
+            width: 0%;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal-content {
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 450px;
+            padding: 32px;
+        }
+
+        .btn-niobium {
+            background: rgba(79, 70, 229, 0.1);
+            border: 1px solid #4f46e5;
+            color: #4f46e5;
+            padding: 10px 24px;
+            border-radius: 16px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-niobium:hover {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .side-panel {
+            position: fixed;
+            right: -450px;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: #0d0d0d;
+            border-left: 1px solid #333;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 500;
+        }
+
+        .side-panel.open {
+            right: 0;
+        }
+
+        .lyrics-line {
+            padding: 12px 0;
+            font-size: 1.25rem;
+            color: #4b5563;
+            transition: all 0.3s;
+        }
+
+        .lyrics-line.active {
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="px-8 mb-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-accent-indigo rounded-xl flex items-center justify-center">
+                        <i class="fas fa-play text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold tracking-tighter text-white">VELIUM</span>
+                </div>
+            </div>
+
+            <nav class="flex-1">
+                <div class="nav-item active" data-view="home">
+                    <i class="fas fa-house"></i>
+                    <span>Home</span>
+                </div>
+                <div class="nav-item" data-view="search">
+                    <i class="fas fa-search"></i>
+                    <span>Search</span>
+                </div>
+                <div class="nav-item" data-view="library">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Library</span>
+                </div>
+
+                <div class="h-px bg-brand-border my-6 mx-8"></div>
+
+                <div class="px-8 mb-4 flex items-center justify-between">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Playlists</span>
+                    <button class="create-playlist-btn text-gray-500 hover:text-white transition-colors">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                
+                <div id="sidebar-playlists" class="space-y-1">
+                    <!-- Playlists will be injected here -->
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main View -->
+        <main class="main-view">
+            <!-- Home View -->
+            <section class="view active" id="homeView">
+                <div class="mb-10">
+                    <h1 class="text-4xl font-bold mb-2" id="greetingText">Good evening</h1>
+                    <p class="text-gray-500">Discover something new today.</p>
+                </div>
+
+                <div class="mb-12">
+                    <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                        <i class="fas fa-bolt text-accent-indigo"></i> Quick Access
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="bg-card-dark border border-brand-border rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:border-accent-indigo transition-all group" onclick="switchView('favorites')">
+                            <div class="w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-heart text-white text-xl"></i>
+                            </div>
+                            <span class="font-bold flex-1">Liked Songs</span>
+                            <div class="w-10 h-10 rounded-full bg-accent-indigo flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i class="fas fa-play text-white text-sm"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="text-xl font-bold mb-6">Popular Tracks</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="popularTracks">
+                        <!-- Tracks will be injected here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Search View -->
+            <section class="view" id="searchView">
+                <div class="mb-10 flex flex-col items-center">
+                    <h1 class="text-5xl font-black mb-8 tracking-tighter">What do you want to listen to?</h1>
+                    <div class="search-box">
+                        <i class="fas fa-search text-gray-500"></i>
+                        <input type="text" id="searchInput" placeholder="Search for songs, artists, or albums" class="bg-transparent border-none outline-none flex-1 text-white">
+                    </div>
+                </div>
+
+                <div id="searchResults" class="hidden">
+                    <div class="flex gap-4 mb-8 overflow-x-auto pb-2">
+                        <button class="search-tab active px-4 py-2 rounded-full text-sm font-bold bg-accent-indigo text-white whitespace-nowrap" data-tab="tracks">Tracks</button>
+                        <button class="search-tab px-4 py-2 rounded-full text-sm font-bold bg-card-dark text-gray-400 hover:text-white transition-colors whitespace-nowrap" data-tab="albums">Albums</button>
+                        <button class="search-tab px-4 py-2 rounded-full text-sm font-bold bg-card-dark text-gray-400 hover:text-white transition-colors whitespace-nowrap" data-tab="artists">Artists</button>
+                        <button class="search-tab px-4 py-2 rounded-full text-sm font-bold bg-card-dark text-gray-400 hover:text-white transition-colors whitespace-nowrap" data-tab="playlists">Playlists</button>
+                    </div>
+
+                    <div id="tracksTab" class="search-tab-content active">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="searchGrid"></div>
+                    </div>
+                    <div id="albumsTab" class="search-tab-content">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="albumsGrid"></div>
+                    </div>
+                    <div id="artistsTab" class="search-tab-content">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="artistsGrid"></div>
+                    </div>
+                    <div id="playlistsTab" class="search-tab-content">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="playlistsGrid"></div>
+                    </div>
+                </div>
+
+                <div id="browseCategories">
+                    <h2 class="text-xl font-bold mb-6">Browse all</h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        <div class="aspect-square rounded-2xl p-6 relative overflow-hidden cursor-pointer group bg-indigo-600" onclick="handleCategorySearch('Pop')">
+                            <span class="text-2xl font-bold">Pop</span>
+                            <i class="fas fa-music absolute -bottom-4 -right-4 text-8xl opacity-20 transform rotate-12 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="aspect-square rounded-2xl p-6 relative overflow-hidden cursor-pointer group bg-red-600" onclick="handleCategorySearch('Rock')">
+                            <span class="text-2xl font-bold">Rock</span>
+                            <i class="fas fa-guitar absolute -bottom-4 -right-4 text-8xl opacity-20 transform rotate-12 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="aspect-square rounded-2xl p-6 relative overflow-hidden cursor-pointer group bg-purple-600" onclick="handleCategorySearch('Hip-Hop')">
+                            <span class="text-2xl font-bold">Hip-Hop</span>
+                            <i class="fas fa-microphone absolute -bottom-4 -right-4 text-8xl opacity-20 transform rotate-12 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="aspect-square rounded-2xl p-6 relative overflow-hidden cursor-pointer group bg-green-600" onclick="handleCategorySearch('Electronic')">
+                            <span class="text-2xl font-bold">EDM</span>
+                            <i class="fas fa-bolt absolute -bottom-4 -right-4 text-8xl opacity-20 transform rotate-12 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Library View -->
+            <section class="view" id="libraryView">
+                <h1 class="text-4xl font-bold mb-10">Your Library</h1>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="libraryContent">
+                    <!-- Playlists -->
+                </div>
+            </section>
+
+            <!-- Favorites View -->
+            <section class="view" id="favoritesView">
+                <div class="flex flex-col md:flex-row items-end gap-8 mb-10">
+                    <div class="w-56 h-56 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl flex items-center justify-center shadow-2xl">
+                        <i class="fas fa-heart text-white text-7xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Playlist</span>
+                        <h1 class="text-7xl font-black tracking-tighter mb-4">Liked Songs</h1>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold" id="likedSongsCount">0 songs</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6 mb-8 border-b border-brand-border pb-8">
+                    <button class="w-16 h-16 bg-accent-indigo rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform" onclick="playAllFavorites()">
+                        <i class="fas fa-play text-white text-xl"></i>
+                    </button>
+                </div>
+                <div id="favoritesList" class="space-y-2"></div>
+            </section>
+
+            <!-- Playlist/Album/Artist View Container -->
+            <div id="dynamicView" class="view"></div>
+        </main>
+
+        <!-- Player Bar -->
+        <footer class="now-playing-bar">
+            <!-- Track Info -->
+            <div class="flex items-center gap-4 min-width-0">
+                <div class="w-14 h-14 bg-card-dark rounded-xl overflow-hidden border border-brand-border flex-shrink-0">
+                    <img id="currentArtwork" src="" class="w-full h-full object-cover hidden">
+                    <div id="artworkPlaceholder" class="w-full h-full flex items-center justify-center">
+                        <i class="fas fa-music text-gray-700"></i>
+                    </div>
+                </div>
+                <div class="min-width-0">
+                    <div id="currentTrackName" class="text-sm font-bold text-white truncate">Not Playing</div>
+                    <div id="currentArtistName" class="text-xs text-gray-500 truncate">Select a track</div>
+                </div>
+                <button id="likeButton" class="text-gray-500 hover:text-white transition-colors ml-2">
+                    <i class="far fa-heart"></i>
+                </button>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex flex-col items-center gap-2">
+                <div class="flex items-center gap-6">
+                    <button class="player-btn text-lg" id="shuffleButton"><i class="fas fa-shuffle"></i></button>
+                    <button class="player-btn text-xl" id="prevButton"><i class="fas fa-step-backward"></i></button>
+                    <button class="w-10 h-10 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-transform" id="playPauseButton">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="player-btn text-xl" id="nextButton"><i class="fas fa-step-forward"></i></button>
+                    <button class="player-btn text-lg" id="repeatButton"><i class="fas fa-repeat"></i></button>
+                </div>
+                <div class="w-full flex items-center gap-3 text-[10px] font-bold text-gray-500">
+                    <span id="currentTimeLabel">0:00</span>
+                    <div class="progress-bar flex-1" id="progressTrack">
+                        <div class="progress-bar-fill" id="progressBarFill"></div>
+                    </div>
+                    <span id="durationLabel">0:00</span>
+                </div>
+            </div>
+
+            <!-- Volume & Extras -->
+            <div class="flex items-center justify-end gap-4">
+                <button class="player-btn" onclick="toggleLyrics()"><i class="fas fa-quote-right"></i></button>
+                <div class="flex items-center gap-2 group">
+                    <i class="fas fa-volume-up text-gray-500 group-hover:text-white transition-colors"></i>
+                    <div class="w-24 h-1 bg-brand-border rounded-full cursor-pointer relative">
+                        <input type="range" id="volumeSlider" min="0" max="100" value="70" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                        <div class="bg-gray-400 h-full rounded-full" id="volumeBarFill" style="width: 70%;"></div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modals -->
+    <div id="createPlaylistModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-6">Create New Playlist</h2>
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Name</label>
+                    <input type="text" id="playlistNameInput" class="w-full bg-black border border-brand-border rounded-xl p-3 outline-none focus:border-accent-indigo text-white" placeholder="My Playlist #1">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Description</label>
+                    <textarea id="playlistDescInput" class="w-full bg-black border border-brand-border rounded-xl p-3 outline-none focus:border-accent-indigo text-white h-24" placeholder="Optional description"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button class="px-6 py-3 rounded-xl font-bold text-gray-400 hover:text-white transition-colors" onclick="hideCreatePlaylistModal()">Cancel</button>
+                <button class="btn-niobium" id="savePlaylistBtn">Create Playlist</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lyrics Panel -->
+    <div id="lyricsPanel" class="side-panel p-8 flex flex-col">
+        <div class="flex items-center justify-between mb-10">
+            <h2 class="text-2xl font-bold">Lyrics</h2>
+            <button class="text-2xl text-gray-500 hover:text-white" onclick="toggleLyrics()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="lyricsContent" class="flex-1 overflow-y-auto custom-scrollbar">
+            <!-- Lyrics will be injected here -->
+        </div>
+    </div>
+
+    <!-- Audio Element (hidden) -->
+    <div id="audioElement"></div>
+
+    <script src="/VELIUM/db.js"></script>
+    <script src="/VELIUM/music.js"></script>
+    <!-- Made with ❤️ from 4SP -->
+</body>
+</html>
+<!-- Made with ❤️ from 4SP -->
