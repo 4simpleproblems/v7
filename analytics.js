@@ -80,20 +80,72 @@
 
         // Track Page View
         trackPageView();
+        trackActivity();
 
         // Heartbeat to update duration
-        setInterval(updateSession, 10000); 
+        setInterval(() => {
+            updateSession();
+            trackActivity();
+        }, 10000); 
 
         // Visibility / Unload listeners
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
                 updateSession();
+                clearActivity();
+            } else {
+                trackActivity();
             }
         });
         
         window.addEventListener('beforeunload', () => {
              updateSession();
+             clearActivity();
         });
+    }
+
+    async function trackActivity() {
+        if (!auth || !auth.currentUser || !db) return;
+        const user = auth.currentUser;
+        
+        try {
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            const userData = userDoc.exists ? userDoc.data() : {};
+            
+            if (userData.showOffline) {
+                await db.collection('users').doc(user.uid).update({
+                    isOnline: false,
+                    currentActivity: null
+                });
+                return;
+            }
+
+            let activity = getCleanTitle(window.location.pathname, document.title);
+            
+            // Special Game Tracking
+            if (window.location.pathname.includes('/GAMES/')) {
+                if (userData.disableActivityTracking) {
+                    activity = "Games";
+                } else {
+                    const gameName = window.location.pathname.split('/').filter(p => p).pop().replace('.html', '');
+                    activity = `Playing ${gameName.charAt(0).toUpperCase() + gameName.slice(1)}`;
+                }
+            }
+
+            await db.collection('users').doc(user.uid).update({
+                isOnline: true,
+                currentActivity: activity,
+                lastActive: window.firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (e) { console.error("Analytics: Activity track failed", e); }
+    }
+
+    function clearActivity() {
+        if (!auth || !auth.currentUser || !db) return;
+        db.collection('users').doc(auth.currentUser.uid).update({
+            isOnline: false,
+            currentActivity: null
+        }).catch(() => {});
     }
 
     const PAGE_NAME_LOOKUP = {
@@ -101,8 +153,6 @@
         'soundboard.html': 'Soundboard',
         'notes.html': 'Notes',
         'dailyphoto.html': 'Dailyphoto',
-        'countdowns.html': 'Countdowns',
-        'weather.html': 'Weather',
         'dictionary.html': 'Dictionary',
         'schedule.html': 'Schedule',
         'messenger-tutorial.html': 'Messenger',

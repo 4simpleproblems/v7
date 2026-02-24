@@ -63,7 +63,7 @@
 
         /* --- LAYOUT SLOTS --- */
         #welcome-section {
-            grid-column: span 7;
+            grid-column: span 12;
             grid-row: span 5;
             background: transparent;
             border: none;
@@ -71,15 +71,6 @@
             flex-direction: column;
             justify-content: center;
             padding-left: 0;
-        }
-
-        #weather-section {
-            grid-column: span 5;
-            grid-row: span 5;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            background: linear-gradient(145deg, #0a0a0a 0%, #050505 100%);
         }
 
         #analytics-left {
@@ -178,23 +169,6 @@
             <h2 class="welcome-msg">Good day, <span id="user-name-display" class="text-indigo-500">User</span>.</h2>
         </div>
 
-        <!-- WEATHER SECTION -->
-        <div id="weather-section" class="dashboard-card">
-            <div id="weather-loader"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
-            <div class="weather-row">
-                <div>
-                    <div class="label-tiny">Local Environment</div>
-                    <div id="w-temp" class="temp-text">--°</div>
-                    <div id="w-desc" class="text-sm text-gray-500 mt-1 capitalize italic">Detecting...</div>
-                </div>
-                <div id="w-icon" class="text-7xl text-white/10"><i class="fa-solid fa-cloud"></i></div>
-            </div>
-            <div class="flex justify-between items-center mt-4 pt-4 border-t border-white/5">
-                <div class="text-xs text-gray-500 font-medium">H: <span id="w-high" class="text-white">--°</span> | L: <span id="w-low" class="text-white">--°</span></div>
-                <div id="w-location" class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">Unknown City</div>
-            </div>
-        </div>
-
         <!-- ANALYTICS LEFT -->
         <div id="analytics-left" class="dashboard-card no-hover">
             <div class="stat-card">
@@ -238,8 +212,6 @@
             'soundboard.html': 'Soundboard',
             'notes.html': 'Notes',
             'dailyphoto.html': 'Dailyphoto',
-            'countdowns.html': 'Countdowns',
-            'weather.html': 'Weather',
             'dictionary.html': 'Dictionary',
             'schedule.html': 'Schedule',
             'messenger-tutorial.html': 'Messenger',
@@ -297,7 +269,6 @@
             });
 
             startClock();
-            loadWeather();
         }
 
         async function loadAnalytics(uid) {

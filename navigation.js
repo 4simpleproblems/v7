@@ -1008,13 +1008,13 @@ let db;
                 : '';
 
             const statusHtml = isOnline 
-                ? `<div class="flex items-center gap-1.5 mt-1">
-                     <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_#6366f1]"></span>
-                     <span class="text-[10px] text-indigo-400 font-medium uppercase tracking-wider">${currentActivity ? `On: ${currentActivity}` : 'Online'}</span>
+                ? `<div class="flex items-center gap-1.5 mt-1 overflow-hidden">
+                     <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_#6366f1] flex-shrink-0"></span>
+                     <span class="text-[10px] text-indigo-400 font-medium uppercase tracking-wider truncate">${currentActivity ? `On: ${currentActivity}` : 'Online'}</span>
                    </div>`
-                : `<div class="flex items-center gap-1.5 mt-1">
-                     <span class="w-2 h-2 rounded-full bg-gray-600"></span>
-                     <span class="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Offline</span>
+                : `<div class="flex items-center gap-1.5 mt-1 overflow-hidden">
+                     <span class="w-2 h-2 rounded-full bg-gray-600 flex-shrink-0"></span>
+                     <span class="text-[10px] text-gray-500 font-medium uppercase tracking-wider truncate">Offline</span>
                    </div>`;
 
             return `
@@ -1804,31 +1804,6 @@ let db;
 
             currentIsPrivileged = isPrivilegedUser;
             renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
-
-            // --- Tracking Logic ---
-            if (user) {
-                const currentPageKey = getCurrentPageKey();
-                const activityName = currentPageKey ? allPages[currentPageKey].name : document.title.replace('4SP - ', '');
-                
-                // Set online status and activity
-                await db.collection('users').doc(user.uid).update({
-                    isOnline: true,
-                    currentActivity: activityName,
-                    lastActive: firebase.firestore.FieldValue.serverTimestamp()
-                }).catch(err => console.error("Error updating presence:", err));
-
-                // Handle Tab Closure
-                window.onbeforeunload = function() {
-                    // Note: update is async, so we use a simple set if possible or just rely on the fact that most browsers allow a quick update.
-                    // For better reliability in production, one would use Firestore Presence with Realtime Database.
-                    db.collection('users').doc(user.uid).update({
-                        isOnline: false,
-                        currentActivity: null,
-                        lastActive: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                };
-            }
-            // ----------------------
 
             // Set flag after the first check
             if (!authCheckCompleted) {

@@ -896,6 +896,34 @@
                     
                     <div id="panicKeyGlobalMessage" class="general-message-area text-sm"></div>
                 </div>
+
+                <div class="w-full mt-8">
+                    <h3 class="text-xl font-bold text-white mb-2">Activity Presence</h3>
+                    <div id="activityPresenceSection" class="settings-box p-6 space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-emphasis">Appear Offline</p>
+                                <p class="text-xs font-light text-gray-400">When enabled, your status will always show as offline to other users.</p>
+                            </div>
+                            <input type="checkbox" id="showOfflineToggle" class="w-5 h-5 accent-indigo-500">
+                        </div>
+                        
+                        <div class="flex items-center justify-between border-t border-[#252525] pt-6">
+                            <div>
+                                <p class="text-emphasis">Game Activity Tracking</p>
+                                <p class="text-xs font-light text-gray-400">Allow 4SP to show which specific game you are currently playing.</p>
+                            </div>
+                            <input type="checkbox" id="trackGamesToggle" checked class="w-5 h-5 accent-indigo-500">
+                        </div>
+                        
+                        <div class="flex justify-between items-center pt-4 border-t border-[#252525]">
+                            <p id="activityPresenceMessage" class="general-message-area text-sm"></p>
+                            <button id="saveActivityPresenceBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
+                                <i class="fa-solid fa-check mr-1"></i> Save Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="w-full mt-8">
                     <h3 class="text-xl font-bold text-white mb-2">Tab Disguise (URL Changer)</h3>
@@ -3560,6 +3588,43 @@ const performAccountDeletion = async (credential) => {
                     showMessage(urlChangerMessage, 'An error occurred while saving.', 'error');
                 }
             });
+
+            // --- 4. Activity Presence Logic ---
+            const showOfflineToggle = document.getElementById('showOfflineToggle');
+            const trackGamesToggle = document.getElementById('trackGamesToggle');
+            const saveActivityPresenceBtn = document.getElementById('saveActivityPresenceBtn');
+            const activityPresenceMessage = document.getElementById('activityPresenceMessage');
+
+            if (currentUser) {
+                const userDocRef = getUserDocRef(currentUser.uid);
+                try {
+                    const snap = await getDoc(userDocRef);
+                    if (snap.exists()) {
+                        const userData = snap.data();
+                        showOfflineToggle.checked = !!userData.showOffline;
+                        trackGamesToggle.checked = !userData.disableActivityTracking;
+                    }
+                } catch (e) { console.error("Error loading activity presence:", e); }
+
+                saveActivityPresenceBtn.addEventListener('click', async () => {
+                    try {
+                        saveActivityPresenceBtn.disabled = true;
+                        showMessage(activityPresenceMessage, '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...', 'warning');
+                        
+                        await updateDoc(userDocRef, {
+                            showOffline: showOfflineToggle.checked,
+                            disableActivityTracking: !trackGamesToggle.checked
+                        });
+                        
+                        showMessage(activityPresenceMessage, 'Presence settings saved!', 'success');
+                    } catch (e) {
+                        console.error("Error saving activity presence:", e);
+                        showMessage(activityPresenceMessage, 'Error saving settings.', 'error');
+                    } finally {
+                        saveActivityPresenceBtn.disabled = false;
+                    }
+                });
+            }
         }
         
         

@@ -23,18 +23,6 @@
         "url": "../logged-in/dailyphoto.html",
         "aliases": ["/logged-in/dailyphoto"]
     },
-    "countdowns": {
-        "name": "Countdowns",
-        "icon": "fa-solid fa-clock", 
-        "url": "../logged-in/countdowns.html",
-        "aliases": ["/logged-in/countdowns"]
-    },
-    "weather": {
-        "name": "Weather",
-        "icon": "fa-solid fa-cloud-sun", 
-        "url": "../logged-in/weather.html",
-        "aliases": ["/logged-in/weather"]
-    },
     "dictionary": {
         "name": "Dictionary",
         "icon": "fa-solid fa-book", 

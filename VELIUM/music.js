@@ -562,15 +562,6 @@ function updateFullscreenTint(imageUrl) {
         fs.style.setProperty('--progress-bg', progressBg);
         fs.style.setProperty('--accent-color', accentColor);
         fs.style.setProperty('--bg-base', `rgb(${r}, ${g}, ${b})`);
-
-        // Apply to Player Bar
-        const playerBar = document.querySelector('.now-playing-bar');
-        if (playerBar) {
-            playerBar.style.borderTopColor = accentColor.replace('1)', '0.2)');
-            const playBtn = document.getElementById('playPauseButton');
-            if (playBtn) playBtn.style.backgroundColor = accentColor;
-            document.getElementById('progressBarFill').style.backgroundColor = accentColor;
-        }
     };
 }
 

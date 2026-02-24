@@ -18,35 +18,26 @@
 
     <style>
         /* --- FONT & BASE STYLING (MATCHING notes.html) --- */
-        :root {
-            --bg-page: #040404;
-            --bg-container: #000000;
-            --border-color: #333;
-            --text-primary: #c0c0c0;
-            --color-indigo: #4f46e5;
-        }
-
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: var(--bg-page);
-            color: var(--text-primary);
-            font-weight: 300;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
+            background-color: #040404; 
+            color: #c0c0c0; 
+            transition: all 0.3s ease;
             font-size: 16px;
+            overflow-x: hidden;
+            font-weight: 300;
         }
 
         h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-widest {
             font-weight: 400 !important;
         }
 
-        /* --- UI COMPONENTS (MATCHING notes.html) --- */
+        /* --- THEME-AWARE STYLES (from navigation.js) --- */
+        
         .btn-toolbar-style {
             background: var(--menu-bg, #0000000);
             border: 1px solid var(--menu-border, #333);
-            border-radius: 14px; /* Updated to 14px */
+            border-radius: 14px;
             color: var(--menu-text, #d1d5db);
             padding: 0.5rem 1rem;
             font-weight: 500;
@@ -54,10 +45,8 @@
             transition: all 0.2s;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
             gap: 0.5rem;
         }
-        
         .btn-toolbar-style:hover {
             background-color: var(--menu-bg, #000000);
             border-color: var(--menu-border, #fff);
@@ -81,7 +70,7 @@
             padding: 1rem 1.5rem; 
             border: 1px solid #1a1a1a; 
             background-color: #0d0d0d; 
-            border-radius: 14px; /* Updated to 14px */
+            border-radius: 14px;
             color: #c0c0c0; 
             transition: all 0.2s;
             font-size: 1.1rem;
@@ -93,20 +82,11 @@
             box-shadow: none;
         }
 
-        /* --- LAYOUT UTILS --- */
+        /* --- Page Content Layout --- */
         #page-content {
-            flex-grow: 1;
+            min-height: calc(100vh - 4rem);
             display: flex;
             flex-direction: column;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            border-bottom: 1px solid #1a1a1a;
-            background-color: var(--bg-page);
         }
 
         #main-wrapper {
@@ -122,28 +102,26 @@
         }
 
         /* Content Box - Matches #note-editor */
-        .dictionary-content-box {
+        #definition-output {
+            flex-grow: 1;
+            min-height: calc(100vh - 15rem);
+            padding: 2rem;
             background-color: #0d0d0d;
             border: 1px solid #1a1a1a;
-            border-radius: 1.25rem; /* Updated to 1.25rem */
-            padding: 2rem;
-            min-height: 50vh;
             color: #c0c0c0;
             line-height: 1.6;
+            border-radius: 1.25rem;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
-        /* --- DICTIONARY SPECIFIC STYLES (REDESIGNED) --- */
-        
         .pronunciation-text {
             font-family: 'Playfair Display', serif;
             font-style: italic;
-            color: #707070; /* Subtle text, not bright */
-            transition: color 0.2s ease;
-            cursor: default; 
+            color: #707070;
             font-size: 1.25rem;
         }
         
-        /* Links inside definitions */
         .highlighted-word {
             text-decoration: underline;
             text-decoration-color: rgba(79, 70, 229, 0.4);
@@ -157,7 +135,6 @@
             text-decoration-color: #4f46e5;
         }
         
-        /* Synonyms list styling */
         .synonym-tag {
             cursor: pointer;
             color: #9ca3af;
@@ -181,26 +158,21 @@
         }
         .audio-icon:hover { opacity: 1; }
         
-        /* CLEANED UP: Part of Speech Label */
         .part-of-speech-label {
             display: block;
             width: 100%;
             padding-bottom: 0.5rem;
             margin-top: 2rem;
             margin-bottom: 1rem;
-            
-            /* No background, simple text header style */
             background-color: transparent;
             color: #4f46e5; 
-            
             font-size: 0.85rem;
             font-weight: 500;
             letter-spacing: 0.1em;
             text-transform: uppercase;
-            border-bottom: 1px solid #1a1a1a; /* Subtle separator line */
+            border-bottom: 1px solid #1a1a1a;
         }
         
-        /* Ordered List numbers */
         ol.definition-list {
             counter-reset: item;
             list-style: none;
@@ -217,9 +189,14 @@
             counter-increment: item;
             position: absolute;
             left: 0;
-            color: #505050; /* Subtle numbering color */
+            color: #505050;
             font-weight: 300;
         }
+
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
     </style>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
 <script>
@@ -229,19 +206,15 @@
 
   gtag('config', 'G-1D4F692C1Q');
 </script>
-    
 </head>
-<body class="min-h-screen">
-    
+<body class="min-h-screen custom-scroll">
     <div id="page-content" class="hidden">
-        
-        <header>
-            <h1 class="text-2xl font-bold text-white">4SP DICTIONARY</h1>
+        <header class="flex justify-between items-center p-4 border-b border-[#1a1a1a] sticky top-0 bg-[#040404] z-[1000]">
+            <h1 class="text-2xl font-bold text-white">4SP Dictionary</h1>
             <div class="flex items-center gap-2"></div>
         </header>
 
         <div id="main-wrapper">
-            
             <div class="relative w-full">
                 <input 
                     type="text"
@@ -251,7 +224,6 @@
                     autocomplete="off"
                 />
                 <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
-                
                 <button 
                     id="search-button" 
                     class="btn-toolbar-style btn-primary-override absolute right-2 top-1/2 transform -translate-y-1/2 h-10 px-4"
@@ -260,45 +232,36 @@
                 </button>
             </div>
 
-            <div id="definition-output" class="dictionary-content-box">
+            <div id="definition-output" class="custom-scroll">
                 <div class="h-full flex flex-col items-center justify-center text-gray-500 space-y-4 pt-12 opacity-50">
                     <i class="fa-solid fa-book-open fa-3x mb-2"></i>
                     <p class="text-lg font-light">Enter a word above to begin.</p>
                 </div>
             </div>
-            
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { firebaseConfig } from "../firebase-config.js"; 
 
-        // --- CONFIGURATION ---
         const DICT_KEY = 'e9433acb-a413-4034-b379-c04f65ba4728';
         const THES_KEY = '14361996-c9fa-4e29-ac53-bb70eb0647e7';
 
-        // --- Firebase Setup ---
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // --- DOM Elements ---
         const pageContent = document.getElementById('page-content');
-        const loadingScreen = document.getElementById('loading-screen');
         const searchInput = document.getElementById('search-input');
         const searchButton = document.getElementById('search-button');
         const definitionOutput = document.getElementById('definition-output');
         
         let currentAudio = null; 
 
-        // --- URL HASH MANAGEMENT ---
         function getWordFromHash() {
             const hash = window.location.hash;
-            if (hash.startsWith('#word=')) {
-                return decodeURIComponent(hash.substring(6)).trim();
-            }
+            if (hash.startsWith('#word=')) return decodeURIComponent(hash.substring(6)).trim();
             return '';
         }
 
@@ -313,276 +276,103 @@
             if (word) {
                 searchInput.value = word;
                 fetchDefinition(word);
-            } else {
-                searchInput.value = '';
             }
         }
 
         window.addEventListener('popstate', checkUrlHashForWord);
 
-
-        // --- DICTIONARY LOGIC (MERRIAM-WEBSTER) ---
-        
         async function fetchDefinition(word) {
             const trimmedWord = word.trim().toLowerCase();
             if (!trimmedWord) return;
-            
             updateUrlHash(trimmedWord);
-
             definitionOutput.innerHTML = `
                 <div class="h-full flex flex-col items-center justify-center pt-12">
                     <i class="fa-solid fa-spinner fa-spin fa-2x text-indigo-500 mb-4"></i>
                     <p class="text-lg font-light text-gray-400">Searching...</p>
                 </div>
             `;
-            searchInput.value = trimmedWord;
-
             try {
                 const [dictResponse, thesResponse] = await Promise.all([
                     fetch(`https://www.dictionaryapi.com/api/v3/references/sd3/json/${encodeURIComponent(trimmedWord)}?key=${DICT_KEY}`),
                     fetch(`https://www.dictionaryapi.com/api/v3/references/ithesaurus/json/${encodeURIComponent(trimmedWord)}?key=${THES_KEY}`)
                 ]);
-
-                if (!dictResponse.ok) throw new Error(`Dictionary API Error: ${dictResponse.status}`);
-                // Thesaurus error shouldn't break the whole thing, but we'll treat it as such for simplicity or handle gracefully.
-                
-                const dictText = await dictResponse.text();
-                let dictEntries;
-                try {
-                    dictEntries = JSON.parse(dictText);
-                } catch (e) {
-                    console.error("Dictionary API returned non-JSON response:", dictText);
-                    throw new Error("Dictionary service error: The API returned an invalid response (likely an invalid API key).");
-                }
-
+                const dictEntries = await dictResponse.json();
                 let thesEntries = [];
-                try {
-                    if (thesResponse.ok) {
-                        thesEntries = await thesResponse.json();
-                    }
-                } catch (e) { console.warn("Thesaurus fetch failed", e); }
-
-                if (!dictEntries || dictEntries.length === 0) {
-                     displayNotFound(trimmedWord);
-                     return;
-                }
-
-                if (typeof dictEntries[0] === 'string') {
-                    displaySuggestions(trimmedWord, dictEntries);
-                    return;
-                }
-
+                if (thesResponse.ok) thesEntries = await thesResponse.json();
+                if (!dictEntries || dictEntries.length === 0) { displayNotFound(trimmedWord); return; }
+                if (typeof dictEntries[0] === 'string') { displaySuggestions(trimmedWord, dictEntries); return; }
                 displayDefinition(trimmedWord, dictEntries, thesEntries);
-
             } catch (error) {
                 console.error("Fetch error:", error);
-                definitionOutput.innerHTML = `
-                    <div class="text-center pt-12">
-                        <p class="text-red-400 mb-2"><i class="fa-solid fa-bug mr-2"></i>An error occurred.</p>
-                        <p class="text-sm text-gray-500">Check console for details.</p>
-                    </div>
-                `;
+                definitionOutput.innerHTML = `<div class="text-center pt-12"><p class="text-red-400 mb-2">An error occurred.</p></div>`;
             }
         }
 
         function displayNotFound(word) {
-            definitionOutput.innerHTML = `
-                 <div class="h-full flex flex-col items-center justify-center pt-12">
-                    <i class="fa-solid fa-circle-exclamation fa-2x text-red-400 mb-4"></i>
-                    <p class="text-lg text-gray-400">No definition found for <strong>"${word}"</strong>.</p>
-                </div>
-            `;
+            definitionOutput.innerHTML = `<div class="h-full flex flex-col items-center justify-center pt-12 opacity-50"><i class="fa-solid fa-circle-exclamation fa-2x mb-4"></i><p class="text-lg">No definition found for "${word}".</p></div>`;
         }
 
         function displaySuggestions(word, suggestions) {
-            const suggestionsHtml = suggestions.slice(0, 10).map(s => 
-                `<span class="highlighted-word text-indigo-400 mx-2 cursor-pointer" data-word="${s}">${s}</span>`
-            ).join(', ');
-
-            definitionOutput.innerHTML = `
-                 <div class="h-full flex flex-col items-center justify-center pt-12 px-8 text-center">
-                    <i class="fa-solid fa-circle-question fa-2x text-yellow-500 mb-4"></i>
-                    <p class="text-lg text-gray-400 mb-4">Word <strong>"${word}"</strong> not found. Did you mean:</p>
-                    <div class="text-lg leading-relaxed">${suggestionsHtml}</div>
-                </div>
-            `;
+            const suggestionsHtml = suggestions.slice(0, 10).map(s => `<span class="highlighted-word text-indigo-400 mx-2" data-word="${s}">${s}</span>`).join(', ');
+            definitionOutput.innerHTML = `<div class="h-full flex flex-col items-center justify-center pt-12 px-8 text-center opacity-50"><i class="fa-solid fa-circle-question fa-2x mb-4"></i><p class="text-lg mb-4">Word not found. Did you mean:</p><div>${suggestionsHtml}</div></div>`;
         }
 
         function highlightDefinitionText(text) {
-             const commonWords = ['the', 'and', 'but', 'not', 'for', 'with', 'from', 'that', 'this', 'have', 'when', 'what', 'which', 'will', 'was', 'are', 'you', 'can', 'one', 'use', 'any', 'all', 'out', 'into', 'upon', 'like', 'than', 'only', 'much', 'a', 'an', 'or', 'of', 'in', 'to', 'is'];
-            
-            // Clean up MW markup for Intermediate Dictionary
-            let cleanText = text
-                .replace(/{bc}/g, ': ')
-                .replace(/{it}/g, '<i>')
-                .replace(/{\/it}/g, '</i>')
-                .replace(/{wi}/g, '<i>') 
-                .replace(/{\/wi}/g, '</i>')
-                .replace(/{sx\|([^|]+)\|([^}]*)}/g, '<span class="highlighted-word" data-word="$1">$1</span>') 
-                .replace(/{[^}]+}/g, ''); 
-
-            return cleanText.replace(/\b([a-zA-Z]{3,})\b/g, (match) => {
-                if (commonWords.includes(match.toLowerCase())) return match;
-                return `<span class="highlighted-word" data-word="${match.toLowerCase()}">${match}</span>`;
-            });
+            const commonWords = ['the', 'and', 'but', 'not', 'for', 'with', 'from', 'that', 'this', 'have', 'when', 'what', 'which', 'will', 'was', 'are', 'you', 'can', 'one', 'use', 'any', 'all', 'out', 'into', 'upon', 'like', 'than', 'only', 'much', 'a', 'an', 'or', 'of', 'in', 'to', 'is'];
+            let cleanText = text.replace(/{bc}/g, ': ').replace(/{it}/g, '<i>').replace(/{\/it}/g, '</i>').replace(/{wi}/g, '<i>').replace(/{\/wi}/g, '</i>').replace(/{sx\|([^|]+)\|([^}]*)}/g, '<span class="highlighted-word" data-word="$1">$1</span>').replace(/{[^}]+}/g, ''); 
+            return cleanText.replace(/\b([a-zA-Z]{3,})\b/g, (match) => commonWords.includes(match.toLowerCase()) ? match : `<span class="highlighted-word" data-word="${match.toLowerCase()}">${match}</span>`);
         }
         
         function getAudioUrl(audioBase) {
             if (!audioBase) return null;
-            let subdir = '';
-            if (audioBase.startsWith('bix')) subdir = 'bix';
-            else if (audioBase.startsWith('gg')) subdir = 'gg';
-            else if (!isNaN(parseInt(audioBase[0])) || !/^[a-zA-Z]/.test(audioBase)) subdir = 'number';
-            else subdir = audioBase[0];
-            
+            let subdir = audioBase.startsWith('bix') ? 'bix' : audioBase.startsWith('gg') ? 'gg' : (!isNaN(parseInt(audioBase[0])) || !/^[a-zA-Z]/.test(audioBase)) ? 'number' : audioBase[0];
             return `https://media.merriam-webster.com/audio/prons/en/us/mp3/${subdir}/${audioBase}.mp3`;
-        }
-
-        function playAudio(url) {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0;
-            }
-            currentAudio = new Audio(url);
-            currentAudio.play();
         }
 
         function displayDefinition(word, dictData, thesData) {
             const primaryEntry = dictData[0];
-            
-            // Headword
             const hw = primaryEntry.hwi ? primaryEntry.hwi.hw.replace(/\*/g, '·') : word;
-            
-            // Pronunciation
             const prs = (primaryEntry.hwi && primaryEntry.hwi.prs && primaryEntry.hwi.prs.length > 0) ? primaryEntry.hwi.prs[0] : null;
             const mwPron = prs ? prs.mw : '';
             const audioUrl = prs && prs.sound ? getAudioUrl(prs.sound.audio) : null;
-            
-            let htmlContent = `
-                <div class="space-y-4 fade-in">
-                    <div class="border-b border-[#1a1a1a] pb-6">
-                        <h2 class="text-4xl text-white capitalize font-normal tracking-wide">${hw}
-                            ${audioUrl ? `<i class="fa-solid fa-volume-high audio-icon" title="Listen" data-audio="${audioUrl}"></i>` : ''}
-                        </h2>
-                        
-                        ${mwPron ? `<p class="mt-2 pronunciation-text">/${mwPron}/</p>` : ''}
-                    </div>
-            `;
-            
-            // --- Definitions Grouped ---
+            let htmlContent = `<div class="space-y-4"><div class="border-b border-[#1a1a1a] pb-6"><h2 class="text-4xl text-white capitalize font-normal tracking-wide">${hw}${audioUrl ? `<i class="fa-solid fa-volume-high audio-icon" title="Listen" data-audio="${audioUrl}"></i>` : ''}</h2>${mwPron ? `<p class="mt-2 pronunciation-text">/${mwPron}/</p>` : ''}</div><div class="mt-2">`;
             const groupedDefinitions = {};
             dictData.slice(0, 5).forEach(entry => {
                 if (typeof entry === 'string') return;
                 const fl = entry.fl ? entry.fl.toLowerCase() : 'definition'; 
-                if (!groupedDefinitions[fl]) {
-                    groupedDefinitions[fl] = [];
-                }
+                if (!groupedDefinitions[fl]) groupedDefinitions[fl] = [];
                 groupedDefinitions[fl].push(entry);
             });
-            
-            htmlContent += `<div class="mt-2">`; 
-            
             for (const fl in groupedDefinitions) {
                 if (groupedDefinitions.hasOwnProperty(fl) && groupedDefinitions[fl][0].shortdef) {
-                    const entries = groupedDefinitions[fl];
-                    
-                    // CLEAN Part of Speech Header (No Box)
-                    htmlContent += `
-                        <div class="part-of-speech-label">${fl}</div>
-                        <ol class="definition-list">
-                    `;
-
-                    entries.forEach(entry => {
-                        entry.shortdef.forEach(def => {
-                            htmlContent += `
-                                <li>
-                                    ${highlightDefinitionText(def)}
-                                </li>
-                            `;
-                        });
-                    });
-                    
+                    htmlContent += `<div class="part-of-speech-label">${fl}</div><ol class="definition-list">`;
+                    groupedDefinitions[fl].forEach(entry => entry.shortdef.forEach(def => { htmlContent += `<li>${highlightDefinitionText(def)}</li>`; }));
                     htmlContent += `</ol>`;
                 }
             }
-            
-            htmlContent += `</div>`; 
-
-            // --- Synonyms ---
+            htmlContent += `</div>`;
             let allSynonyms = [];
             if (thesData && thesData.length > 0 && typeof thesData[0] !== 'string') {
-                thesData.forEach(entry => {
-                    if (entry.meta && entry.meta.syns) {
-                        entry.meta.syns.forEach(group => allSynonyms.push(...group));
-                    }
-                });
+                thesData.forEach(entry => { if (entry.meta && entry.meta.syns) entry.meta.syns.forEach(group => allSynonyms.push(...group)); });
             }
-            if (allSynonyms.length === 0 && primaryEntry.meta && primaryEntry.meta.syns) {
-                 primaryEntry.meta.syns.forEach(group => allSynonyms.push(...group));
-            }
-
             allSynonyms = [...new Set(allSynonyms)];
-
             if (allSynonyms.length > 0) {
-                const synonymTags = allSynonyms.slice(0, 15).map(s => 
-                    `<span class="synonym-tag" data-word="${s}">${s}</span>`
-                ).join('<span class="text-[#333] mx-2">|</span>');
-
-                htmlContent += `
-                    <div class="mt-12 pt-6 border-t border-[#1a1a1a]">
-                        <p class="text-xs text-[#505050] font-medium uppercase mb-3 tracking-widest">Synonyms</p>
-                        <div class="leading-loose text-[#9ca3af]">
-                            ${synonymTags}
-                        </div>
-                    </div>
-                `;
+                const synonymTags = allSynonyms.slice(0, 15).map(s => `<span class="synonym-tag" data-word="${s}">${s}</span>`).join('<span class="text-[#333] mx-2">|</span>');
+                htmlContent += `<div class="mt-12 pt-6 border-t border-[#1a1a1a]"><p class="text-xs text-[#505050] font-medium uppercase mb-3 tracking-widest">Synonyms</p><div class="leading-loose text-[#9ca3af]">${synonymTags}</div></div>`;
             }
-
             htmlContent += `</div>`;
             definitionOutput.innerHTML = htmlContent;
         }
 
-        // --- EVENT LISTENERS ---
-        function handleSearch() {
-            const query = searchInput.value.trim().toLowerCase();
-            if (query) {
-                fetchDefinition(query); 
-            }
-        }
-
-        searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') handleSearch();
-        });
-        
-        searchButton.addEventListener('click', handleSearch);
-
+        searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') fetchDefinition(searchInput.value); });
+        searchButton.addEventListener('click', () => fetchDefinition(searchInput.value));
         definitionOutput.addEventListener('click', (event) => {
-            const target = event.target;
-            if (target.dataset.word) {
-                searchInput.value = target.dataset.word; 
-                fetchDefinition(target.dataset.word);
-            }
-            if (target.classList.contains('audio-icon') && target.dataset.audio) {
-                playAudio(target.dataset.audio);
-            }
+            if (event.target.dataset.word) fetchDefinition(event.target.dataset.word);
+            if (event.target.classList.contains('audio-icon') && event.target.dataset.audio) new Audio(event.target.dataset.audio).play();
         });
-
-        // --- AUTHENTICATION & INITIALIZATION ---
-        async function initializeAuth() {
-            try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    // await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Auth Error:", error);
-            }
-        }
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                if (window.showLoader) window.showLoader("Dictionary");
                 if (window.hideLoader) window.hideLoader();
                 pageContent.classList.remove('hidden');
                 pageContent.style.display = 'flex'; 
@@ -591,9 +381,7 @@
                 window.location.href = '../index.html'; 
             }
         });
-
-        initializeAuth();
-        
     </script>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->
