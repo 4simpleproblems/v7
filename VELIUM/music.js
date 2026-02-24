@@ -107,6 +107,21 @@ const popularArtists = [
 ];
 
 // --- Helpers ---
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `px-6 py-3 rounded-2xl bg-black/80 backdrop-blur-md border border-white/10 text-white text-sm font-medium shadow-2xl animate-in slide-in-from-bottom-4 duration-300`;
+    if (type === 'success') toast.classList.add('border-green-500/50');
+    else if (type === 'error') toast.classList.add('border-red-500/50');
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('animate-out', 'fade-out', 'slide-out-to-bottom-4');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 function getTrackUid(track) {
     if (!track) return null;
     if (track.youtube_id) return `ytm-${track.youtube_id}`;
@@ -139,6 +154,11 @@ async function preloadNextTrack() {
     if (preloadedNextTrack && preloadedNextTrack.index === nextIndex) return;
 
     try {
+        if (nextTrack.youtube_id || nextTrack.videoId) {
+            preloadedNextTrack = { index: nextIndex, source: 'youtube', videoId: nextTrack.youtube_id || nextTrack.videoId };
+            return;
+        }
+
         const directUrl = getDownloadUrl(nextTrack);
         if (directUrl) {
             preloadedNextTrack = { index: nextIndex, source: 'audio', url: directUrl };
@@ -156,6 +176,8 @@ async function preloadNextTrack() {
             const response = await fetch(`${API_BASE_URL}/youtube-search?q=${encodeURIComponent(query)}`);
             const data = await response.json();
             if (data.videoId) {
+                nextTrack.youtube_id = data.videoId;
+                saveLibraryData();
                 preloadedNextTrack = { index: nextIndex, source: 'youtube', videoId: data.videoId };
             }
         }
@@ -662,6 +684,12 @@ function renderFavorites() {
 function createTrackRow(track, index, trackList) {
     const div = document.createElement('div');
     div.className = 'flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 group cursor-pointer border border-transparent hover:border-brand-border transition-all';
+    
+    // Duration handling: API might return duration in ms, playlist might have it in seconds or ms
+    let durationSec = 0;
+    if (track.duration) durationSec = track.duration > 10000 ? track.duration / 1000 : track.duration;
+    else if (track.duration_seconds) durationSec = track.duration_seconds;
+
     div.innerHTML = `
         <div class="w-10 text-center text-gray-500 font-bold group-hover:hidden">${index + 1}</div>
         <div class="w-10 text-center text-accent-indigo hidden group-hover:block"><i class="fas fa-play"></i></div>
@@ -670,10 +698,20 @@ function createTrackRow(track, index, trackList) {
             <div class="text-sm font-bold text-white truncate">${escapeHtml(track.title)}</div>
             <div class="text-xs text-gray-500 truncate">${escapeHtml(track.artist_name)}</div>
         </div>
-        <div class="text-xs text-gray-500 font-mono hidden sm:block">${formatTime(track.duration / 1000)}</div>
-        <button class="text-gray-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"><i class="fas fa-ellipsis-h"></i></button>
+        <div class="text-xs text-gray-500 font-mono hidden sm:block">${formatTime(durationSec)}</div>
+        <button class="ellipsis-btn text-gray-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 p-2"><i class="fas fa-ellipsis-h"></i></button>
     `;
-    div.addEventListener('click', () => { playlist = trackList; originalPlaylist = [...trackList]; playTrack(index); });
+    
+    div.addEventListener('click', (e) => {
+        if (e.target.closest('.ellipsis-btn')) {
+            e.stopPropagation();
+            showAddToPlaylistModal(track);
+            return;
+        }
+        playlist = trackList; 
+        originalPlaylist = [...trackList]; 
+        playTrack(index); 
+    });
     return div;
 }
 
@@ -719,6 +757,13 @@ async function playTrack(index) {
         return;
     }
 
+    // 2. Check currentTrack for cached ID
+    if (currentTrack.youtube_id || currentTrack.videoId) {
+        loadYouTubePlayer(currentTrack.youtube_id || currentTrack.videoId);
+        preloadNextTrack();
+        return;
+    }
+
     const directUrl = getDownloadUrl(currentTrack);
     if (directUrl) { 
         loadAudioPlayer(directUrl); 
@@ -731,6 +776,8 @@ async function playTrack(index) {
         const response = await fetch(`${API_BASE_URL}/youtube-search?q=${encodeURIComponent(query)}`);
         const data = await response.json();
         if (data.videoId) {
+            currentTrack.youtube_id = data.videoId; // Cache it
+            saveLibraryData(); // Persist if it's in a playlist
             loadYouTubePlayer(data.videoId);
             preloadNextTrack();
         }
@@ -1003,6 +1050,67 @@ function hideCreatePlaylistModal() { document.getElementById('createPlaylistModa
 function showEditPlaylistModal(playlistId) { const pl = playlists.find(p => p.id === playlistId); if (!pl) return; document.getElementById('editPlaylistModal').style.display = 'flex'; document.getElementById('editPlaylistId').value = pl.id; document.getElementById('editPlaylistNameInput').value = pl.name; document.getElementById('editPlaylistDescInput').value = pl.description; }
 function hideEditPlaylistModal() { document.getElementById('editPlaylistModal').style.display = 'none'; }
 async function confirmEditPlaylist() { const id = document.getElementById('editPlaylistId').value, name = document.getElementById('editPlaylistNameInput').value.trim(), desc = document.getElementById('editPlaylistDescInput').value.trim(); const pl = playlists.find(p => p.id === id); if (pl && name) { updatePlaylist(id, name, desc, pl.cover_url); hideEditPlaylistModal(); } }
+
+function showAddToPlaylistModal(track) {
+    const modal = document.getElementById('addToPlaylistModal');
+    const list = document.getElementById('playlistSelectionList');
+    if (!modal || !list) return;
+    
+    list.innerHTML = '';
+    if (playlists.length === 0) {
+        list.innerHTML = '<div class="py-4 text-center text-gray-500">No playlists found. Create one first!</div>';
+    } else {
+        playlists.forEach(pl => {
+            const item = document.createElement('div');
+            item.className = 'flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 cursor-pointer border border-transparent hover:border-brand-border transition-all';
+            item.innerHTML = `
+                <div class="w-10 h-10 bg-card-dark rounded-lg flex items-center justify-center flex-shrink-0">
+                    ${pl.cover_url ? `<img src="${getProxyUrl(pl.cover_url)}" class="w-full h-full object-cover rounded-lg">` : `<i class="fas fa-list text-gray-700"></i>`}
+                </div>
+                <div class="flex-1 font-bold text-white truncate">${escapeHtml(pl.name)}</div>
+            `;
+            item.onclick = () => addTrackToPlaylist(track, pl.id);
+            list.appendChild(item);
+        });
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function hideAddToPlaylistModal() {
+    document.getElementById('addToPlaylistModal').style.display = 'none';
+}
+
+async function addTrackToPlaylist(track, playlistId) {
+    const plIndex = playlists.findIndex(p => p.id.toString() === playlistId.toString());
+    if (plIndex > -1) {
+        // Ensure we save duration normalized to seconds if possible
+        let durationSec = 0;
+        if (track.duration) durationSec = track.duration > 10000 ? track.duration / 1000 : track.duration;
+        else if (track.duration_seconds) durationSec = track.duration_seconds;
+        track.duration = durationSec;
+        
+        // Prevent duplicates in same playlist
+        const trackUid = getTrackUid(track);
+        if (playlists[plIndex].tracks.some(t => getTrackUid(t) === trackUid)) {
+            showToast('Already in playlist', 'info');
+            hideAddToPlaylistModal();
+            return;
+        }
+
+        playlists[plIndex].tracks.push(track);
+        await saveLibraryData();
+        renderSidebarPlaylists();
+        renderLibrary();
+        if (document.getElementById('dynamicView').classList.contains('active')) {
+            // Refresh if looking at this playlist
+            const currentViewTitle = document.querySelector('#dynamicView h1')?.textContent;
+            if (currentViewTitle === playlists[plIndex].name) loadPlaylistView(playlistId);
+        }
+        showToast('Added to playlist', 'success');
+    }
+    hideAddToPlaylistModal();
+}
 // --- Cropper Logic ---
 let cropperImage = null;
 let cropState = { x: 0, y: 0, radius: 100 };
