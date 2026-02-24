@@ -223,6 +223,30 @@ function formatTime(seconds) {
     return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+async function saveTrackDuration(track, duration) {
+    if (!track || !duration || duration <= 0) return;
+    const durationSec = duration > 10000 ? duration / 1000 : duration;
+    
+    // Check if we already have a reasonably accurate duration
+    if (track.duration && Math.abs(track.duration - durationSec) < 2) return;
+
+    track.duration = durationSec;
+    const trackUid = getTrackUid(track);
+
+    // Update in favorites
+    const favIndex = favorites.findIndex(f => getTrackUid(f) === trackUid);
+    if (favIndex > -1) favorites[favIndex].duration = durationSec;
+
+    // Update in all playlists
+    playlists.forEach(pl => {
+        pl.tracks.forEach(t => {
+            if (getTrackUid(t) === trackUid) t.duration = durationSec;
+        });
+    });
+
+    await saveLibraryData();
+}
+
 // --- Shuffle Algorithm ---
 function generateShuffledSequence() {
     if (playlist.length === 0) return;
@@ -664,7 +688,7 @@ async function loadOfficialPlaylistDetails(playlistId) {
             <div id="dynamicList" class="space-y-2"></div>
         `;
         const list = document.getElementById('dynamicList');
-        data.tracks.forEach((track, index) => list.appendChild(createTrackRow(track, index, data.tracks)));
+        data.tracks.forEach((track, index) => list.appendChild(createTrackRow(track, index, data.tracks, true)));
         currentDynamicPlaylist = data.tracks;
     } catch (e) { console.error('Failed to load playlist details', e); }
 }
@@ -678,10 +702,10 @@ function renderFavorites() {
         return;
     }
     list.innerHTML = '';
-    favorites.forEach((track, index) => list.appendChild(createTrackRow(track, index, favorites)));
+    favorites.forEach((track, index) => list.appendChild(createTrackRow(track, index, favorites, true)));
 }
 
-function createTrackRow(track, index, trackList) {
+function createTrackRow(track, index, trackList, hideEllipsis = false) {
     const div = document.createElement('div');
     div.className = 'flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 group cursor-pointer border border-transparent hover:border-brand-border transition-all';
     
@@ -699,7 +723,7 @@ function createTrackRow(track, index, trackList) {
             <div class="text-xs text-gray-500 truncate">${escapeHtml(track.artist_name)}</div>
         </div>
         <div class="text-xs text-gray-500 font-mono hidden sm:block">${formatTime(durationSec)}</div>
-        <button class="ellipsis-btn text-gray-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 p-2"><i class="fas fa-ellipsis-h"></i></button>
+        ${!hideEllipsis ? `<button class="ellipsis-btn text-gray-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 p-2"><i class="fas fa-ellipsis-h"></i></button>` : ''}
     `;
     
     div.addEventListener('click', (e) => {
@@ -803,6 +827,7 @@ function loadAudioPlayer(url) {
                 const fsBar = document.getElementById('fsProgressBarFill'); if (fsBar) fsBar.style.width = percent + '%';
                 const fsCurrent = document.getElementById('fsCurrentTime'); if (fsCurrent) fsCurrent.textContent = formatTime(audio.currentTime);
                 const fsDuration = document.getElementById('fsDuration'); if (fsDuration) fsDuration.textContent = formatTime(audio.duration);
+                saveTrackDuration(currentTrack, audio.duration);
             }
         });
     }
@@ -1013,7 +1038,7 @@ async function loadPlaylistView(playlistId) {
     `;
     const list = document.getElementById('dynamicList');
     if (pl.tracks.length === 0) list.innerHTML = '<div class="py-20 text-center text-gray-500">This playlist is empty. Add some songs!</div>';
-    else pl.tracks.forEach((track, index) => list.appendChild(createTrackRow(track, index, pl.tracks)));
+    else pl.tracks.forEach((track, index) => list.appendChild(createTrackRow(track, index, pl.tracks, true)));
     currentDynamicPlaylist = pl.tracks;
 }
 
@@ -1263,6 +1288,7 @@ function startProgressUpdate() {
                 const fsBar = document.getElementById('fsProgressBarFill'); if (fsBar) fsBar.style.width = percent + '%';
                 const fsCurrent = document.getElementById('fsCurrentTime'); if (fsCurrent) fsCurrent.textContent = formatTime(current);
                 const fsDuration = document.getElementById('fsDuration'); if (fsDuration) fsDuration.textContent = formatTime(total);
+                saveTrackDuration(currentTrack, total);
             }
         }
     }, 1000);
