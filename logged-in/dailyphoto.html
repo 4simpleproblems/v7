@@ -91,7 +91,7 @@
             font-size: 0.9rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-            border-radius: 20px;
+            border-radius: 18px; /* 20 - 2 */
             margin: 0 16px;
             font-weight: 300;
         }
@@ -110,7 +110,7 @@
         .photo-card {
             background: #050505;
             border: 1px solid #111;
-            border-radius: 24px;
+            border-radius: 22px; 
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             position: relative;
@@ -129,6 +129,7 @@
             height: 100%;
             object-fit: cover;
             transition: transform 0.5s ease;
+            border-radius: 22px;
         }
 
         .photo-card:hover img {
@@ -137,16 +138,17 @@
 
         .overlay-grad {
             position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%);
+            background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0) 70%);
             display: flex; flex-direction: column; justify-content: flex-end;
-            padding: 1.25rem; opacity: 0; transition: opacity 0.3s;
+            padding: 1.25rem; opacity: 1; transition: opacity 0.3s;
+            pointer-events: none;
+            border-radius: 22px;
         }
-        .photo-card:hover .overlay-grad { opacity: 1; }
 
         .search-box {
             background: #0d0d0d;
             border: 1px solid #333;
-            border-radius: 12px; /* Reduced rounding */
+            border-radius: 12px;
             padding: 8px 16px;
             display: flex;
             align-items: center;
@@ -182,11 +184,15 @@
 
         .slot-item {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 20px; border-radius: 16px;
-            background: rgba(255,255,255,0.02); border: 1px solid transparent;
-            margin: 0 16px 8px 16px; transition: all 0.2s;
+            padding: 12px 16px; border-radius: 18px;
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+            margin: 0 16px 8px 16px; transition: all 0.3s;
         }
-        .slot-item:hover { background: rgba(255,255,255,0.04); border-color: #333; }
+        .slot-item:hover { 
+            background: rgba(255,255,255,0.04); 
+            border-color: #4f46e5;
+            transform: translateX(4px);
+        }
 
         .btn-circle {
             width: 32px; height: 32px; border-radius: 50%;
@@ -206,7 +212,7 @@
             <div class="px-8 mb-10">
                 <div class="flex items-center gap-3">
                     <img src="../images/logo.png" class="w-8 h-8 object-contain">
-                    <span class="text-xl font-bold tracking-tighter text-white">DAILYPHOTO</span>
+                    <span class="text-xl font-bold tracking-tighter text-white uppercase">Dailyphoto</span>
                 </div>
             </div>
 
@@ -217,7 +223,11 @@
                 </div>
                 <div class="nav-item" data-mode="global">
                     <i class="fas fa-globe"></i>
-                    <span>Global Pulse</span>
+                    <span>Global</span>
+                </div>
+                <div class="nav-item" data-mode="me">
+                    <i class="fas fa-user-circle"></i>
+                    <span>My Moments</span>
                 </div>
 
                 <div class="h-px bg-brand-border my-6 mx-8"></div>
@@ -236,7 +246,7 @@
                 <div class="h-px bg-brand-border my-6 mx-8"></div>
 
                 <div class="px-8 mb-4">
-                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Your Moments</span>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Your Slots</span>
                 </div>
                 <div id="slots-container">
                     <!-- Slots -->
@@ -252,6 +262,9 @@
                         <h1 id="feed-title" class="text-4xl font-bold mb-2">Following</h1>
                         <p id="feed-desc" class="text-gray-500">Moments from people you follow.</p>
                     </div>
+                    <button id="main-upload-btn" class="inline-flex items-center justify-center py-3 px-6 bg-indigo-600/10 border border-indigo-500/30 rounded-2xl text-sm font-medium text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all shadow-lg shadow-indigo-900/20">
+                        <i class="fas fa-plus mr-2"></i> Post Moment
+                    </button>
                 </header>
 
                 <div id="photo-feed" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -282,7 +295,7 @@
             </div>
 
             <div class="flex gap-3">
-                <button onclick="closeModal('upload-modal')" class="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:text-white transition-colors">Cancel</button>
+                <button onclick="window.closeModal('upload-modal')" class="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:text-white transition-colors">Cancel</button>
                 <button id="confirm-upload-btn" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-900/20 hover:bg-indigo-700 transition-all">Post Moment</button>
             </div>
         </div>
@@ -293,7 +306,7 @@
         <div class="modal-content">
             <div class="flex-1 bg-black flex items-center justify-center relative overflow-hidden">
                 <img id="modal-img" class="w-full h-full object-contain">
-                <button onclick="closeModal('view-modal')" class="absolute top-6 left-6 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-colors">
+                <button onclick="window.closeModal('view-modal')" class="absolute top-6 left-6 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-colors">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -339,6 +352,7 @@
         let activeSlot = 0;
         let pendingImgData = null;
         let feedMode = 'following';
+        let userDailySlots = [];
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -354,23 +368,24 @@
             setupSearch();
             setupFeed();
             setupNav();
+            setupMainUpload();
         }
 
         function loadSlots() {
             const container = document.getElementById('slots-container');
             onSnapshot(doc(db, 'users', currentUser.uid), snap => {
                 const data = snap.data() || {};
-                const slots = data.dailySlotsUsed || [];
+                userDailySlots = data.dailySlotsUsed || [];
                 container.innerHTML = '';
 
                 for (let i = 0; i < 5; i++) {
-                    const postId = slots[i];
+                    const postId = userDailySlots[i];
                     const div = document.createElement('div');
                     div.className = 'slot-item';
 
                     if (postId && postId !== 'DELETED') {
                         div.innerHTML = `
-                            <span class="text-xs text-gray-500 truncate max-w-[140px]">Active Moment</span>
+                            <span class="text-xs text-gray-400 font-medium">Moment ${i+1}</span>
                             <div class="flex gap-1">
                                 <button onclick="window.viewPost('${postId}')" class="btn-circle" title="View"><i class="fas fa-eye text-[10px]"></i></button>
                                 <button onclick="window.deletePost('${postId}', ${i})" class="btn-circle text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-[10px]"></i></button>
@@ -385,6 +400,20 @@
                     container.appendChild(div);
                 }
             });
+        }
+
+        function setupMainUpload() {
+            document.getElementById('main-upload-btn').onclick = () => {
+                // Find first empty slot
+                let emptyIdx = userDailySlots.findIndex(s => !s || s === 'DELETED');
+                if (emptyIdx === -1 && userDailySlots.length < 5) emptyIdx = userDailySlots.length;
+                
+                if (emptyIdx === -1 || emptyIdx >= 5) {
+                    alert("All your daily slots are full. Delete a moment to share a new one!");
+                    return;
+                }
+                window.openUploadModal(emptyIdx);
+            };
         }
 
         window.openUploadModal = (idx) => {
@@ -428,13 +457,12 @@
                     comments: []
                 });
 
-                let slots = userSnap.data().dailySlotsUsed || [];
+                let slots = [...userDailySlots];
                 while (slots.length <= activeSlot) slots.push(null);
                 slots[activeSlot] = postRef.id;
                 await updateDoc(doc(db, 'users', currentUser.uid), { dailySlotsUsed: slots });
 
                 window.closeModal('upload-modal');
-                // Clear fields
                 document.getElementById('post-title').value = '';
                 document.getElementById('upload-preview').innerHTML = '<i class="fas fa-cloud-upload-alt text-4xl text-gray-800"></i>';
                 pendingImgData = null;
@@ -447,7 +475,7 @@
             if (!confirm("Remove this moment?")) return;
             const userRef = doc(db, 'users', currentUser.uid);
             const userSnap = await getDoc(userRef);
-            const slots = userSnap.data().dailySlotsUsed || [];
+            const slots = [...userSnap.data().dailySlotsUsed];
             slots[idx] = 'DELETED';
             await deleteDoc(doc(db, 'daily_photos', postId));
             await updateDoc(userRef, { dailySlotsUsed: slots });
@@ -502,6 +530,14 @@
                     limit(50)
                 );
                 feedUnsub = onSnapshot(q, renderFeedGrid);
+            } else if (feedMode === 'me') {
+                const q = query(
+                    collection(db, 'daily_photos'),
+                    where('creatorUid', '==', currentUser.uid),
+                    where('status', '==', 'active'),
+                    orderBy('createdAt', 'desc')
+                );
+                feedUnsub = onSnapshot(q, renderFeedGrid);
             } else {
                 getDocs(collection(db, 'users', currentUser.uid, 'following')).then(snap => {
                     const uids = [currentUser.uid, ...snap.docs.map(d => d.id)].slice(0, 10);
@@ -551,8 +587,16 @@
                     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     feedMode = btn.dataset.mode;
-                    document.getElementById('feed-title').textContent = feedMode === 'following' ? 'Following' : 'Global Pulse';
-                    document.getElementById('feed-desc').textContent = feedMode === 'following' ? 'Moments from people you follow.' : 'Discover shared moments from across the network.';
+                    
+                    const titles = { following: 'Following', global: 'Global', me: 'My Moments' };
+                    const descs = { 
+                        following: 'Moments from people you follow.', 
+                        global: 'Discover shared moments from across the network.', 
+                        me: 'Your archive of moments shared today.' 
+                    };
+                    
+                    document.getElementById('feed-title').textContent = titles[feedMode];
+                    document.getElementById('feed-desc').textContent = descs[feedMode];
                     setupFeed();
                 };
             });
