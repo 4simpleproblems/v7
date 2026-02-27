@@ -269,12 +269,15 @@
     </div>
 
     <script type="module">
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, writeBatch, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from "/firebase-config.js";
         import { getAvatarHTML } from "/utils.js";
 
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        if (!getApps().length) initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore();
 
         const avatarPreview = document.getElementById('avatar-preview');
         const displayNameEl = document.getElementById('display-name');
@@ -312,7 +315,7 @@
         let isFollowing = false;
         let currentUsername = "";
 
-        auth.onAuthStateChanged(async (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 firebaseAuthUser = user;
                 
@@ -324,7 +327,8 @@
                 }
 
                 if (requestedUsername) {
-                    const snapUsername = await db.collection("users").where("username", "==", requestedUsername).get();
+                    const q = query(collection(db, "users"), where("username", "==", requestedUsername));
+                    const snapUsername = await getDocs(q);
                     if (!snapUsername.empty) {
                         profileOwnerId = snapUsername.docs[0].id;
                         currentUsername = requestedUsername;
@@ -333,7 +337,7 @@
                     }
                 } else {
                     profileOwnerId = user.uid;
-                    const meSnap = await db.collection("users").doc(user.uid).get();
+                    const meSnap = await getDoc(doc(db, "users", user.uid));
                     if (meSnap.exists() && meSnap.data().username) {
                         window.history.replaceState({}, '', `/logged-in/@${meSnap.data().username}`);
                     }
@@ -349,8 +353,7 @@
                     checkFollowStatus();
                 }
 
-                const userDocRef = db.collection("users").doc(profileOwnerId);
-                const meDocRef = db.collection("users").doc(firebaseAuthUser.uid);
+                const userDocRef = doc(db, "users", profileOwnerId);
                 
                 onSnapshot(userDocRef, (snap) => {
                     if (snap.exists()) {
@@ -415,7 +418,7 @@
             closeEditBtn.onclick = () => closeModal(editModal);
             saveProfileBtn.onclick = async () => {
                 saveProfileBtn.disabled = true;
-                await db.collection('users').doc(firebaseAuthUser.uid).update({
+                await updateDoc(doc(db, 'users', firebaseAuthUser.uid), {
                     displayName: editDisplayName.value.trim(),
                     description: editDescription.value.trim()
                 });
@@ -443,8 +446,8 @@
 
             blockBtn.onclick = async () => {
                 if (confirm("Block this user?")) {
-                    await db.collection('users').doc(firebaseAuthUser.uid).update({
-                        blockedUsers: firebase.firestore.FieldValue.arrayUnion(profileOwnerId)
+                    await updateDoc(doc(db, 'users', firebaseAuthUser.uid), {
+                        blockedUsers: arrayUnion(profileOwnerId)
                     });
                     location.reload();
                 }
@@ -452,50 +455,52 @@
         }
 
         function loadCounts() {
-            db.collection('users').doc(profileOwnerId).collection('followers').onSnapshot(snap => {
+            onSnapshot(collection(db, 'users', profileOwnerId, 'followers'), snap => {
                 followersCountEl.textContent = snap.docs.filter(d => d.id !== '.init').length;
             });
-            db.collection('users').doc(profileOwnerId).collection('following').onSnapshot(snap => {
+            onSnapshot(collection(db, 'users', profileOwnerId, 'following'), snap => {
                 followingCountEl.textContent = snap.docs.filter(d => d.id !== '.init').length;
             });
         }
 
         function checkFollowStatus() {
-            db.collection('users').doc(profileOwnerId).collection('followers').doc(firebaseAuthUser.uid).onSnapshot(snap => {
-                isFollowing = snap.exists;
+            onSnapshot(doc(db, 'users', profileOwnerId, 'followers', firebaseAuthUser.uid), snap => {
+                isFollowing = snap.exists();
                 followBtn.textContent = isFollowing ? 'Following' : 'Follow';
                 followBtn.classList.toggle('primary-cta', !isFollowing);
             });
         }
 
         followBtn.onclick = async () => {
-            const batch = db.batch();
-            const meRef = db.collection('users').doc(firebaseAuthUser.uid);
-            const ownerRef = db.collection('users').doc(profileOwnerId);
-            const myFollowingRef = meRef.collection('following').doc(profileOwnerId);
-            const theirFollowersRef = ownerRef.collection('followers').doc(firebaseAuthUser.uid);
+            const meRef = doc(db, 'users', firebaseAuthUser.uid);
+            const ownerRef = doc(db, 'users', profileOwnerId);
+            const myFollowingRef = doc(db, 'users', firebaseAuthUser.uid, 'following', profileOwnerId);
+            const theirFollowersRef = doc(db, 'users', profileOwnerId, 'followers', firebaseAuthUser.uid);
 
+            const batch = writeBatch(db);
             if (isFollowing) {
                 batch.delete(myFollowingRef);
                 batch.delete(theirFollowersRef);
-                batch.update(meRef, { followingCount: firebase.firestore.FieldValue.increment(-1) });
-                batch.update(ownerRef, { followerCount: firebase.firestore.FieldValue.increment(-1) });
+                batch.update(meRef, { followingCount: increment(-1) });
+                batch.update(ownerRef, { followerCount: increment(-1) });
             } else {
-                batch.set(myFollowingRef, { followedAt: firebase.firestore.FieldValue.serverTimestamp() });
-                batch.set(theirFollowersRef, { followedAt: firebase.firestore.FieldValue.serverTimestamp() });
-                batch.update(meRef, { followingCount: firebase.firestore.FieldValue.increment(1) });
-                batch.update(ownerRef, { followerCount: firebase.firestore.FieldValue.increment(1) });
+                batch.set(myFollowingRef, { followedAt: new Date() });
+                batch.set(theirFollowersRef, { followedAt: new Date() });
+                batch.update(meRef, { followingCount: increment(1) });
+                batch.update(ownerRef, { followerCount: increment(1) });
             }
             await batch.commit();
         };
 
         async function loadDailyPhotos() {
-            const snap = await db.collection('daily_photos')
-                .where('creatorUid', '==', profileOwnerId)
-                .where('status', '==', 'active')
-                .orderBy('createdAt', 'desc')
-                .limit(6)
-                .get();
+            const q = query(
+                collection(db, 'daily_photos'),
+                where('creatorUid', '==', profileOwnerId),
+                where('status', '==', 'active'),
+                limit(6)
+            );
+            
+            const snap = await getDocs(q);
             
             dailyphotoContainer.innerHTML = '';
             if (snap.empty) {
@@ -524,13 +529,13 @@
             followListContainer.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-indigo-500"></i></div>';
             openModal(followListModal);
 
-            const snap = await db.collection('users').doc(profileOwnerId).collection(type).get();
+            const snap = await getDocs(collection(db, 'users', profileOwnerId, type));
             followListContainer.innerHTML = '';
             
-            for (const doc of snap.docs) {
-                if (doc.id === '.init') continue;
-                const uSnap = await db.collection('users').doc(doc.id).get();
-                if (uSnap.exists) {
+            for (const docSnap of snap.docs) {
+                if (docSnap.id === '.init') continue;
+                const uSnap = await getDoc(doc(db, 'users', docSnap.id));
+                if (uSnap.exists()) {
                     const uData = uSnap.data();
                     const item = document.createElement('div');
                     item.className = 'flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition';

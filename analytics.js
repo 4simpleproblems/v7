@@ -144,12 +144,29 @@
             let activity = getCleanTitle(window.location.pathname, document.title);
             
             // Special Game Tracking
-            if (window.location.pathname.includes('/GAMES/')) {
+            const isGamesPage = window.location.pathname.includes('games.html');
+            if (isGamesPage || window.location.pathname.includes('/GAMES/')) {
                 if (userData.disableActivityTracking) {
                     activity = "Games";
                 } else {
-                    const gameName = window.location.pathname.split('/').filter(p => p).pop().replace('.html', '');
-                    activity = `Playing ${gameName.charAt(0).toUpperCase() + gameName.slice(1)}`;
+                    let gameName = "";
+                    if (isGamesPage && window.location.hash) {
+                        // Extract from hash: #Category?id=GameName
+                        const hash = window.location.hash.substring(1);
+                        if (hash.includes('id=')) {
+                            gameName = hash.split('id=')[1].split('&')[0];
+                        } else {
+                            gameName = hash.split('?')[0];
+                        }
+                    } else {
+                        gameName = window.location.pathname.split('/').filter(p => p).pop().replace('.html', '');
+                    }
+                    
+                    if (gameName) {
+                        activity = `Playing ${decodeURIComponent(gameName).replace(/-/g, ' ').charAt(0).toUpperCase() + decodeURIComponent(gameName).replace(/-/g, ' ').slice(1)}`;
+                    } else {
+                        activity = "Games";
+                    }
                 }
             }
 
