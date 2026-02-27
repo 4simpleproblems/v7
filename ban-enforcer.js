@@ -1,21 +1,18 @@
 /**
- * ban-enforcer.js (v6.5 - Ultimate Reliability Fix)
- *
- * This script protects the website by blocking interaction ONLY 
- * when the user's ban status is verified as true.
- *
- * Key Features:
- * 1. Real-time Firestore listener.
- * 2. Instant Fullscreen Exit.
- * 3. Overlay approach (preserves original body content behind opacity).
- * 4. Aggressive Interval Guard to prevent element deletion.
- * 5. Excludes 'messenger-v2.html' from enforcement.
- * 6. Uses !important for robust styling.
- * 7. Enforces max font-weight of 400.
- * 8. FIX: Robust initialization checks for Firebase App existence.
+ * ban-enforcer.js (v6.6 - Modular Firebase Migration)
  */
 
-console.log("BanEnforcer (v6.5): Script loaded. Waiting for Firebase App initialization...");
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+console.log("BanEnforcer (v6.6): Script loaded. Initializing modular Firebase...");
+
+// Initialize Firebase if not already initialized
+if (!getApps().length) initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getFirestore();
 
 // --- Global State ---
 let banGuardInterval = null;
@@ -37,7 +34,6 @@ let currentBanData = null;
         document.head.appendChild(link);
     }
     
-    // Injecting style to limit font weight to 400 (max)
     const style = document.createElement('style');
     style.innerHTML = `
         #ban-enforcer-message *, #ban-enforcer-home-button, #ban-enforcer-policy-btn {
@@ -47,9 +43,6 @@ let currentBanData = null;
     document.head.appendChild(style);
 })();
 
-/**
- * Removes the barrier and unlocks the page.
- */
 function unlockPage() {
     console.log("BanEnforcer: Calling unlockPage(). Removing visuals and interval guard.");
     if (banGuardInterval) {
@@ -65,18 +58,13 @@ function unlockPage() {
     const btn = document.getElementById('ban-enforcer-home-button');
     if (btn) btn.remove();
 
-    // Use !important on removals for maximum effect
     document.documentElement.style.cssText = document.documentElement.style.cssText.replace(/overflow:\s*hidden\s*!important;?/, '');
     document.body.style.cssText = document.body.style.cssText.replace(/overflow:\s*hidden\s*!important;?/, '');
 }
 
-/**
- * Renders the ban screen (Overlay Mode).
- */
 function renderBanVisuals(banData) {
     console.log("BanEnforcer: Calling renderBanVisuals(). Attempting to draw shield and message box.");
     
-    // 1. Force Exit Fullscreen IMMEDIATELY
     if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) {
         if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
         else if (document.webkitExitFullscreen) document.webkitExitFullscreen().catch(() => {});
@@ -89,23 +77,18 @@ function renderBanVisuals(banData) {
         banTimestamp = `on ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`;
     }
 
-    // --- SPACING ADJUSTMENTS ---
-    // Original Spacing: 60px. New Spacing (half): 30px.
     const spacing = '30px'; 
-    // Home Button Size: Original 50x50px. New: 60x60px.
     const homeBtnSize = '60px'; 
 
-    // Optional Link Button (e.g., for TOS)
     let actionButton = '';
     if (banData.link) {
-         // IMPORTANT: The policy button link is now hardcoded to 'legal.html#terms-of-service'
          actionButton = `
             <a id="ban-enforcer-policy-btn" href="../legal.html#terms-of-service" target="_blank" style="
                 display: inline-flex !important;
                 align-items: center !important;
                 gap: 10px !important;
                 padding: 12px 24px !important;
-                background-color: rgba(239, 68, 68, 0.1) !important; /* Reddish Tint */
+                background-color: rgba(239, 68, 68, 0.1) !important;
                 border: 1px solid #d1d5db !important; 
                 color: #d1d5db !important; 
                 text-decoration: none !important;
@@ -122,15 +105,11 @@ function renderBanVisuals(banData) {
          `;
     }
 
-    // --- Create Elements Individually (Overlay) ---
-
-    // 1. Shield
     let shield = document.getElementById('ban-enforcer-shield');
     if (!shield) {
-        console.log("BanEnforcer: Shield element not found, creating and appending.");
         shield = document.createElement('div');
         shield.id = 'ban-enforcer-shield';
-        document.documentElement.appendChild(shield); // Append to HTML to cover everything
+        document.documentElement.appendChild(shield);
     }
     shield.style.cssText = `
         position: fixed !important; top: 0 !important; left: 0 !important; 
@@ -140,10 +119,8 @@ function renderBanVisuals(banData) {
         z-index: 2147483646 !important; cursor: default !important;
     `;
 
-    // 2. Message Box
     let messageBox = document.getElementById('ban-enforcer-message');
     if (!messageBox) {
-        console.log("BanEnforcer: Message Box element not found, creating and appending.");
         messageBox = document.createElement('div');
         messageBox.id = 'ban-enforcer-message';
         document.documentElement.appendChild(messageBox);
@@ -168,10 +145,8 @@ function renderBanVisuals(banData) {
         </p>
     `;
 
-    // 3. Home Button
     let homeButton = document.getElementById('ban-enforcer-home-button');
     if (!homeButton) {
-        console.log("BanEnforcer: Home Button element not found, creating and appending.");
         homeButton = document.createElement('a');
         homeButton.id = 'ban-enforcer-home-button';
         homeButton.href = '../index.html';
@@ -190,180 +165,43 @@ function renderBanVisuals(banData) {
     homeButton.onmouseover = () => { homeButton.style.backgroundColor = '#000 !important'; homeButton.style.borderColor = '#fff !important'; homeButton.style.color = '#fff !important'; };
     homeButton.onmouseout = () => { homeButton.style.backgroundColor = 'transparent !important'; homeButton.style.borderColor = '#333 !important'; homeButton.style.color = '#d1d5db !important'; };
 
-    // 4. Lock Scrolling
     document.documentElement.style.overflow = 'hidden !important';
     document.body.style.overflow = 'hidden !important';
-    
-    // 5. Action Button Hover Listener
-    if (banData.link) {
-        const policyButton = document.getElementById('ban-enforcer-policy-btn');
-        if (policyButton) {
-            policyButton.onmouseover = () => { 
-                policyButton.style.borderColor = '#ef4444 !important'; // Red Border on hover
-                policyButton.style.color = '#ef4444 !important';       // Red Text on hover
-            };
-            policyButton.onmouseout = () => { 
-                policyButton.style.borderColor = '#d1d5db !important'; // Restore Gray Border
-                policyButton.style.color = '#d1d5db !important';       // Restore Gray Text
-            };
-        }
-    }
 }
 
-/**
- * Enforces the ban state.
- */
 function lockPageAsBanned(banData) {
-    console.log(`BanEnforcer: lockPageAsBanned triggered for UID: ${banData.uid}. Ban Reason: ${banData.reason}.`);
+    console.log(`BanEnforcer: lockPageAsBanned triggered for UID: ${banData.uid}.`);
     currentBanData = banData;
-    
     renderBanVisuals(banData);
 
-    // Aggressive Guard Loop
     if (banGuardInterval) clearInterval(banGuardInterval);
     banGuardInterval = setInterval(() => {
         if (currentBanData) {
-            // 1. Fullscreen Check (Silence errors)
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen().catch(() => {});
             }
-
-            // 2. DOM Integrity Check
             const shield = document.getElementById('ban-enforcer-shield');
             const msg = document.getElementById('ban-enforcer-message');
-            if (!shield || !msg) {
-                console.warn("BanEnforcer Guard: Ban elements missing. Re-rendering visuals.");
-                renderBanVisuals(currentBanData);
-            }
+            if (!shield || !msg) renderBanVisuals(currentBanData);
         }
-    }, 200); // Check every 200ms
+    }, 200);
 }
 
 // --- 3. Auth & Firestore Listener ---
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("BanEnforcer: DOMContentLoaded fired. Starting initialization...");
-
-    // --- EXCLUSION CHECK ---
-    const path = window.location.pathname;
-    if (path.includes('messenger-v2.html')) {
-        console.warn("BanEnforcer: Skipped enforcement on exclusion path 'messenger-v2.html'.");
-        return;
-    }
-    console.log(`BanEnforcer: Current path (${path}) is not excluded. Proceeding.`);
-
-
-    /**
-     * Waits for the Firestore library to be available.
-     * @param {function} callback - Function to call with the Firestore instance.
-     */
-    const waitForFirestore = (callback) => {
-        console.log("BanEnforcer: Waiting for Firebase Firestore to be available...");
-        const maxRetries = 100;
-        let attempts = 0;
-        const check = () => {
-            if (typeof firebase !== 'undefined' && typeof firebase.firestore === 'function') {
-                console.log(`BanEnforcer: Firestore available after ${attempts} attempts. Initializing listener.`);
-                callback(firebase.firestore());
-            } else {
-                attempts++;
-                if (attempts < maxRetries) {
-                    setTimeout(check, 50);
+const path = window.location.pathname;
+if (!path.includes('messenger-v2.html')) {
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            onSnapshot(doc(db, 'bans', user.uid), docSnap => {
+                if (docSnap.exists()) {
+                    lockPageAsBanned({ uid: user.uid, ...docSnap.data() });
                 } else {
-                    console.error("BanEnforcer Error: Failed to find firebase.firestore after max retries.");
+                    if (currentBanData) unlockPage();
                 }
-            }
-        };
-        check();
-    };
-
-    /**
-     * Initializes the Firebase Authentication and Firestore listener.
-     */
-    const initListener = () => {
-        // At this point, firebase.apps.length > 0, and firebase.auth is available
-        console.log("BanEnforcer: Initializing firebase.auth().onAuthStateChanged listener...");
-        
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) {
-                console.log(`BanEnforcer Auth: User logged in. UID: ${user.uid}. Starting Firestore check.`);
-                waitForFirestore((dbInstance) => {
-                    // Set up real-time listener
-                    dbInstance.collection('bans').doc(user.uid).onSnapshot(doc => {
-                        if (doc.exists) {
-                            console.log("BanEnforcer Listener: Ban document EXISTS for user. Locking page.");
-                            lockPageAsBanned({ uid: user.uid, ...doc.data() });
-                        } else {
-                            console.log("BanEnforcer Listener: Ban document does NOT exist. Unlocking page.");
-                            if (currentBanData) unlockPage();
-                        }
-                    }, error => {
-                        console.error("BanEnforcer Listener Error: Failed to get ban status from Firestore:", error);
-                    });
-                });
-            } else {
-                console.log("BanEnforcer Auth: User logged out. Ensuring page is unlocked.");
-                unlockPage();
-            }
-        });
-    };
-
-    /**
-     * Waits specifically for firebase.auth to be defined.
-     */
-    const waitForAuth = (callback) => {
-        console.log("BanEnforcer: Waiting for Firebase Auth library to be available...");
-        const maxRetries = 100;
-        let attempts = 0;
-        const check = () => {
-            if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function') {
-                 console.log(`BanEnforcer Auth: Firebase Auth library available after ${attempts} attempts. Proceeding to App check.`);
-                 callback();
-            } else {
-                attempts++;
-                if (attempts < maxRetries) {
-                    setTimeout(check, 50);
-                } else {
-                    console.error("BanEnforcer Error: Failed to find firebase.auth after max retries. Check library loading order.");
-                }
-            }
-        };
-        check();
-    };
-    
-    /**
-     * Waits for a Firebase App to be initialized before running the listener setup.
-     */
-    const waitForFirebaseApp = (callback) => {
-        console.log("BanEnforcer: Waiting for Firebase App (initializeApp) to be called...");
-        const maxRetries = 100;
-        let attempts = 0;
-        const check = () => {
-            // Check if firebase object exists AND if at least one app is initialized
-            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-                 console.log(`BanEnforcer App: Firebase App initialized after ${attempts} attempts. Starting Listener setup.`);
-                 callback();
-            } else {
-                attempts++;
-                if (attempts < maxRetries) {
-                    setTimeout(check, 50);
-                } else {
-                    console.error("BanEnforcer Error: Failed to find initialized Firebase App after max retries. Cannot run auth listener.");
-                }
-            }
-        };
-        check();
-    };
-
-
-    // Initialize
-    const attemptInit = () => {
-        // We start by ensuring the required auth library is loaded.
-        // Then we ensure the app is configured.
-        waitForAuth(() => {
-            waitForFirebaseApp(initListener);
-        });
-    };
-    
-    attemptInit();
-});
+            });
+        } else {
+            unlockPage();
+        }
+    });
+}

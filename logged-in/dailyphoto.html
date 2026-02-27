@@ -325,19 +325,22 @@
     </div>
 
     <script type="module">
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, writeBatch, limit, addDoc, deleteDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from "/firebase-config.js";
         import { getAvatarHTML } from "/utils.js";
 
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        if (!getApps().length) initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore();
 
         let currentUser = null;
         let activeSlot = 0;
         let pendingImgData = null;
         let feedMode = 'following';
 
-        auth.onAuthStateChanged(async (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
                 initUI();
@@ -355,7 +358,7 @@
 
         function loadSlots() {
             const container = document.getElementById('slots-container');
-            db.collection('users').doc(currentUser.uid).onSnapshot(snap => {
+            onSnapshot(doc(db, 'users', currentUser.uid), snap => {
                 const data = snap.data() || {};
                 const slots = data.dailySlotsUsed || [];
                 container.innerHTML = '';
@@ -369,14 +372,14 @@
                         div.innerHTML = `
                             <span class="text-xs text-gray-500 truncate max-w-[140px]">Active Moment</span>
                             <div class="flex gap-1">
-                                <button onclick="viewPost('${postId}')" class="btn-circle" title="View"><i class="fas fa-eye text-[10px]"></i></button>
-                                <button onclick="deletePost('${postId}', ${i})" class="btn-circle text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-[10px]"></i></button>
+                                <button onclick="window.viewPost('${postId}')" class="btn-circle" title="View"><i class="fas fa-eye text-[10px]"></i></button>
+                                <button onclick="window.deletePost('${postId}', ${i})" class="btn-circle text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-[10px]"></i></button>
                             </div>
                         `;
                     } else {
                         div.innerHTML = `
                             <span class="text-xs text-gray-700 italic">Empty Slot</span>
-                            <button onclick="openUploadModal(${i})" class="btn-circle" title="Post"><i class="fas fa-plus text-[10px]"></i></button>
+                            <button onclick="window.openUploadModal(${i})" class="btn-circle" title="Post"><i class="fas fa-plus text-[10px]"></i></button>
                         `;
                     }
                     container.appendChild(div);
@@ -412,11 +415,11 @@
             btn.textContent = 'Sharing...';
 
             try {
-                const userSnap = await db.collection('users').doc(currentUser.uid).get();
-                const postRef = await db.collection('daily_photos').add({
+                const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+                const postRef = await addDoc(collection(db, 'daily_photos'), {
                     creatorUid: currentUser.uid,
                     creatorUsername: userSnap.data().username,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdAt: serverTimestamp(),
                     imageBase64: pendingImgData,
                     title: title || "Daily Moment",
                     isPublic: isPublic,
@@ -428,9 +431,9 @@
                 let slots = userSnap.data().dailySlotsUsed || [];
                 while (slots.length <= activeSlot) slots.push(null);
                 slots[activeSlot] = postRef.id;
-                await db.collection('users').doc(currentUser.uid).update({ dailySlotsUsed: slots });
+                await updateDoc(doc(db, 'users', currentUser.uid), { dailySlotsUsed: slots });
 
-                closeModal('upload-modal');
+                window.closeModal('upload-modal');
                 // Clear fields
                 document.getElementById('post-title').value = '';
                 document.getElementById('upload-preview').innerHTML = '<i class="fas fa-cloud-upload-alt text-4xl text-gray-800"></i>';
@@ -442,11 +445,12 @@
 
         window.deletePost = async (postId, idx) => {
             if (!confirm("Remove this moment?")) return;
-            const userRef = db.collection('users').doc(currentUser.uid);
-            const slots = (await userRef.get()).data().dailySlotsUsed || [];
+            const userRef = doc(db, 'users', currentUser.uid);
+            const userSnap = await getDoc(userRef);
+            const slots = userSnap.data().dailySlotsUsed || [];
             slots[idx] = 'DELETED';
-            await db.collection('daily_photos').doc(postId).delete();
-            await userRef.update({ dailySlotsUsed: slots });
+            await deleteDoc(doc(db, 'daily_photos', postId));
+            await updateDoc(userRef, { dailySlotsUsed: slots });
         };
 
         function setupSearch() {
@@ -456,15 +460,18 @@
                 const term = e.target.value.trim().toLowerCase();
                 if (term.length < 2) return results.innerHTML = '';
                 
-                const snap = await db.collection('users')
-                    .where('username', '>=', term)
-                    .where('username', '<=', term + '\uf8ff')
-                    .limit(5).get();
+                const q = query(
+                    collection(db, "users"),
+                    where('username', '>=', term),
+                    where('username', '<=', term + '\uf8ff'),
+                    limit(5)
+                );
+                const snap = await getDocs(q);
                 
                 results.innerHTML = '';
-                snap.forEach(doc => {
-                    if (doc.id === currentUser.uid) return;
-                    const d = doc.data();
+                snap.forEach(docSnap => {
+                    if (docSnap.id === currentUser.uid) return;
+                    const d = docSnap.data();
                     const div = document.createElement('div');
                     div.className = 'nav-item !mx-0 !px-4 !py-2 hover:!bg-white/5';
                     div.innerHTML = `
@@ -484,20 +491,32 @@
             grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin text-indigo-500/20 text-2xl"></i></div>';
 
             const today = new Date(); today.setHours(0,0,0,0);
-            let q = db.collection('daily_photos').where('status', '==', 'active').where('createdAt', '>=', today);
-
+            
             if (feedMode === 'global') {
-                q = q.where('isPublic', '==', true).orderBy('createdAt', 'desc').limit(50);
-                feedUnsub = q.onSnapshot(renderFeedGrid);
+                const q = query(
+                    collection(db, 'daily_photos'),
+                    where('status', '==', 'active'),
+                    where('createdAt', '>=', today),
+                    where('isPublic', '==', true),
+                    orderBy('createdAt', 'desc'),
+                    limit(50)
+                );
+                feedUnsub = onSnapshot(q, renderFeedGrid);
             } else {
-                db.collection('users').doc(currentUser.uid).collection('following').get().then(snap => {
+                getDocs(collection(db, 'users', currentUser.uid, 'following')).then(snap => {
                     const uids = [currentUser.uid, ...snap.docs.map(d => d.id)].slice(0, 10);
                     if (uids.length === 0) {
                         grid.innerHTML = '<p class="text-gray-700 col-span-full text-center py-20 text-sm">Follow users to see their moments here.</p>';
                         return;
                     }
-                    q = q.where('creatorUid', 'in', uids).orderBy('createdAt', 'desc');
-                    feedUnsub = q.onSnapshot(renderFeedGrid);
+                    const q = query(
+                        collection(db, 'daily_photos'),
+                        where('status', '==', 'active'),
+                        where('createdAt', '>=', today),
+                        where('creatorUid', 'in', uids),
+                        orderBy('createdAt', 'desc')
+                    );
+                    feedUnsub = onSnapshot(q, renderFeedGrid);
                 });
             }
         }
@@ -509,8 +528,8 @@
                 grid.innerHTML = '<p class="text-gray-800 col-span-full text-center py-20 text-sm italic">No moments shared today yet.</p>';
                 return;
             }
-            snap.forEach(doc => {
-                const data = doc.data();
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
                 const div = document.createElement('div');
                 div.className = 'photo-card';
                 div.innerHTML = `
@@ -520,7 +539,7 @@
                         <p class="text-[10px] text-gray-400 truncate">${data.title}</p>
                     </div>
                 `;
-                div.onclick = () => viewPost(doc.id);
+                div.onclick = () => window.viewPost(docSnap.id);
                 grid.appendChild(div);
             });
         }
@@ -540,8 +559,9 @@
         }
 
         window.viewPost = async (postId) => {
-            const snap = await db.collection('daily_photos').doc(postId).get();
-            if (!snap.exists) return;
+            const postRef = doc(db, 'daily_photos', postId);
+            const snap = await getDoc(postRef);
+            if (!snap.exists()) return;
             const data = snap.data();
             
             document.getElementById('modal-img').src = data.imageBase64;
@@ -549,7 +569,7 @@
             document.getElementById('modal-author-name').textContent = `@${data.creatorUsername}`;
             document.getElementById('modal-post-date').textContent = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Just now";
             
-            const authorSnap = await db.collection('users').doc(data.creatorUid).get();
+            const authorSnap = await getDoc(doc(db, 'users', data.creatorUid));
             document.getElementById('modal-author-avatar').innerHTML = getAvatarHTML(authorSnap.data(), "w-full h-full", false, currentUser);
             
             renderComments(data.comments || []);
@@ -560,7 +580,7 @@
                 const text = input.value.trim();
                 if (!text) return;
                 
-                const userSnap = await db.collection('users').doc(currentUser.uid).get();
+                const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
                 const comment = {
                     uid: currentUser.uid,
                     username: userSnap.data().username,
@@ -568,11 +588,11 @@
                     timestamp: new Date()
                 };
                 
-                await db.collection('daily_photos').doc(postId).update({
-                    comments: firebase.firestore.FieldValue.arrayUnion(comment)
+                await updateDoc(postRef, {
+                    comments: arrayUnion(comment)
                 });
                 input.value = '';
-                const updatedSnap = await db.collection('daily_photos').doc(postId).get();
+                const updatedSnap = await getDoc(postRef);
                 renderComments(updatedSnap.data().comments);
             };
         };

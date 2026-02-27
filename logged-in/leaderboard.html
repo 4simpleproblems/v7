@@ -149,20 +149,17 @@
     </div>
 
     <script type="module">
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from '../firebase-config.js';
 
-        const checkFirebase = setInterval(() => {
-            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-                clearInterval(checkFirebase);
-                initLeaderboard();
-            }
-        }, 100);
+        if (!getApps().length) initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore();
 
         async function initLeaderboard() {
-            const db = firebase.firestore();
-            const auth = firebase.auth();
-
-            auth.onAuthStateChanged(async (user) => {
+            onAuthStateChanged(auth, async (user) => {
                 if (!user && !window._LOCAL_MODE) {
                     window.location.replace('../index.html');
                     return;
@@ -174,22 +171,24 @@
         }
 
         async function loadUserRankings(currentUid) {
-            const db = firebase.firestore();
             const rankingsEl = document.getElementById('rankings-list');
             
             // Get current user's following list
             let following = new Set();
             if (currentUid) {
-                const followSnap = await db.collection('users').doc(currentUid).collection('following').get();
-                followSnap.forEach(doc => following.add(doc.id));
+                const followSnap = await getDocs(collection(db, 'users', currentUid, 'following'));
+                followSnap.forEach(docSnap => following.add(docSnap.id));
             }
 
-            const snap = await db.collection('users')
-                .where('leaderboardAccepted', '==', true)
-                .where('leaderboardOptOut', '==', false)
-                .orderBy('totalV6Time', 'desc')
-                .limit(50)
-                .get();
+            const q = query(
+                collection(db, 'users'),
+                where('leaderboardAccepted', '==', true),
+                where('leaderboardOptOut', '==', false),
+                orderBy('totalV6Time', 'desc'),
+                limit(50)
+            );
+            
+            const snap = await getDocs(q);
             
             if (snap.empty) {
                 rankingsEl.innerHTML = '<p class="text-gray-600 italic p-4">No users have joined the leaderboard yet.</p>';
@@ -199,9 +198,9 @@
             rankingsEl.innerHTML = '';
             let i = 1;
             
-            snap.forEach(doc => {
-                const data = doc.data();
-                const uid = doc.id;
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                const uid = docSnap.id;
                 const hours = Math.floor((data.totalV6Time || 0) / 3600);
                 const minutes = Math.floor(((data.totalV6Time || 0) % 3600) / 60);
 
@@ -244,36 +243,29 @@
 
         async function toggleFollow(btn, targetUid, currentUid) {
             if (!currentUid) return;
-            const db = firebase.firestore();
             const isFollowing = btn.classList.contains('following');
 
             try {
-                const batch = db.batch();
-                const myFollowRef = db.collection('users').doc(currentUid).collection('following').doc(targetUid);
-                const theirFollowerRef = db.collection('users').doc(targetUid).collection('followers').doc(currentUid);
+                const batch = writeBatch(db);
+                const meRef = doc(db, 'users', currentUid);
+                const ownerRef = doc(db, 'users', targetUid);
+                const myFollowRef = doc(db, 'users', currentUid, 'following', targetUid);
+                const theirFollowerRef = doc(db, 'users', targetUid, 'followers', currentUid);
 
                 if (isFollowing) {
                     batch.delete(myFollowRef);
                     batch.delete(theirFollowerRef);
-                    
-                    // Increment/Decrement counts
-                    batch.update(db.collection('users').doc(currentUid), { followingCount: firebase.firestore.FieldValue.increment(-1) });
-                    batch.update(db.collection('users').doc(targetUid), { followerCount: firebase.firestore.FieldValue.increment(-1) });
-
-                    await batch.commit();
-                    btn.classList.remove('following');
-                    btn.textContent = 'Follow';
+                    batch.update(meRef, { followingCount: increment(-1) });
+                    batch.update(ownerRef, { followerCount: increment(-1) });
                 } else {
-                    batch.set(myFollowRef, { timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                    batch.set(theirFollowerRef, { timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                    
-                    batch.update(db.collection('users').doc(currentUid), { followingCount: firebase.firestore.FieldValue.increment(1) });
-                    batch.update(db.collection('users').doc(targetUid), { followerCount: firebase.firestore.FieldValue.increment(1) });
-
-                    await batch.commit();
-                    btn.classList.add('following');
-                    btn.textContent = 'Following';
+                    batch.set(myFollowRef, { timestamp: serverTimestamp() });
+                    batch.set(theirFollowerRef, { timestamp: serverTimestamp() });
+                    batch.update(meRef, { followingCount: increment(1) });
+                    batch.update(ownerRef, { followerCount: increment(1) });
                 }
+                await batch.commit();
+                btn.classList.toggle('following');
+                btn.textContent = isFollowing ? 'Follow' : 'Following';
             } catch (e) { console.error("Follow toggle failed", e); }
         }
 
@@ -287,8 +279,8 @@
 
         function renderAvatar(userData, containerId) {
             const container = document.getElementById(containerId);
-            const username = userData.username || 'User';
-            const initial = (userData.username || '?').charAt(0).toUpperCase();
+            if (!container) return;
+            const initial = (userData.username || userData.displayName || '?').charAt(0).toUpperCase();
             const pfpType = userData.pfpType || 'google';
 
             let avatarHtml = '';
@@ -296,7 +288,6 @@
             if (pfpType === 'custom' && userData.customPfp) {
                 avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover">`;
             } else if (pfpType === 'mibi' && userData.mibiConfig) {
-                // Simplified mibi for leaderboard
                 avatarHtml = `<div class="w-full h-full" style="background-color: ${userData.mibiConfig.bgColor || '#3B82F6'};"></div>`;
             } else if (pfpType === 'letter') {
                 const bg = userData.pfpLetterBg || '#333';
@@ -313,24 +304,24 @@
         }
 
         async function loadPageStats() {
-            const db = firebase.firestore();
-            const snap = await db.collection('analytics')
-                .where('version', '==', 'project_niobium')
-                .get();
+            const q = query(
+                collection(db, 'analytics'),
+                where('version', '==', 'project_niobium')
+            );
+            const snap = await getDocs(q);
             
             let pageMap = {};
-            snap.forEach(doc => {
-                const data = doc.data();
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
                 if (data.visitedPages) {
                     data.visitedPages.forEach(p => {
                         const path = p.path || p.url;
                         if (!path || path.includes('srcdoc')) return;
                         const title = p.title || path;
-                        if (!pageMap[path]) pageMap[path] = { title, count: 0, totalDuration: 0, sessions: 0 };
+                        if (!pageMap[path]) pageMap[path] = { title, count: 0 };
                         pageMap[path].count++;
                     });
                 }
-                // Also count session duration per page is harder, let's just do session count for now
             });
 
             const sorted = Object.entries(pageMap).sort((a,b) => b[1].count - a[1].count).slice(0, 6);
@@ -353,6 +344,8 @@
                 listEl.appendChild(item);
             });
         }
+
+        initLeaderboard();
     </script>
 </body>
 </html>

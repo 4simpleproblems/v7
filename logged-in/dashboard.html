@@ -224,7 +224,7 @@
         <!-- WELCOME SECTION -->
         <div id="welcome-section" class="dashboard-card no-hover">
             <div id="clock-date" class="date-display">--------</div>
-            <div id="clock-time" class="time-display">00:00</div>
+            <div id="clock-time" class="time-display">00:00:00</div>
             <h2 class="welcome-msg">Good day, <span id="user-name-display" class="text-indigo-500">User</span>.</h2>
         </div>
 
@@ -302,7 +302,14 @@
     </div>
 
     <script type="module">
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from '../firebase-config.js';
+
+        if (!getApps().length) initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore();
 
         const V6_PAGES = {
             'dashboard.html': 'Dashboard',
@@ -322,13 +329,6 @@
             'profile.html': 'Profile'
         };
 
-        const getCleanTitle = (path, originalTitle) => {
-            const fileName = path.split('/').pop().split('?')[0];
-            if (V6_PAGES[fileName]) return V6_PAGES[fileName];
-            if (originalTitle && !originalTitle.includes('VERSION 5 CLIENT')) return originalTitle;
-            return fileName.replace('.html', '').charAt(0).toUpperCase() + fileName.replace('.html', '').slice(1);
-        };
-
         const parseUA = (ua) => {
             if (!ua) return { browser: 'Browser', os: 'Operating System' };
             let browser = 'Other', os = 'Other';
@@ -342,17 +342,7 @@
             return { browser, os };
         };
 
-        const checkFirebase = setInterval(() => {
-            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-                clearInterval(checkFirebase);
-                initDashboard();
-            }
-        }, 100);
-
         async function initDashboard() {
-            const db = firebase.firestore();
-            const auth = firebase.auth();
-
             // Load page identification config
             let pageConfig = {};
             try {
@@ -362,22 +352,23 @@
                 console.error("Failed to load page identification config", e);
             }
 
-            auth.onAuthStateChanged(async (user) => {
+            onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    const userDoc = await db.collection('users').doc(user.uid).get();
-                    if (userDoc.exists) {
-                        const data = userDoc.data();
+                    const userDocRef = doc(db, 'users', user.uid);
+                    const userSnap = await getDoc(userDocRef);
+                    
+                    if (userSnap.exists()) {
+                        const data = userSnap.data();
                         document.getElementById('user-name-display').textContent = data.displayName || data.username || "User";
                         
                         // Leaderboard handling
                         if (data.leaderboardAccepted) {
                             document.getElementById('leaderboard-widget').classList.remove('greyed-out');
                             document.getElementById('leaderboard-overlay').style.display = 'none';
-                            // Fetch rank (placeholder logic for now)
                             fetchUserRank(user.uid);
                         } else {
                             document.getElementById('accept-leaderboard-btn').onclick = async () => {
-                                await db.collection('users').doc(user.uid).update({
+                                await updateDoc(userDocRef, {
                                     leaderboardAccepted: true,
                                     leaderboardOptOut: false
                                 });
@@ -395,22 +386,24 @@
         }
 
         async function fetchUserRank(uid) {
-            const db = firebase.firestore();
-            const snap = await db.collection('users')
-                .where('leaderboardAccepted', '==', true)
-                .where('leaderboardOptOut', '==', false)
-                .orderBy('totalV6Time', 'desc')
-                .limit(100)
-                .get();
+            const q = query(
+                collection(db, 'users'),
+                where('leaderboardAccepted', '==', true),
+                where('leaderboardOptOut', '==', false),
+                orderBy('totalV6Time', 'desc'),
+                limit(100)
+            );
+            
+            const snap = await getDocs(q);
             
             let rank = '--';
             let i = 1;
             let champion = null;
 
-            snap.forEach(doc => {
-                const data = doc.data();
-                if (i === 1) champion = { id: doc.id, ...data };
-                if (doc.id === uid) rank = `#${i}`;
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                if (i === 1) champion = { id: docSnap.id, ...data };
+                if (docSnap.id === uid) rank = `#${i}`;
                 i++;
             });
 
@@ -428,8 +421,7 @@
         function renderAvatar(userData, containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
-            const username = userData.username || 'User';
-            const initial = (userData.username || '?').charAt(0).toUpperCase();
+            const initial = (userData.username || userData.displayName || '?').charAt(0).toUpperCase();
             const pfpType = userData.pfpType || 'google';
 
             let avatarHtml = '';
@@ -453,17 +445,18 @@
         }
 
         async function loadAnalytics(uid, pageConfig = {}, userData = {}) {
-            const db = firebase.firestore();
-            const snap = await db.collection('analytics')
-                .where('userId', '==', uid)
-                .where('version', '==', 'project_niobium')
-                .get();
+            const q = query(
+                collection(db, 'analytics'),
+                where('userId', '==', uid),
+                where('version', '==', 'project_niobium')
+            );
+            
+            const snap = await getDocs(q);
             
             let totalPageViews = 0;
             let pageMap = {}; 
             let latestUA = "";
 
-            // Create a helper to find config by path
             const findConfigByPath = (path) => {
                 const clean = (p) => p.toLowerCase().replace(/^(..\/|logged-in\/)/, '').replace('.html', '');
                 const target = clean(path);
@@ -480,8 +473,8 @@
                 return null;
             };
 
-            snap.forEach(doc => {
-                const data = doc.data();
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
                 totalPageViews += (data.pageCount || 0);
                 if (data.userAgent) latestUA = data.userAgent;
 
@@ -490,7 +483,6 @@
                         const path = p.path || p.url;
                         if (!path || path.includes('srcdoc')) return;
                         
-                        // Check if page exists in config
                         const config = findConfigByPath(path);
                         if (!config) return;
 
@@ -510,7 +502,6 @@
             document.getElementById('stat-os').textContent = uaInfo.os;
             document.getElementById('stat-device').textContent = window._LOCAL_MODE ? 'Version 5 Client' : 'Cloud Access';
 
-            // Use the "CORRECT" time from user doc
             const displayTime = (timeInSecs) => {
                 const hours = Math.floor(timeInSecs / 3600);
                 const minutes = Math.floor((timeInSecs % 3600) / 60);
@@ -520,17 +511,13 @@
             displayTime(userData.totalV6Time || 0);
             document.getElementById('stat-pageviews').textContent = totalPageViews;
 
-            // Listen for real-time updates to time
-            db.collection('users').doc(uid).onSnapshot(doc => {
-                if (doc.exists) displayTime(doc.data().totalV6Time || 0);
+            onSnapshot(doc(db, 'users', uid), docSnap => {
+                if (docSnap.exists()) displayTime(docSnap.data().totalV6Time || 0);
             });
 
             const listEl = document.getElementById('recent-pages-list');
             listEl.innerHTML = '';
             
-            const currentOrigin = window.location.origin;
-
-            // Only show top 6
             sortedPages.slice(0, 6).forEach(([path, data]) => {
                 const item = document.createElement('div');
                 item.className = 'page-btn';
@@ -569,68 +556,7 @@
             setInterval(update, 1000);
         }
 
-        // --- JSONP HELPER FOR ip-api.com ---
-        window.handleIpApiResponse = function(response) {
-            if (response.status === "success") {
-                const lat = response.lat;
-                const lon = response.lon;
-                document.getElementById('w-location').textContent = response.city || 'Local Node';
-                fetchWeatherData(lat, lon);
-            } else {
-                console.error("IP API Error", response);
-                fallbackLocation();
-            }
-        };
-
-        async function loadWeather() {
-            const loader = document.getElementById('weather-loader');
-            loader.classList.add('loading');
-            
-            // ip-api.com via JSONP script injection
-            const script = document.createElement('script');
-            script.src = 'https://extreme-ip-lookup.com/json/?callback=handleIpApiResponse'; // Using another reliable one
-            // Wait, extreme-ip needs keys. Let's stick to ip-api but handle protocol.
-            // Since it's HTTP, we can't use it on Vercel. 
-            // Let's use ipapi.co with a fallback.
-            try {
-                const res = await fetch('https://ipapi.co/json/');
-                const data = await res.json();
-                handleIpApiResponse({ status: 'success', lat: data.latitude, lon: data.longitude, city: data.city });
-            } catch (e) {
-                fallbackLocation();
-            }
-        }
-
-        function fallbackLocation() {
-            // Default to NYC or something stable
-            fetchWeatherData(40.7128, -74.0060);
-            document.getElementById('w-location').textContent = 'Global Relay';
-        }
-
-        async function fetchWeatherData(lat, lon) {
-            try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto`;
-                const res = await fetch(url);
-                const data = await res.json();
-
-                document.getElementById('w-temp').textContent = `${Math.round(data.current.temperature_2m)}°`;
-                document.getElementById('w-high').textContent = `${Math.round(data.daily.temperature_2m_max[0])}°`;
-                document.getElementById('w-low').textContent = `${Math.round(data.daily.temperature_2m_min[0])}°`;
-                
-                const code = data.current.weather_code;
-                let icon = 'fa-cloud';
-                let desc = 'Cloudy';
-                if (code === 0) { icon = 'fa-sun'; desc = 'Clear Sky'; }
-                else if (code < 3) { icon = 'fa-cloud-sun'; desc = 'Partly Cloudy'; }
-                else if (code < 50) { icon = 'fa-cloud'; desc = 'Overcast'; }
-                else if (code < 70) { icon = 'fa-cloud-rain'; desc = 'Rain'; }
-                else if (code < 80) { icon = 'fa-snowflake'; desc = 'Snow'; }
-                
-                document.getElementById('w-icon').innerHTML = `<i class="fa-solid ${icon}"></i>`;
-                document.getElementById('w-desc').textContent = desc;
-            } catch(e) { console.error("Final weather fetch fail", e); }
-            document.getElementById('weather-loader').classList.remove('loading');
-        }
+        initDashboard();
     </script>
 </body>
 </html>
