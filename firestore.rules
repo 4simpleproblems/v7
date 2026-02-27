@@ -160,7 +160,8 @@ service cloud.firestore {
     // IX. Analytics Collection (`analytics`)
     // ----------------------------------------------------------------------------------
     match /analytics/{sessionId} {
-      allow read, write: if isAdminOrSuperAdmin();
+      allow read: if isAdminOrSuperAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if isAdminOrSuperAdmin();
 
       allow create, update: if (request.auth == null && request.resource.data.userId == 'anonymous') ||
                                (isAuthenticated() && request.resource.data.userId == request.auth.uid);
