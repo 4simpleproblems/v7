@@ -319,11 +319,13 @@
             if (user) {
                 firebaseAuthUser = user;
                 
-                // Extract username from URL path: /logged-in/@username
-                let path = window.location.pathname;
+                // Extract username from URL path: /logged-in/@username or query param path
+                const urlParams = new URLSearchParams(window.location.search);
+                let path = urlParams.get('path') || window.location.pathname;
                 let requestedUsername = null;
+                
                 if (path.includes('/@')) {
-                    requestedUsername = path.split('/@')[1];
+                    requestedUsername = path.split('/@')[1].split('?')[0].split('/')[0];
                 }
 
                 if (requestedUsername) {
@@ -332,6 +334,10 @@
                     if (!snapUsername.empty) {
                         profileOwnerId = snapUsername.docs[0].id;
                         currentUsername = requestedUsername;
+                        // Clean up URL if we came from a redirect
+                        if (urlParams.get('path')) {
+                            window.history.replaceState({}, '', `/logged-in/@${requestedUsername}`);
+                        }
                     } else {
                         profileOwnerId = user.uid;
                     }
