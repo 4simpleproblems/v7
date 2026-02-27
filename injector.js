@@ -12,27 +12,31 @@
     // 1. DEFINE YOUR SCRIPTS HERE
     // Update this array (and ONLY this array) to manage your application's scripts.
     const scriptsToLoad = [
-      '/ban-enforcer.js',
-      '/tab-disguiser.js',
-      '/panic-key.js',
-      '/analytics.js',
-      '/navigation.js',
-      '/admin_keybinds.js'
+      { url: '/ban-enforcer.js', type: 'module' },
+      { url: '/tab-disguiser.js' },
+      { url: '/panic-key.js' },
+      { url: '/analytics.js' },
+      { url: '/navigation.js' },
+      { url: '/admin_keybinds.js' }
     ];
 
     // 2. CORE DYNAMIC LOADING FUNCTION
     /**
      * Creates a Promise to load a script element, resolving when loaded.
      */
-    function loadScript(url) {
+    function loadScript(config) {
+        const url = typeof config === 'string' ? config : config.url;
+        const type = config.type || 'text/javascript';
+
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             script.src = url;
+            script.type = type;
             script.async = true; // Prevents blocking the rest of the page render
 
             // Set up event listeners
             script.onload = () => {
-                console.log(`Script loaded: ${url}`);
+                console.log(`Script loaded: ${url} (${type})`);
                 resolve(url);
             };
             script.onerror = () => {

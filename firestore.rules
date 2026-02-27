@@ -34,7 +34,7 @@ service cloud.firestore {
     // ----------------------------------------------------------------------------------
     match /users/{userId} {
       allow read: if true; 
-      allow list: if isAdminOrSuperAdmin(); 
+      allow list: if isAuthenticated(); 
       
       // UPDATED: Admins can now create users (for Mass Add), or users can create their own.
       allow create: if isAdminOrSuperAdmin() || (
