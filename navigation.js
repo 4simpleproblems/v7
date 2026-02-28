@@ -864,6 +864,86 @@ let db;
             #notification-button:hover { background-color: var(--pin-btn-hover-bg, #374151); z-index: 50; }
             #notification-button i { color: var(--pin-btn-icon-color, #d1d5db); transition: color 0.3s ease; }
 
+            /* Notification Menu */
+            #notification-menu-container {
+                position: absolute;
+                left: 0;
+                top: 55px;
+                width: 18rem;
+                background: var(--menu-bg, #000);
+                border: 1px solid var(--menu-border, #333);
+                border-radius: 26px;
+                padding: 1rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+                transition: transform 0.2s ease-out, opacity 0.2s ease-out, background-color 0.3s ease, border-color 0.3s ease;
+                transform-origin: top left;
+                z-index: 10000;
+            }
+            #notification-menu-container.closed { opacity: 0; pointer-events: none; transform: translateY(-10px) scale(0.95); display: none !important; }
+            #notification-menu-container.open { display: flex !important; animation: menu-pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+            #notification-menu-container.closing { display: flex !important; animation: menu-pop-out 0.3s ease-in forwards; pointer-events: none; }
+
+            .notification-menu-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                border-bottom: 1px solid var(--menu-divider, #333);
+                padding-bottom: 0.5rem;
+                margin-bottom: 0.25rem;
+            }
+            .notification-menu-title {
+                font-size: 0.9rem;
+                font-weight: 700;
+                color: var(--menu-username-text, #fff);
+            }
+            .notification-menu-clear {
+                font-size: 0.75rem;
+                color: var(--tab-active-text, #4f46e5);
+                cursor: pointer;
+                font-weight: 600;
+                background: none;
+                border: none;
+                padding: 0;
+            }
+            .notification-menu-clear:hover { text-decoration: underline; }
+
+            .notification-list {
+                max-height: 250px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                scrollbar-width: thin;
+                scrollbar-color: var(--menu-divider, #333) transparent;
+            }
+            .notification-list::-webkit-scrollbar { width: 4px; }
+            .notification-list::-webkit-scrollbar-thumb { background: var(--menu-divider, #333); border-radius: 10px; }
+
+            .notification-item {
+                padding: 0.75rem;
+                background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
+                border-radius: 16px;
+                border: 1px solid transparent;
+                transition: all 0.2s;
+                font-size: 0.8rem;
+                color: var(--menu-text, #d1d5db);
+                display: flex;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+            .notification-item:hover { border-color: var(--menu-divider, #444); background: var(--tab-active-bg, rgba(79, 70, 229, 0.1)); }
+            .notification-item i { margin-top: 2px; color: var(--tab-active-text, #4f46e5); flex-shrink: 0; }
+            .notification-empty {
+                text-align: center;
+                padding: 1.5rem 0.5rem;
+                color: var(--menu-email-text, #9ca3af);
+                font-size: 0.8rem;
+                font-style: italic;
+            }
+
             #nav-left-controls {
                 display: flex;
                 align-items: center;
@@ -1186,9 +1266,19 @@ let db;
         const getNotificationButtonHtml = () => {
             return `
                 <div id="notification-area-wrapper" class="relative flex-shrink-0 flex items-center">
-                    <button id="notification-button" class="w-10 h-10 border flex items-center justify-center hover:bg-gray-700 transition" title="Notifications" style="border-radius: 14px;">
+                    <button id="notification-button" class="w-10 h-10 border flex items-center justify-center hover:bg-gray-700 transition" title="Show Notifications" style="border-radius: 14px;">
                         <i class="fa-solid fa-bell text-gray-300"></i>
                     </button>
+                    <div id="notification-menu-container" class="notification-menu-container closed">
+                        <div class="notification-menu-header">
+                            <span class="notification-menu-title">Notifications</span>
+                            <button class="notification-menu-clear" id="clear-notifications">Clear All</button>
+                        </div>
+                        <div class="notification-list" id="notification-list-content">
+                            <!-- Notifications will be injected here -->
+                            <div class="notification-empty">No notifications yet</div>
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -1314,8 +1404,8 @@ let db;
             };
 
             return `
-                ${pinButtonHtml}
                 ${user ? loggedInView(user, userData) : loggedOutView}
+                ${pinButtonHtml}
             `;
         }
 
@@ -1326,10 +1416,48 @@ let db;
             const profileToggle = document.getElementById('profile-toggle');
             const profileMenu = document.getElementById('profile-menu-container');
             const notifButton = document.getElementById('notification-button');
+            const notifMenu = document.getElementById('notification-menu-container');
+            const clearNotifsBtn = document.getElementById('clear-notifications');
 
-            if (notifButton) {
-                notifButton.addEventListener('click', () => {
-                    window.showNotification("Notifications Clear! ❤️");
+            if (notifButton && notifMenu) {
+                notifButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+
+                    // Close other menus
+                    const otherMenus = ['auth-menu-container', 'profile-menu-container', 'pin-context-menu'];
+                    otherMenus.forEach(id => {
+                        const m = document.getElementById(id);
+                        if (m && m.classList.contains('open')) {
+                            m.classList.remove('open');
+                            m.classList.add('closing');
+                            m.addEventListener('animationend', () => {
+                                m.classList.remove('closing');
+                                m.classList.add('closed');
+                            }, { once: true });
+                        }
+                    });
+
+                    if (notifMenu.classList.contains('open')) {
+                        notifMenu.classList.remove('open');
+                        notifMenu.classList.add('closing');
+                        notifMenu.addEventListener('animationend', () => {
+                            notifMenu.classList.remove('closing');
+                            notifMenu.classList.add('closed');
+                        }, { once: true });
+                    } else {
+                        notifMenu.classList.remove('closed');
+                        notifMenu.classList.remove('closing');
+                        notifMenu.classList.add('open');
+                        updateNotificationMenu();
+                    }
+                });
+            }
+
+            if (clearNotifsBtn) {
+                clearNotifsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    notificationHistory.length = 0;
+                    updateNotificationMenu();
                 });
             }
 
@@ -1802,6 +1930,19 @@ let db;
                             }, { once: true });
                         }
                     }
+
+                    const notifMenu = document.getElementById('notification-menu-container');
+                    const notifButton = document.getElementById('notification-button');
+                    if (notifMenu && notifMenu.classList.contains('open')) {
+                        if (!notifMenu.contains(e.target) && (notifButton && !notifButton.contains(e.target))) {
+                            notifMenu.classList.remove('open');
+                            notifMenu.classList.add('closing');
+                            notifMenu.addEventListener('animationend', () => {
+                                notifMenu.classList.remove('closing');
+                                notifMenu.classList.add('closed');
+                            }, { once: true });
+                        }
+                    }
                     
                     const pinButton = document.getElementById('pin-button');
                     const pinContextMenu = document.getElementById('pin-context-menu');
@@ -1993,9 +2134,20 @@ let db;
     };
 
     const activeNotifs = new Map(); // message -> { element, count, timeout }
+    const notificationHistory = [];
 
     window.showNotification = function(message) {
         if (!message) return;
+        
+        // Add to history
+        notificationHistory.unshift({
+            message: message,
+            timestamp: new Date(),
+            id: Date.now()
+        });
+        if (notificationHistory.length > 20) notificationHistory.pop();
+        updateNotificationMenu();
+
         const container = document.getElementById('viro-notif-container');
         if (!container) return;
 
@@ -2045,6 +2197,34 @@ let db;
         const timeout = setTimeout(() => removeNotif(message), 3000);
         activeNotifs.set(message, { element: notif, count: 1, timeout });
     };
+
+    function updateNotificationMenu() {
+        const listContent = document.getElementById('notification-list-content');
+        if (!listContent) return;
+
+        if (notificationHistory.length === 0) {
+            listContent.innerHTML = '<div class="notification-empty">No notifications yet</div>';
+            return;
+        }
+
+        listContent.innerHTML = notificationHistory.map(n => `
+            <div class="notification-item">
+                <i class="fa-solid fa-bell"></i>
+                <div class="flex-1">
+                    <div>${n.message}</div>
+                    <div class="text-[10px] opacity-50 mt-1">${formatNotifTime(n.timestamp)}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function formatNotifTime(date) {
+        const now = new Date();
+        const diff = Math.floor((now - date) / 1000);
+        if (diff < 60) return 'Just now';
+        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
 
     function removeNotif(message) {
         const data = activeNotifs.get(message);
