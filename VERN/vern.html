@@ -40,16 +40,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* --- VELIUM STYLE SYNC --- */
+        /* --- 4SP THEME SYNC --- */
         :root {
-            --bg-color: #000000;
-            --toolbar-bg: #000000;
-            --item-bg: #0d0d0d;
-            --item-border: #1a1a1a;
-            --item-hover-bg: #111111;
-            --accent: #4f46e5;
-            --text-main: #ffffff;
-            --text-muted: #666;
+            --bg-color: var(--bg-primary, #000000);
+            --toolbar-bg: var(--bg-primary, #000000);
+            --item-bg: var(--bg-secondary, #0d0d0d);
+            --item-border: var(--border-primary, #1a1a1a);
+            --item-hover-bg: var(--border-faint, rgba(255,255,255,0.05));
+            --accent: var(--accent-primary, #4f46e5);
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #666);
             --radius: 18px; /* 20 - 2 */
             --control-size: 42px;
         }
@@ -101,9 +101,9 @@
         }
 
         .control-btn.active, .tab.active {
-            color: #4f46e5;
-            background: rgba(79, 70, 229, 0.08);
-            border: 1px solid rgba(79, 70, 229, 0.15);
+            color: var(--accent);
+            background: var(--btn-bg, rgba(79, 70, 229, 0.08));
+            border: 1px solid var(--accent-glow, rgba(79, 70, 229, 0.15));
         }
 
         /* Tab Specifics */
@@ -120,8 +120,8 @@
         
         /* URL Bar */
         #urlbar {
-            background-color: #0d0d0d;
-            border: 1px solid #333;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
             color: var(--text-main);
             height: var(--control-size);
             border-radius: 498px; /* 500 - 2 */
@@ -133,8 +133,8 @@
         }
         #urlbar:focus {
             border-color: var(--accent);
-            background: #111;
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+            background: var(--bg-secondary);
+            box-shadow: 0 0 0 4px var(--btn-bg);
         }
 
         /* Iframe */
@@ -223,6 +223,8 @@
         .notification-icon.info { color: #60a5fa; }
         .notification-icon.warning { color: #fbbf24; }
 
+        /* --- LOGO TINTING LOGIC (Mirrors navigation.js) --- */
+        .navbar-logo { transition: filter 0.3s ease, transform 0.3s ease; height: 32px; width: auto; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -245,6 +247,9 @@
 
     <!-- Main Toolbar -->
     <header class="flex items-center p-3 gap-3 shrink-0 relative z-20">
+        <div class="flex items-center gap-3 mr-2">
+            <img src="/images/logo.png" class="navbar-logo" id="navbar-logo">
+        </div>
         <div class="flex items-center gap-2">
             <button onclick="b()" class="control-btn" title="Back"><i class="fas fa-chevron-left"></i></button>
             <button onclick="f()" class="control-btn" title="Forward"><i class="fas fa-chevron-right"></i></button>

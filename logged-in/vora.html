@@ -281,6 +281,9 @@
         .notification-icon.success { color: #4ade80; }
         .notification-icon.info { color: #60a5fa; }
         .notification-icon.warning { color: #fbbf24; }
+
+        /* --- LOGO TINTING LOGIC (Mirrors navigation.js) --- */
+        .navbar-logo { transition: filter 0.3s ease, transform 0.3s ease; }
     </style>
     
     <script>
@@ -300,7 +303,7 @@
         <aside class="sidebar">
             <div class="px-8 mb-10">
                 <div class="flex items-center gap-3">
-                    <img src="../images/logo.png" class="w-10 h-10 object-contain">
+                    <img src="../images/logo.png" class="w-10 h-10 object-contain navbar-logo" id="navbar-logo">
                     <span class="text-xl font-bold tracking-tighter text-[var(--text-main)]">VORA</span>
                 </div>
             </div>
