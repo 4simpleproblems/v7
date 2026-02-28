@@ -139,9 +139,8 @@ window.applyTheme = (theme) => {
             .primary-cta { color: #ffffff !important; }
 
             /* Preserving vibrant red for settings delete section */
-            #deletionSection p, #deletionSection label, #deletionSection .text-red-300 { color: #fca5a5 !important; }
-            #deletionSection .bg-red-900\\/10 { background-color: rgba(127, 29, 29, 0.4) !important; }
-            #deletionSection .border-red-700\\/50 { border-color: rgba(185, 28, 28, 0.5) !important; }
+            #deletionSection p, #deletionSection label, #deletionSection .text-red-300 { color: #fee2e2 !important; }
+            div#deletionSection { background-color: rgba(153, 27, 27, 0.9) !important; border-color: #ef4444 !important; }
 
             /* Invert X and Github logos to be black in light themes */
             .fa-x-twitter, .fa-github { color: #000000 !important; }
@@ -187,6 +186,7 @@ window.applyTheme = (theme) => {
     const logos = document.querySelectorAll('.navbar-logo, #navbar-logo');
     const tintColor = themeToApply['accent-primary'] || themeToApply['tab-active-text'] || '#ffffff';
     const accentGlow = themeToApply['accent-secondary'] || 'rgba(79, 70, 229, 0.4)';
+    const cardHoverBg = accentGlow.replace(/0\.[0-9]+\)/, '0.45)').replace(/0\.[0-9]+$/, '0.45');
 
     logos.forEach(logoImg => {
         let newLogoSrc;
@@ -242,6 +242,7 @@ window.applyTheme = (theme) => {
             box-shadow: 0 10px 30px ${accentGlow} !important;
             backdrop-filter: blur(12px) !important;
             -webkit-backdrop-filter: blur(12px) !important;
+            background-color: ${cardHoverBg} !important;
         }
         .play-btn-circle {
             background-color: ${tintColor} !important;
