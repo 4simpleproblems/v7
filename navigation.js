@@ -110,6 +110,38 @@ window.applyTheme = (theme) => {
         root.style.setProperty('--menu-email-text', themeToApply['menu-email-text'] || DEFAULT_THEME['menu-email-text']);
     }
 
+    // --- Global Text Contrast Fix for Light Themes ---
+    const fixId = '4sp-theme-contrast-fix';
+    let styleEl = document.getElementById(fixId);
+    if (isLightTheme) {
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = fixId;
+            document.head.appendChild(styleEl);
+        }
+        styleEl.textContent = `
+            /* Fix hardcoded light text in light themes */
+            .text-white:not(.keep-white), 
+            .text-gray-100, .text-gray-200, .text-gray-300 { 
+                color: var(--text-primary) !important; 
+            }
+            .text-white\\/80, .text-white\\/60, .text-gray-400, .text-gray-500 { 
+                color: var(--text-secondary) !important; 
+            }
+            /* Ensure headings are always primary text color */
+            h1, h2, h3, h4, h5, h6 { color: var(--text-primary) !important; }
+            
+            /* Exceptions: Keep white text on dark buttons */
+            .bg-indigo-600 .text-white, 
+            .bg-red-600 .text-white,
+            .bg-blue-600 .text-white,
+            button[class*="bg-indigo-"] .text-white,
+            .primary-cta { color: #ffffff !important; }
+        `;
+    } else if (styleEl) {
+        styleEl.remove();
+    }
+
     // --- Fireworks Logic ---
     const fwContainer = document.getElementById('fireworks-container');
     if (fwContainer) {

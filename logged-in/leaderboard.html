@@ -126,8 +126,8 @@
 <body>
     <div class="leaderboard-container">
         <header class="mb-12">
-            <h1 class="text-5xl font-light tracking-tighter mb-2">V6 Leaderboard</h1>
-            <p class="text-gray-500 text-lg font-light">The global rankings of 4SP's most active users.</p>
+            <h1 class="text-5xl font-light tracking-tighter mb-2 text-[var(--text-main)]">V6 Leaderboard</h1>
+            <p class="text-[var(--text-muted)] opacity-60 text-lg font-light">The global rankings of 4SP's most active users.</p>
         </header>
 
         <!-- TOP 1 SECTION -->
@@ -143,18 +143,18 @@
         <!-- TOP PAGES -->
         <div class="section-card">
             <div class="label-tiny">System Pulse</div>
-            <h2 class="section-title">Most Used Pages</h2>
+            <h2 class="section-title text-[var(--text-main)]">Most Used Pages</h2>
             <div id="top-pages-list" class="page-stat-grid">
-                <p class="text-gray-600 italic">Calculating activity metrics...</p>
+                <p class="text-[var(--text-muted)] opacity-40 italic">Calculating activity metrics...</p>
             </div>
         </div>
 
         <!-- GLOBAL RANKINGS -->
         <div class="section-card">
             <div class="label-tiny">Active Roster</div>
-            <h2 class="section-title">Top 50 Users</h2>
+            <h2 class="section-title text-[var(--text-main)]">Top 50 Users</h2>
             <div id="rankings-list">
-                <p class="text-gray-600 italic p-4">Synchronizing ranking data...</p>
+                <p class="text-[var(--text-muted)] opacity-40 italic p-4">Synchronizing ranking data...</p>
             </div>
         </div>
     </div>
@@ -227,17 +227,17 @@
                 item.innerHTML = `
                     <div class="rank-num ${i <= 3 ? 'rank-'+i : ''}">${i}</div>
                     <div class="user-avatar" id="avatar-${uid}">
-                        <i class="fas fa-user text-gray-700"></i>
+                        <i class="fas fa-user text-[var(--text-muted)] opacity-40"></i>
                     </div>
                     <div class="flex-grow">
-                        <div class="text-lg font-medium">${data.displayName || data.username || "Anonymous"}</div>
-                        <div class="text-xs text-gray-500 font-mono">${hours}h ${minutes}m</div>
+                        <div class="text-lg font-medium text-[var(--text-main)]">${data.displayName || data.username || "Anonymous"}</div>
+                        <div class="text-xs text-[var(--text-muted)] opacity-60 font-mono">${hours}h ${minutes}m</div>
                     </div>
                     ${uid !== currentUid ? `
                         <button class="follow-btn ${isFollowing ? 'following' : ''}" data-uid="${uid}">
                             ${isFollowing ? 'Following' : 'Follow'}
                         </button>
-                    ` : '<span class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">You</span>'}
+                    ` : '<span class="text-[10px] text-[var(--text-muted)] opacity-60 uppercase tracking-widest font-bold">You</span>'}
                 `;
 
                 rankingsEl.appendChild(item);
@@ -344,12 +344,12 @@
                 item.className = 'page-stat-item';
                 item.innerHTML = `
                     <div>
-                        <div class="text-sm font-medium text-white">${data.title}</div>
-                        <div class="text-[10px] text-gray-600 uppercase tracking-widest">${path}</div>
+                        <div class="text-sm font-medium text-[var(--text-main)]">${data.title}</div>
+                        <div class="text-[10px] text-[var(--text-muted)] opacity-40 uppercase tracking-widest">${path}</div>
                     </div>
                     <div class="text-right">
                         <div class="text-xl font-light" style="color: var(--accent-color);">${data.count}</div>
-                        <div class="text-[10px] text-gray-700 uppercase">Sessions</div>
+                        <div class="text-[10px] text-[var(--text-muted)] opacity-40 uppercase">Sessions</div>
                     </div>
                 `;
                 listEl.appendChild(item);

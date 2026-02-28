@@ -196,8 +196,8 @@
         
         <header class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-white mb-2">Analytics Dashboard</h1>
-                <p class="text-gray-400 flex items-center">
+                <h1 class="text-3xl font-bold text-[var(--text-main)] mb-2">Analytics Dashboard</h1>
+                <p class="text-[var(--text-muted)] opacity-60 flex items-center">
                     <span class="live-indicator"></span> Real-time System Overview
                 </p>
             </div>
@@ -211,18 +211,18 @@
         </header>
 
         <div id="tab-users" class="tab-content">
-            <div id="sync-stats-card" class="bg-[#0d0d0d] border border-[#1a1a1a] rounded-[1.25rem] p-4 mb-6 flex flex-wrap gap-4 justify-between items-center">
+            <div id="sync-stats-card" class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] p-4 mb-6 flex flex-wrap gap-4 justify-between items-center">
                 <div class="flex gap-8">
                     <div class="flex flex-col">
-                        <span class="text-gray-500 text-xs uppercase tracking-widest">Auth Users</span>
-                        <span id="auth-user-count" class="text-2xl text-white font-mono">--</span>
+                        <span class="text-[var(--text-muted)] opacity-40 text-xs uppercase tracking-widest">Auth Users</span>
+                        <span id="auth-user-count" class="text-2xl text-[var(--text-main)] font-mono">--</span>
                     </div>
                     <div class="flex flex-col">
-                        <span class="text-gray-500 text-xs uppercase tracking-widest">DB Users</span>
-                        <span id="db-user-count" class="text-2xl text-white font-mono">--</span>
+                        <span class="text-[var(--text-muted)] opacity-40 text-xs uppercase tracking-widest">DB Users</span>
+                        <span id="db-user-count" class="text-2xl text-[var(--text-main)] font-mono">--</span>
                     </div>
                     <div class="flex flex-col">
-                        <span class="text-gray-500 text-xs uppercase tracking-widest text-red-400">Missing</span>
+                        <span class="text-[var(--text-muted)] opacity-40 text-xs uppercase tracking-widest text-red-400">Missing</span>
                         <span id="missing-user-count" class="text-2xl text-red-400 font-mono">--</span>
                     </div>
                 </div>
@@ -234,8 +234,8 @@
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div class="stat-card">
-                    <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Total Users</span>
-                    <span id="total-users-count" class="text-4xl text-white font-light">--</span>
+                    <span class="text-[var(--text-muted)] opacity-60 text-sm mb-2 uppercase tracking-wide">Total Users</span>
+                    <span id="total-users-count" class="text-4xl text-[var(--text-main)] font-light">--</span>
                 </div>
                 <div class="stat-card">
                     <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Admins</span>
@@ -253,7 +253,7 @@
 
             <div class="chart-container mb-6">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-                    <h3 class="text-white text-lg">User Growth</h3>
+                    <h3 class="text-[var(--text-main)] text-lg">User Growth</h3>
                     <div class="flex gap-3">
                         <select id="chart-datatype" class="bg-[#1a1a1a] text-gray-300 border border-[#333] rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500">
                             <option value="new" selected>New Users</option>
@@ -272,17 +272,17 @@
                 </div>
             </div>
 
-            <div class="bg-[#0d0d0d] border border-[#1a1a1a] rounded-[1.25rem] overflow-hidden">
-                <div class="p-4 border-b border-[#1a1a1a] flex justify-between items-center flex-wrap gap-4 bg-[#0a0a0a]">
+            <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] overflow-hidden">
+                <div class="p-4 border-b border-[var(--border-main)] flex justify-between items-center flex-wrap gap-4 bg-[var(--bg-page)]">
                     <div class="flex items-center gap-2">
-                        <h3 class="text-white text-lg">User Directory</h3>
+                        <h3 class="text-[var(--text-main)] text-lg">User Directory</h3>
                         <span class="text-xs bg-blue-900/30 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">Firestore Synced</span>
                     </div>
                     <div class="flex gap-4">
-                        <button id="export-csv-btn" class="bg-[#1a1a1a] hover:bg-[#252525] text-white border border-[#333] px-3 py-2 rounded-[14px] text-sm transition flex items-center gap-2" title="Export all users to CSV">
+                        <button id="export-csv-btn" class="bg-[var(--bg-page)] hover:bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-main)] px-3 py-2 rounded-[14px] text-sm transition flex items-center gap-2" title="Export all users to CSV">
                             <i class="fa-solid fa-file-csv text-green-500"></i> Export
                         </button>
-                        <input type="text" id="user-search" placeholder="Search by username, email, or ID..." class="bg-[#1a1a1a] text-white border border-[#333] rounded-[14px] px-4 py-2 text-sm focus:outline-none focus:border-blue-500 w-56 placeholder-gray-600">
+                        <input type="text" id="user-search" placeholder="Search by username, email, or ID..." class="bg-[var(--bg-page)] text-[var(--text-main)] border border-[var(--border-main)] rounded-[14px] px-4 py-2 text-sm focus:outline-none focus:border-[var(--accent-color)] w-56 placeholder-[var(--text-muted)] opacity-40">
                         <select id="user-sort" class="bg-[#1a1a1a] text-gray-300 border border-[#333] rounded-[14px] px-3 py-2 text-sm focus:outline-none">
                             <option value="newest">Newest First</option>
                             <option value="oldest">Oldest First</option>
@@ -316,8 +316,8 @@
         <div id="tab-traffic" class="tab-content hidden">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                  <div class="stat-card">
-                    <div class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Total Sessions</div>
-                    <div id="stat-total-sessions" class="text-3xl text-white font-light">--</div>
+                    <div class="text-[var(--text-muted)] opacity-60 text-sm mb-2 uppercase tracking-wide">Total Sessions</div>
+                    <div id="stat-total-sessions" class="text-3xl text-[var(--text-main)] font-light">--</div>
                 </div>
                 <div class="stat-card">
                     <div class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Avg Duration</div>
@@ -334,9 +334,9 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-[#0d0d0d] border border-[#1a1a1a] rounded-[1.25rem] overflow-hidden h-fit">
-                    <div class="p-4 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-                        <h3 class="text-white text-lg">Top Pages</h3>
+                <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] overflow-hidden h-fit">
+                    <div class="p-4 border-b border-[var(--border-main)] bg-[var(--bg-page)]">
+                        <h3 class="text-[var(--text-main)] text-lg">Top Pages</h3>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="analytics-table">
@@ -352,9 +352,9 @@
                     </div>
                 </div>
 
-                <div class="bg-[#0d0d0d] border border-[#1a1a1a] rounded-[1.25rem] overflow-hidden h-fit">
-                    <div class="p-4 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-                         <h3 class="text-white text-lg">Recent Sessions</h3>
+                <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] overflow-hidden h-fit">
+                    <div class="p-4 border-b border-[var(--border-main)] bg-[var(--bg-page)]">
+                         <h3 class="text-[var(--text-main)] text-lg">Recent Sessions</h3>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="analytics-table">

@@ -169,32 +169,32 @@
                     
                     <div class="text-center w-full">
                         <div id="self-indicator" class="hidden mb-2">
-                            <span class="text-[9px] font-bold bg-indigo-900/30 text-indigo-400 px-2 py-0.5 rounded-full uppercase tracking-widest border border-indigo-800/50">Your Profile</span>
+                            <span class="text-[9px] font-bold bg-[var(--accent-color)]/20 text-[var(--accent-color)] px-2 py-0.5 rounded-full uppercase tracking-widest border border-[var(--accent-color)]/30">Your Profile</span>
                         </div>
                         <div class="flex items-center justify-center gap-1">
-                            <h1 id="display-name" class="text-3xl font-light tracking-tight text-white px-2 py-1">--</h1>
+                            <h1 id="display-name" class="text-3xl font-light tracking-tight text-[var(--text-main)] px-2 py-1">--</h1>
                         </div>
-                        <p id="username" class="text-gray-500 font-mono text-sm mt-1">@--</p>
+                        <p id="username" class="text-[var(--text-muted)] opacity-60 font-mono text-sm mt-1">@--</p>
                         
-                        <div id="activity-label" class="mt-3 text-[10px] text-indigo-400 font-medium uppercase tracking-widest hidden">
-                            On: <span id="current-activity-text" class="text-white">--</span>
+                        <div id="activity-label" class="mt-3 text-[10px] text-[var(--accent-color)] font-medium uppercase tracking-widest hidden">
+                            On: <span id="current-activity-text" class="text-[var(--text-main)]">--</span>
                         </div>
                     </div>
 
                     <div id="edit-profile-btn-container" class="hidden mt-6 w-full">
-                        <button id="open-edit-modal-btn" class="w-full py-2.5 bg-white/5 border border-white/5 text-gray-400 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition flex items-center justify-center gap-2">
+                        <button id="open-edit-modal-btn" class="w-full py-2.5 bg-[var(--border-faint)] border border-[var(--border-faint)] text-[var(--text-muted)] rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-[var(--border-faint)]/20 transition flex items-center justify-center gap-2">
                             <i class="fa-solid fa-pen-to-square"></i> Edit Profile
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 w-full mt-8 pt-8 border-t border-white/5">
-                        <div class="bg-white/5 p-4 rounded-2xl border border-white/5 text-center cursor-pointer hover:bg-white/10 transition" id="btn-show-followers">
-                            <p class="text-2xl font-medium text-white" id="followers-count">0</p>
-                            <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Followers</p>
+                    <div class="grid grid-cols-2 gap-4 w-full mt-8 pt-8 border-t border-[var(--border-faint)]">
+                        <div class="bg-[var(--border-faint)] p-4 rounded-2xl border border-[var(--border-faint)] text-center cursor-pointer hover:bg-[var(--border-faint)]/20 transition" id="btn-show-followers">
+                            <p class="text-2xl font-medium text-[var(--text-main)]" id="followers-count">0</p>
+                            <p class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] opacity-60 font-bold">Followers</p>
                         </div>
-                        <div class="bg-white/5 p-4 rounded-2xl border border-white/5 text-center cursor-pointer hover:bg-white/10 transition" id="btn-show-following">
-                            <p class="text-2xl font-medium text-white" id="following-count">0</p>
-                            <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Following</p>
+                        <div class="bg-[var(--border-faint)] p-4 rounded-2xl border border-[var(--border-faint)] text-center cursor-pointer hover:bg-[var(--border-faint)]/20 transition" id="btn-show-following">
+                            <p class="text-2xl font-medium text-[var(--text-main)]" id="following-count">0</p>
+                            <p class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] opacity-60 font-bold">Following</p>
                         </div>
                     </div>
 
@@ -212,19 +212,19 @@
             <div class="lg:col-span-2">
                 <div class="flex justify-between items-end mb-6">
                     <div>
-                        <h2 class="text-2xl font-light tracking-tight text-white">Dailyphoto</h2>
-                        <p class="text-gray-500 text-sm">A collection of moments shared today.</p>
+                        <h2 class="text-2xl font-light tracking-tight text-[var(--text-main)]">Dailyphoto</h2>
+                        <p class="text-[var(--text-muted)] opacity-60 text-sm">A collection of moments shared today.</p>
                     </div>
-                    <a href="/logged-in/dailyphoto.html" class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest hover:underline">View Feed</a>
+                    <a href="/logged-in/dailyphoto.html" class="text-[10px] font-bold text-[var(--accent-color)] uppercase tracking-widest hover:underline">View Feed</a>
                 </div>
                 
                 <div id="dailyphoto-container" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <!-- Photos will be dynamically inserted here -->
                 </div>
 
-                <div class="mt-12 p-8 feature-card bg-white/5 border-dashed border-white/10">
-                    <h3 class="text-lg font-light mb-4">About 4SP Profiles</h3>
-                    <p class="text-sm text-gray-500 leading-relaxed">
+                <div class="mt-12 p-8 feature-card bg-[var(--border-faint)] border-dashed border-[var(--border-main)]">
+                    <h3 class="text-lg font-light mb-4 text-[var(--text-main)]">About 4SP Profiles</h3>
+                    <p class="text-sm text-[var(--text-muted)] opacity-60 leading-relaxed">
                         4SP profiles connect you with your peers. Follow users to see their activity, total experience time, and daily moments.
                     </p>
                 </div>
@@ -234,15 +234,15 @@
 
     <!-- Follow List Modal -->
     <div id="follow-list-modal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
-        <div class="bg-[#080808] rounded-[40px] w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl flex flex-col border border-white/10">
-            <header class="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-                <h3 id="follow-modal-title" class="text-xl font-light tracking-tight text-white">--</h3>
-                <button id="close-follow-modal" class="text-gray-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+        <div class="bg-[var(--bg-card)] rounded-[40px] w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl flex flex-col border border-[var(--border-main)]">
+            <header class="p-6 border-b border-[var(--border-faint)] flex justify-between items-center bg-[var(--border-faint)]">
+                <h3 id="follow-modal-title" class="text-xl font-light tracking-tight text-[var(--text-main)]">--</h3>
+                <button id="close-follow-modal" class="text-[var(--text-muted)] opacity-60 hover:text-[var(--text-main)] transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
             </header>
-            <div class="p-4 border-b border-white/5 bg-black">
+            <div class="p-4 border-b border-[var(--border-faint)] bg-[var(--bg-page)]">
                 <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 text-sm"></i>
-                    <input type="text" id="follow-search-input" class="w-full bg-white/5 border border-white/5 rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none" placeholder="Search usernames...">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] opacity-40 text-sm"></i>
+                    <input type="text" id="follow-search-input" class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-2xl py-3 pl-10 pr-4 text-sm text-[var(--text-main)] focus:ring-2 focus:ring-[var(--accent-color)]/20 transition-all outline-none" placeholder="Search usernames...">
                 </div>
             </div>
             <div id="follow-list-container" class="flex-1 overflow-y-auto custom-scroll p-4 space-y-2"></div>
@@ -251,19 +251,19 @@
 
     <!-- Edit Profile Modal -->
     <div id="edit-profile-modal" class="hidden fixed inset-0 z-[10002] flex items-center justify-center p-4 backdrop-blur-xl bg-black/60 transition-all duration-300">
-        <div class="bg-[#080808] rounded-[40px] w-full max-w-md overflow-hidden shadow-2xl flex flex-col border border-white/10">
-            <header class="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-                <h3 class="text-xl font-light tracking-tight text-white">Edit Profile</h3>
-                <button id="close-edit-modal" class="text-gray-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+        <div class="bg-[var(--bg-card)] rounded-[40px] w-full max-w-md overflow-hidden shadow-2xl flex flex-col border border-[var(--border-main)]">
+            <header class="p-6 border-b border-[var(--border-faint)] flex justify-between items-center bg-[var(--border-faint)]">
+                <h3 class="text-xl font-light tracking-tight text-[var(--text-main)]">Edit Profile</h3>
+                <button id="close-edit-modal" class="text-[var(--text-muted)] opacity-60 hover:text-[var(--text-main)] transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
             </header>
             <div class="p-8 space-y-6 overflow-y-auto custom-scroll max-h-[70vh]">
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Display Name</label>
-                    <input type="text" id="edit-display-name" class="w-full bg-white/5 border border-white/5 rounded-2xl py-3 px-4 text-sm text-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none" placeholder="Enter display name...">
+                    <label class="block text-[10px] font-bold text-[var(--text-muted)] opacity-60 uppercase tracking-widest mb-2 ml-1">Display Name</label>
+                    <input type="text" id="edit-display-name" class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-2xl py-3 px-4 text-sm text-[var(--text-main)] focus:ring-2 focus:ring-[var(--accent-color)]/20 transition-all outline-none" placeholder="Enter display name...">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Description</label>
-                    <textarea id="edit-description" rows="3" class="w-full bg-white/5 border border-white/5 rounded-2xl py-3 px-4 text-sm text-white focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none outline-none" placeholder="Tell your story..."></textarea>
+                    <label class="block text-[10px] font-bold text-[var(--text-muted)] opacity-60 uppercase tracking-widest mb-2 ml-1">Description</label>
+                    <textarea id="edit-description" rows="3" class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-2xl py-3 px-4 text-sm text-[var(--text-main)] focus:ring-2 focus:ring-[var(--accent-color)]/20 transition-all resize-none outline-none" placeholder="Tell your story..."></textarea>
                 </div>
             </div>
             <div class="p-8 bg-black border-t border-white/5">
@@ -555,8 +555,8 @@
                     item.innerHTML = `
                         <div class="w-10 h-10 rounded-xl overflow-hidden">${getAvatarHTML(uData, "w-full h-full", false, firebaseAuthUser)}</div>
                         <div class="flex-grow">
-                            <p class="text-sm font-medium text-white">${uData.displayName || uData.username}</p>
-                            <p class="text-[10px] text-gray-500 font-mono">@${uData.username}</p>
+                            <p class="text-sm font-medium text-[var(--text-main)]">${uData.displayName || uData.username}</p>
+                            <p class="text-[10px] text-[var(--text-muted)] opacity-60 font-mono">@${uData.username}</p>
                         </div>
                     `;
                     followListContainer.appendChild(item);

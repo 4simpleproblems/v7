@@ -604,9 +604,9 @@
          */
         function getChangePasswordSection() {
             return `
-                <h3 class="text-xl font-bold text-white mb-2 mt-8">Change Password</h3>
+                <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Change Password</h3>
                 <div id="passwordChangeSection" class="settings-box w-full p-4">
-                    <p class="text-sm font-light text-gray-400 mb-3">
+                    <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-3">
                         Change your password. You must provide your current password for security.
                     </p>
                     
@@ -645,8 +645,8 @@
                 let iconHtml = config.icon.startsWith('<i') ? config.icon : `<img src="${config.icon}" alt="${config.name} Icon" class="h-6 w-auto mr-3">`;
 
                 return `
-                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[#252525] last:border-b-0" data-provider-row="${id}">
-                        <div class="flex items-center text-lg text-white">
+                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[var(--border-main)] last:border-b-0" data-provider-row="${id}">
+                        <div class="flex items-center text-lg text-[var(--text-main)]">
                             ${iconHtml}
                             ${config.name}
                             ${isPrimary ? '<span class="text-xs text-yellow-400 ml-2 font-normal">(Primary)</span>' : ''}
@@ -662,7 +662,7 @@
                                     <i class="fa-solid fa-unlink mr-1"></i> Unlink
                                 </button>` : 
                                 (providerData.length === 1 || (id === 'password' && primaryProviderId === 'password')) ? 
-                                    `<span class="text-xs text-custom-light-gray font-light ml-4">Cannot Unlink</span>` : ''
+                                    `<span class="text-xs text-[var(--text-muted)] opacity-60 font-light ml-4">Cannot Unlink</span>` : ''
                             }
                         </div>
                     </div>
@@ -678,8 +678,8 @@
                 let iconHtml = config.icon.startsWith('<i') ? config.icon : `<img src="${config.icon}" alt="${config.name} Icon" class="h-6 w-auto mr-3">`;
 
                 return `
-                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[#252525] last:border-b-0" data-provider-row="${id}">
-                        <div class="flex items-center text-lg text-white">
+                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[var(--border-main)] last:border-b-0" data-provider-row="${id}">
+                        <div class="flex items-center text-lg text-[var(--text-main)]">
                             ${iconHtml}
                             ${config.name}
                         </div>
@@ -699,7 +699,7 @@
             
             if (!primaryProviderId) { // No primary provider found
                 deletionContent = `
-                    <h3 class="text-xl font-bold text-white mb-2 mt-8">Delete Account</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Delete Account</h3>
                     <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
                         <p class="text-sm font-light text-red-300 mb-3">
                             <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
@@ -709,7 +709,7 @@
                 `;
             } else if (primaryProviderId === 'password') {
                 deletionContent = `
-                    <h3 class="text-xl font-bold text-white mb-2 mt-8">Delete Account</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Delete Account</h3>
                     <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
                         <p class="text-sm font-light text-red-300 mb-3">
                             <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
@@ -734,7 +734,7 @@
                 `;
             } else {
                 deletionContent = `
-                    <h3 class="text-xl font-bold text-white mb-2 mt-8">Delete Account</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Delete Account</h3>
                     <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
                         <p class="text-sm font-light text-red-300 mb-3">
                             <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
@@ -756,13 +756,13 @@
 
             // --- Combined HTML for Account Management ---
             return `
-                <h3 class="text-xl font-bold text-white mb-2 mt-8">Linked Providers</h3>
+                <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Linked Providers</h3>
                 <div id="linked-providers-list" class="settings-box w-full mb-4 p-0">
                     ${linkedProvidersHtml}
                 </div>
                 
                 <div id="available-providers-section" class="provider-section-fade w-full ${hideLinkSection ? 'section-hidden' : ''}">
-                    <h3 class="text-xl font-bold text-white mb-2">Link New Providers</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Link New Providers</h3>
                     <div id="available-providers-list" class="settings-box w-full flex flex-col gap-0 p-0">
                         ${availableProvidersHtml}
                     </div>
@@ -786,12 +786,12 @@
              }
 
              return `
-                 <h2 class="text-3xl font-bold text-white mb-6">General Settings</h2>
+                 <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">General Settings</h2>
                  
                  <div class="w-full">
                     
                     <div class="flex justify-between items-center mb-4 settings-box p-4">
-                        <p class="text-sm font-light text-gray-300">
+                        <p class="text-sm font-light text-[var(--text-muted)] opacity-80">
                            <i class="fa-solid fa-calendar-alt mr-2 text-yellow-500"></i>
                            Changes this month (<span class="text-emphasis text-yellow-300">${currentMonthName}</span>):
                         </p>
@@ -800,12 +800,12 @@
                         </span>
                     </div>
 
-                    <h3 class="text-xl font-bold text-white mb-2">Account Username</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Account Username</h3>
                     
                     <div id="usernameSection" class="settings-box transition-all duration-300 p-4">
                         
                         <div id="viewMode" class="flex justify-between items-center">
-                            <p class="text-lg text-gray-400 leading-relaxed">
+                            <p class="text-lg text-[var(--text-muted)] leading-relaxed">
                                 Current: <span id="currentUsernameText" class="text-emphasis text-blue-400">${currentUsername}</span>
                             </p>
                             <button id="enterEditModeBtn" class="btn-toolbar-style" style="padding: 0.5rem 0.75rem;">
@@ -814,14 +814,14 @@
                         </div>
 
                         <div id="editMode" class="hidden flex-col gap-3 pt-4 border-t border-[#252525]">
-                            <label for="newUsernameInput" class="block text-gray-400 text-sm font-light">New Username</label>
+                            <label for="newUsernameInput" class="block text-[var(--text-muted)] opacity-60 text-sm font-light">New Username</label>
                             <input type="text" id="newUsernameInput" value="${currentUsername}" maxlength="${MAX_LENGTH}"
                                    class="input-text-style w-full" 
                                    placeholder="${MIN_LENGTH}-${MAX_LENGTH} characters, only allowed symbols">
                             
                             <div class="flex justify-between items-center pt-2">
-                                <p class="text-xs text-gray-500 font-light whitespace-nowrap">
-                                    Length: <span id="minLength" class="font-semibold text-gray-400">${MIN_LENGTH}</span>/<span id="charCount" class="font-semibold text-gray-400">${currentUsername.length}</span>/<span id="maxLength" class="font-semibold text-gray-400">${MAX_LENGTH}</span>
+                                <p class="text-xs text-[var(--text-muted)] opacity-50 font-light whitespace-nowrap">
+                                    Length: <span id="minLength" class="font-semibold text-[var(--text-muted)]">${MIN_LENGTH}</span>/<span id="charCount" class="font-semibold text-[var(--text-muted)]">${currentUsername.length}</span>/<span id="maxLength" class="font-semibold text-[var(--text-muted)]">${MAX_LENGTH}</span>
                                 </p>
                                 
                                 <div class="flex gap-2">
@@ -855,20 +855,20 @@
             ).join('');
 
             return `
-                <h2 class="text-3xl font-bold text-white mb-6">Privacy & Security</h2>
+                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">Privacy & Security</h2>
                 
                 <div class="w-full">
-                    <h3 class="text-xl font-bold text-white mb-2">Panic Key Settings</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Panic Key Settings</h3>
                     <div id="panicKeySection" class="settings-box transition-all duration-300 p-4">
-                        <p class="text-sm font-light text-gray-400 mb-4">
+                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
                             Configure up to 3 panic keys. Pressing the specified key (without Shift, Ctrl, or Alt) on any page will redirect you to the URL you set.
                             <br>
                             <span class="text-yellow-400">Valid keys:</span> a-z, 0-9, and &#96; - = [ ] \\ ; ' , . /
                         </p>
                         
                         <div class="flex items-center gap-4 px-2 mb-2">
-                            <label class="block text-gray-400 text-sm font-light" style="width: 4rem; text-align: center;">Key</label>
-                            <label class="block text-gray-400 text-sm font-light flex-grow">Redirect URL</label>
+                            <label class="block text-[var(--text-muted)] opacity-60 text-sm font-light" style="width: 4rem; text-align: center;">Key</label>
+                            <label class="block text-[var(--text-muted)] opacity-60 text-sm font-light flex-grow">Redirect URL</label>
                         </div>
 
                         <div class="flex items-center gap-4 mb-3">
@@ -898,12 +898,12 @@
                 </div>
 
                 <div class="w-full mt-8">
-                    <h3 class="text-xl font-bold text-white mb-2">Activity Presence</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Activity Presence</h3>
                     <div id="activityPresenceSection" class="settings-box p-6 space-y-6">
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-emphasis">Appear Offline</p>
-                                <p class="text-xs font-light text-gray-400">When enabled, your status will always show as offline to other users.</p>
+                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">When enabled, your status will always show as offline to other users.</p>
                             </div>
                             <input type="checkbox" id="showOfflineToggle" class="w-5 h-5 accent-indigo-500">
                         </div>
@@ -911,7 +911,7 @@
                         <div class="flex items-center justify-between border-t border-[#252525] pt-6">
                             <div>
                                 <p class="text-emphasis">Game Activity Tracking</p>
-                                <p class="text-xs font-light text-gray-400">Allow 4SP to show which specific game you are currently playing.</p>
+                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">Allow 4SP to show which specific game you are currently playing.</p>
                             </div>
                             <input type="checkbox" id="trackGamesToggle" checked class="w-5 h-5 accent-indigo-500">
                         </div>
@@ -919,7 +919,7 @@
                         <div class="flex items-center justify-between border-t border-[#252525] pt-6">
                             <div>
                                 <p class="text-emphasis">Leaderboard Participation</p>
-                                <p class="text-xs font-light text-gray-400">Show your profile and activity on the global leaderboard.</p>
+                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">Show your profile and activity on the global leaderboard.</p>
                             </div>
                             <input type="checkbox" id="leaderboardToggle" checked class="w-5 h-5 accent-indigo-500">
                         </div>
@@ -934,15 +934,15 @@
                 </div>
                 
                 <div class="w-full mt-8">
-                    <h3 class="text-xl font-bold text-white mb-2">Tab Disguise (URL Changer)</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Tab Disguise (URL Changer)</h3>
                     <div id="urlChangerSection" class="settings-box transition-all duration-300 p-4">
-                        <p class="text-sm font-light text-gray-400 mb-4">
+                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
                             Change the title and favicon of the website to disguise it. This setting is saved locally in your browser.
                         </p>
                         
                         <div class="flex flex-col gap-4">
                             <div>
-                                <label for="tabDisguiseMode" class="block text-gray-400 text-sm font-light mb-2">Mode</label>
+                                <label for="tabDisguiseMode" class="block text-[var(--text-muted)] opacity-60 text-sm font-light mb-2">Mode</label>
                                 <select id="tabDisguiseMode" class="input-select-style">
                                     <option value="none">None (Use 4SP Default)</option>
                                     <option value="preset">Use a Preset</option>
@@ -1035,13 +1035,13 @@
                         transform-origin: center;
                     }
                 </style>
-                <h2 class="text-3xl font-bold text-white mb-6">Personalization</h2>
+                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">Personalization</h2>
                 
                 <div class="w-full">
                     <!-- PROFILE PICTURE SECTION -->
-                    <h3 class="text-xl font-bold text-white mb-2">Profile Picture</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Profile Picture</h3>
                     <div id="pfpSection" class="settings-box transition-all duration-300 p-4 mb-8">
-                        <p class="text-sm font-light text-gray-400 mb-4">
+                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
                             Choose how you appear across the site.
                         </p>
                         
@@ -1058,16 +1058,16 @@
                             <div id="pfpLetterSettings" class="hidden flex flex-col gap-4 mt-2">
                                 <div class="flex items-center gap-6 mb-4">
                                     <!-- Interactive Preview -->
-                                    <div id="pfp-letter-preview" class="w-24 h-24 rounded-[24px] flex items-center justify-center text-white text-3xl font-bold shadow-lg border border-white/10 cursor-text relative overflow-hidden group" style="background: linear-gradient(135deg, #374151 0%, #111827 100%);">
+                                    <div id="pfp-letter-preview" class="w-24 h-24 rounded-[24px] flex items-center justify-center text-[var(--text-main)] text-3xl font-bold shadow-lg border border-[var(--border-main)] cursor-text relative overflow-hidden group" style="background: linear-gradient(135deg, #374151 0%, #111827 100%);">
                                         <input type="text" id="pfp-letter-input" maxlength="3" class="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-center uppercase cursor-text placeholder-white/20" placeholder="A">
                                     </div>
                                     <div class="flex flex-col gap-1">
-                                        <label class="block text-gray-400 text-xs uppercase tracking-wider font-bold">Letter Preview</label>
-                                        <p class="text-xs text-gray-500 max-w-[200px]">Type directly in the box to set your avatar text (Max 3).</p>
+                                        <label class="block text-[var(--text-muted)] opacity-60 text-xs uppercase tracking-wider font-bold">Letter Preview</label>
+                                        <p class="text-xs text-[var(--text-muted)] opacity-50 max-w-[200px]">Type directly in the box to set your avatar text (Max 3).</p>
                                     </div>
                                 </div>
                                 
-                                <label class="block text-gray-400 text-xs mb-2 uppercase tracking-wider font-bold">Background Color</label>
+                                <label class="block text-[var(--text-muted)] opacity-60 text-xs mb-2 uppercase tracking-wider font-bold">Background Color</label>
                                 <div class="color-palette-grid mb-6" id="pfp-color-grid"></div>
                                 
                                 <button id="save-letter-pfp-btn" class="btn-toolbar-style btn-primary-override w-full justify-center">
@@ -1077,7 +1077,7 @@
 
                             <!-- Mibi Avatar Settings (Hidden by default) -->
                             <div id="pfpMibiSettings" class="hidden flex flex-col gap-4 mt-2">
-                                <p class="text-sm font-light text-gray-400 mb-4">
+                                <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
                                     Create your custom Mibi Avatar!
                                 </p>
                                 <button id="open-mac-menu-btn" class="btn-toolbar-style btn-primary-override">
@@ -1089,8 +1089,8 @@
                                     <div class="relative bg-black rounded-[16px] shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden border border-[#333]">
                                         
                                         <!-- Header -->
-                                        <div class="flex justify-between items-center p-6 border-b border-[#333] bg-black">
-                                            <h3 class="text-2xl font-bold text-white">Mibi Avatar Creator</h3>
+                                        <div class="flex justify-between items-center p-6 border-b border-[var(--border-main)] bg-[var(--bg-secondary)]">
+                                            <h3 class="text-2xl font-bold text-[var(--text-main)]">Mibi Avatar Creator</h3>
                                             <button id="mac-close-x-btn" class="btn-toolbar-style w-10 h-10 flex items-center justify-center p-0">
                                                 <i class="fa-solid fa-xmark fa-xl"></i>
                                             </button>
@@ -1116,40 +1116,40 @@
                                                 
                                                 <div id="mac-sliders-container" class="hidden flex-col gap-6 w-full max-w-xs transition-opacity duration-300 opacity-0">
                                                     <div class="flex flex-col gap-2">
-                                                        <label class="text-xs text-gray-400 uppercase tracking-wider font-bold">Size</label>
+                                                        <label class="text-xs text-[var(--text-muted)] opacity-60 uppercase tracking-wider font-bold">Size</label>
                                                         <input type="range" id="mac-size-slider" min="50" max="150" value="100" list="mac-size-ticks" class="mac-slider w-full h-2 bg-gray-700 rounded-[16px] appearance-none cursor-pointer">
                                                         <datalist id="mac-size-ticks">
                                                             <option value="100"></option>
                                                         </datalist>
                                                     </div>
                                                     <div class="flex flex-col gap-2">
-                                                        <label class="text-xs text-gray-400 uppercase tracking-wider font-bold">Rotation</label>
+                                                        <label class="text-xs text-[var(--text-muted)] opacity-60 uppercase tracking-wider font-bold">Rotation</label>
                                                         <input type="range" id="mac-rotation-slider" min="-180" max="180" value="0" list="mac-rotation-ticks" class="mac-slider w-full h-2 bg-gray-700 rounded-[16px] appearance-none cursor-pointer">
                                                         <datalist id="mac-rotation-ticks">
                                                             <option value="0"></option>
                                                         </datalist>
                                                     </div>
-                                                    <p class="text-center text-gray-500 text-xs mt-2"><i class="fa-solid fa-hand-pointer mr-1"></i> Drag avatar to position</p>
+                                                    <p class="text-center text-[var(--text-muted)] opacity-50 text-xs mt-2"><i class="fa-solid fa-hand-pointer mr-1"></i> Drag avatar to position</p>
                                                 </div>
                                                 
-                                                <p class="text-gray-500 text-sm font-mono mt-2" id="mac-preview-label">Click preview to adjust orientation</p>
+                                                <p class="text-[var(--text-muted)] opacity-50 text-sm font-mono mt-2" id="mac-preview-label">Click preview to adjust orientation</p>
                                             </div>
 
                                             <!-- RIGHT: Controls & Options -->
                                             <div id="mac-controls-wrapper" class="w-1/2 flex flex-col bg-black transition-transform duration-500 ease-in-out translate-x-0">
                                                 
                                                 <!-- Tabs -->
-                                                <div class="flex border-b border-[#333]">
-                                                    <button class="mac-tab-btn flex-1 py-4 text-gray-400 hover:text-white hover:bg-[#252525] transition-colors border-b-2 border-transparent font-medium active-tab" data-tab="hats">
+                                                <div class="flex border-b border-[var(--border-main)]">
+                                                    <button class="mac-tab-btn flex-1 py-4 text-[var(--text-muted)] opacity-60 hover:text-[var(--text-main)] hover:bg-[var(--bg-page)] transition-colors border-b-2 border-transparent font-medium active-tab" data-tab="hats">
                                                         <i class="fa-solid fa-hat-wizard mr-2"></i> Hats
                                                     </button>
-                                                    <button class="mac-tab-btn flex-1 py-4 text-gray-400 hover:text-white hover:bg-[#252525] transition-colors border-b-2 border-transparent font-medium" data-tab="eyes">
+                                                    <button class="mac-tab-btn flex-1 py-4 text-[var(--text-muted)] opacity-60 hover:text-[var(--text-main)] hover:bg-[var(--bg-page)] transition-colors border-b-2 border-transparent font-medium" data-tab="eyes">
                                                         <i class="fa-solid fa-eye mr-2"></i> Eyes
                                                     </button>
-                                                    <button class="mac-tab-btn flex-1 py-4 text-gray-400 hover:text-white hover:bg-[#252525] transition-colors border-b-2 border-transparent font-medium" data-tab="mouths">
+                                                    <button class="mac-tab-btn flex-1 py-4 text-[var(--text-muted)] opacity-60 hover:text-[var(--text-main)] hover:bg-[var(--bg-page)] transition-colors border-b-2 border-transparent font-medium" data-tab="mouths">
                                                         <i class="fa-solid fa-face-smile mr-2"></i> Mouths
                                                     </button>
-                                                    <button class="mac-tab-btn flex-1 py-4 text-gray-400 hover:text-white hover:bg-[#252525] transition-colors border-b-2 border-transparent font-medium" data-tab="bg">
+                                                    <button class="mac-tab-btn flex-1 py-4 text-[var(--text-muted)] opacity-60 hover:text-[var(--text-main)] hover:bg-[var(--bg-page)] transition-colors border-b-2 border-transparent font-medium" data-tab="bg">
                                                         <i class="fa-solid fa-palette mr-2"></i> Color
                                                     </button>
                                                 </div>
@@ -1185,7 +1185,7 @@
                                     <!-- Preview -->
                                     <div class="w-16 h-16 rounded-[24px] overflow-hidden border border-gray-600 flex-shrink-0 bg-black relative">
                                         <img id="customPfpPreview" src="" class="w-full h-full object-cover" style="display: none;">
-                                        <div id="customPfpPlaceholder" class="w-full h-full flex items-center justify-center text-gray-600">
+                                        <div id="customPfpPlaceholder" class="w-full h-full flex items-center justify-center text-[var(--text-muted)] opacity-40">
                                             <i class="fa-solid fa-user"></i>
                                         </div>
                                     </div>
@@ -1196,7 +1196,7 @@
                                             <i class="fa-solid fa-upload mr-2"></i> Upload Image
                                         </button>
                                         <input type="file" id="pfpFileInput" accept="image/*" style="display: none;">
-                                        <p class="text-xs text-gray-500 mt-1">Max size: 2MB. Images are cropped to square.</p>
+                                        <p class="text-xs text-[var(--text-muted)] opacity-50 mt-1">Max size: 2MB. Images are cropped to square.</p>
                                     </div>
                                 </div>
                             </div>
@@ -1206,15 +1206,15 @@
                     </div>
 
                     <!-- THEME SECTION -->
-                    <h3 class="text-xl font-bold text-white mb-2">Navigation Bar Theme</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Navigation Bar Theme</h3>
                     <div id="themeSection" class="settings-box transition-all duration-300 p-4">
-                        <p class="text-sm font-light text-gray-400 mb-4">
+                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
                             Select a theme for your navigation bar. This setting is saved locally and will apply a live preview.
                         </p>
                         
                         <div id="theme-picker-container">
                             <div class="flex items-center justify-center p-8">
-                                <i class="fa-solid fa-spinner fa-spin fa-2x text-gray-500"></i>
+                                <i class="fa-solid fa-spinner fa-spin fa-2x text-[var(--text-muted)] opacity-40"></i>
                             </div>
                         </div>
                         
@@ -1227,11 +1227,11 @@
         // --- NEW: Generates the HTML for the "Data Management" section ---
         function getDataManagementContent() {
             return `
-                <h2 class="text-3xl font-bold text-white mb-6">Data Management</h2>
+                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">Data Management</h2>
                 <div class="w-full">
-                    <h3 class="text-xl font-bold text-white mb-2">Export Data</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Export Data</h3>
                     <div class="settings-box transition-all duration-300 p-4 mb-8">
-                        <p class="text-sm font-light text-gray-400 mb-4">
+                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
                             Export all your local game data (from LocalStorage and IndexedDB) into a single JSON file.
                             This file can be used as a backup or to transfer your data to another browser.
                         </p>
@@ -1240,7 +1240,7 @@
                         </button>
                     </div>
 
-                    <h3 class="text-xl font-bold text-white mb-2">Import Data</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Import Data</h3>
                     <div class="settings-box transition-all duration-300 p-4 bg-red-900/10 border-red-700/50">
                         <p class="text-sm font-light text-red-300 mb-4">
                             <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
@@ -1261,28 +1261,28 @@
          */
                  function getManagementContent() {            return `
 
-                <h2 class="text-3xl font-bold text-white mb-6">Admin Management</h2>
+                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">Admin Management</h2>
                 
                 <!-- Admin Management Section -->
                 <div class="w-full mb-8">
-                    <h3 class="text-xl font-bold text-white mb-2">Admin Management</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Admin Management</h3>
                     <div class="settings-box p-4">
-                        <p class="text-sm font-light text-gray-400 mb-4">
+                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
                             Manage website administrators. Superadmins can add/remove other admins and designate additional superadmins.
                         </p>
 
                         <!-- Current Admins List -->
                         <div class="mb-4">
-                            <label class="block text-gray-400 text-sm font-light mb-2">Current Administrators</label>
+                            <label class="block text-[var(--text-muted)] opacity-60 text-sm font-light mb-2">Current Administrators</label>
                             <div id="current-admins-list" class="flex flex-col gap-2">
                                 <!-- Admins will be loaded here by JavaScript -->
-                                <p class="text-gray-500 italic">Loading admins...</p>
+                                <p class="text-[var(--text-muted)] opacity-40 italic">Loading admins...</p>
                             </div>
                         </div>
 
                         <!-- Add Admin Section -->
                         <div class="border-t border-[#252525] pt-4 mt-4">
-                            <label for="newAdminEmail" class="block text-gray-400 text-sm font-light mb-2">Add New Admin (by Email)</label>
+                            <label for="newAdminEmail" class="block text-[var(--text-muted)] opacity-60 text-sm font-light mb-2">Add New Admin (by Email)</label>
                             <div class="flex gap-2">
                                 <input type="email" id="newAdminEmail" class="input-text-style flex-grow" placeholder="Enter email address">
                                 <button id="addAdminBtn" class="btn-toolbar-style btn-primary-override w-24">
@@ -1294,8 +1294,8 @@
 
                         <!-- Superadmin Controls (only visible to superadmin) -->
                         <div id="superadmin-controls" class="hidden border-t border-[#252525] pt-4 mt-4">
-                            <h4 class="text-lg font-bold text-white mb-2">Superadmin Actions</h4>
-                            <p class="text-sm font-light text-gray-400 mb-4">
+                            <h4 class="text-lg font-bold text-[var(--text-main)] mb-2">Superadmin Actions</h4>
+                            <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
                                 Only the primary superadmin can manage other superadmins and strip admin privileges.
                             </p>
                             <div class="flex flex-col gap-3">
@@ -1373,7 +1373,7 @@
                     adminEntry.className = 'flex justify-between items-center bg-[#0a0a0a] border border-[#1a1a1a] rounded-[16px] p-3';
                     adminEntry.innerHTML = `
                         <div>
-                            <span class="font-medium text-white">${admin.username || admin.email}</span>
+                            <span class="font-medium text-[var(--text-main)]">${admin.username || admin.email}</span>
                             ${isSuperadmin ? '<span class="text-xs text-yellow-400 ml-2 font-normal">(Superadmin)</span>' : ''}
                             ${isCurrentUser ? '<span class="text-xs text-blue-400 ml-2 font-normal">(Current User)</span>' : ''}
                         </div>
@@ -1602,14 +1602,14 @@
          */
         function getAboutContent() {
             return `
-                <h2 class="text-3xl font-bold text-white mb-4">About 4SP (4simpleproblems)</h2>
+                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-4">About 4SP (4simpleproblems)</h2>
                 
                 <div class="about-section-content">
-                    <p class="text-lg text-gray-400 leading-relaxed">
+                    <p class="text-lg text-[var(--text-muted)] opacity-80 leading-relaxed">
                         <span class="text-emphasis">4SP (4simpleproblems)</span> is a <span class="text-emphasis">Student Toolkit and Entertainment website</span> designed to boost student productivity and provide useful resources. We aim to solve four core challenges that students face every day by integrating essential tools and engaging digital content into one seamless platform.
                     </p>
                     
-                    <h3 class="text-xl font-bold text-white mt-6 mb-2">The Four Simple Problems We Address</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mt-6 mb-2">The Four Simple Problems We Address</h3>
                     <ul class="list-disc list-inside ml-4 text-lg text-gray-400 leading-relaxed">
                         <li>Providing a <span class="text-emphasis">digital leisure platform free of advertisements</span>.</li>
                         <li>Delivering a <span class="text-emphasis">student toolkit designed for accessibility and consistent availability</span>, bypassing typical institutional network restrictions.</li>
@@ -1621,12 +1621,12 @@
                         Features currently include an <span class="text-emphasis">online notebook</span> in the Notes App for secure organization, a <span class="text-emphasis">live clock</span> on the dashboard, a <span class="text-emphasis">dictionary</span> for quick lookups, and more tools.
                     </p>
                     
-                    <h3 class="text-xl font-bold text-white mt-6 mb-2">Version</h3>
-                    <p class="text-gray-400">
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mt-6 mb-2">Version</h3>
+                    <p class="text-[var(--text-muted)] opacity-80">
                         Current Version: <span class="text-blue-400 text-emphasis">6.0.0</span>
                     </p>
 
-                    <h3 class="text-xl font-bold text-white mt-6 mb-3">Connect & Support</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mt-6 mb-3">Connect & Support</h3>
                     <div class="social-link-group">
                         <a href="https://www.youtube.com/@4simpleproblems" target="_blank" class="btn-toolbar-style" title="YouTube">
                             <i class="fa-brands fa-youtube fa-lg mr-2"></i> YouTube
@@ -1642,7 +1642,7 @@
                         </a>
                     </div>
                     
-                    <h3 class="text-xl font-bold text-white mt-6 mb-3">Legal Information</h3>
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mt-6 mb-3">Legal Information</h3>
                     <div class="legal-buttons">
                         <a href="../legal.html#terms-of-service" class="btn-toolbar-style">Terms of Service</a>
                         <a href="../legal.html#privacy-policy" class="btn-toolbar-style">Privacy Policy</a>
@@ -1656,7 +1656,7 @@
          */
         function getComingSoonContent(title) {
             return `
-                <h2 class="text-3xl font-bold text-white mb-2">${title}</h2>
+                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-2">${title}</h2>
                 <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
                     <p class="text-xl text-gray-500 italic">...Coming Soon...</p>
                     <i class="fa-solid fa-hourglass-start fa-5x text-gray-700 mt-4"></i>
@@ -1785,7 +1785,7 @@
                 const customWrapper = document.createElement('div');
                 // Match size and roundness + flex-shrink-0
                 customWrapper.className = 'w-10 h-10 rounded-[16px] bg-[#333] flex items-center justify-center cursor-pointer hover:bg-[#444] relative overflow-hidden border-2 border-transparent hover:border-dashed hover:border-white flex-shrink-0';
-                customWrapper.innerHTML = '<i class="fa-solid fa-eye-dropper text-white text-sm"></i><input type="color" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">';
+                customWrapper.innerHTML = '<i class="fa-solid fa-eye-dropper text-[var(--text-main)] text-sm"></i><input type="color" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">';
                 const input = customWrapper.querySelector('input');
                 input.oninput = (e) => {
                     mibiAvatarState.bgColor = e.target.value;
@@ -2510,7 +2510,7 @@
 
                     
 
-                                            b.classList.remove('active-tab', 'text-white', 'border-blue-500');
+                                            b.classList.remove('active-tab', 'text-[var(--text-main)]', 'border-blue-500');
 
                     
 
@@ -2522,7 +2522,7 @@
 
                     
 
-                                        btn.classList.add('active-tab', 'text-white', 'border-blue-500');
+                                        btn.classList.add('active-tab', 'text-[var(--text-main)]', 'border-blue-500');
 
                     
 
@@ -2776,7 +2776,7 @@
             let userDocSnap = await getDoc(userDocRef);
 
             if (!userDocSnap.exists()) {
-                mainView.innerHTML = `<h2 class="text-3xl font-bold text-white mb-6">General Settings</h2><p class="text-red-400">Error: User data not found. Please log out and back in.</p>`;
+                mainView.innerHTML = `<h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">General Settings</h2><p class="text-red-400">Error: User data not found. Please log out and back in.</p>`;
                 return;
             }
 

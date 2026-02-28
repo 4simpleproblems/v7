@@ -434,7 +434,7 @@
     <header>
         <div class="brand">
             <i class="fa-solid fa-robot"></i>
-            <span>VANA</span>
+            <span class="text-[var(--text-main)]">VANA</span>
         </div>
 
         <div class="auth-controls-wrapper" id="dropdown-wrapper">
@@ -443,29 +443,29 @@
                 <i class="fa-solid fa-chevron-down"></i>
             </button>
             <div id="model-menu" class="auth-menu-container closed">
-                <div class="text-xs text-gray-500 uppercase font-bold px-3 py-2">Select Model</div>
+                <div class="text-xs text-[var(--text-muted)] opacity-60 uppercase font-bold px-3 py-2">Select Model</div>
                 
                 <button class="auth-menu-link active" data-model="llama-3.1-8b-instant" onclick="setModel('llama-3.1-8b-instant', 'Llama 3.1 8B (Fast)', this)">
                     <i class="fa-solid fa-bolt w-4"></i>
                     <div>
-                        <div class="font-medium">Llama 3.1 8B</div>
-                        <div class="text-xs text-gray-500">Fastest response</div>
+                        <div class="font-medium text-[var(--text-main)]">Llama 3.1 8B</div>
+                        <div class="text-xs text-[var(--text-muted)] opacity-60">Fastest response</div>
                     </div>
                 </button>
 
                 <button class="auth-menu-link" data-model="llama-3.3-70b-versatile" onclick="setModel('llama-3.3-70b-versatile', 'Llama 3.3 70B (Smart)', this)">
                     <i class="fa-solid fa-brain w-4"></i>
                     <div>
-                        <div class="font-medium">Llama 3.3 70B</div>
-                        <div class="text-xs text-gray-500">Highest intelligence</div>
+                        <div class="font-medium text-[var(--text-main)]">Llama 3.3 70B</div>
+                        <div class="text-xs text-[var(--text-muted)] opacity-60">Highest intelligence</div>
                     </div>
                 </button>
 
                 <button class="auth-menu-link" data-model="openai/gpt-oss-120b" onclick="setModel('openai/gpt-oss-120b', 'GPT-OSS 120B', this)">
                     <i class="fa-solid fa-code-branch w-4"></i>
                     <div>
-                        <div class="font-medium">GPT-OSS 120B</div>
-                        <div class="text-xs text-gray-500">Open source powerhouse</div>
+                        <div class="font-medium text-[var(--text-main)]">GPT-OSS 120B</div>
+                        <div class="text-xs text-[var(--text-muted)] opacity-60">Open source powerhouse</div>
                     </div>
                 </button>
             </div>

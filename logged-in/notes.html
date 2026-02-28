@@ -257,7 +257,7 @@
         #note-editor:empty::before {
             content: 'Start typing your notes here...';
             color: var(--text-muted);
-            opacity: 0.5;
+            opacity: 0.4;
             pointer-events: none;
             font-style: italic;
         }
@@ -394,8 +394,8 @@
 <body class="min-h-screen mode-notes">
     <div id="page-content" classm="hidden">
         
-        <header class="flex justify-between items-center p-4 border-b border-[#1a1a1a]">
-            <h1 class="text-2xl font-bold text-white">4SP Notes</h1>
+        <header class="flex justify-between items-center p-4 border-b border-[var(--border-main)] bg-[var(--bg-page)] sticky top-0 z-40">
+            <h1 class="text-2xl font-bold text-[var(--text-main)]">4SP Notes</h1>
             
             <div class="flex items-center gap-2">
                 <button id="mode-toggle-btn" class="btn-toolbar-style">
@@ -471,7 +471,7 @@
                 <button id="format-italic" class="btn-icon" title="Italic (Ctrl+I)"><i class="fa-solid fa-italic"></i></button>
                 <button id="format-underline" class="btn-icon" title="Underline (Ctrl+U)"><i class="fa-solid fa-underline"></i></button>
                 
-                <label for="font-color-picker" class="text-xs text-gray-400 text-center" title="Font Color">Color</label>
+                <label for="font-color-picker" class="text-xs text-[var(--text-muted)] opacity-60 text-center" title="Font Color">Color</label>
                 <input type="color" id="font-color-picker" value="#c0c0c0">
                 
             </div>

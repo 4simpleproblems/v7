@@ -308,8 +308,8 @@
     <!-- HEADER -->
     <header class="flex flex-col md:flex-row justify-between items-center p-6 border-b border-[var(--border-main)] gap-4 bg-[var(--bg-page)]">
         <div class="w-full md:w-auto">
-            <h1 class="text-2xl font-bold text-white tracking-wide">4SP WEATHER</h1>
-            <div id="location-display" class="text-xs text-[#707070] flex items-center gap-2 mt-1">
+            <h1 class="text-2xl font-bold text-[var(--text-main)] tracking-wide">4SP WEATHER</h1>
+            <div id="location-display" class="text-xs text-[var(--text-muted)] opacity-60 flex items-center gap-2 mt-1">
                 <i class="fa-regular fa-location-dot"></i> <span id="loc-name">Detecting...</span>
             </div>
         </div>
@@ -345,32 +345,32 @@
         <!-- CURRENT CONDITIONS HERO -->
         <div class="weather-card flex flex-col md:flex-row items-center justify-between gap-8">
             <div class="flex flex-col items-center md:items-start">
-                <div class="text-sm text-[#4f46e5] uppercase tracking-wider font-bold mb-2">Current Conditions</div>
+                <div class="text-sm text-[var(--accent-color)] uppercase tracking-wider font-bold mb-2">Current Conditions</div>
                 <div class="flex items-center gap-6">
                     <div id="curr-icon" class="current-icon"><i class="fa-solid fa-spinner fa-spin"></i></div>
                     <div>
                         <div id="curr-temp" class="current-temp">--°</div>
-                        <div id="curr-desc" class="text-xl text-gray-400">Loading data...</div>
+                        <div id="curr-desc" class="text-xl text-[var(--text-muted)] opacity-60">Loading data...</div>
                     </div>
                 </div>
             </div>
             
             <div class="grid grid-cols-2 gap-x-12 gap-y-4 text-right">
                 <div>
-                    <div class="text-xs text-[#707070] uppercase">High</div>
-                    <div id="curr-high" class="text-2xl text-white font-medium">--°</div>
+                    <div class="text-xs text-[var(--text-muted)] opacity-60 uppercase">High</div>
+                    <div id="curr-high" class="text-2xl text-[var(--text-main)] font-medium">--°</div>
                 </div>
                 <div>
-                    <div class="text-xs text-[#707070] uppercase">Low</div>
-                    <div id="curr-low" class="text-2xl text-gray-400 font-medium">--°</div>
+                    <div class="text-xs text-[var(--text-muted)] opacity-60 uppercase">Low</div>
+                    <div id="curr-low" class="text-2xl text-[var(--text-muted)] opacity-60 font-medium">--°</div>
                 </div>
                 <div>
-                    <div class="text-xs text-[#707070] uppercase">Wind</div>
-                    <div id="curr-wind" class="text-lg text-gray-300">--</div>
+                    <div class="text-xs text-[var(--text-muted)] opacity-60 uppercase">Wind</div>
+                    <div id="curr-wind" class="text-lg text-[var(--text-muted)] opacity-80">--</div>
                 </div>
                 <div>
-                    <div class="text-xs text-[#707070] uppercase">Humidity</div>
-                    <div id="curr-hum" class="text-lg text-gray-300">--%</div>
+                    <div class="text-xs text-[var(--text-muted)] opacity-60 uppercase">Humidity</div>
+                    <div id="curr-hum" class="text-lg text-[var(--text-muted)] opacity-80">--%</div>
                 </div>
             </div>
         </div>

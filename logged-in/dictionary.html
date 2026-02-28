@@ -226,7 +226,7 @@
 <body class="min-h-screen custom-scroll">
     <div id="page-content" class="hidden">
         <header class="flex justify-between items-center p-4 border-b border-[var(--border-main)] sticky top-0 bg-[var(--bg-page)] z-[1000]">
-            <h1 class="text-2xl font-bold text-white">4SP Dictionary</h1>
+            <h1 class="text-2xl font-bold text-[var(--text-main)]">4SP Dictionary</h1>
             <div class="flex items-center gap-2"></div>
         </header>
 
@@ -239,7 +239,7 @@
                     class="input-text-style pl-12 pr-24"
                     autocomplete="off"
                 />
-                <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
+                <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)] opacity-60"></i>
                 <button 
                     id="search-button" 
                     class="btn-toolbar-style btn-primary-override absolute right-2 top-1/2 transform -translate-y-1/2 h-10 px-4"
@@ -249,7 +249,7 @@
             </div>
 
             <div id="definition-output" class="custom-scroll">
-                <div class="h-full flex flex-col items-center justify-center text-gray-500 space-y-4 pt-12 opacity-50">
+                <div class="h-full flex flex-col items-center justify-center text-[var(--text-muted)] space-y-4 pt-12 opacity-50">
                     <i class="fa-solid fa-book-open fa-3x mb-2"></i>
                     <p class="text-lg font-light">Enter a word above to begin.</p>
                 </div>
@@ -303,8 +303,8 @@
             updateUrlHash(trimmedWord);
             definitionOutput.innerHTML = `
                 <div class="h-full flex flex-col items-center justify-center pt-12">
-                    <i class="fa-solid fa-spinner fa-spin fa-2x text-indigo-500 mb-4"></i>
-                    <p class="text-lg font-light text-gray-400">Searching...</p>
+                    <i class="fa-solid fa-spinner fa-spin fa-2x text-[var(--accent-color)] mb-4"></i>
+                    <p class="text-lg font-light text-[var(--text-muted)] opacity-60">Searching...</p>
                 </div>
             `;
             try {
@@ -351,7 +351,7 @@
             const prs = (primaryEntry.hwi && primaryEntry.hwi.prs && primaryEntry.hwi.prs.length > 0) ? primaryEntry.hwi.prs[0] : null;
             const mwPron = prs ? prs.mw : '';
             const audioUrl = prs && prs.sound ? getAudioUrl(prs.sound.audio) : null;
-            let htmlContent = `<div class="space-y-4"><div class="border-b border-[#1a1a1a] pb-6"><h2 class="text-4xl text-white capitalize font-normal tracking-wide">${hw}${audioUrl ? `<i class="fa-solid fa-volume-high audio-icon" title="Listen" data-audio="${audioUrl}"></i>` : ''}</h2>${mwPron ? `<p class="mt-2 pronunciation-text">/${mwPron}/</p>` : ''}</div><div class="mt-2">`;
+            let htmlContent = `<div class="space-y-4"><div class="border-b border-[var(--border-main)] pb-6"><h2 class="text-4xl text-[var(--text-main)] capitalize font-normal tracking-wide">${hw}${audioUrl ? `<i class="fa-solid fa-volume-high audio-icon" title="Listen" data-audio="${audioUrl}"></i>` : ''}</h2>${mwPron ? `<p class="mt-2 pronunciation-text">/${mwPron}/</p>` : ''}</div><div class="mt-2">`;
             const groupedDefinitions = {};
             dictData.slice(0, 5).forEach(entry => {
                 if (typeof entry === 'string') return;
@@ -373,8 +373,8 @@
             }
             allSynonyms = [...new Set(allSynonyms)];
             if (allSynonyms.length > 0) {
-                const synonymTags = allSynonyms.slice(0, 15).map(s => `<span class="synonym-tag" data-word="${s}">${s}</span>`).join('<span class="text-[#333] mx-2">|</span>');
-                htmlContent += `<div class="mt-12 pt-6 border-t border-[#1a1a1a]"><p class="text-xs text-[#505050] font-medium uppercase mb-3 tracking-widest">Synonyms</p><div class="leading-loose text-[#9ca3af]">${synonymTags}</div></div>`;
+                const synonymTags = allSynonyms.slice(0, 15).map(s => `<span class="synonym-tag" data-word="${s}">${s}</span>`).join('<span class="text-[var(--text-muted)] opacity-20 mx-2">|</span>');
+                htmlContent += `<div class="mt-12 pt-6 border-t border-[var(--border-main)]"><p class="text-xs text-[var(--text-muted)] opacity-40 font-medium uppercase mb-3 tracking-widest">Synonyms</p><div class="leading-loose text-[var(--text-muted)] opacity-80">${synonymTags}</div></div>`;
             }
             htmlContent += `</div>`;
             definitionOutput.innerHTML = htmlContent;

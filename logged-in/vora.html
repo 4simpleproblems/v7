@@ -301,7 +301,7 @@
             <div class="px-8 mb-10">
                 <div class="flex items-center gap-3">
                     <img src="../images/logo.png" class="w-10 h-10 object-contain">
-                    <span class="text-xl font-bold tracking-tighter text-white">VORA</span>
+                    <span class="text-xl font-bold tracking-tighter text-[var(--text-main)]">VORA</span>
                 </div>
             </div>
 
@@ -334,10 +334,10 @@
         <main class="main-view custom-scroll">
             <div class="max-w-6xl mx-auto">
                 <header class="mb-12 flex flex-col items-center">
-                    <h1 class="text-5xl font-black mb-8 tracking-tighter">Find your next favorite.</h1>
+                    <h1 class="text-5xl font-black mb-8 tracking-tighter text-[var(--text-main)]">Find your next favorite.</h1>
                     <div class="search-box">
-                        <i class="fas fa-search text-gray-500"></i>
-                        <input type="text" id="searchInput" placeholder="Search movies or series..." class="bg-transparent border-none outline-none flex-1 text-white">
+                        <i class="fas fa-search text-[var(--text-muted)] opacity-40"></i>
+                        <input type="text" id="searchInput" placeholder="Search movies or series..." class="bg-transparent border-none outline-none flex-1 text-[var(--text-main)]">
                     </div>
                 </header>
 
@@ -386,14 +386,14 @@
                 <div class="flex items-center gap-4">
                     <img src="../images/logo.png" class="w-8 h-8 opacity-20 grayscale">
                     <div class="flex flex-col">
-                        <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Powered by VORA Engine</span>
-                        <span class="text-[9px] text-gray-700">Encrypted streaming node active</span>
+                        <span class="text-[10px] font-bold text-[var(--text-muted)] opacity-60 uppercase tracking-widest">Powered by VORA Engine</span>
+                        <span class="text-[9px] text-[var(--text-muted)] opacity-40">Encrypted streaming node active</span>
                     </div>
                 </div>
                 <div id="now-watching-container" class="hidden items-center gap-4">
                     <div class="text-right">
-                        <p id="watching-title" class="text-xs font-bold text-white truncate max-w-[200px]">Loading...</p>
-                        <p class="text-[9px] text-gray-500 uppercase tracking-widest">Now Watching</p>
+                        <p id="watching-title" class="text-xs font-bold text-[var(--text-main)] truncate max-w-[200px]">Loading...</p>
+                        <p class="text-[9px] text-[var(--text-muted)] opacity-60 uppercase tracking-widest">Now Watching</p>
                     </div>
                     <div class="w-10 h-10 rounded-lg bg-card-dark border border-brand-border flex items-center justify-center">
                         <i class="fas fa-play text-[10px] text-accent-purple"></i>

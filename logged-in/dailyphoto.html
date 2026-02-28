@@ -226,7 +226,7 @@
             <div class="px-8 mb-10">
                 <div class="flex items-center gap-3">
                     <img src="../images/logo.png" class="w-8 h-8 object-contain">
-                    <span class="text-xl font-bold tracking-tighter text-white uppercase">Dailyphoto</span>
+                    <span class="text-xl font-bold tracking-tighter text-[var(--text-main)] uppercase">Dailyphoto</span>
                 </div>
             </div>
 
@@ -247,20 +247,20 @@
                 <div class="h-px bg-brand-border my-6 mx-8"></div>
 
                 <div class="px-8 mb-4">
-                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Discover</span>
+                    <span class="text-[10px] font-bold text-[var(--text-muted)] opacity-60 uppercase tracking-widest">Discover</span>
                 </div>
                 <div class="px-4 mb-6">
                     <div class="search-box">
-                        <i class="fas fa-search text-gray-600 text-xs"></i>
-                        <input type="text" id="user-search" placeholder="Search usernames..." class="bg-transparent border-none outline-none flex-1 text-xs text-white">
+                        <i class="fas fa-search text-[var(--text-muted)] opacity-40 text-xs"></i>
+                        <input type="text" id="user-search" placeholder="Search usernames..." class="bg-transparent border-none outline-none flex-1 text-xs text-[var(--text-main)]">
                     </div>
                     <div id="search-results" class="mt-4 space-y-1"></div>
                 </div>
 
-                <div class="h-px bg-brand-border my-6 mx-8"></div>
+                <div class="h-px bg-[var(--border-main)] my-6 mx-8"></div>
 
                 <div class="px-8 mb-4">
-                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Your Slots</span>
+                    <span class="text-[10px] font-bold text-[var(--text-muted)] opacity-60 uppercase tracking-widest">Your Slots</span>
                 </div>
                 <div id="slots-container">
                     <!-- Slots -->
@@ -273,8 +273,8 @@
             <div class="max-w-6xl mx-auto">
                 <header class="mb-10 flex justify-between items-end">
                     <div>
-                        <h1 id="feed-title" class="text-4xl font-bold mb-2">Following</h1>
-                        <p id="feed-desc" class="text-gray-500">Moments from people you follow.</p>
+                        <h1 id="feed-title" class="text-4xl font-bold mb-2 text-[var(--text-main)]">Following</h1>
+                        <p id="feed-desc" class="text-[var(--text-muted)] opacity-60">Moments from people you follow.</p>
                     </div>
                     <button id="main-upload-btn" class="inline-flex items-center justify-center py-3 px-6 rounded-2xl text-sm font-medium transition-all shadow-lg shadow-indigo-900/20" style="background: var(--btn-bg); border: 1px solid var(--accent-glow); color: var(--accent-color);">
                         <i class="fas fa-plus mr-2"></i> Post Moment
@@ -399,7 +399,7 @@
 
                     if (postId && postId !== 'DELETED') {
                         div.innerHTML = `
-                            <span class="text-xs text-gray-400 font-medium">Moment ${i+1}</span>
+                            <span class="text-xs text-[var(--text-muted)] opacity-60 font-medium">Moment ${i+1}</span>
                             <div class="flex gap-1">
                                 <button onclick="window.viewPost('${postId}')" class="btn-circle" title="View"><i class="fas fa-eye text-[10px]"></i></button>
                                 <button onclick="window.deletePost('${postId}', ${i})" class="btn-circle text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-[10px]"></i></button>
@@ -407,7 +407,7 @@
                         `;
                     } else {
                         div.innerHTML = `
-                            <span class="text-xs text-gray-700 italic">Empty Slot</span>
+                            <span class="text-xs text-[var(--text-muted)] opacity-40 italic">Empty Slot</span>
                             <button onclick="window.openUploadModal(${i})" class="btn-circle" title="Post"><i class="fas fa-plus text-[10px]"></i></button>
                         `;
                     }
@@ -518,7 +518,7 @@
                     div.className = 'nav-item !mx-0 !px-4 !py-2 hover:!bg-white/5';
                     div.innerHTML = `
                         <div class="w-6 h-6 rounded-lg overflow-hidden">${getAvatarHTML(d, "w-full h-full", false, currentUser)}</div>
-                        <span class="text-[11px] text-gray-400">@${d.username}</span>
+                        <span class="text-[11px] text-[var(--text-muted)] opacity-60">@${d.username}</span>
                     `;
                     div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
                     results.appendChild(div);
@@ -586,7 +586,7 @@
                     <img src="${data.imageBase64}" loading="lazy">
                     <div class="overlay-grad">
                         <p class="text-xs font-bold text-white">@${data.creatorUsername}</p>
-                        <p class="text-[10px] text-gray-400 truncate">${data.title}</p>
+                        <p class="text-[10px] text-gray-300 truncate">${data.title}</p>
                     </div>
                 `;
                 div.onclick = () => window.viewPost(docSnap.id);
