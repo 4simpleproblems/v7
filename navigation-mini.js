@@ -128,17 +128,40 @@ window.applyTheme = (theme) => {
             if (fireworksInstance) {
                 fireworksInstance.stop();
             }
-            // Trigger party popper effect
-            if (typeof party !== 'undefined') {
-                party.confetti(document.body, {
-                    count: party.variation.range(40, 60),
-                    size: party.variation.range(0.8, 1.2),
-                });
+            
+            // Clear existing bday interval if any
+            if (window._bdayInterval) {
+                clearInterval(window._bdayInterval);
+                window._bdayInterval = null;
             }
+
+            // Trigger initial party popper effect
+            const triggerConfetti = () => {
+                if (typeof party !== 'undefined') {
+                    const nav = document.querySelector('nav') || document.body;
+                    // Pick a random point in the navbar
+                    const rect = nav.getBoundingClientRect();
+                    const randomX = rect.left + Math.random() * rect.width;
+                    const randomY = rect.top + Math.random() * rect.height;
+                    
+                    party.confetti({ x: randomX, y: randomY }, {
+                        count: party.variation.range(20, 40),
+                        size: party.variation.range(0.6, 1.0),
+                        spread: party.variation.range(40, 60),
+                    });
+                }
+            };
+
+            triggerConfetti();
+            window._bdayInterval = setInterval(triggerConfetti, 3000);
         } else {
             fwContainer.style.opacity = '0';
             if (fireworksInstance) {
                 fireworksInstance.stop();
+            }
+            if (window._bdayInterval) {
+                clearInterval(window._bdayInterval);
+                window._bdayInterval = null;
             }
         }
     }
