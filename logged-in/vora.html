@@ -19,33 +19,43 @@
     <script src="/VORA/VERN_SYSTEM/baremux/index.js"></script>
     <script>
         window.checkBare = async () => {
-            const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
-            const wispUrl = "wss://wisp.mercurywork.shop/";
-            const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
-            
+            if (window.__4sp_bare_mux_connecting) return;
+            window.__4sp_bare_mux_connecting = true;
+
             try {
-                const transport = await connection.getTransport();
-                if (!transport || transport.path !== transportPath) {
+                const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
+                const wispUrl = "wss://wisp.mercurywork.shop/";
+                const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
+                
+                try {
+                    const transport = await connection.getTransport();
+                    if (!transport || transport.path !== transportPath) {
+                        await connection.setTransport(transportPath, [
+                            { websocket: wispUrl },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                        ]);
+                    }
+                    console.log("Vora: BareMux Transport Set");
+                } catch (e) {
                     await connection.setTransport(transportPath, [
                         { websocket: wispUrl },
                         { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                     ]);
                 }
-            } catch (e) {
-                await connection.setTransport(transportPath, [
-                    { websocket: wispUrl },
-                    { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                ]);
+            } catch (err) {
+                // Silently handle connection failures to prevent spam
+            } finally {
+                window.__4sp_bare_mux_connecting = false;
             }
         };
 
         (async () => {
             if ("serviceWorker" in navigator) {
                 try {
-                    await navigator.serviceWorker.register("/VORA/VERN_SYSTEM/sw.js", {
-                        scope: "/VORA/VERN_SYSTEM/"
+                    await navigator.serviceWorker.register("/sw.js", {
+                        scope: "/"
                     });
-                } catch (e) { console.error("VERN Proxy Error", e); }
+                } catch (e) { console.error("Proxy Register Error", e); }
             }
             await window.checkBare();
         })();

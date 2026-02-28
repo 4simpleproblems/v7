@@ -53,12 +53,12 @@
                     if (gP.includes('googleusercontent.com') && gP.includes('=')) {
                         gP = gP.split('=')[0] + '=s500-c';
                     }
-                    innerHTML = `<img src="${gP}" class="${innerClasses}" referrerpolicy="no-referrer" onerror="this.src='/images/default_pfp.png'">`;
+                    innerHTML = `<img src="${gP}" class="${innerClasses}" referrerpolicy="no-referrer" onerror="this.src='/images/logo.png'">`;
                 }
             }
             
             if (!innerHTML) {
-                innerHTML = `<img src="/images/default_pfp.png" class="${innerClasses}">`;
+                innerHTML = `<img src="/images/logo.png" class="${innerClasses}">`;
             }
 
             const bgClass = userData?.pfpType === 'letter' ? '' : 'bg-gray-800';

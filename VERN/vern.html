@@ -401,16 +401,21 @@
                 }
             }
 
-            // Init BareMux
+            if (window.__4sp_bare_mux_connecting) return;
+            window.__4sp_bare_mux_connecting = true;
+
+            // Init BareMux with error handling
             try {
                 const connection = new BareMux.BareMuxConnection("/VERN/baremux/worker.js");
                 const wispUrl = "wss://wisp.mercurywork.shop/";
-                connection.setTransport("/VERN/libcurl/index.mjs", [
+                await connection.setTransport("/VERN/libcurl/index.mjs", [
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
             } catch (e) {
-                console.error("BareMux Init Failed", e);
+                // Silently handle init failures
+            } finally {
+                window.__4sp_bare_mux_connecting = false;
             }
         })();
 

@@ -49,16 +49,23 @@
                     console.error("SW Register Failed", e);
                 }
             }
+            
+            if (window.__4sp_bare_mux_connecting) return;
+            window.__4sp_bare_mux_connecting = true;
+
             try {
+                // SharedWorker support check and initialization
                 const connection = new BareMux.BareMuxConnection("/VELIUM/baremux/worker.js");
                 const wispUrl = "wss://wisp.mercurywork.shop/";
                 await connection.setTransport("/VELIUM/libcurl/index.mjs", [
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
-                console.log("BareMux Initialized");
+                console.log("Velium: BareMux Initialized");
             } catch (e) {
-                console.error("BareMux Init Failed", e);
+                // Silently handle init failures to prevent console spam
+            } finally {
+                window.__4sp_bare_mux_connecting = false;
             }
         })();
     </script>
