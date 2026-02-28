@@ -83,32 +83,35 @@
         };
         
         // Constants for providers (NEW)
-        const PROVIDER_CONFIG = {
-            'google.com': { 
-                name: 'Google', 
-                icon: '../images/google-icon.png', 
-                instance: () => new GoogleAuthProvider() 
-            },
-            'github.com': { 
-                name: 'GitHub', 
-                icon: '../images/github-mark-white.png', 
-                instance: () => new GithubAuthProvider() 
-            },
-            'microsoft.com': { 
-                name: 'Microsoft', 
-                icon: '../images/microsoft.png', 
-                instance: () => new OAuthProvider('microsoft.com') 
-            },
-            'twitter.com': { // NEW: X (Twitter) Provider
-                name: 'X (Twitter)',
-                icon: '../images/x.png',
-                instance: () => new OAuthProvider('twitter.com')
-            },
-            'password': { 
-                name: 'Email & Password', 
-                icon: '<i class="fa-solid fa-at fa-lg mr-3"></i>', 
-                isCredential: true
-            }
+        const getProviderConfig = () => {
+            const light = isLightTheme();
+            return {
+                'google.com': { 
+                    name: 'Google', 
+                    icon: '../images/google-icon.png', 
+                    instance: () => new GoogleAuthProvider() 
+                },
+                'github.com': { 
+                    name: 'GitHub', 
+                    icon: light ? '../images/github-mark.png' : '../images/github-mark-white.png', 
+                    instance: () => new GithubAuthProvider() 
+                },
+                'microsoft.com': { 
+                    name: 'Microsoft', 
+                    icon: '../images/microsoft.png', 
+                    instance: () => new OAuthProvider('microsoft.com') 
+                },
+                'twitter.com': { // NEW: X (Twitter) Provider
+                    name: 'X (Twitter)',
+                    icon: light ? '../images/x-black.png' : '../images/x.png',
+                    instance: () => new OAuthProvider('twitter.com')
+                },
+                'password': { 
+                    name: 'Email & Password', 
+                    icon: '<i class="fa-solid fa-at fa-lg mr-3"></i>', 
+                    isCredential: true
+                }
+            };
         };
 
         // --- NEW: Constants for Privacy Settings ---
@@ -123,6 +126,16 @@
         // --- NEW: Constant for Theme Storage ---
         // (Copied from navigation.js)
         const THEME_STORAGE_KEY = 'user-navbar-theme';
+        const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink'];
+
+        const isLightTheme = () => {
+            try {
+                const theme = JSON.parse(localStorage.getItem(THEME_STORAGE_KEY));
+                return theme && lightThemeNames.includes(theme.name);
+            } catch (e) {
+                return false;
+            }
+        };
 
 
         // Presets copied from tab-disguiser.js
@@ -632,10 +645,11 @@
         function getAccountManagementContent(providerData) {
             // Determine the Primary Provider (the first one in the list)
             const primaryProviderId = providerData && providerData.length > 0 ? providerData[0].providerId : null;
+            const providerConfig = getProviderConfig();
             
             let linkedProvidersHtml = providerData.map(info => {
                 const id = info.providerId;
-                const config = PROVIDER_CONFIG[id] || { name: id, icon: '<i class="fa-solid fa-puzzle-piece fa-lg mr-3"></i>' };
+                const config = providerConfig[id] || { name: id, icon: '<i class="fa-solid fa-puzzle-piece fa-lg mr-3"></i>' };
                 
                 const isPrimary = (id === primaryProviderId); // Check if this is the primary provider
                 const canUnlink = providerData.length > 1 && !(id === 'password' && primaryProviderId === 'password');
@@ -671,10 +685,10 @@
 
             // Filter out already linked social providers for the linking list
             const linkedIds = providerData.map(p => p.providerId);
-            const availableProviders = Object.keys(PROVIDER_CONFIG).filter(id => id !== 'password' && !linkedIds.includes(id));
+            const availableProviders = Object.keys(providerConfig).filter(id => id !== 'password' && !linkedIds.includes(id));
             
             let availableProvidersHtml = availableProviders.map(id => {
-                const config = PROVIDER_CONFIG[id];
+                const config = providerConfig[id];
                 let iconHtml = config.icon.startsWith('<i') ? config.icon : `<img src="${config.icon}" alt="${config.name} Icon" class="h-6 w-auto mr-3">`;
 
                 return `
@@ -738,7 +752,7 @@
                     <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
                         <p class="text-sm font-light text-red-300 mb-3">
                             <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
-                            WARNING: Deleting your account is permanent. You must re-authenticate with ${PROVIDER_CONFIG[primaryProviderId].name} to proceed.
+                            WARNING: Deleting your account is permanent. You must re-authenticate with ${providerConfig[primaryProviderId].name} to proceed.
                         </p>
                         
                         <div class="flex justify-between items-center pt-2">
@@ -1632,13 +1646,13 @@
                             <i class="fa-brands fa-youtube fa-lg mr-2"></i> YouTube
                         </a>
                         <a href="https://x.com/4simpleproblems" target="_blank" class="btn-toolbar-style" title="X (Twitter)">
-                            <i class="fa-brands fa-x-twitter fa-lg mr-2"></i>X
+                            <i class="fa-brands fa-x-twitter fa-lg mr-2 light-invert"></i>X
                         </a>
                         <a href="https://buymeacoffee.com/4simpleproblems" target="_blank" class="btn-toolbar-style" title="Buy Me a Coffee">
                             <i class="fa-solid fa-mug-hot fa-lg mr-2"></i> Buy Me a Coffee
                         </a>
                         <a href="https://github.com/v5-4simpleproblems" target="_blank" class="btn-toolbar-style" title="GitHub">
-                            <i class="fa-brands fa-github fa-lg mr-2"></i> Github
+                            <i class="fa-brands fa-github fa-lg mr-2 light-invert"></i> Github
                         </a>
                     </div>
                     
@@ -3047,7 +3061,8 @@
             linkProviderButtons.forEach(button => {
                 button.addEventListener('click', async () => {
                     const providerId = button.dataset.providerId;
-                    const config = PROVIDER_CONFIG[providerId];
+                    const providerConfig = getProviderConfig();
+                    const config = providerConfig[providerId];
                     const providerInstance = config.instance();
                     
                     showMessage(messageElement, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Attempting to link with ${config.name}...`, 'warning');
@@ -3086,7 +3101,8 @@
             unlinkProviderButtons.forEach(button => {
                 button.addEventListener('click', async () => {
                     const providerId = button.dataset.providerId;
-                    const config = PROVIDER_CONFIG[providerId];
+                    const providerConfig = getProviderConfig();
+                    const config = providerConfig[providerId];
                     
                     showMessage(messageElement, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Unlinking ${config.name}...`, 'warning');
                     
@@ -3127,7 +3143,8 @@
             setPrimaryProviderButtons.forEach(button => {
                 button.addEventListener('click', async () => {
                     const providerId = button.dataset.providerId;
-                    const config = PROVIDER_CONFIG[providerId];
+                    const providerConfig = getProviderConfig();
+                    const config = providerConfig[providerId];
                     const providerInstance = config.instance();
                     
                     showMessage(messageElement, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Attempting to set ${config.name} as primary...`, 'warning');
@@ -3287,11 +3304,12 @@ const performAccountDeletion = async (credential) => {
             else if (reauthenticateBtn) {
                 
                 reauthenticateBtn.addEventListener('click', async () => {
-                    const providerInstance = PROVIDER_CONFIG[primaryProviderId].instance();
+                    const providerConfig = getProviderConfig();
+                    const providerInstance = providerConfig[primaryProviderId].instance();
                     
                     reauthenticateBtn.disabled = true;
                     showMessage(deleteMessage, '', 'success');
-                    showMessage(deleteMessage, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Re-authenticating with ${PROVIDER_CONFIG[primaryProviderId].name}...`, 'warning');
+                    showMessage(deleteMessage, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Re-authenticating with ${providerConfig[primaryProviderId].name}...`, 'warning');
                     
                     try {
                         // Re-authenticate using the social provider popup

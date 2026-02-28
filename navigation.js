@@ -137,6 +137,9 @@ window.applyTheme = (theme) => {
             .bg-blue-600 .text-white,
             button[class*="bg-indigo-"] .text-white,
             .primary-cta { color: #ffffff !important; }
+
+            /* Invert X and Github logos to be black in light themes */
+            .fa-x-twitter, .fa-github { color: #000000 !important; }
         `;
     } else if (styleEl) {
         styleEl.remove();

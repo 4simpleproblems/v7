@@ -56,6 +56,11 @@
             color: var(--text-main);
         }
 
+        /* Invert icons for light themes */
+        html:not(.dark) .light-invert {
+            color: #000000 !important;
+        }
+
         /* --- THEME-AWARE STYLES --- */
         .btn-toolbar-style {
             background: var(--bg-secondary);
