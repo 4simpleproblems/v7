@@ -101,6 +101,12 @@ window.applyTheme = (theme) => {
         }
     }
 
+    // Determine lightest accent for card blur
+    const lightestAccent = themeToApply['tab-active-hover-text'] || themeToApply['tab-active-text'] || themeToApply['accent-primary'] || '#ffffff';
+    const rgb = hexToRgb(lightestAccent);
+    const cardBlurBg = rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.75)` : 'rgba(79, 70, 229, 0.75)';
+    root.style.setProperty('--card-blur-bg', cardBlurBg);
+
     // Apply specific colors for light themes
     if (isLightTheme) {
         root.style.setProperty('--menu-username-text', '#000000'); 

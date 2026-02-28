@@ -1053,7 +1053,7 @@
                     <div class="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between rounded-2xl">
                         <div class="flex items-start justify-between w-full">
                             <h3 class="text-4xl font-bold text-[var(--text-main)] truncate drop-shadow-lg" style="max-width: 80%;" title="${game.name}">${game.name}</h3>
-                            <div class="flex items-center gap-1.5 bg-[var(--accent-glow)] backdrop-blur-md rounded-2xl p-1.5 border border-[var(--accent-glow)]">
+                            <div class="flex items-center gap-1.5 bg-[var(--card-blur-bg)] backdrop-blur-md rounded-2xl p-1.5 border border-[var(--accent-glow)]">
                                 ${gameButtonsHtml}
                                 ${favoriteButtonHtml}
                             </div>
@@ -1107,8 +1107,8 @@
             card.innerHTML = `
                 <div class="relative w-full cursor-pointer group">
                     <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover"></div>
-                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--accent-glow)] backdrop-blur-md rounded-xl px-3 py-1.5 text-[var(--text-main)] truncate text-sm font-semibold shadow-lg border border-[var(--accent-glow)]" title="${game.name}">${game.name}</h3>
-                    <div class="absolute bottom-2 right-2 bg-[var(--accent-glow)] backdrop-blur-md rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg border border-[var(--accent-glow)]">
+                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--card-blur-bg)] backdrop-blur-md rounded-xl px-3 py-1.5 text-[var(--text-main)] truncate text-sm font-semibold shadow-lg border border-[var(--accent-glow)]" title="${game.name}">${game.name}</h3>
+                    <div class="absolute bottom-2 right-2 bg-[var(--card-blur-bg)] backdrop-blur-md rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg border border-[var(--accent-glow)]">
                         <button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>
                         <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>
                     </div>
