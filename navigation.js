@@ -32,7 +32,7 @@ if (!window.FIREBASE_CONFIG) {
 window.PAGE_CONFIG_URL = window.PAGE_CONFIG_URL || '../page-identification.json';
 const PRIVILEGED_EMAIL = '4simpleproblems@gmail.com'; 
 const THEME_STORAGE_KEY = 'user-navbar-theme';
-const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink']; // Define light theme names
+const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink', 'Birthday']; // Define light theme names
 
 const DEFAULT_THEME = {
     'name': 'Dark',
