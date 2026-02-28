@@ -87,6 +87,24 @@ const DEFAULT_THEME = {
 
 let fireworksInstance = null; // Store fireworks instance globally
 
+const hexToRgb = (hex) => {
+    if (!hex || typeof hex !== 'string') return null;
+    let c = hex.substring(1); 
+    if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+    if (c.length !== 6) return null;
+    const num = parseInt(c, 16);
+    return { r: (num >> 16) & 0xFF, g: (num >> 8) & 0xFF, b: (num >> 0) & 0xFF };
+};
+
+const getLuminance = (rgb) => {
+    if (!rgb) return 0;
+    const a = [rgb.r, rgb.g, rgb.b].map(v => {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+};
+
 window.applyTheme = (theme) => {
     const root = document.documentElement;
     if (!root) return;
@@ -1188,24 +1206,6 @@ let db;
             }
             document.getElementById('auth-menu-container')?.classList.add('closed');
             document.getElementById('auth-menu-container')?.classList.remove('open');
-        };
-
-        const hexToRgb = (hex) => {
-            if (!hex || typeof hex !== 'string') return null;
-            let c = hex.substring(1); 
-            if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
-            if (c.length !== 6) return null;
-            const num = parseInt(c, 16);
-            return { r: (num >> 16) & 0xFF, g: (num >> 8) & 0xFF, b: (num >> 0) & 0xFF };
-        };
-
-        const getLuminance = (rgb) => {
-            if (!rgb) return 0;
-            const a = [rgb.r, rgb.g, rgb.b].map(v => {
-                v /= 255;
-                return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-            });
-            return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
         };
 
         const getLetterAvatarTextColor = (gradientBg) => {
