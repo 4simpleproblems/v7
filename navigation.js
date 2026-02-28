@@ -138,6 +138,11 @@ window.applyTheme = (theme) => {
             button[class*="bg-indigo-"] .text-white,
             .primary-cta { color: #ffffff !important; }
 
+            /* Preserving vibrant red for settings delete section */
+            #deletionSection p, #deletionSection label, #deletionSection .text-red-300 { color: #fca5a5 !important; }
+            #deletionSection .bg-red-900\\/10 { background-color: rgba(127, 29, 29, 0.4) !important; }
+            #deletionSection .border-red-700\\/50 { border-color: rgba(185, 28, 28, 0.5) !important; }
+
             /* Invert X and Github logos to be black in light themes */
             .fa-x-twitter, .fa-github { color: #000000 !important; }
         `;
@@ -235,9 +240,17 @@ window.applyTheme = (theme) => {
         .video-card:hover, .zone-item:hover, .other-zone-item:hover {
             border-color: ${tintColor} !important;
             box-shadow: 0 10px 30px ${accentGlow} !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
         }
         .play-btn-circle {
             background-color: ${tintColor} !important;
+        }
+        /* Fix Pin Menu Direction - Open to the right */
+        #pin-context-menu {
+            left: 0 !important;
+            right: auto !important;
+            transform-origin: top left !important;
         }
     `;
 };
