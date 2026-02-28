@@ -149,6 +149,38 @@ window.applyTheme = (theme) => {
         styleEl.remove();
     }
 
+    // --- Global Theme Shadow Sync ---
+    const shadowFixId = '4sp-theme-shadow-sync';
+    let shadowStyleEl = document.getElementById(shadowFixId);
+    if (!shadowStyleEl) {
+        shadowStyleEl = document.createElement('style');
+        shadowStyleEl.id = shadowFixId;
+        document.head.appendChild(shadowStyleEl);
+    }
+    shadowStyleEl.textContent = `
+        /* Tint standard tailwind-style shadow classes */
+        .shadow-sm { box-shadow: 0 1px 2px 0 var(--accent-secondary) !important; }
+        .shadow { box-shadow: 0 1px 3px 0 var(--accent-secondary), 0 1px 2px -1px var(--accent-secondary) !important; }
+        .shadow-md { box-shadow: 0 4px 6px -1px var(--accent-secondary), 0 2px 4px -2px var(--accent-secondary) !important; }
+        .shadow-lg { box-shadow: 0 10px 15px -3px var(--accent-secondary), 0 4px 6px -4px var(--accent-secondary) !important; }
+        .shadow-xl { box-shadow: 0 20px 25px -5px var(--accent-secondary), 0 8px 10px -6px var(--accent-secondary) !important; }
+        .shadow-2xl { box-shadow: 0 25px 50px -12px var(--accent-secondary) !important; }
+        
+        /* Force tint on all elements with box-shadow that aren't specific exceptions */
+        [style*="box-shadow"], [class*="shadow"] {
+            --tw-shadow-color: var(--accent-secondary) !important;
+            --tw-ring-color: var(--accent-secondary) !important;
+        }
+
+        /* Specific menu and card shadows */
+        .auth-menu-container, .notification-menu-container, #pin-context-menu {
+            box-shadow: 0 10px 30px var(--accent-secondary) !important;
+        }
+        .viro-notif {
+            box-shadow: 0 10px 25px -5px var(--accent-secondary) !important;
+        }
+    `;
+
     // --- Fireworks Logic ---
     const fwContainer = document.getElementById('fireworks-container');
     if (fwContainer) {

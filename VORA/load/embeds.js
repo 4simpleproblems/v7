@@ -250,12 +250,12 @@ function createMediaCard(item) {
                 <i class="fas fa-play"></i>
             </div>
         </a>
-        <button class="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/10 hover:scale-110 transition-all fav-trigger z-10" data-id="${item.id}" title="Like">
+        <button class="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-[var(--accent-glow)] backdrop-blur-md text-white border border-[var(--accent-glow)] hover:scale-110 transition-all fav-trigger z-10" data-id="${item.id}" title="Like">
             <i class="${heartClass} fa-star"></i>
         </button>
-        <div class="overlay-grad">
+        <div class="overlay-grad !bg-[var(--accent-glow)] !backdrop-blur-md border-t border-[var(--accent-glow)]">
             <h3 class="text-white text-sm truncate mb-1 font-normal">${title}</h3>
-            <p class="text-[10px] text-gray-500">${formatFullDate(item.release_date || item.first_air_date) || ''}</p>
+            <p class="text-[10px] text-white/60">${formatFullDate(item.release_date || item.first_air_date) || ''}</p>
         </div>
     `;
 
