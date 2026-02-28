@@ -813,7 +813,7 @@
                             </button>
                         </div>
 
-                        <div id="editMode" class="hidden flex-col gap-3 pt-4 border-t border-[#252525]">
+                        <div id="editMode" class="hidden flex-col gap-3 pt-4 border-t border-[var(--border-main)]">
                             <label for="newUsernameInput" class="block text-[var(--text-muted)] opacity-60 text-sm font-light">New Username</label>
                             <input type="text" id="newUsernameInput" value="${currentUsername}" maxlength="${MAX_LENGTH}"
                                    class="input-text-style w-full" 
@@ -886,7 +886,7 @@
                             <input type="url" id="panicUrl3" class="input-text-style" placeholder="e.g., https://wikipedia.org">
                         </div>
                         
-                        <div class="flex justify-between items-center pt-4 border-t border-[#252525]">
+                        <div class="flex justify-between items-center pt-4 border-t border-[var(--border-main)]">
                             <p id="panicKeyMessage" class="general-message-area text-sm"></p>
                             <button id="applyPanicKeyBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
                                 <i class="fa-solid fa-check mr-1"></i> Apply Keys
@@ -908,7 +908,7 @@
                             <input type="checkbox" id="showOfflineToggle" class="w-5 h-5 accent-indigo-500">
                         </div>
                         
-                        <div class="flex items-center justify-between border-t border-[#252525] pt-6">
+                        <div class="flex items-center justify-between border-t border-[var(--border-main)] pt-6">
                             <div>
                                 <p class="text-emphasis">Game Activity Tracking</p>
                                 <p class="text-xs font-light text-[var(--text-muted)] opacity-60">Allow 4SP to show which specific game you are currently playing.</p>
@@ -916,7 +916,7 @@
                             <input type="checkbox" id="trackGamesToggle" checked class="w-5 h-5 accent-indigo-500">
                         </div>
 
-                        <div class="flex items-center justify-between border-t border-[#252525] pt-6">
+                        <div class="flex items-center justify-between border-t border-[var(--border-main)] pt-6">
                             <div>
                                 <p class="text-emphasis">Leaderboard Participation</p>
                                 <p class="text-xs font-light text-[var(--text-muted)] opacity-60">Show your profile and activity on the global leaderboard.</p>
@@ -924,7 +924,7 @@
                             <input type="checkbox" id="leaderboardToggle" checked class="w-5 h-5 accent-indigo-500">
                         </div>
                         
-                        <div class="flex justify-between items-center pt-4 border-t border-[#252525]">
+                        <div class="flex justify-between items-center pt-4 border-t border-[var(--border-main)]">
                             <p id="activityPresenceMessage" class="general-message-area text-sm"></p>
                             <button id="saveActivityPresenceBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
                                 <i class="fa-solid fa-check mr-1"></i> Save Status
@@ -968,7 +968,7 @@
                                     <div class="flex items-center gap-2">
                                         <input type="text" id="faviconFetchInput" class="input-text-style" placeholder="e.g., google.com">
                                         <button type="button" id="fetchFaviconBtn" class="btn-toolbar-style btn-primary-override w-28" style="padding: 0.5rem 0.75rem;">Fetch</button>
-                                        <div id="favicon-fetch-preview-container" class="w-10 h-10 border border-[#252525] bg-[#111111] rounded-[16px] flex items-center justify-center p-1 flex-shrink-0">
+                                        <div id="favicon-fetch-preview-container" class="w-10 h-10 border border-[var(--border-main)] bg-[#111111] rounded-[16px] flex items-center justify-center p-1 flex-shrink-0">
                                             <img src="" alt="Preview" class="w-full h-full object-contain" style="display: none;">
                                         </div>
                                     </div>
@@ -976,7 +976,7 @@
                                 </div>
                         </div>
 
-                        <div class="flex justify-between items-center pt-4 mt-4 border-t border-[#252525]">
+                        <div class="flex justify-between items-center pt-4 mt-4 border-t border-[var(--border-main)]">
                             <p id="urlChangerMessage" class="general-message-area text-sm"></p>
                             <button id="applyUrlChangerBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
                                 <i class="fa-solid fa-check mr-1"></i> Apply Tab
@@ -1047,7 +1047,7 @@
                         
                         <div class="flex flex-col gap-4">
                             <!-- Mode Selection Buttons -->
-                            <div class="flex gap-4 mb-4 border-b border-[#333] pb-4">
+                            <div class="flex gap-4 mb-4 border-b border-[var(--border-main)] pb-4">
                                 <button class="pfp-mode-btn active btn-toolbar-style" data-mode="google">Google PFP</button>
                                 <button class="pfp-mode-btn btn-toolbar-style" data-mode="letter">Letter Avatar</button>
                                 <button class="pfp-mode-btn btn-toolbar-style" data-mode="mibi">Mibi Avatar</button>
@@ -1086,7 +1086,7 @@
                                 
                                 <!-- MAC Modal -->
                                 <div id="mibi-mac-menu" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden backdrop-blur-sm">
-                                    <div class="relative bg-black rounded-[16px] shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden border border-[#333]">
+                                    <div class="relative bg-black rounded-[16px] shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden border border-[var(--border-main)]">
                                         
                                         <!-- Header -->
                                         <div class="flex justify-between items-center p-6 border-b border-[var(--border-main)] bg-[var(--bg-secondary)]">
@@ -1100,8 +1100,8 @@
                                         <div class="flex flex-grow overflow-hidden relative">
                                             
                                             <!-- LEFT: Live Preview -->
-                                            <div id="mac-preview-wrapper" class="w-1/2 flex flex-col items-center justify-center bg-[#0a0a0a] p-8 border-r border-[#333] transition-all duration-500 ease-in-out z-10">
-                                                <div class="relative h-64 md:h-80 aspect-square rounded-[56px] overflow-hidden border-4 border-[#333] shadow-lg mb-6 transition-all duration-300 hover:border-dashed hover:border-white cursor-pointer flex-shrink-0" id="mac-preview-container" style="aspect-ratio: 1/1;">
+                                            <div id="mac-preview-wrapper" class="w-1/2 flex flex-col items-center justify-center bg-[#0a0a0a] p-8 border-r border-[var(--border-main)] transition-all duration-500 ease-in-out z-10">
+                                                <div class="relative h-64 md:h-80 aspect-square rounded-[56px] overflow-hidden border-4 border-[var(--border-main)] shadow-lg mb-6 transition-all duration-300 hover:border-dashed hover:border-white cursor-pointer flex-shrink-0" id="mac-preview-container" style="aspect-ratio: 1/1;">
                                                     <!-- Background (Static) -->
                                                     <div id="mac-preview-bg" class="absolute inset-0 w-full h-full transition-colors duration-300"></div>
                                                     
@@ -1166,7 +1166,7 @@
                                         </div>
                                         
                                         <!-- Footer Actions -->
-                                        <div class="p-6 border-t border-[#333] bg-black flex justify-end gap-4 items-center">
+                                        <div class="p-6 border-t border-[var(--border-main)] bg-black flex justify-end gap-4 items-center">
                                             <button id="mac-reset-btn" class="btn-toolbar-style mr-auto px-4 py-2 rounded-[16px]" title="Reset Avatar">
                                                 <i class="fa-solid fa-rotate-left"></i>
                                             </button>
@@ -1281,7 +1281,7 @@
                         </div>
 
                         <!-- Add Admin Section -->
-                        <div class="border-t border-[#252525] pt-4 mt-4">
+                        <div class="border-t border-[var(--border-main)] pt-4 mt-4">
                             <label for="newAdminEmail" class="block text-[var(--text-muted)] opacity-60 text-sm font-light mb-2">Add New Admin (by Email)</label>
                             <div class="flex gap-2">
                                 <input type="email" id="newAdminEmail" class="input-text-style flex-grow" placeholder="Enter email address">
@@ -1293,7 +1293,7 @@
                         </div>
 
                         <!-- Superadmin Controls (only visible to superadmin) -->
-                        <div id="superadmin-controls" class="hidden border-t border-[#252525] pt-4 mt-4">
+                        <div id="superadmin-controls" class="hidden border-t border-[var(--border-main)] pt-4 mt-4">
                             <h4 class="text-lg font-bold text-[var(--text-main)] mb-2">Superadmin Actions</h4>
                             <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
                                 Only the primary superadmin can manage other superadmins and strip admin privileges.

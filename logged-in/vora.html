@@ -220,8 +220,27 @@
             transition: opacity 0.3s ease;
         }
 
+        .play-btn-circle {
+            width: 60px;
+            height: 60px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            transform: translateY(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 20px -5px var(--accent-glow);
+        }
+
         .video-card:hover .play-overlay {
             opacity: 1;
+        }
+
+        .video-card:hover .play-btn-circle {
+            transform: translateY(0);
         }
 
         .overlay-grad {

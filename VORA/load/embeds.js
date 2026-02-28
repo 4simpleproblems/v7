@@ -246,7 +246,9 @@ function createMediaCard(item) {
     card.innerHTML = `
         <img src="${poster}" loading="lazy" onerror="this.closest('.video-card').style.display='none'">
         <a href="${link}#${hashValue}" class="play-overlay">
-            <i class="fas fa-play text-4xl text-white"></i>
+            <div class="play-btn-circle">
+                <i class="fas fa-play"></i>
+            </div>
         </a>
         <button class="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/10 hover:scale-110 transition-all fav-trigger z-10" data-id="${item.id}" title="Like">
             <i class="${heartClass} fa-star"></i>
