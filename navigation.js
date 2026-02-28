@@ -177,6 +177,9 @@ window.applyTheme = (theme) => {
     }
 
     const logos = document.querySelectorAll('.navbar-logo, #navbar-logo');
+    const tintColor = themeToApply['accent-primary'] || themeToApply['tab-active-text'] || '#ffffff';
+    const accentGlow = themeToApply['accent-secondary'] || 'rgba(79, 70, 229, 0.4)';
+
     logos.forEach(logoImg => {
         let newLogoSrc;
         if (themeToApply.name === 'Christmas') {
@@ -207,17 +210,34 @@ window.applyTheme = (theme) => {
             logoImg.style.filter = ''; 
             logoImg.style.transform = '';
         } else {
-            const tintColor = themeToApply['accent-primary'] || themeToApply['tab-active-text'] || '#ffffff';
-            logoImg.style.filter = `drop-shadow(100px 0 0 ${tintColor})`;
-            logoImg.style.transform = 'translateX(-100px)';
+            // Apply a simple drop-shadow tint for Vana and others
+            logoImg.style.filter = `drop-shadow(0 0 5px ${tintColor})`;
+            logoImg.style.transform = '';
         }
 
         if (modeChanged) {
-            // Force Reflow
             void logoImg.offsetWidth; 
-            logoImg.style.transition = 'filter 0.3s ease'; // Restore transition
+            logoImg.style.transition = 'filter 0.3s ease'; 
         }
     });
+
+    // --- Global Theme Card Sync ---
+    const cardFixId = '4sp-theme-card-sync';
+    let cardStyleEl = document.getElementById(cardFixId);
+    if (!cardStyleEl) {
+        cardStyleEl = document.createElement('style');
+        cardStyleEl.id = cardFixId;
+        document.head.appendChild(cardStyleEl);
+    }
+    cardStyleEl.textContent = `
+        .video-card:hover, .zone-item:hover, .other-zone-item:hover {
+            border-color: ${tintColor} !important;
+            box-shadow: 0 10px 30px ${accentGlow} !important;
+        }
+        .play-btn-circle {
+            background-color: ${tintColor} !important;
+        }
+    `;
 };
 
 let auth;

@@ -352,31 +352,6 @@
             transform: translateX(-50%) translateY(0);
         }
     </style>
-
-        /* --- Toaster/Status --- */
-        #status-toaster {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            background-color: rgba(13, 13, 13, 0.95);
-            backdrop-filter: blur(5px);
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            border: 1px solid #333;
-            font-size: 0.85rem;
-            color: #fff;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        #status-toaster.visible {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-    </style>
-    
 </head>
 <body class="min-h-screen">
 
@@ -388,19 +363,6 @@
 
         <main class="flex-grow p-5 md:p-8 max-w-7xl mx-auto w-full relative">
             
-            <div class="mb-8 p-5 rounded-[1.25rem] border border-cyan-900/30 bg-cyan-900/10 flex flex-col items-start gap-3">
-                <h3 class="text-lg text-cyan-400 flex items-center gap-2">
-                    <i class="fa-solid fa-server"></i> Integrated Third-Party Soundboard
-                </h3>
-                <p class="text-sm text-cyan-100/80 leading-relaxed max-w-4xl">
-                    Since you have entered the 4SP Max website, the <strong>Third Party Soundboard</strong> is now hosted directly within this page (located at the bottom). There is no need to download separate HTML files or bypass external blocks. 
-                </p>
-                <p class="text-xs text-cyan-300/60 italic border-t border-cyan-800/30 pt-2 mt-1 w-full">
-                    <i class="fa-solid fa-circle-info mr-1"></i>
-                    This direct integration logic has also been applied to the Messenger.
-                </p>
-            </div>
-
             <div class="mb-10">
                 <h2 class="section-header text-[var(--text-main)]">Normal Sounds</h2>
                 <div id="normalSoundsContainer" class="sound-grid"></div>
@@ -459,12 +421,6 @@
                         <span><i class="fa-solid fa-volume-xmark w-5"></i> Stop All</span>
                         <span class="text-xs text-gray-500 border border-[#333] px-1 rounded">SHIFT+C</span>
                     </div>
-                    
-                    <div class="my-2 border-t border-[#333]"></div>
-
-                    <div id="auth-btn" class="dropdown-item">
-                        <span><i class="fa-brands fa-google w-5"></i> Login</span>
-                    </div>
                 </div>
             </div>
         </div>
@@ -480,8 +436,7 @@
 
         // --- Firebase Integration ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // Same config as the admin file
         const firebaseConfig = {
@@ -497,10 +452,6 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        const ADMIN_EMAIL = "4simpleproblems@gmail.com";
-        let isAdmin = false;
 
         // --- UI & State References ---
         const pageContent = document.getElementById('page-content');
@@ -542,7 +493,6 @@
         const applyDelayBtn = document.getElementById('applyDelayBtn');
         const clearSoundsBtn = document.getElementById('clear-sounds-btn');
         const statusToaster = document.getElementById('status-toaster');
-        const authBtn = document.getElementById('auth-btn');
         
         // Sound Containers
         const normalSoundsContainer = document.getElementById('normalSoundsContainer');
@@ -606,37 +556,6 @@
                 thirdPartySectionWrapper.style.display = 'block';
             });
         }
-        
-        // --- Auth Logic ---
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // User is signed in
-                if (user.email === ADMIN_EMAIL) {
-                    isAdmin = true;
-                    showStatus("Admin Access Granted", "success");
-                    authBtn.innerHTML = `<span><i class="fa-solid fa-user-shield w-5 text-green-500"></i> Admin Logout</span>`;
-                } else {
-                    isAdmin = false;
-                    authBtn.innerHTML = `<span><i class="fa-solid fa-right-from-bracket w-5"></i> Logout</span>`;
-                }
-            } else {
-                // User is signed out
-                isAdmin = false;
-                authBtn.innerHTML = `<span><i class="fa-brands fa-google w-5"></i> Login</span>`;
-            }
-        });
-
-        authBtn.addEventListener('click', () => {
-             if (auth.currentUser) {
-                 signOut(auth).then(() => showStatus("Logged out"));
-             } else {
-                 const provider = new GoogleAuthProvider();
-                 signInWithPopup(auth, provider).catch((error) => {
-                     console.error("Login failed", error);
-                     showStatus("Login failed", "error");
-                 });
-             }
-        });
         
         document.addEventListener('keydown', (e) => {
             // Stop All Sounds: SHIFT + C
