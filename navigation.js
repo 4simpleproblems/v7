@@ -210,9 +210,8 @@ window.applyTheme = (theme) => {
             logoImg.style.filter = ''; 
             logoImg.style.transform = '';
         } else {
-            // Apply a simple drop-shadow tint for Vana and others
-            logoImg.style.filter = `drop-shadow(0 0 5px ${tintColor})`;
-            logoImg.style.transform = '';
+            logoImg.style.filter = `drop-shadow(100px 0 0 ${tintColor})`;
+            logoImg.style.transform = 'translateX(-100px)';
         }
 
         if (modeChanged) {
