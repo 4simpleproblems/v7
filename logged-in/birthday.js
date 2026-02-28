@@ -73,7 +73,7 @@
                 friction: 0.97,
                 gravity: 1.5,
                 particles: 150,
-                traceLength: 0.1, // Minimum trace for "dots" look
+                traceLength: 1, // Integer value
                 traceSpeed: 1,
                 explosion: 12,
                 intensity: 40,

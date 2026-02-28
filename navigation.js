@@ -219,7 +219,7 @@ window.applyTheme = (theme) => {
                 friction: 0.97,
                 gravity: 1.5,
                 particles: 100,
-                traceLength: 0.1, // Minimum trace for "dots" look
+                traceLength: 1, // Integer value
                 traceSpeed: 1,
                 explosion: 8,
                 intensity: 30,
@@ -252,10 +252,7 @@ window.applyTheme = (theme) => {
                     fireworksInstance = new Fireworks.default(fwContainer, fireworksOptions);
                     fireworksInstance.start();
                 } else {
-                    // Stop, clear, and re-init to avoid internal state errors when switching modes
-                    fireworksInstance.stop();
-                    fireworksInstance.setOptions(fireworksOptions);
-                    fireworksInstance.start();
+                    fireworksInstance.updateOptions(fireworksOptions);
                 }
             }
         } else {
