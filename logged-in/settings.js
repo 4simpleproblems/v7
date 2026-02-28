@@ -4127,16 +4127,15 @@ const performAccountDeletion = async (credential) => {
                     
                     const isActive = savedTheme && savedTheme.name === theme.name;
                     
-                    // Use active tab colors for the button style to match navigation.js look
-                    const activeText = theme['tab-active-text'] || '#4f46e5';
-                    const activeBorder = theme['tab-active-border'] || '#4f46e5';
-                    // MODIFICATION: Use navbar-bg for background to show light/dark correctly
-                    const activeBg = theme['navbar-bg'] || '#000000'; 
+                    // Use the new standardized variables for the button preview
+                    const activeText = theme['text-primary'] || theme['tab-active-text'] || '#ffffff';
+                    const activeBorder = theme['accent-primary'] || theme['tab-active-border'] || '#4f46e5';
+                    const activeBg = theme['bg-primary'] || theme['navbar-bg'] || '#000000'; 
                     
-                    // Hover states
-                    const hoverText = theme['tab-active-hover-text'] || activeText;
-                    const hoverBorder = theme['tab-active-hover-border'] || activeBorder;
-                    const hoverBg = theme['tab-active-hover-bg'] || activeBg;
+                    // Hover states (using accents)
+                    const hoverText = theme['text-primary'] || '#ffffff';
+                    const hoverBorder = theme['accent-primary'] || '#4f46e5';
+                    const hoverBg = theme['accent-secondary'] || 'rgba(79, 70, 229, 0.2)';
 
                     themeButtonsHtml += `
                         <button 

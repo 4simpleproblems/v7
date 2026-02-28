@@ -10,12 +10,15 @@
     <script src="../injector.js"></script>
 
     <style>
+        :root {
+            --bg-page: var(--bg-primary, #000);
+        }
         body, html { 
             margin: 0; 
             padding: 0; 
             height: 100%; 
             overflow: hidden; 
-            background-color: #000;
+            background-color: var(--bg-page);
         }
         
         /* The injector/navigation adds padding-top: 64px to body.
@@ -75,3 +78,4 @@
     </script>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->

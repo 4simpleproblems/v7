@@ -18,19 +18,22 @@
     <style>
         /* --- FONT & BASE STYLING --- */
         :root {
-            --menu-bg: #000000;
-            --menu-border: #333;
-            --menu-text: #d1d5db;
-            --menu-item-hover-bg: #2a2a2a;
-            --tab-active-bg: rgba(79, 70, 229, 0.1);
-            --tab-active-border: #4f46e5;
-            --tab-active-text: #4f46e5;
+            --bg-page: var(--bg-primary, #040404);
+            --bg-card: var(--bg-secondary, #0d0d0d);
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #1a1a1a);
+            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --btn-text: var(--button-text, #4f46e5);
         }
 
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: #040404; 
-            color: #c0c0c0; 
+            background-color: var(--bg-page); 
+            color: var(--text-muted); 
             transition: all 0.3s ease;
             font-size: 16px;
             overflow-x: hidden;
@@ -43,10 +46,10 @@
 
         /* --- BUTTONS & TOOLBAR --- */
         .btn-toolbar-style {
-            background: var(--menu-bg);
-            border: 1px solid var(--menu-border);
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
             border-radius: 14px; /* Updated to 14px */
-            color: var(--menu-text);
+            color: var(--text-muted);
             padding: 0.5rem 1rem;
             font-weight: 500;
             cursor: pointer;
@@ -57,26 +60,26 @@
         }
 
         .btn-toolbar-style:hover {
-            background-color: var(--menu-bg);
-            border-color: #fff;
-            color: #ffffff;
+            background-color: var(--bg-card);
+            border-color: var(--text-main);
+            color: var(--text-main);
         }
         
         .btn-toolbar-style.btn-primary-override {
-            background-color: var(--tab-active-bg);
-            border: 1px solid var(--tab-active-border);
-            color: var(--tab-active-text);
+            background-color: var(--btn-bg);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
         }
         .btn-toolbar-style.btn-primary-override:hover {
-            background-color: rgba(79, 70, 229, 0.15);
-            border-color: #6366f1;
-            color: #6366f1;
+            background-color: var(--accent-glow);
+            border-color: var(--accent-color);
+            color: var(--text-main);
         }
 
         .btn-secondary-override {
-            background: var(--menu-bg);
-            border: 1px solid var(--menu-border);
-            color: var(--menu-text);
+            background: var(--bg-page);
+            border: 1px solid var(--border-main);
+            color: var(--text-muted);
             padding: 0.5rem 1rem;
             font-weight: 500;
             cursor: pointer;
@@ -87,9 +90,9 @@
             gap: 0.5rem;
         }
         .btn-secondary-override:hover {
-            background-color: var(--menu-item-hover-bg);
-            border-color: #555;
-            color: #ffffff;
+            background-color: var(--bg-card);
+            border-color: var(--text-main);
+            color: var(--text-main);
         }
 
         /* --- DROPDOWN --- */
@@ -97,8 +100,8 @@
             position: absolute;
             top: 100%;
             right: 0;
-            background: var(--menu-bg);
-            border: 1px solid var(--menu-border);
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
             border-radius: 1.25rem; /* Updated to 1.25rem */
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
             z-index: 1010;
@@ -109,7 +112,7 @@
         .dropdown-item {
             padding: 0.5rem 0.75rem;
             font-size: 0.875rem;
-            color: var(--menu-text);
+            color: var(--text-muted);
             border-radius: 14px; /* Updated to 14px */
             cursor: pointer;
             transition: background-color 0.15s, color 0.15s;
@@ -118,8 +121,8 @@
             gap: 10px;
         }
         .dropdown-item:hover {
-            background-color: var(--menu-item-hover-bg);
-            color: #ffffff;
+            background-color: var(--accent-glow);
+            color: var(--text-main);
         }
 
         /* --- MAIN CONTENT --- */
@@ -139,8 +142,8 @@
 
         /* --- CARD STYLING --- */
         .countdown-card {
-            background-color: #0d0d0d;
-            border: 1px solid #1a1a1a;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-main);
             border-radius: 1.25rem; /* Updated to 1.25rem */
             padding: 1.5rem;
             padding-bottom: 3.5rem; 
@@ -151,7 +154,7 @@
             position: relative;
         }
         .countdown-card:hover {
-            border-color: #333;
+            border-color: var(--accent-color);
         }
         .card-header {
             display: flex;
@@ -160,30 +163,31 @@
         }
         .card-title {
             font-size: 1.2rem;
-            color: #fff;
+            color: var(--text-main);
         }
         .card-meta {
             font-size: 0.8rem;
-            color: #707070;
+            color: var(--text-muted);
+            opacity: 0.6;
         }
         .time-display {
             font-family: 'Roboto', sans-serif;
             font-size: 1.5rem;
-            color: var(--tab-active-text);
+            color: var(--accent-color);
             font-weight: 300;
         }
         .detail-display {
             font-size: 0.85rem;
-            color: #9ca3af;
+            color: var(--text-muted);
+            opacity: 0.8;
             line-height: 1.4;
         }
         .delete-btn {
             position: absolute;
             bottom: 1rem; 
             right: 1rem;
-            color: #707070;
-            cursor: pointer;
-            opacity: 0.8; 
+            color: var(--text-muted);
+            opacity: 0.5; 
             padding: 0.5rem;
             border-radius: 14px;
             transition: all 0.2s;
@@ -225,8 +229,8 @@
         }
 
         #countdown-modal {
-            background: #0d0d0d;
-            border: 1px solid #333;
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
             border-radius: 1.25rem; /* Updated to 1.25rem */
             width: 80vw;
             max-width: 1000px;
@@ -239,7 +243,7 @@
         .modal-left {
             width: 45%;
             padding: 2rem;
-            border-right: 1px solid #1a1a1a;
+            border-right: 1px solid var(--border-main);
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
@@ -247,7 +251,7 @@
         }
         .modal-right {
             width: 55%;
-            background: #050505;
+            background: var(--bg-page);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -264,17 +268,18 @@
         }
         label {
             font-size: 0.85rem;
-            color: #707070;
+            color: var(--text-muted);
+            opacity: 0.6;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
         .custom-input-container {
-            background: #151515;
-            border: 1px solid #333;
+            background: var(--bg-page);
+            border: 1px solid var(--border-main);
             border-radius: 14px; /* Updated to 14px */
             padding: 0.75rem;
-            color: #fff;
+            color: var(--text-main);
             outline: none;
             font-family: inherit;
             cursor: pointer;
@@ -285,26 +290,26 @@
             font-size: 1rem;
         }
         .custom-input-container:hover {
-            border-color: #555;
+            border-color: var(--accent-color);
         }
         .custom-input-container.focus-ring {
-            border-color: var(--tab-active-border);
+            border-color: var(--accent-color);
         }
         .custom-input-container span {
             font-weight: 500;
         }
         
         select {
-            background: #151515;
-            border: 1px solid #333;
+            background: var(--bg-page);
+            border: 1px solid var(--border-main);
             border-radius: 14px; /* Updated to 14px */
             padding: 0.75rem;
-            color: #fff;
+            color: var(--text-main);
             outline: none;
             font-family: inherit;
         }
         select:focus {
-            border-color: var(--tab-active-border);
+            border-color: var(--accent-color);
         }
 
         .checkbox-group {
@@ -322,41 +327,44 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            border: 1px solid #333;
-            color: #707070;
+            border: 1px solid var(--border-main);
+            color: var(--text-muted);
+            opacity: 0.6;
             cursor: pointer;
             font-size: 0.8rem;
             transition: all 0.2s;
         }
         .day-checkbox:checked + .day-label {
-            background: var(--tab-active-bg);
-            border-color: var(--tab-active-border);
-            color: var(--tab-active-text);
+            background: var(--btn-bg);
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            opacity: 1;
         }
 
         #preview-big-time {
             font-size: 2.5rem;
             font-weight: 300;
-            color: #fff;
+            color: var(--text-main);
             margin-bottom: 1rem;
             font-family: 'Roboto', sans-serif;
         }
         #preview-details {
             font-size: 1rem;
-            color: #707070;
+            color: var(--text-muted);
+            opacity: 0.8;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
             text-align: left;
         }
         .preview-stat {
-            background: #111;
+            background: var(--bg-card);
             padding: 0.5rem 1rem;
             border-radius: 14px;
-            border: 1px solid #222;
+            border: 1px solid var(--border-main);
         }
         .preview-stat strong {
-            color: var(--tab-active-text);
+            color: var(--accent-color);
         }
 
         .modal-actions {
@@ -384,8 +392,8 @@
             pointer-events: auto;
         }
         .picker-modal {
-            background: #0d0d0d;
-            border: 1px solid #333;
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
             border-radius: 1.25rem;
             padding: 1.5rem;
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
@@ -404,8 +412,8 @@
         }
         .calendar-nav-btn {
             background: transparent;
-            border: 1px solid #333;
-            color: #fff;
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
             width: 30px;
             height: 30px;
             border-radius: 50%;
@@ -415,7 +423,7 @@
             justify-content: center;
         }
         .calendar-nav-btn:hover {
-            background: #222;
+            background: var(--bg-page);
         }
         .calendar-grid {
             display: grid;
@@ -424,7 +432,8 @@
             text-align: center;
         }
         .calendar-day-name {
-            color: #707070;
+            color: var(--text-muted);
+            opacity: 0.6;
             font-size: 0.75rem;
             padding-bottom: 0.5rem;
         }
@@ -436,23 +445,23 @@
             border-radius: 0.3rem;
             cursor: pointer;
             font-size: 0.9rem;
-            color: #ccc;
+            color: var(--text-muted);
         }
         .calendar-day:hover {
-            background: #222;
-            color: #fff;
+            background: var(--bg-page);
+            color: var(--text-main);
         }
         .calendar-day.empty {
             cursor: default;
             pointer-events: none;
         }
         .calendar-day.selected {
-            background: var(--tab-active-bg);
-            border: 1px solid var(--tab-active-border);
-            color: var(--tab-active-text);
+            background: var(--btn-bg);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
         }
         .calendar-day.today {
-            border: 1px solid #444;
+            border: 1px solid var(--border-main);
         }
 
         /* Time Picker Specifics (12H Format) */
@@ -464,28 +473,31 @@
         .time-column {
             flex: 1;
             overflow-y: auto;
-            border: 1px solid #222;
+            border: 1px solid var(--border-main);
             border-radius: 14px;
-            background: #080808;
+            background: var(--bg-page);
         }
         .time-option {
             padding: 0.5rem;
             text-align: center;
             cursor: pointer;
             font-size: 1.1rem;
-            color: #888;
+            color: var(--text-muted);
+            opacity: 0.6;
         }
         .time-option:hover {
-            background: #1a1a1a;
-            color: #fff;
+            background: var(--bg-card);
+            color: var(--text-main);
         }
         .time-option.selected {
-            background: var(--tab-active-bg);
-            color: var(--tab-active-text);
+            background: var(--btn-bg);
+            color: var(--accent-color);
+            opacity: 1;
         }
         .picker-title {
             text-align: center;
-            color: #707070;
+            color: var(--text-muted);
+            opacity: 0.6;
             font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -493,15 +505,15 @@
         }
 
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #040404; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        ::-webkit-scrollbar-track { background: var(--bg-page); }
+        ::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
     </style>
     
 </head>
 <body class="min-h-screen">
     
-    <header class="flex justify-between items-center p-4 border-b border-[#1a1a1a]">
+    <header class="flex justify-between items-center p-4 border-b border-[var(--border-main)] bg-[var(--bg-page)] sticky top-0 z-40">
         <h1 class="text-2xl font-bold text-white">4SP Countdowns</h1>
         
         <div class="flex items-center gap-2">
@@ -540,23 +552,23 @@
                 <div class="form-group">
                     <label>Title</label>
                     <input type="text" id="input-title" placeholder="e.g. Project Launch" maxlength="40" 
-                           class="bg-[#151515] border border-[#333] rounded-[14px] p-3 text-white outline-none focus:border-indigo-500">
+                           class="bg-[var(--bg-page)] border border-[var(--border-main)] rounded-[14px] p-3 text-white outline-none focus:border-[var(--accent-color)]">
                 </div>
 
                 <div class="flex gap-4">
                     <div class="form-group flex-1">
                         <label>Date</label>
-                        <div id="date-display-container" class="custom-input-container relative">
+                        <div id="date-display-container" class="custom-input-container relative bg-[var(--bg-page)] border-[var(--border-main)]">
                             <span id="date-display"></span>
-                            <i class="fa-solid fa-calendar-day text-[#707070]"></i>
+                            <i class="fa-solid fa-calendar-day text-[var(--text-muted)]"></i>
                              <input type="hidden" id="input-date">
                         </div>
                     </div>
                     <div class="form-group flex-1">
                         <label>Time</label>
-                        <div id="time-display-container" class="custom-input-container relative">
+                        <div id="time-display-container" class="custom-input-container relative bg-[var(--bg-page)] border-[var(--border-main)]">
                             <span id="time-display"></span>
-                            <i class="fa-solid fa-clock text-[#707070]"></i>
+                            <i class="fa-solid fa-clock text-[var(--text-muted)]"></i>
                             <input type="hidden" id="input-time" value="12:00">
                         </div>
                     </div>
@@ -565,7 +577,7 @@
                 <div id="frequency-section" class="hidden">
                     <div class="form-group">
                         <label>Frequency Pattern</label>
-                        <select id="input-freq-type" class="bg-[#151515] border border-[#333] rounded-[14px] p-3 text-white outline-none focus:border-indigo-500">
+                        <select id="input-freq-type" class="bg-[var(--bg-page)] border border-[var(--border-main)] rounded-[14px] p-3 text-white outline-none focus:border-[var(--accent-color)]">
                             <option value="daily">Daily</option>
                             <option value="weekly">Specific Days (Weekly)</option>
                             <option value="monthly">Monthly (Same Day)</option>
@@ -1326,3 +1338,4 @@
     </script>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->

@@ -72,7 +72,17 @@ const DEFAULT_THEME = {
     'pin-btn-icon-color': '#d1d5db',
     'hint-bg': '#010101',
     'hint-border': '#374151',
-    'hint-text': '#ffffff'
+    'hint-text': '#ffffff',
+    'bg-primary': '#040404',
+    'bg-secondary': '#080808',
+    'text-primary': '#ffffff',
+    'text-secondary': '#c0c0c0',
+    'accent-primary': '#4f46e5',
+    'accent-secondary': 'rgba(79, 70, 229, 0.4)',
+    'border-primary': '#1a1a1a',
+    'border-secondary': 'rgba(255,255,255,0.05)',
+    'button-bg': 'rgba(79, 70, 229, 0.1)',
+    'button-text': '#4f46e5'
 };
 
 let fireworksInstance = null; // Store fireworks instance globally
@@ -165,7 +175,7 @@ window.applyTheme = (theme) => {
             logoImg.style.filter = ''; 
             logoImg.style.transform = '';
         } else {
-            const tintColor = themeToApply['tab-active-text'] || '#ffffff';
+            const tintColor = themeToApply['accent-primary'] || themeToApply['tab-active-text'] || '#ffffff';
             logoImg.style.filter = `drop-shadow(100px 0 0 ${tintColor})`;
             logoImg.style.transform = 'translateX(-100px)';
         }

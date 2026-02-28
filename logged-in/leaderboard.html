@@ -15,16 +15,22 @@
 
     <style>
         :root {
-            --bg-page: #040404;
-            --bg-container: #080808;
-            --border-color: rgba(255,255,255,0.05);
-            --accent-color: #4f46e5;
+            --bg-page: var(--bg-primary, #040404);
+            --bg-container: var(--bg-secondary, #080808);
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #1a1a1a);
+            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --btn-text: var(--button-text, #4f46e5);
         }
 
         body { 
             font-family: 'Geist', sans-serif; 
             background-color: var(--bg-page);
-            color: #fff;
+            color: var(--text-main);
             font-weight: 300;
             min-height: 100vh;
             padding: 2.5rem;
@@ -37,41 +43,42 @@
 
         .section-card {
             background: var(--bg-container);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border-main);
             border-radius: 28px;
             padding: 2rem;
             margin-bottom: 2rem;
         }
 
-        .label-tiny { font-size: 0.7rem; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
-        .section-title { font-size: 2rem; font-weight: 200; letter-spacing: -0.02em; margin-bottom: 1.5rem; }
+        .label-tiny { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); opacity: 0.5; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
+        .section-title { font-size: 2rem; font-weight: 200; letter-spacing: -0.02em; margin-bottom: 1.5rem; color: var(--text-main); }
 
         .leader-item {
             display: flex;
             align-items: center;
             gap: 1.5rem;
             padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-faint);
             transition: all 0.2s;
         }
-        .leader-item:hover { background: rgba(255,255,255,0.02); }
+        .leader-item:hover { background: var(--border-faint); }
         .leader-item:last-child { border-bottom: none; }
 
-        .rank-num { font-size: 1.25rem; font-weight: 500; width: 40px; color: #444; }
-        .rank-1 { color: #fbbf24; font-size: 2rem; }
-        .rank-2 { color: #cbd5e1; font-size: 1.5rem; }
-        .rank-3 { color: #d97706; font-size: 1.25rem; }
+        .rank-num { font-size: 1.25rem; font-weight: 500; width: 40px; color: var(--text-muted); opacity: 0.4; }
+        .rank-1 { color: #fbbf24; font-size: 2rem; opacity: 1; }
+        .rank-2 { color: #cbd5e1; font-size: 1.5rem; opacity: 1; }
+        .rank-3 { color: #d97706; font-size: 1.25rem; opacity: 1; }
 
         .user-avatar {
             width: 48px;
             height: 48px;
             border-radius: 14px;
-            background: #1a1a1a;
+            background: var(--bg-page);
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             flex-shrink: 0;
+            border: 1px solid var(--border-main);
         }
 
         .follow-btn {
@@ -82,6 +89,10 @@
             transition: all 0.2s;
             border: 1px solid var(--accent-color);
             color: var(--accent-color);
+            background: transparent;
+        }
+        .follow-btn:hover {
+            background: var(--btn-bg);
         }
         .follow-btn.following {
             background: var(--accent-color);
@@ -94,8 +105,8 @@
             gap: 1rem;
         }
         .page-stat-item {
-            background: rgba(255,255,255,0.02);
-            border: 1px solid var(--border-color);
+            background: var(--border-faint);
+            border: 1px solid var(--border-main);
             border-radius: 20px;
             padding: 1.25rem;
             display: flex;
@@ -104,8 +115,8 @@
         }
 
         .highlight-card {
-            background: linear-gradient(135deg, #1e1b4b 0%, #000000 100%);
-            border-color: rgba(79, 70, 229, 0.3);
+            background: linear-gradient(135deg, var(--accent-glow) 0%, var(--bg-page) 100%);
+            border-color: var(--accent-color);
             text-align: center;
             padding: 3rem;
         }
@@ -337,7 +348,7 @@
                         <div class="text-[10px] text-gray-600 uppercase tracking-widest">${path}</div>
                     </div>
                     <div class="text-right">
-                        <div class="text-xl font-light text-indigo-400">${data.count}</div>
+                        <div class="text-xl font-light" style="color: var(--accent-color);">${data.count}</div>
                         <div class="text-[10px] text-gray-700 uppercase">Sessions</div>
                     </div>
                 `;

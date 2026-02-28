@@ -16,18 +16,22 @@
     <style>
         /* --- FONT & BASE STYLING --- */
         :root {
-            --menu-bg: #000000;
-            --menu-border: #333;
-            --menu-text: #d1d5db;
-            --tab-active-bg: rgba(79, 70, 229, 0.1);
-            --tab-active-border: #4f46e5;
-            --tab-active-text: #4f46e5;
+            --bg-page: var(--bg-primary, #040404);
+            --bg-card: var(--bg-secondary, #000000);
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #333);
+            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --btn-text: var(--button-text, #4f46e5);
         }
 
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: #040404; 
-            color: #c0c0c0; 
+            background-color: var(--bg-page); 
+            color: var(--text-muted); 
             font-size: 16px;
             font-weight: 300;
         }
@@ -36,10 +40,10 @@
 
         /* --- UI COMPONENTS --- */
         .btn-toolbar-style {
-            background: var(--menu-bg);
-            border: 1px solid var(--menu-border);
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
             border-radius: 14px; /* Updated to 14px */
-            color: var(--menu-text);
+            color: var(--text-muted);
             padding: 0.5rem 1rem;
             font-weight: 500;
             cursor: pointer;
@@ -49,8 +53,9 @@
             gap: 0.5rem;
         }
         .btn-toolbar-style:hover {
-            border-color: #fff;
-            color: #ffffff;
+            background-color: var(--bg-card);
+            border-color: var(--text-main);
+            color: var(--text-main);
         }
         
         /* Dropdown Styling */
@@ -59,8 +64,8 @@
             top: 100%;
             right: 0;
             margin-top: 0.5rem;
-            background: var(--menu-bg);
-            border: 1px solid var(--menu-border);
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
             border-radius: 1.25rem; /* Updated to 1.25rem */
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
             z-index: 1010;
@@ -71,7 +76,7 @@
         .dropdown-item {
             padding: 0.5rem 0.75rem;
             font-size: 0.875rem;
-            color: var(--menu-text);
+            color: var(--text-muted);
             border-radius: 14px; /* Updated to 14px */
             cursor: pointer;
             display: flex;
@@ -80,15 +85,16 @@
             gap: 10px;
         }
         .dropdown-item:hover {
-            background-color: #2a2a2a;
-            color: #ffffff;
+            background-color: var(--accent-glow);
+            color: var(--text-main);
         }
         .dropdown-header {
             padding: 0.5rem 0.75rem;
-            color: #9ca3af;
+            color: var(--text-muted);
+            opacity: 0.6;
             font-size: 0.75rem;
             text-transform: uppercase;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--border-main);
             margin-bottom: 0.5rem;
         }
 
@@ -96,8 +102,8 @@
         .custom-checkbox {
             appearance: none;
             -webkit-appearance: none;
-            background-color: var(--menu-bg); 
-            border: 1px solid var(--menu-border); 
+            background-color: var(--bg-page); 
+            border: 1px solid var(--border-main); 
             border-radius: 14px; /* Updated to 14px */
             width: 1.25rem;
             height: 1.25rem;
@@ -108,8 +114,8 @@
             justify-content: center;
         }
         .custom-checkbox:checked {
-            background-color: var(--tab-active-border);
-            border-color: var(--tab-active-border);
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
         }
         .custom-checkbox:checked::after {
             content: '\f00c';
@@ -120,9 +126,9 @@
         }
 
         .custom-input {
-            background: var(--menu-bg);
-            border: 1px solid var(--menu-border);
-            color: var(--menu-text);
+            background: var(--bg-page);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
             padding: 0.25rem 0.5rem;
             border-radius: 14px; /* Updated to 14px */
             width: 70px;
@@ -138,9 +144,9 @@
         }
 
         .sound-btn {
-            background-color: #050505;
-            border: 1px solid #1a1a1a;
-            color: #c0c0c0;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-main);
+            color: var(--text-muted);
             border-radius: 1.25rem; /* Updated to 1.25rem */
             padding: 1rem;
             min-height: 80px;
@@ -157,16 +163,17 @@
         }
         
         .sound-btn:hover {
-            background-color: #1a1a1a;
-            border-color: #4f46e5;
-            color: #fff;
+            background-color: var(--bg-card);
+            border-color: var(--accent-color);
+            color: var(--text-main);
             transform: translateY(-2px);
         }
         
         .sound-btn:active, .sound-btn.sound-btn-playing {
-            background-color: rgba(79, 70, 229, 0.2);
-            border-color: #6366f1;
+            background-color: var(--accent-glow);
+            border-color: var(--accent-color);
             transform: translateY(0);
+            color: var(--text-main);
         }
 
         /* --- TOASTER --- */
@@ -176,13 +183,13 @@
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
-            background-color: rgba(13, 13, 13, 0.95);
+            background-color: var(--bg-card);
             backdrop-filter: blur(5px);
             padding: 0.75rem 1.5rem;
             border-radius: 9999px;
-            border: 1px solid #333;
+            border: 1px solid var(--border-main);
             font-size: 0.85rem;
-            color: #fff;
+            color: var(--text-main);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease;
@@ -433,3 +440,4 @@
     </script>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->

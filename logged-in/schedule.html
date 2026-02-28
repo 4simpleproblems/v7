@@ -16,17 +16,22 @@
 
     <style>
         :root {
-            --bg-page: #040404;
-            --bg-card: #0a0a0a;
-            --border-color: #333;
-            --text-primary: #c0c0c0;
-            --accent-color: #4f46e5;
+            --bg-page: var(--bg-primary, #040404);
+            --bg-card: var(--bg-secondary, #0a0a0a);
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #333);
+            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --btn-text: var(--button-text, #4f46e5);
         }
 
         body { 
             font-family: 'Geist', sans-serif; 
             background-color: var(--bg-page); 
-            color: var(--text-primary); 
+            color: var(--text-muted); 
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -47,7 +52,7 @@
 
         .period-card {
             background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border-main);
             border-radius: 1.25rem; /* Updated to 1.25rem */
             padding: 1.25rem;
             margin-bottom: 1rem;
@@ -68,7 +73,8 @@
         }
 
         .drag-handle {
-            color: #666;
+            color: var(--text-muted);
+            opacity: 0.5;
             cursor: grab;
             padding: 0.5rem;
         }
@@ -81,9 +87,9 @@
         }
 
         .input-field {
-            background-color: #111;
-            border: 1px solid #333;
-            color: #fff;
+            background-color: var(--bg-page);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
             padding: 0.75rem 1rem;
             border-radius: 14px; /* Updated to 14px */
             font-family: inherit;
@@ -95,7 +101,7 @@
         .input-field:focus {
             outline: none;
             border-color: var(--accent-color);
-            background-color: #050505;
+            background-color: var(--bg-card);
         }
 
         .time-inputs {
@@ -125,7 +131,7 @@
         }
 
         .add-btn {
-            background-color: rgba(79, 70, 229, 0.1);
+            background-color: var(--btn-bg);
             border: 1px dashed var(--accent-color);
             color: var(--accent-color);
             width: 100%;
@@ -143,8 +149,9 @@
         }
 
         .add-btn:hover {
-            background-color: rgba(79, 70, 229, 0.2);
+            background-color: var(--accent-glow);
             border-style: solid;
+            color: var(--text-main);
         }
 
         #periods-list {
@@ -153,7 +160,7 @@
             padding-right: 0.5rem;
             margin-bottom: 1rem;
             scrollbar-width: thin;
-            scrollbar-color: #333 transparent;
+            scrollbar-color: var(--border-main) transparent;
         }
 
         #periods-list::-webkit-scrollbar {
@@ -165,12 +172,12 @@
         }
 
         #periods-list::-webkit-scrollbar-thumb {
-            background: #333;
+            background: var(--border-main);
             border-radius: 14px;
         }
 
         #periods-list::-webkit-scrollbar-thumb:hover {
-            background: #4f46e5;
+            background: var(--accent-color);
         }
 
         .header-actions {
@@ -178,19 +185,20 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2.5rem;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--border-main);
             padding-bottom: 1.5rem;
         }
 
         .save-indicator {
             font-size: 0.85rem;
-            color: #666;
+            color: var(--text-muted);
+            opacity: 0.6;
             transition: color 0.3s;
             display: flex;
             align-items: center;
             gap: 6px;
         }
-        .save-indicator.saved { color: #22c55e; }
+        .save-indicator.saved { color: #22c55e; opacity: 1; }
 
         .list-container {
             position: relative;
@@ -240,8 +248,8 @@
         }
         
         .tp-container {
-            background: #0a0a0a;
-            border: 1px solid #333;
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
             border-radius: 1.25rem; /* Updated to 1.25rem */
             padding: 1.5rem;
             width: 320px;
@@ -277,13 +285,15 @@
             height: 40px;
             line-height: 40px;
             font-size: 1.2rem;
-            color: #666;
+            color: var(--text-muted);
+            opacity: 0.5;
             scroll-snap-align: center;
             cursor: pointer;
             transition: color 0.2s, transform 0.2s;
         }
         .tp-item.active {
-            color: #fff;
+            color: var(--text-main);
+            opacity: 1;
             font-weight: 600;
             transform: scale(1.1);
         }
@@ -296,9 +306,9 @@
             right: 0;
             height: 40px;
             margin-top: -20px;
-            background: rgba(79, 70, 229, 0.1);
-            border-top: 1px solid rgba(79, 70, 229, 0.3);
-            border-bottom: 1px solid rgba(79, 70, 229, 0.3);
+            background: var(--accent-glow);
+            border-top: 1px solid var(--accent-color);
+            border-bottom: 1px solid var(--accent-color);
             pointer-events: none;
             z-index: -1;
         }
@@ -322,24 +332,24 @@
             gap: 0.5rem;
         }
         .tp-btn-cancel {
-            background: #000000;
-            color: #d1d5db;
-            border: 1px solid #333;
+            background: var(--bg-page);
+            color: var(--text-muted);
+            border: 1px solid var(--border-main);
         }
         .tp-btn-cancel:hover {
-            border-color: #fff;
-            color: #fff;
+            border-color: var(--text-main);
+            color: var(--text-main);
         }
         
         .tp-btn-save {
-            background: rgba(79, 70, 229, 0.1);
-            color: #4f46e5;
-            border: 1px solid #4f46e5;
+            background: var(--btn-bg);
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
         }
         .tp-btn-save:hover {
-            background: rgba(79, 70, 229, 0.15);
-            border-color: #6366f1;
-            color: #6366f1;
+            background: var(--accent-glow);
+            border-color: var(--accent-color);
+            color: var(--text-main);
         }
 
     </style>
@@ -833,4 +843,4 @@
 
     </script>
 </body>
-</html>
+</html><!-- Made with ❤️ from 4SP -->

@@ -18,10 +18,23 @@
 
     <style>
         /* --- FONT & BASE STYLING (MATCHING notes.html) --- */
+        :root {
+            --bg-page: var(--bg-primary, #040404);
+            --bg-card: var(--bg-secondary, #0d0d0d);
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #1a1a1a);
+            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --btn-text: var(--button-text, #4f46e5);
+        }
+
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: #040404; 
-            color: #c0c0c0; 
+            background-color: var(--bg-page); 
+            color: var(--text-muted); 
             transition: all 0.3s ease;
             font-size: 16px;
             overflow-x: hidden;
@@ -35,10 +48,10 @@
         /* --- THEME-AWARE STYLES (from navigation.js) --- */
         
         .btn-toolbar-style {
-            background: var(--menu-bg, #0000000);
-            border: 1px solid var(--menu-border, #333);
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
             border-radius: 14px;
-            color: var(--menu-text, #d1d5db);
+            color: var(--text-muted);
             padding: 0.5rem 1rem;
             font-weight: 500;
             cursor: pointer;
@@ -48,36 +61,36 @@
             gap: 0.5rem;
         }
         .btn-toolbar-style:hover {
-            background-color: var(--menu-bg, #000000);
-            border-color: var(--menu-border, #fff);
-            color: var(--tab-hover-text, #ffffff);
+            background-color: var(--bg-page);
+            border-color: var(--text-main);
+            color: var(--text-main);
         }
         
         .btn-toolbar-style.btn-primary-override {
-            background-color: var(--tab-active-bg, rgba(79, 70, 229, 0.1));
-            border: 1px solid var(--tab-active-border, #4f46e5);
-            color: var(--tab-active-text, #4f46e5);
+            background-color: var(--btn-bg);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
         }
         .btn-toolbar-style.btn-primary-override:hover {
-            background-color: var(--tab-active-hover-bg, rgba(79, 70, 229, 0.15));
-            border-color: var(--tab-active-hover-border, #6366f1);
-            color: var(--tab-active-hover-text, #6366f1);
+            background-color: var(--accent-glow);
+            border-color: var(--accent-color);
+            color: var(--text-main);
         }
 
         /* Input Styling (Matches Notes Editor Aesthetic) */
         .input-text-style {
             width: 100%; 
             padding: 1rem 1.5rem; 
-            border: 1px solid #1a1a1a; 
-            background-color: #0d0d0d; 
+            border: 1px solid var(--border-main); 
+            background-color: var(--bg-card); 
             border-radius: 14px;
-            color: #c0c0c0; 
+            color: var(--text-muted); 
             transition: all 0.2s;
             font-size: 1.1rem;
             font-weight: 300;
         }
         .input-text-style:focus {
-            border-color: #505050; 
+            border-color: var(--accent-color); 
             outline: none;
             box-shadow: none;
         }
@@ -106,9 +119,9 @@
             flex-grow: 1;
             min-height: calc(100vh - 15rem);
             padding: 2rem;
-            background-color: #0d0d0d;
-            border: 1px solid #1a1a1a;
-            color: #c0c0c0;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-main);
+            color: var(--text-muted);
             line-height: 1.6;
             border-radius: 1.25rem;
             word-break: break-word;
@@ -118,39 +131,41 @@
         .pronunciation-text {
             font-family: 'Playfair Display', serif;
             font-style: italic;
-            color: #707070;
+            color: var(--text-muted);
+            opacity: 0.6;
             font-size: 1.25rem;
         }
         
         .highlighted-word {
             text-decoration: underline;
-            text-decoration-color: rgba(79, 70, 229, 0.4);
+            text-decoration-color: var(--accent-glow);
             text-underline-offset: 3px;
             cursor: pointer;
-            color: #c0c0c0;
+            color: var(--text-muted);
             transition: all 0.2s ease;
         }
         .highlighted-word:hover {
-            color: #ffffff;
-            text-decoration-color: #4f46e5;
+            color: var(--text-main);
+            text-decoration-color: var(--accent-color);
         }
         
         .synonym-tag {
             cursor: pointer;
-            color: #9ca3af;
+            color: var(--text-muted);
+            opacity: 0.8;
             transition: all 0.2s;
         }
         .synonym-tag:hover {
-             color: #ffffff; 
+             color: var(--text-main); 
              text-decoration: underline;
-             text-decoration-color: #4f46e5;
+             text-decoration-color: var(--accent-color);
              text-underline-offset: 3px;
         }
         
         .audio-icon {
             font-size: 0.6em;
             margin-left: 12px;
-            color: #4f46e5;
+            color: var(--accent-color);
             cursor: pointer;
             opacity: 0.6;
             transition: opacity 0.2s;
@@ -165,12 +180,12 @@
             margin-top: 2rem;
             margin-bottom: 1rem;
             background-color: transparent;
-            color: #4f46e5; 
+            color: var(--accent-color); 
             font-size: 0.85rem;
             font-weight: 500;
             letter-spacing: 0.1em;
             text-transform: uppercase;
-            border-bottom: 1px solid #1a1a1a;
+            border-bottom: 1px solid var(--border-main);
         }
         
         ol.definition-list {
@@ -182,20 +197,21 @@
             position: relative;
             padding-left: 1.5rem;
             margin-bottom: 0.75rem;
-            color: #c0c0c0;
+            color: var(--text-muted);
         }
         ol.definition-list li::before {
             content: counter(item) ".";
             counter-increment: item;
             position: absolute;
             left: 0;
-            color: #505050;
+            color: var(--text-muted);
+            opacity: 0.5;
             font-weight: 300;
         }
 
         .custom-scroll::-webkit-scrollbar { width: 5px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 10px; }
 
     </style>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
@@ -209,7 +225,7 @@
 </head>
 <body class="min-h-screen custom-scroll">
     <div id="page-content" class="hidden">
-        <header class="flex justify-between items-center p-4 border-b border-[#1a1a1a] sticky top-0 bg-[#040404] z-[1000]">
+        <header class="flex justify-between items-center p-4 border-b border-[var(--border-main)] sticky top-0 bg-[var(--bg-page)] z-[1000]">
             <h1 class="text-2xl font-bold text-white">4SP Dictionary</h1>
             <div class="flex items-center gap-2"></div>
         </header>

@@ -15,17 +15,19 @@
 
     <style>
         :root {
-            --bg-page: #040404;
-            --bg-container: #080808;
-            --border-color: rgba(255,255,255,0.05);
-            --accent-color: #4f46e5;
-            --accent-glow: rgba(79, 70, 229, 0.4);
+            --bg-page: var(--bg-primary, #040404);
+            --bg-container: var(--bg-secondary, #080808);
+            --border-color: var(--border-secondary, rgba(255,255,255,0.05));
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
         }
 
         body { 
             font-family: 'Geist', sans-serif; 
             background-color: var(--bg-page);
-            color: #fff;
+            color: var(--text-main);
             font-weight: 300;
             min-height: 100vh;
             display: flex;
@@ -70,8 +72,8 @@
         }
 
         .dashboard-card:hover:not(.no-hover) {
-            border-color: rgba(255,255,255,0.1);
-            background: #0c0c0c;
+            border-color: var(--accent-color);
+            background: var(--bg-secondary);
             transform: translateY(-4px);
             box-shadow: 0 20px 40px rgba(0,0,0,0.6);
         }
@@ -107,18 +109,18 @@
         }
 
         /* --- COMPONENTS --- */
-        .time-display { font-size: 5.5rem; font-weight: 200; line-height: 1; letter-spacing: -0.04em; }
+        .time-display { font-size: 5.5rem; font-weight: 200; line-height: 1; letter-spacing: -0.04em; color: var(--text-main); }
         
         /* Scalable clock for large screens */
         @media (min-width: 1600px) {
             .time-display { font-size: 7vw; }
         }
 
-        .date-display { font-size: 1.2rem; color: #666; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 0.5rem; }
-        .welcome-msg { font-size: 2rem; font-weight: 300; margin-top: 1.5rem; color: #aaa; }
+        .date-display { font-size: 1.2rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 0.5rem; opacity: 0.6; }
+        .welcome-msg { font-size: 2rem; font-weight: 300; margin-top: 1.5rem; color: var(--text-secondary); }
 
         .stat-card {
-            background: #0a0a0a;
+            background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             border-radius: 20px;
             padding: 1.25rem;
@@ -128,16 +130,16 @@
             justify-content: space-between;
         }
 
-        .label-tiny { font-size: 0.65rem; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.15em; }
-        .val-big { font-size: 1.75rem; font-weight: 500; color: #fff; margin-top: 0.25rem; }
+        .label-tiny { font-size: 0.65rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.5; }
+        .val-big { font-size: 1.75rem; font-weight: 500; color: var(--text-main); margin-top: 0.25rem; }
         #stat-total-time { font-size: 3rem; }
-        .val-sub { font-size: 0.7rem; color: #555; margin-top: 0.25rem; }
+        .val-sub { font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.25rem; opacity: 0.6; }
 
         /* --- LEADERBOARD WIDGET --- */
         #leaderboard-widget {
             grid-column: span 8;
             grid-row: span 5;
-            background: #0a0a0a;
+            background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             border-radius: 28px;
             padding: 1.5rem;
@@ -180,7 +182,7 @@
             gap: 1rem;
             padding: 1rem;
             background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
             border-radius: 18px;
             transition: all 0.2s;
             cursor: pointer;
@@ -189,7 +191,7 @@
             z-index: 1;
         }
         .page-btn:hover {
-            background: rgba(79, 70, 229, 0.05);
+            background: var(--button-bg);
             border-color: var(--accent-color);
             transform: scale(1.05);
             z-index: 10;
@@ -225,30 +227,30 @@
         <div id="welcome-section" class="dashboard-card no-hover">
             <div id="clock-date" class="date-display">--------</div>
             <div id="clock-time" class="time-display">00:00:00</div>
-            <h2 class="welcome-msg">Good day, <span id="user-name-display" class="text-indigo-500">User</span>.</h2>
+            <h2 class="welcome-msg">Good day, <span id="user-name-display" style="color: var(--accent-primary);">User</span>.</h2>
         </div>
 
         <!-- LEADERBOARD WIDGET -->
         <div id="leaderboard-widget" class="dashboard-card greyed-out">
             <div class="flex flex-col justify-center border-r border-white/5 pr-8 h-full">
                 <div class="label-tiny">Your Status</div>
-                <div id="leaderboard-rank" class="val-big text-indigo-400">#--</div>
+                <div id="leaderboard-rank" class="val-big" style="color: var(--accent-primary);">#--</div>
                 <div class="text-[10px] text-gray-500 mt-1 uppercase tracking-widest font-bold">Global Rank</div>
             </div>
 
             <div class="flex-grow flex items-center gap-6 px-4">
-                <div id="champion-avatar-widget" class="w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <i class="fas fa-crown text-indigo-500"></i>
+                <div id="champion-avatar-widget" class="w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center overflow-hidden flex-shrink-0" style="background: var(--button-bg); border-color: var(--border-color);">
+                    <i class="fas fa-crown" style="color: var(--accent-primary);"></i>
                 </div>
                 <div class="min-w-0">
                     <div class="label-tiny">Global Champion</div>
                     <div id="champion-name-widget" class="text-xl font-medium text-white truncate">Loading...</div>
-                    <div id="champion-time-widget" class="text-[10px] text-indigo-400/70 font-mono mt-0.5">0h 0m total</div>
+                    <div id="champion-time-widget" class="text-[10px] font-mono mt-0.5" style="color: var(--text-secondary); opacity: 0.7;">0h 0m total</div>
                 </div>
             </div>
             
             <div class="flex flex-col gap-2">
-                <a href="leaderboard.html" class="inline-flex items-center justify-center py-2.5 px-6 bg-indigo-600/10 border border-indigo-500/30 rounded-2xl text-xs font-medium text-indigo-400 hover:bg-indigo-600/20 transition group">
+                <a href="leaderboard.html" class="inline-flex items-center justify-center py-2.5 px-6 border rounded-2xl text-xs font-medium transition group" style="background: var(--button-bg); border-color: var(--border-primary); color: var(--accent-primary);">
                     Rankings <i class="fas fa-trophy ml-2 group-hover:scale-110 transition-transform"></i>
                 </a>
             </div>
@@ -256,11 +258,11 @@
             <div id="leaderboard-overlay">
                 <div class="text-center p-4">
                     <p class="text-xs text-gray-400 mb-3">Join the leaderboard to see your rank</p>
-                    <button id="accept-leaderboard-btn" class="py-2.5 px-6 bg-indigo-600 hover:bg-indigo-700 rounded-2xl text-xs font-medium transition shadow-lg shadow-indigo-600/20">
+                    <button id="accept-leaderboard-btn" class="py-2.5 px-6 bg-indigo-600 hover:bg-indigo-700 rounded-2xl text-xs font-medium transition shadow-lg shadow-indigo-600/20" style="background: var(--accent-primary);">
                         Accept Terms
                     </button>
                     <div class="mt-2">
-                        <a href="../legal.html#leaderboard-terms" target="_blank" class="text-[10px] text-indigo-400/60 hover:text-indigo-400 hover:underline">View Terms</a>
+                        <a href="../legal.html#leaderboard-terms" target="_blank" class="text-[10px] hover:underline" style="color: var(--accent-primary); opacity: 0.6;">View Terms</a>
                     </div>
                 </div>
             </div>
@@ -278,12 +280,290 @@
             <div class="stat-card">
                 <div>
                     <div class="label-tiny">System Analytics</div>
-                    <div id="stat-browser" class="text-sm font-medium text-indigo-400">Loading...</div>
+                    <div id="stat-browser" class="text-sm font-medium" style="color: var(--accent-primary);">Loading...</div>
                     <div id="stat-os" class="text-xs text-gray-500 mt-1">Detecting OS</div>
                 </div>
                 <div id="stat-device" class="text-[10px] text-gray-700 uppercase font-bold tracking-widest">Project Niobium</div>
             </div>
         </div>
+
+        <!-- QUICK ACCESS SECTION -->
+        <div id="quick-access-section" class="dashboard-card">
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="label-tiny">Recently Accessed</div>
+                    <h3 class="text-xl font-medium text-white/80 mt-1">Most Opened Pages</h3>
+                </div>
+                <div id="stat-pageviews" class="text-3xl font-light text-white/20">0</div>
+            </div>
+            
+            <div id="recent-pages-list" class="page-grid flex-grow">
+                <div class="col-span-2 py-20 text-center text-gray-700 italic text-sm">Synchronizing analytics...</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { firebaseConfig } from '../firebase-config.js';
+
+        if (!getApps().length) initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore();
+
+        const V6_PAGES = {
+            'dashboard.html': 'Dashboard',
+            'soundboard.html': 'Soundboard',
+            'notes.html': 'Notes',
+            'dailyphoto.html': 'Dailyphoto',
+            'dictionary.html': 'Dictionary',
+            'schedule.html': 'Schedule',
+            'messenger-tutorial.html': 'Messenger',
+            'games.html': 'Games',
+            'vana.html': 'Vana',
+            'vora.html': 'Vora',
+            'vern.html': 'Vern',
+            'velium.html': 'Velium',
+            'securly-tester.html': 'Securly Tester',
+            'settings.html': 'Settings',
+            'profile.html': 'Profile'
+        };
+
+        const parseUA = (ua) => {
+            if (!ua) return { browser: 'Browser', os: 'Operating System' };
+            let browser = 'Other', os = 'Other';
+            if (ua.includes('Chrome')) browser = 'Chrome';
+            else if (ua.includes('Firefox')) browser = 'Firefox';
+            else if (ua.includes('Safari')) browser = 'Safari';
+            if (ua.includes('Windows')) os = 'Windows';
+            else if (ua.includes('Mac OS')) os = 'macOS';
+            else if (ua.includes('CrOS')) os = 'ChromeOS';
+            else if (ua.includes('Linux')) os = 'Linux';
+            return { browser, os };
+        };
+
+        async function initDashboard() {
+            // Load page identification config
+            let pageConfig = {};
+            try {
+                const response = await fetch('../page-identification.json');
+                pageConfig = await response.json();
+            } catch (e) {
+                console.error("Failed to load page identification config", e);
+            }
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    const userDocRef = doc(db, 'users', user.uid);
+                    const userSnap = await getDoc(userDocRef);
+                    
+                    if (userSnap.exists()) {
+                        const data = userSnap.data();
+                        document.getElementById('user-name-display').textContent = data.displayName || data.username || "User";
+                        
+                        // Leaderboard handling
+                        if (data.leaderboardAccepted) {
+                            document.getElementById('leaderboard-widget').classList.remove('greyed-out');
+                            document.getElementById('leaderboard-overlay').style.display = 'none';
+                            fetchUserRank(user.uid);
+                        } else {
+                            document.getElementById('accept-leaderboard-btn').onclick = async () => {
+                                await updateDoc(userDocRef, {
+                                    leaderboardAccepted: true,
+                                    leaderboardOptOut: false
+                                });
+                                location.reload();
+                            };
+                        }
+                        loadAnalytics(user.uid, pageConfig, data);
+                    }
+                } else if (!window._LOCAL_MODE) {
+                    window.location.replace('../index.html');
+                }
+            });
+
+            startClock();
+        }
+
+        async function fetchUserRank(uid) {
+            const q = query(
+                collection(db, 'users'),
+                where('leaderboardAccepted', '==', true),
+                where('leaderboardOptOut', '==', false),
+                orderBy('totalV6Time', 'desc'),
+                limit(100)
+            );
+            
+            const snap = await getDocs(q);
+            
+            let rank = '--';
+            let i = 1;
+            let champion = null;
+
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                if (i === 1) champion = { id: docSnap.id, ...data };
+                if (docSnap.id === uid) rank = `#${i}`;
+                i++;
+            });
+
+            document.getElementById('leaderboard-rank').textContent = rank;
+
+            if (champion) {
+                document.getElementById('champion-name-widget').textContent = champion.displayName || champion.username || "Anonymous";
+                const hours = Math.floor((champion.totalV6Time || 0) / 3600);
+                const minutes = Math.floor(((champion.totalV6Time || 0) % 3600) / 60);
+                document.getElementById('champion-time-widget').textContent = `${hours}h ${minutes}m total`;
+                renderAvatar(champion, 'champion-avatar-widget');
+            }
+        }
+
+        function renderAvatar(userData, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const initial = (userData.username || userData.displayName || '?').charAt(0).toUpperCase();
+            const pfpType = userData.pfpType || 'google';
+
+            let avatarHtml = '';
+
+            if (pfpType === 'custom' && userData.customPfp) {
+                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover">`;
+            } else if (pfpType === 'mibi' && userData.mibiConfig) {
+                avatarHtml = `<div class="w-full h-full" style="background-color: ${userData.mibiConfig.bgColor || '#3B82F6'};"></div>`;
+            } else if (pfpType === 'letter') {
+                const bg = userData.pfpLetterBg || '#333';
+                avatarHtml = `<div class="w-full h-full flex items-center justify-center font-bold text-white" style="background: ${bg};">${initial}</div>`;
+            } else {
+                if (userData.photoURL) {
+                    avatarHtml = `<img src="${userData.photoURL}" class="w-full h-full object-cover">`;
+                } else {
+                    avatarHtml = `<div class="w-full h-full bg-indigo-600 flex items-center justify-center font-bold text-white">${initial}</div>`;
+                }
+            }
+
+            container.innerHTML = avatarHtml;
+        }
+
+        async function loadAnalytics(uid, pageConfig = {}, userData = {}) {
+            const q = query(
+                collection(db, 'analytics'),
+                where('userId', '==', uid),
+                where('version', '==', 'project_niobium')
+            );
+            
+            const snap = await getDocs(q);
+            
+            let totalPageViews = 0;
+            let pageMap = {}; 
+            let latestUA = "";
+
+            const findConfigByPath = (path) => {
+                const clean = (p) => p.toLowerCase().replace(/^(..\/|logged-in\/)/, '').replace('.html', '');
+                const target = clean(path);
+                
+                for (const key in pageConfig) {
+                    const page = pageConfig[key];
+                    if (clean(page.url) === target) return page;
+                    if (page.aliases) {
+                        for (const alias of page.aliases) {
+                            if (clean(alias) === target) return page;
+                        }
+                    }
+                }
+                return null;
+            };
+
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                totalPageViews += (data.pageCount || 0);
+                if (data.userAgent) latestUA = data.userAgent;
+
+                if (data.visitedPages) {
+                    data.visitedPages.forEach(p => {
+                        const path = p.path || p.url;
+                        if (!path || path.includes('srcdoc')) return;
+                        
+                        const config = findConfigByPath(path);
+                        if (!config) return;
+
+                        const cleanTitle = config.name;
+                        const icon = config.icon || 'fa-solid fa-file-alt';
+                        
+                        if (!pageMap[path]) pageMap[path] = { title: cleanTitle, icon: icon, count: 0 };
+                        pageMap[path].count++;
+                    });
+                }
+            });
+
+            const sortedPages = Object.entries(pageMap).sort((a, b) => b[1].count - a[1].count);
+            
+            const uaInfo = parseUA(latestUA);
+            document.getElementById('stat-browser').textContent = uaInfo.browser;
+            document.getElementById('stat-os').textContent = uaInfo.os;
+            document.getElementById('stat-device').textContent = window._LOCAL_MODE ? 'Version 5 Client' : 'Cloud Access';
+
+            const displayTime = (timeInSecs) => {
+                const hours = Math.floor(timeInSecs / 3600);
+                const minutes = Math.floor((timeInSecs % 3600) / 60);
+                document.getElementById('stat-total-time').textContent = `${hours}h ${minutes}m`;
+            };
+
+            displayTime(userData.totalV6Time || 0);
+            document.getElementById('stat-pageviews').textContent = totalPageViews;
+
+            onSnapshot(doc(db, 'users', uid), docSnap => {
+                if (docSnap.exists()) displayTime(docSnap.data().totalV6Time || 0);
+            });
+
+            const listEl = document.getElementById('recent-pages-list');
+            listEl.innerHTML = '';
+            
+            sortedPages.slice(0, 6).forEach(([path, data]) => {
+                const item = document.createElement('div');
+                item.className = 'page-btn';
+                
+                item.innerHTML = `
+                    <div class="icon-box">
+                        <i class="${data.icon}"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white truncate">${data.title}</p>
+                        <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">${data.count} Sessions</p>
+                    </div>
+                `;
+
+                item.onclick = () => {
+                    if (window.parent && window.parent.loadPage) {
+                        window.parent.loadPage(path);
+                    } else if (window.loadPage) {
+                        window.loadPage(path);
+                    } else {
+                        window.location.href = path;
+                    }
+                };
+
+                listEl.appendChild(item);
+            });
+        }
+
+        function startClock() {
+            const update = () => {
+                const now = new Date();
+                document.getElementById('clock-time').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                document.getElementById('clock-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            };
+            update();
+            setInterval(update, 1000);
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>
+<!-- Made with ❤️ from 4SP -->
+
 
         <!-- QUICK ACCESS SECTION -->
         <div id="quick-access-section" class="dashboard-card">

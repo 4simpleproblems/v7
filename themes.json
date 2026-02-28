@@ -35,7 +35,17 @@
         "pin-btn-icon-color": "#d1d5db",
         "hint-bg": "#010101",
         "hint-border": "#374151",
-        "hint-text": "#ffffff"
+        "hint-text": "#ffffff",
+        "bg-primary": "#040404",
+        "bg-secondary": "#080808",
+        "text-primary": "#ffffff",
+        "text-secondary": "#c0c0c0",
+        "accent-primary": "#4f46e5",
+        "accent-secondary": "rgba(79, 70, 229, 0.4)",
+        "border-primary": "#1a1a1a",
+        "border-secondary": "rgba(255,255,255,0.05)",
+        "button-bg": "rgba(79, 70, 229, 0.1)",
+        "button-text": "#4f46e5"
     },
     {
         "name": "Light",
@@ -73,7 +83,17 @@
         "pin-btn-icon-color": "#4b5563",
         "hint-bg": "#ffffff",
         "hint-border": "#e5e7eb",
-        "hint-text": "#111827"
+        "hint-text": "#111827",
+        "bg-primary": "#f9fafb",
+        "bg-secondary": "#ffffff",
+        "text-primary": "#111827",
+        "text-secondary": "#4b5563",
+        "accent-primary": "#4f46e5",
+        "accent-secondary": "rgba(79, 70, 229, 0.2)",
+        "border-primary": "#e5e7eb",
+        "border-secondary": "rgba(0,0,0,0.05)",
+        "button-bg": "rgba(79, 70, 229, 0.1)",
+        "button-text": "#4f46e5"
     },
     {
         "name": "Christmas",
@@ -111,7 +131,17 @@
         "pin-btn-icon-color": "#FEF3C7",
         "hint-bg": "#052e22",
         "hint-border": "#B91C1C",
-        "hint-text": "#FEF3C7"
+        "hint-text": "#FEF3C7",
+        "bg-primary": "#052e22",
+        "bg-secondary": "#0B3D2E",
+        "text-primary": "#ffffff",
+        "text-secondary": "#FEF3C7",
+        "accent-primary": "#B91C1C",
+        "accent-secondary": "rgba(185, 28, 28, 0.4)",
+        "border-primary": "#B91C1C",
+        "border-secondary": "rgba(185, 28, 28, 0.2)",
+        "button-bg": "rgba(185, 28, 28, 0.1)",
+        "button-text": "#F87171"
     },
     {
         "name": "The New Year",
@@ -151,7 +181,17 @@
         "pin-btn-icon-color": "#fcd34d",
         "hint-bg": "#020617",
         "hint-border": "#fcd34d",
-        "hint-text": "#fcd34d"
+        "hint-text": "#fcd34d",
+        "bg-primary": "#020617",
+        "bg-secondary": "#0f172a",
+        "text-primary": "#ffffff",
+        "text-secondary": "#cbd5e1",
+        "accent-primary": "#fcd34d",
+        "accent-secondary": "rgba(252, 211, 77, 0.4)",
+        "border-primary": "#1e293b",
+        "border-secondary": "rgba(252, 211, 77, 0.1)",
+        "button-bg": "rgba(252, 211, 77, 0.1)",
+        "button-text": "#fcd34d"
     },
     {
         "name": "Copper",
@@ -189,7 +229,17 @@
         "pin-btn-icon-color": "#ffebcd",
         "hint-bg": "#1e0d00",
         "hint-border": "#592700",
-        "hint-text": "#ffebcd"
+        "hint-text": "#ffebcd",
+        "bg-primary": "#1e0d00",
+        "bg-secondary": "#2d1400",
+        "text-primary": "#ffffff",
+        "text-secondary": "#ffebcd",
+        "accent-primary": "#f59e0b",
+        "accent-secondary": "rgba(245, 158, 11, 0.4)",
+        "border-primary": "#592700",
+        "border-secondary": "rgba(245, 158, 11, 0.1)",
+        "button-bg": "rgba(245, 158, 11, 0.1)",
+        "button-text": "#f59e0b"
     },
     {
         "name": "Coral",
@@ -227,7 +277,17 @@
         "pin-btn-icon-color": "#fce7f3",
         "hint-bg": "#380520",
         "hint-border": "#7c184c",
-        "hint-text": "#fce7f3"
+        "hint-text": "#fce7f3",
+        "bg-primary": "#380520",
+        "bg-secondary": "#4d082c",
+        "text-primary": "#ffffff",
+        "text-secondary": "#fce7f3",
+        "accent-primary": "#f971d6",
+        "accent-secondary": "rgba(249, 113, 214, 0.4)",
+        "border-primary": "#7c184c",
+        "border-secondary": "rgba(249, 113, 214, 0.1)",
+        "button-bg": "rgba(249, 113, 214, 0.1)",
+        "button-text": "#f971d6"
     },
     {
         "name": "Crimson",
@@ -265,7 +325,17 @@
         "pin-btn-icon-color": "#ffcccc",
         "hint-bg": "#1f0000",
         "hint-border": "#550000",
-        "hint-text": "#ffcccc"
+        "hint-text": "#ffcccc",
+        "bg-primary": "#1f0000",
+        "bg-secondary": "#2a0000",
+        "text-primary": "#ffffff",
+        "text-secondary": "#ffcccc",
+        "accent-primary": "#ff8080",
+        "accent-secondary": "rgba(255, 128, 128, 0.4)",
+        "border-primary": "#550000",
+        "border-secondary": "rgba(255, 128, 128, 0.1)",
+        "button-bg": "rgba(255, 128, 128, 0.1)",
+        "button-text": "#ff8080"
     },
     {
         "name": "Deep Blue",
@@ -303,7 +373,17 @@
         "pin-btn-icon-color": "#ccd6f6",
         "hint-bg": "#071323",
         "hint-border": "#172a45",
-        "hint-text": "#ccd6f6"
+        "hint-text": "#ccd6f6",
+        "bg-primary": "#071323",
+        "bg-secondary": "#0a192f",
+        "text-primary": "#ffffff",
+        "text-secondary": "#ccd6f6",
+        "accent-primary": "#64ffda",
+        "accent-secondary": "rgba(100, 255, 218, 0.4)",
+        "border-primary": "#172a45",
+        "border-secondary": "rgba(100, 255, 218, 0.1)",
+        "button-bg": "rgba(100, 255, 218, 0.1)",
+        "button-text": "#64ffda"
     },
     {
         "name": "Ember",
@@ -341,7 +421,17 @@
         "pin-btn-icon-color": "#fef3c7",
         "hint-bg": "#331102",
         "hint-border": "#7c2d12",
-        "hint-text": "#fef3c7"
+        "hint-text": "#fef3c7",
+        "bg-primary": "#331102",
+        "bg-secondary": "#451a03",
+        "text-primary": "#ffffff",
+        "text-secondary": "#fef3c7",
+        "accent-primary": "#FEA26D",
+        "accent-secondary": "rgba(254, 162, 109, 0.4)",
+        "border-primary": "#7c2d12",
+        "border-secondary": "rgba(254, 162, 109, 0.1)",
+        "button-bg": "rgba(254, 162, 109, 0.1)",
+        "button-text": "#FEA26D"
     },
     {
         "name": "Fire",
@@ -379,7 +469,17 @@
         "pin-btn-icon-color": "#fee2e2",
         "hint-bg": "#2b0000",
         "hint-border": "#7f1d1d",
-        "hint-text": "#fee2e2"
+        "hint-text": "#fee2e2",
+        "bg-primary": "#2b0000",
+        "bg-secondary": "#3c0000",
+        "text-primary": "#ffffff",
+        "text-secondary": "#fee2e2",
+        "accent-primary": "#F07B66",
+        "accent-secondary": "rgba(240, 123, 102, 0.4)",
+        "border-primary": "#7f1d1d",
+        "border-secondary": "rgba(240, 123, 102, 0.1)",
+        "button-bg": "rgba(240, 123, 102, 0.1)",
+        "button-text": "#F07B66"
     },
     {
         "name": "Forest",
@@ -417,7 +517,17 @@
         "pin-btn-icon-color": "#e0f2f1",
         "hint-bg": "#0f2615",
         "hint-border": "#2c6e3b",
-        "hint-text": "#e0f2f1"
+        "hint-text": "#e0f2f1",
+        "bg-primary": "#0f2615",
+        "bg-secondary": "#14371e",
+        "text-primary": "#ffffff",
+        "text-secondary": "#e0f2f1",
+        "accent-primary": "#56C889",
+        "accent-secondary": "rgba(86, 200, 137, 0.4)",
+        "border-primary": "#2c6e3b",
+        "border-secondary": "rgba(86, 200, 137, 0.1)",
+        "button-bg": "rgba(86, 200, 137, 0.1)",
+        "button-text": "#56C889"
     },
     {
         "name": "Gold",
@@ -455,7 +565,17 @@
         "pin-btn-icon-color": "#fff9e5",
         "hint-bg": "#201500",
         "hint-border": "#664400",
-        "hint-text": "#fff9e5"
+        "hint-text": "#fff9e5",
+        "bg-primary": "#201500",
+        "bg-secondary": "#332200",
+        "text-primary": "#ffffff",
+        "text-secondary": "#fff9e5",
+        "accent-primary": "#F9B92F",
+        "accent-secondary": "rgba(249, 185, 47, 0.4)",
+        "border-primary": "#664400",
+        "border-secondary": "rgba(249, 185, 47, 0.1)",
+        "button-bg": "rgba(249, 185, 47, 0.1)",
+        "button-text": "#F9B92F"
     },
     {
         "name": "Green",
@@ -493,7 +613,17 @@
         "pin-btn-icon-color": "#E8F5E9",
         "hint-bg": "#1a471c",
         "hint-border": "#388E3C",
-        "hint-text": "#E8F5E9"
+        "hint-text": "#E8F5E9",
+        "bg-primary": "#1a471c",
+        "bg-secondary": "#1B5E20",
+        "text-primary": "#ffffff",
+        "text-secondary": "#E8F5E9",
+        "accent-primary": "#66BB6A",
+        "accent-secondary": "rgba(102, 187, 106, 0.4)",
+        "border-primary": "#388E3C",
+        "border-secondary": "rgba(102, 187, 106, 0.1)",
+        "button-bg": "rgba(102, 187, 106, 0.1)",
+        "button-text": "#66BB6A"
     },
     {
         "name": "Haze",
@@ -531,7 +661,17 @@
         "pin-btn-icon-color": "#f3e8ff",
         "hint-bg": "#210948",
         "hint-border": "#4c1d95",
-        "hint-text": "#f3e8ff"
+        "hint-text": "#f3e8ff",
+        "bg-primary": "#210948",
+        "bg-secondary": "#2e1065",
+        "text-primary": "#ffffff",
+        "text-secondary": "#f3e8ff",
+        "accent-primary": "#c084fc",
+        "accent-secondary": "rgba(192, 132, 252, 0.4)",
+        "border-primary": "#4c1d95",
+        "border-secondary": "rgba(192, 132, 252, 0.1)",
+        "button-bg": "rgba(192, 132, 252, 0.1)",
+        "button-text": "#c084fc"
     },
     {
         "name": "Lavender",
@@ -569,7 +709,17 @@
         "pin-btn-icon-color": "#4c1d95",
         "hint-bg": "#fefefe",
         "hint-border": "#e5e7eb",
-        "hint-text": "#4c1d95"
+        "hint-text": "#4c1d95",
+        "bg-primary": "#fdfcff",
+        "bg-secondary": "#ffffff",
+        "text-primary": "#4219A4",
+        "text-secondary": "#6d28d9",
+        "accent-primary": "#8B70FB",
+        "accent-secondary": "rgba(139, 112, 251, 0.2)",
+        "border-primary": "#e5e7eb",
+        "border-secondary": "rgba(139, 112, 251, 0.1)",
+        "button-bg": "rgba(139, 112, 251, 0.1)",
+        "button-text": "#8B70FB"
     },
     {
         "name": "Matrix",
@@ -607,7 +757,17 @@
         "pin-btn-icon-color": "#00ff00",
         "hint-bg": "#010502",
         "hint-border": "#003b00",
-        "hint-text": "#00ff00"
+        "hint-text": "#00ff00",
+        "bg-primary": "#010502",
+        "bg-secondary": "#020a04",
+        "text-primary": "#00ff00",
+        "text-secondary": "#3BF41F",
+        "accent-primary": "#6AFF4D",
+        "accent-secondary": "rgba(106, 255, 77, 0.4)",
+        "border-primary": "#003b00",
+        "border-secondary": "rgba(106, 255, 77, 0.1)",
+        "button-bg": "rgba(106, 255, 77, 0.1)",
+        "button-text": "#6AFF4D"
     },
     {
         "name": "Mint",
@@ -645,7 +805,17 @@
         "pin-btn-icon-color": "#0f766e",
         "hint-bg": "#f7fcfc",
         "hint-border": "#e0f2f1",
-        "hint-text": "#0f766e"
+        "hint-text": "#0f766e",
+        "bg-primary": "#f0fdfa",
+        "bg-secondary": "#ffffff",
+        "text-primary": "#0f766e",
+        "text-secondary": "#0d9488",
+        "accent-primary": "#06b6d4",
+        "accent-secondary": "rgba(6, 182, 212, 0.2)",
+        "border-primary": "#e0f2f1",
+        "border-secondary": "rgba(6, 182, 212, 0.1)",
+        "button-bg": "rgba(6, 182, 212, 0.1)",
+        "button-text": "#06b6d4"
     },
     {
         "name": "Monochrome",
@@ -683,7 +853,17 @@
         "pin-btn-icon-color": "#e4e4e7",
         "hint-bg": "#121215",
         "hint-border": "#3f3f46",
-        "hint-text": "#e4e4e7"
+        "hint-text": "#e4e4e7",
+        "bg-primary": "#121215",
+        "bg-secondary": "#18181b",
+        "text-primary": "#ffffff",
+        "text-secondary": "#e4e4e7",
+        "accent-primary": "#a1a1aa",
+        "accent-secondary": "rgba(161, 161, 170, 0.4)",
+        "border-primary": "#3f3f46",
+        "border-secondary": "rgba(161, 161, 170, 0.1)",
+        "button-bg": "rgba(161, 161, 170, 0.1)",
+        "button-text": "#a1a1aa"
     },
     {
         "name": "Ocean",
@@ -721,7 +901,17 @@
         "pin-btn-icon-color": "#bfdbfe",
         "hint-bg": "#0a2138",
         "hint-border": "#1c5180",
-        "hint-text": "#bfdbfe"
+        "hint-text": "#bfdbfe",
+        "bg-primary": "#0a2138",
+        "bg-secondary": "#0e2c4d",
+        "text-primary": "#ffffff",
+        "text-secondary": "#CCEBFF",
+        "accent-primary": "#2F5CEE",
+        "accent-secondary": "rgba(47, 92, 238, 0.4)",
+        "border-primary": "#1c5180",
+        "border-secondary": "rgba(47, 92, 238, 0.1)",
+        "button-bg": "rgba(47, 92, 238, 0.1)",
+        "button-text": "#2F5CEE"
     },
     {
         "name": "Orange",
@@ -759,7 +949,17 @@
         "pin-btn-icon-color": "#FFF3E0",
         "hint-bg": "#bf4700",
         "hint-border": "#F57C00",
-        "hint-text": "#FFF3E0"
+        "hint-text": "#FFF3E0",
+        "bg-primary": "#bf4700",
+        "bg-secondary": "#E65100",
+        "text-primary": "#ffffff",
+        "text-secondary": "#FFF3E0",
+        "accent-primary": "#FFA726",
+        "accent-secondary": "rgba(255, 167, 38, 0.4)",
+        "border-primary": "#F57C00",
+        "border-secondary": "rgba(255, 167, 38, 0.1)",
+        "button-bg": "rgba(255, 167, 38, 0.1)",
+        "button-text": "#FFA726"
     },
     {
         "name": "Pink",
@@ -797,7 +997,17 @@
         "pin-btn-icon-color": "#880E4F",
         "hint-bg": "#f9eaf1",
         "hint-border": "#F8BBD0",
-        "hint-text": "#880E4F"
+        "hint-text": "#880E4F",
+        "bg-primary": "#fdf2f7",
+        "bg-secondary": "#FCE4EC",
+        "text-primary": "#880E4F",
+        "text-secondary": "#AD1457",
+        "accent-primary": "#E91E63",
+        "accent-secondary": "rgba(233, 30, 99, 0.2)",
+        "border-primary": "#F8BBD0",
+        "border-secondary": "rgba(233, 30, 99, 0.1)",
+        "button-bg": "rgba(233, 30, 99, 0.1)",
+        "button-text": "#E91E63"
     },
     {
         "name": "Purple",
@@ -835,7 +1045,17 @@
         "pin-btn-icon-color": "#EDE7F6",
         "hint-bg": "#28126b",
         "hint-border": "#5E35B1",
-        "hint-text": "#EDE7F6"
+        "hint-text": "#EDE7F6",
+        "bg-primary": "#28126b",
+        "bg-secondary": "#311B92",
+        "text-primary": "#ffffff",
+        "text-secondary": "#EDE7F6",
+        "accent-primary": "#9575CD",
+        "accent-secondary": "rgba(149, 117, 205, 0.4)",
+        "border-primary": "#5E35B1",
+        "border-secondary": "rgba(149, 117, 205, 0.1)",
+        "button-bg": "rgba(149, 117, 205, 0.1)",
+        "button-text": "#9575CD"
     },
     {
         "name": "Rose Gold",
@@ -873,7 +1093,17 @@
         "pin-btn-icon-color": "#5c3333",
         "hint-bg": "#fef7f7",
         "hint-border": "#fbebeb",
-        "hint-text": "#5c3333"
+        "hint-text": "#5c3333",
+        "bg-primary": "#fffafa",
+        "bg-secondary": "#fef7f7",
+        "text-primary": "#5c3333",
+        "text-secondary": "#a36c6c",
+        "accent-primary": "#d9b3b3",
+        "accent-secondary": "rgba(217, 179, 179, 0.2)",
+        "border-primary": "#fbebeb",
+        "border-secondary": "rgba(217, 179, 179, 0.1)",
+        "button-bg": "rgba(217, 179, 179, 0.1)",
+        "button-text": "#d9b3b3"
     },
     {
         "name": "Potato",
@@ -911,7 +1141,17 @@
         "pin-btn-icon-color": "#f5deb3",
         "hint-bg": "#3a2a1a",
         "hint-border": "#6b4423",
-        "hint-text": "#f5deb3"
+        "hint-text": "#f5deb3",
+        "bg-primary": "#3a2a1a",
+        "bg-secondary": "#4b3621",
+        "text-primary": "#ffffff",
+        "text-secondary": "#f5deb3",
+        "accent-primary": "#d2b48c",
+        "accent-secondary": "rgba(210, 180, 140, 0.4)",
+        "border-primary": "#6b4423",
+        "border-secondary": "rgba(210, 180, 140, 0.1)",
+        "button-bg": "rgba(210, 180, 140, 0.1)",
+        "button-text": "#d2b48c"
     },
     {
         "name": "Silver",
@@ -949,7 +1189,17 @@
         "pin-btn-icon-color": "#d1d5db",
         "hint-bg": "#171d26",
         "hint-border": "#4b5563",
-        "hint-text": "#d1d5db"
+        "hint-text": "#d1d5db",
+        "bg-primary": "#171d26",
+        "bg-secondary": "#1f2937",
+        "text-primary": "#ffffff",
+        "text-secondary": "#d1d5db",
+        "accent-primary": "#9ca3af",
+        "accent-secondary": "rgba(156, 163, 175, 0.4)",
+        "border-primary": "#4b5563",
+        "border-secondary": "rgba(156, 163, 175, 0.1)",
+        "button-bg": "rgba(156, 163, 175, 0.1)",
+        "button-text": "#d1d5db"
     },
     {
         "name": "Slate",
@@ -987,7 +1237,17 @@
         "pin-btn-icon-color": "#cbd5e1",
         "hint-bg": "#0b111e",
         "hint-border": "#1e293b",
-        "hint-text": "#cbd5e1"
+        "hint-text": "#cbd5e1",
+        "bg-primary": "#0b111e",
+        "bg-secondary": "#0f172a",
+        "text-primary": "#ffffff",
+        "text-secondary": "#DAE2EC",
+        "accent-primary": "#2C38E8",
+        "accent-secondary": "rgba(44, 56, 232, 0.4)",
+        "border-primary": "#1e293b",
+        "border-secondary": "rgba(44, 56, 232, 0.1)",
+        "button-bg": "rgba(44, 56, 232, 0.1)",
+        "button-text": "#2C38E8"
     },
     {
         "name": "Sunset",
@@ -1025,7 +1285,17 @@
         "pin-btn-icon-color": "#ffddcc",
         "hint-bg": "#1a0800",
         "hint-border": "#661f00",
-        "hint-text": "#ffddcc"
+        "hint-text": "#ffddcc",
+        "bg-primary": "#1a0800",
+        "bg-secondary": "#260c00",
+        "text-primary": "#ffffff",
+        "text-secondary": "#FEEBD7",
+        "accent-primary": "#FFAB7A",
+        "accent-secondary": "rgba(255, 171, 122, 0.4)",
+        "border-primary": "#661f00",
+        "border-secondary": "rgba(255, 171, 122, 0.1)",
+        "button-bg": "rgba(255, 171, 122, 0.1)",
+        "button-text": "#FFAB7A"
     },
     {
         "name": "Clanker",
@@ -1063,6 +1333,16 @@
         "pin-btn-icon-color": "#E0E0E0",
         "hint-bg": "#1a1a1a",
         "hint-border": "#CC0000",
-        "hint-text": "#E0E0E0"
+        "hint-text": "#E0E0E0",
+        "bg-primary": "#1a1a1a",
+        "bg-secondary": "#232B30",
+        "text-primary": "#ffffff",
+        "text-secondary": "#E0E0E0",
+        "accent-primary": "#CC0000",
+        "accent-secondary": "rgba(204, 0, 0, 0.4)",
+        "border-primary": "#CC0000",
+        "border-secondary": "rgba(204, 0, 0, 0.1)",
+        "button-bg": "rgba(204, 0, 0, 0.1)",
+        "button-text": "#CC0000"
     }
 ]

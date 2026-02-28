@@ -43,10 +43,22 @@
             padding: 0;
             overflow: hidden; /* Prevent scrolling for true fullscreen experience */
         }
+        :root {
+            --bg-page: var(--bg-primary, #040404);
+            --bg-card: var(--bg-secondary, #111111);
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #374151);
+            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --btn-text: var(--button-text, #4f46e5);
+        }
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: #040404; 
-            color: #c0c0c0; 
+            background-color: var(--bg-page); 
+            color: var(--text-muted); 
             font-weight: 300; /* Base font weight */
             display: flex;
             align-items: center;
@@ -63,7 +75,7 @@
         /* Custom class for slightly bolder text (+100 weight from base 300) */
         .font-accent-bold {
             font-weight: 400; 
-            color: #ffffff; /* Make the highlighted text stand out */
+            color: var(--text-main); /* Make the highlighted text stand out */
         }
         
         /* Main Fullscreen Container for the Two-Column Layout */
@@ -71,7 +83,7 @@
             width: 100vw;
             height: 100vh;
             display: flex;
-            background-color: #040404;
+            background-color: var(--bg-page);
             padding: 32px 0 0 0; 
             box-sizing: border-box; /* Include padding in the height calculation */
         }
@@ -80,8 +92,8 @@
         .left-column {
             width: 350px; /* Fixed width for steps/navigation */
             flex-shrink: 0;
-            background-color: #111111;
-            border-right: 1px solid #374151;
+            background-color: var(--bg-card);
+            border-right: 1px solid var(--border-main);
             padding: 40px 30px;
             display: flex;
             flex-direction: column;
@@ -103,11 +115,12 @@
         
         /* Highlight active step text on the left */
         .step-indicator.active .step-title {
-            color: white;
+            color: var(--text-main);
             font-weight: 600; 
         }
         .step-indicator.active .step-subtitle {
-            color: #d1d5db; /* Gray-300 */
+            color: var(--text-muted);
+            opacity: 0.8;
         }
 
         /* ------------------------------------------- */
@@ -121,23 +134,23 @@
             justify-content: center;
             border-radius: 14px; /* Updated to 14px */
             background-color: transparent;
-            border: 1px solid #374151; /* gray-700 */
-            color: #9ca3af; 
+            border: 1px solid var(--border-main);
+            color: var(--text-muted); 
             cursor: pointer;
             transition: all 0.2s;
             line-height: 1; /* Fix vertical alignment for the number */
             font-weight: 400;
         }
         .btn-icon:hover {
-            background-color: #374151; /* gray-700 */
-            color: #f3f4f6; /* gray-100 */
-            border-color: #374151; /* gray-700 */
+            background-color: var(--border-main);
+            color: var(--text-main);
+            border-color: var(--border-main);
         }
         .btn-icon.active {
             /* Active style (subtle purple/indigo) */
-            background-color: rgba(79, 70, 229, 0.1);
-            color: #4f46e5;
-            border-color: #4f46e5;
+            background-color: var(--btn-bg);
+            color: var(--accent-color);
+            border-color: var(--accent-color);
         }
         .btn-icon:disabled {
             cursor: not-allowed;
@@ -148,25 +161,25 @@
         /* 2. Main Action Button Style (for Download Button) */
         .btn-main-action {
             /* Match .btn-icon.active colors */
-            background-color: rgba(79, 70, 229, 0.15); /* Slightly stronger transparent background */
-            color: #4f46e5; /* Strong blue text color */
-            border: 1px solid #4f46e5; /* Strong blue border color */
+            background-color: var(--btn-bg);
+            color: var(--accent-color); 
+            border: 1px solid var(--accent-color); 
             border-radius: 14px; /* Updated to 14px */
             transition: all 0.3s ease;
             box-shadow: none; /* Removed the glow effect */
             font-weight: 600;
         }
         .btn-main-action:hover {
-            background-color: rgba(79, 70, 229, 0.3); /* Darker hover */
-            color: #ffffff; /* White text on hover for contrast */
+            background-color: var(--accent-glow);
+            color: var(--text-main);
         }
 
         /* 3. Navigation Action Button Style (for Prev/Next) */
         .btn-nav-action {
             /* Base style: Match .btn-main-action's colors */
-            background-color: rgba(79, 70, 229, 0.15); /* Indigo 500 @ 15% */
-            color: #4f46e5; /* Indigo 500 */
-            border: 1px solid #4f46e5; /* Indigo 500 */
+            background-color: var(--btn-bg);
+            color: var(--accent-color); 
+            border: 1px solid var(--accent-color); 
             transition: all 0.2s ease;
             box-shadow: none;
             font-weight: 600;
@@ -181,21 +194,23 @@
             cursor: pointer;
         }
         .btn-nav-action:hover:not(:disabled) {
-            background-color: rgba(79, 70, 229, 0.3); /* Darker hover */
-            color: #ffffff; /* White text on hover for contrast */
+            background-color: var(--accent-glow);
+            color: var(--text-main);
         }
         .btn-nav-action:disabled {
             opacity: 0.4; /* Stronger disabled look */
             cursor: not-allowed;
             background-color: transparent; /* Makes the disabled look cleaner */
-            border-color: #374151; /* gray-700 for disabled border */
-            color: #9ca3af; /* gray-400 for disabled icon */
+            border-color: var(--border-main); 
+            color: var(--text-muted);
         }
 
         /* 4. Description Block Custom Styling */
         #description-block {
             /* Slightly more rounded (1rem is rounded-[1.25rem]) */
             border-radius: 1.25rem;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-main);
             /* Less side padding (p-6 was 1.5rem, px-4 is 1rem) */
             padding: 1.5rem 1rem; /* 24px top/bottom, 16px left/right */
         }
@@ -268,11 +283,12 @@
         
         /* CONTENT BOX STYLES */
         .disclaimer-content-box {
-            background-color: rgba(0, 0, 0, 0.95); /* bg-black/95 */
-            color: white;
+            background-color: var(--bg-card);
+            opacity: 0.95;
+            color: var(--text-main);
             padding: 1rem; /* p-4 */
             border-radius: 1.25rem; /* Updated to 1.25rem */
-            border: 1px solid #4b5563; /* border-gray-700 */
+            border: 1px solid var(--border-main);
             box-shadow: 0 0 25px rgba(0,0,0,0.5); /* shadow for depth */
             -webkit-backdrop-filter: blur(8px); /* backdrop-blur-md */
             backdrop-filter: blur(8px); /* backdrop-blur-md */
@@ -286,7 +302,7 @@
         /* CUSTOM BOLD HIGHLIGHT STYLING */
         .disclaimer-highlight {
             font-weight: 400; /* Medium weight */
-            color: #ffffff; /* White for strong emphasis */
+            color: var(--text-main); /* White for strong emphasis */
         }
 
         @media (min-width: 768px) {
@@ -318,7 +334,8 @@
         }
         .disclaimer-message {
             font-size: 0.875rem; /* text-sm */
-            color: #d1d5db; /* text-gray-300 */
+            color: var(--text-muted);
+            opacity: 0.8;
             margin-bottom: 0.5rem; /* mb-2 */
             font-weight: 300; /* font-light */
         }
@@ -351,16 +368,16 @@
             border-radius: 14px; /* Updated to 14px */
             
             /* Color and Border */
-            background-color: #000000; /* Black background */
-            color: white;
-            border: 1px solid #ffffff; /* White border */
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            border: 1px solid var(--text-main);
             
             box-shadow: none;
             transition: all 0.15s ease-in-out;
             cursor: pointer; /* Ensure cursor is correct */
         }
         .disclaimer-button:hover {
-            background-color: #1a1a1a; /* Dark gray hover */
+            background-color: var(--bg-card);
             transform: scale(1.02);
         }
         
@@ -691,3 +708,4 @@
     </script>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->
