@@ -1117,9 +1117,9 @@ let db;
                 }
                 setupPinEventListeners();
             } else {
-                const authButtonContainer = document.getElementById('auth-controls-wrapper');
-                if (authButtonContainer) {
-                    authButtonContainer.insertAdjacentHTML('afterbegin', newPinHtml);
+                const navLeft = document.getElementById('nav-left-controls');
+                if (navLeft) {
+                    navLeft.insertAdjacentHTML('beforeend', newPinHtml);
                     setupPinEventListeners();
                 }
             }
@@ -1405,7 +1405,6 @@ let db;
 
             return `
                 ${user ? loggedInView(user, userData) : loggedOutView}
-                ${pinButtonHtml}
             `;
         }
 
@@ -1570,7 +1569,9 @@ let db;
         const updateAuthControlsArea = () => {
             const authWrapper = document.getElementById('auth-controls-wrapper');
             if (!authWrapper) return;
-            authWrapper.innerHTML = getAuthControlsHtml();
+            const profileHtml = getProfileButtonHtml(currentUser, currentUserData);
+            const authHtml = getAuthControlsHtml();
+            authWrapper.innerHTML = `${profileHtml}${authHtml}`;
             setupPinEventListeners();
             setupAuthToggleListeners(currentUser); 
         }
@@ -1646,21 +1647,21 @@ let db;
                     return `<a href="${page.url}" class="nav-tab ${activeClass}"><i class="${iconClasses} mr-2"></i>${page.name}</a>`;
                 }).join('');
 
-            const authControlsHtml = getAuthControlsHtml();
-
             // Only update innerHTML if tabContainer exists (it should with new structure)
             if (tabContainer) {
                 tabContainer.innerHTML = tabsHtml;
             }
 
             if (navLeftControls) {
-                const profileHtml = getProfileButtonHtml(user, userData);
+                const pinHtml = getPinButtonHtml();
                 const notifHtml = getNotificationButtonHtml();
-                navLeftControls.innerHTML = `${notifHtml}${profileHtml}`;
+                navLeftControls.innerHTML = `${notifHtml}${pinHtml}`;
             }
 
             if (authControlsWrapper) {
-                authControlsWrapper.innerHTML = authControlsHtml;
+                const profileHtml = getProfileButtonHtml(user, userData);
+                const authHtml = getAuthControlsHtml();
+                authControlsWrapper.innerHTML = `${profileHtml}${authHtml}`;
             }
             
             const tabCount = tabContainer ? tabContainer.querySelectorAll('.nav-tab').length : 0;
