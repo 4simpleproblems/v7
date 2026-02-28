@@ -67,10 +67,21 @@
             document.body.appendChild(bdayContainer);
             
             const fw = new Fireworks.default(bdayContainer, {
-                autoresize: true, opacity: 1.0, acceleration: 1.05, friction: 0.97,
-                gravity: 1.5, particles: 150, traceLength: 0, traceSpeed: 0,
-                explosion: 15, intensity: 20, flickering: 50, lineStyle: 'round',
-                shape: 'circle', rocketsPoint: { min: 0, max: 100 }
+                autoresize: true,
+                opacity: 1.0,
+                acceleration: 1.05,
+                friction: 0.97,
+                gravity: 1.5,
+                particles: 150,
+                traceLength: 0.1, // Minimum trace for "dots" look
+                traceSpeed: 1,
+                explosion: 12,
+                intensity: 40,
+                flickering: 50,
+                lineStyle: 'round',
+                hue: { min: 0, max: 360 },
+                delay: { min: 10, max: 20 },
+                rocketsPoint: { min: 0, max: 100 }
             });
             fw.start();
             setTimeout(() => {
@@ -100,4 +111,5 @@
         checkBirthday();
     }
 })();
+// Made with ❤️ from 4SP
 // Made with ❤️ from 4SP

@@ -219,13 +219,14 @@ window.applyTheme = (theme) => {
                 friction: 0.97,
                 gravity: 1.5,
                 particles: 100,
-                traceLength: 0, // No traces for dots
-                traceSpeed: 0,
-                explosion: 10,
-                intensity: 10,
+                traceLength: 0.1, // Minimum trace for "dots" look
+                traceSpeed: 1,
+                explosion: 8,
+                intensity: 30,
                 flickering: 50,
                 lineStyle: 'round',
-                shape: 'circle', // Use circles for dots
+                hue: { min: 0, max: 360 },
+                delay: { min: 15, max: 30 },
                 rocketsPoint: { min: 0, max: 100 }
             } : {
                 autoresize: true,
@@ -240,16 +241,22 @@ window.applyTheme = (theme) => {
                 intensity: 5,
                 flickering: 50,
                 lineStyle: 'round',
+                hue: { min: 0, max: 360 },
+                delay: { min: 30, max: 60 },
                 rocketsPoint: { min: 50, max: 50 }
             };
 
             // Start or Update fireworks
-            if (!fireworksInstance && typeof Fireworks !== 'undefined') {
-                 fireworksInstance = new Fireworks.default(fwContainer, fireworksOptions);
-                 fireworksInstance.start();
-            } else if (fireworksInstance) {
-                fireworksInstance.updateOptions(fireworksOptions);
-                fireworksInstance.start();
+            if (typeof Fireworks !== 'undefined') {
+                if (!fireworksInstance) {
+                    fireworksInstance = new Fireworks.default(fwContainer, fireworksOptions);
+                    fireworksInstance.start();
+                } else {
+                    // Stop, clear, and re-init to avoid internal state errors when switching modes
+                    fireworksInstance.stop();
+                    fireworksInstance.setOptions(fireworksOptions);
+                    fireworksInstance.start();
+                }
             }
         } else {
             fwContainer.style.opacity = '0';
@@ -2337,3 +2344,5 @@ let db;
 }
 })();
 }
+
+// Made with ❤️ from 4SP
