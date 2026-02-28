@@ -317,9 +317,9 @@ let db;
             document.body.prepend(navbarDiv);
         }
         
-        if (!document.getElementById('notification-container')) {
+        if (!document.getElementById('viro-notif-container')) {
             const notifDiv = document.createElement('div');
-            notifDiv.id = 'notification-container';
+            notifDiv.id = 'viro-notif-container';
             document.body.appendChild(notifDiv);
         }
 
@@ -382,6 +382,10 @@ let db;
             <a href="/" class="flex items-center space-x-2 flex-shrink-0 overflow-hidden relative" style="z-index: 20;">
                 <img src="${logoPath}" alt="4SP Logo" class="navbar-logo" id="navbar-logo">
             </a>
+
+            <div id="nav-left-controls" style="z-index: 20;">
+                <div class="nav-left-placeholder"></div>
+            </div>
             
             <div class="tab-wrapper" style="z-index: 20;">
                 <button id="glide-left" class="scroll-glide-button hidden"><i class="fa-solid fa-chevron-left"></i></button>
@@ -611,11 +615,11 @@ let db;
             }
             .auth-menu-container .border-b { border-color: transparent !important; } /* Removed bottom border */
             .auth-menu-displayname {
-                color: #ffffff !important;
+                color: var(--menu-username-text, #ffffff) !important;
                 text-align: left !important; margin: 0 !important; font-weight: 600 !important;
             }
             .auth-menu-username-handle {
-                color: #9ca3af !important;
+                color: var(--menu-email-text, #9ca3af) !important;
                 text-align: left !important; margin: 0 !important; font-weight: 400 !important;
             }
             .auth-menu-username {
@@ -646,12 +650,12 @@ let db;
             .stat-count {
                 font-weight: 600;
                 font-size: 0.95rem;
-                color: #ffffff;
+                color: var(--menu-username-text, #ffffff);
                 transition: color 0.2s ease;
             }
             .stat-label {
                 font-size: 0.7rem;
-                color: #9ca3af;
+                color: var(--menu-email-text, #9ca3af);
                 text-transform: uppercase;
                 letter-spacing: 0.025em;
                 transition: color 0.2s ease;
@@ -760,28 +764,111 @@ let db;
             @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
             /* Notifications */
-            #notification-container {
+            #viro-notif-container {
                 position: fixed;
-                bottom: 2rem;
-                right: 2rem;
+                bottom: 24px;
+                right: 24px;
+                z-index: 1000000;
                 display: flex;
-                flex-direction: column;
-                gap: 0.75rem;
-                z-index: 20000;
+                flex-direction: column-reverse;
+                gap: 12px;
                 pointer-events: none;
+                width: 320px;
+                max-width: calc(100vw - 48px);
             }
-            .notification-toast {
-                background-color: #0a0a0a; border: 1px solid #333; border-radius: 16px; /* Reset to 16px */
-                padding: 0.75rem 1.25rem; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-                display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem;
-                min-width: 200px; transform: translateX(120%);
-                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease, background-color 0.2s;
-                opacity: 0; pointer-events: auto; cursor: default;
+
+            .viro-notif {
+                pointer-events: auto;
+                background: var(--menu-bg, #ffffff);
+                border: 1px solid var(--menu-border, rgba(0,0,0,0.08));
+                border-radius: 20px;
+                padding: 12px 16px;
+                box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                animation: notif-pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
             }
-            .notification-toast.show { transform: translateX(0); opacity: 1; }
-            .notification-toast.show:hover {
-                transform: scale(1.02) translateX(-5px); background-color: #151515;
-                border-color: #555; box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+
+            .viro-notif.fade-out {
+                animation: notif-fade-out 0.3s ease forwards;
+            }
+
+            @keyframes notif-pop-in {
+                0% { opacity: 0; transform: translateY(20px) scale(0.9); }
+                100% { opacity: 1; transform: translateY(0) scale(1); }
+            }
+
+            @keyframes notif-fade-out {
+                0% { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(0.9); }
+            }
+
+            .viro-notif-content {
+                font-size: 0.85rem;
+                color: var(--menu-username-text, #1c1917);
+                font-weight: 500;
+                line-height: 1.4;
+                flex: 1;
+                word-wrap: break-word;
+            }
+
+            .viro-notif-close {
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 10px;
+                color: var(--menu-email-text, #9ca3af);
+                cursor: pointer;
+                transition: all 0.2s;
+                flex-shrink: 0;
+                border: none;
+                background: transparent;
+            }
+
+            .viro-notif-close:hover {
+                background-color: var(--menu-item-hover-bg, #f3f4f6);
+                color: var(--menu-item-hover-text, #4b5563);
+            }
+
+            .viro-notif-badge {
+                background: var(--accent-primary, #f97316);
+                color: white;
+                font-size: 10px;
+                font-weight: 800;
+                width: 18px;
+                height: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                flex-shrink: 0;
+                box-shadow: 0 2px 4px rgba(249, 115, 22, 0.2);
+            }
+
+            #notification-button {
+                border-color: var(--pin-btn-border, #4b5563); transition: background-color 0.2s, border-color 0.3s ease; 
+                display: flex; align-items: center; justify-content: center; 
+                border-radius: 16px; 
+                border-width: 1px; 
+                width: 40px; height: 40px;
+                background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); 
+                cursor: pointer;
+            }
+            #notification-button:hover { background-color: var(--pin-btn-hover-bg, #374151); z-index: 50; }
+            #notification-button i { color: var(--pin-btn-icon-color, #d1d5db); transition: color 0.3s ease; }
+
+            #nav-left-controls {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-left: 1rem;
             }
 
             /* UNIVERSAL LOADER CSS */
@@ -1096,11 +1183,20 @@ let db;
             `;
         }
 
+        const getNotificationButtonHtml = () => {
+            return `
+                <div id="notification-area-wrapper" class="relative flex-shrink-0 flex items-center">
+                    <button id="notification-button" class="w-10 h-10 border flex items-center justify-center hover:bg-gray-700 transition" title="Notifications" style="border-radius: 14px;">
+                        <i class="fa-solid fa-bell text-gray-300"></i>
+                    </button>
+                </div>
+            `;
+        }
+
         const getAuthControlsHtml = () => {
             const user = currentUser;
             const userData = currentUserData;
             const pinButtonHtml = getPinButtonHtml();
-            const profileButtonHtml = getProfileButtonHtml(user, userData);
 
             const loggedOutView = `
                 <div id="auth-button-container" class="relative flex-shrink-0 flex items-center">
@@ -1218,7 +1314,6 @@ let db;
             };
 
             return `
-                ${profileButtonHtml}
                 ${pinButtonHtml}
                 ${user ? loggedInView(user, userData) : loggedOutView}
             `;
@@ -1230,6 +1325,13 @@ let db;
 
             const profileToggle = document.getElementById('profile-toggle');
             const profileMenu = document.getElementById('profile-menu-container');
+            const notifButton = document.getElementById('notification-button');
+
+            if (notifButton) {
+                notifButton.addEventListener('click', () => {
+                    window.showNotification("Notifications Clear! ❤️");
+                });
+            }
 
             if (profileToggle && profileMenu) {
                 profileToggle.addEventListener('click', (e) => {
@@ -1388,6 +1490,7 @@ let db;
             // --- Updated Selectors to Match new structure ---
             const tabContainer = document.getElementById('tabs-container'); 
             const authControlsWrapper = document.getElementById('auth-controls-wrapper');
+            const navLeftControls = document.getElementById('nav-left-controls');
             const logos = document.querySelectorAll('.navbar-logo, #navbar-logo');
 
             let currentTheme;
@@ -1420,6 +1523,12 @@ let db;
             // Only update innerHTML if tabContainer exists (it should with new structure)
             if (tabContainer) {
                 tabContainer.innerHTML = tabsHtml;
+            }
+
+            if (navLeftControls) {
+                const profileHtml = getProfileButtonHtml(user, userData);
+                const notifHtml = getNotificationButtonHtml();
+                navLeftControls.innerHTML = `${notifHtml}${profileHtml}`;
             }
 
             if (authControlsWrapper) {
@@ -1883,28 +1992,78 @@ let db;
         osc.stop(audioCtx.currentTime + 0.015);
     };
 
-    window.showNotification = function(message, iconClass = 'fa-solid fa-info-circle', type = 'info') {
-        const notificationContainer = document.getElementById('notification-container');
-        if (!notificationContainer) return;
-        
-        while (notificationContainer.children.length >= 3) {
-            notificationContainer.removeChild(notificationContainer.firstChild);
+    const activeNotifs = new Map(); // message -> { element, count, timeout }
+
+    window.showNotification = function(message) {
+        if (!message) return;
+        const container = document.getElementById('viro-notif-container');
+        if (!container) return;
+
+        // Deduplication
+        if (activeNotifs.has(message)) {
+            const data = activeNotifs.get(message);
+            data.count++;
+            
+            // Update UI
+            let badge = data.element.querySelector('.viro-notif-badge');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.className = 'viro-notif-badge';
+                data.element.prepend(badge);
+            }
+            badge.textContent = data.count;
+
+            // Reset timeout
+            clearTimeout(data.timeout);
+            data.timeout = setTimeout(() => removeNotif(message), 3000);
+            return;
         }
+
+        // Max 5 notifications
+        if (container.children.length >= 5) {
+            const oldestMessage = Array.from(activeNotifs.keys())[0];
+            removeNotif(oldestMessage);
+        }
+
+        // Create Element
+        const notif = document.createElement('div');
+        notif.className = 'viro-notif';
+        notif.innerHTML = `
+            <div class="viro-notif-content">${message}</div>
+            <button class="viro-notif-close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        `;
+
+        notif.querySelector('.viro-notif-close').onclick = () => removeNotif(message);
+
+        container.appendChild(notif);
+
+        if (window.playClickSound) window.playClickSound();
+
+        // Store and Set Auto-remove
+        const timeout = setTimeout(() => removeNotif(message), 3000);
+        activeNotifs.set(message, { element: notif, count: 1, timeout });
+    };
+
+    function removeNotif(message) {
+        const data = activeNotifs.get(message);
+        if (!data) return;
+
+        clearTimeout(data.timeout);
+        data.element.classList.add('fade-out');
         
-        const toast = document.createElement('div');
-        toast.className = 'notification-toast';
-        toast.innerHTML = `<i class="${iconClass} notification-icon ${type}"></i><span>${message}</span>`;
-        notificationContainer.appendChild(toast);
-        
-        requestAnimationFrame(() => {
-            toast.classList.add('show');
-            if (window.playClickSound) window.playClickSound();
-        });
-        
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => { if (toast.parentElement) toast.remove(); }, 300);
-        }, 3000);
+        data.element.addEventListener('animationend', () => {
+            data.element.remove();
+            activeNotifs.delete(message);
+        }, { once: true });
+    }
+
+    // Override standard alert
+    const originalAlert = window.alert;
+    window.alert = function(msg) {
+        console.log("4SP Alert Intercepted:", msg);
+        window.showNotification(msg);
     };
 
     if (document.readyState === 'loading') {
