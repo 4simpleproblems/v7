@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
@@ -18,7 +17,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
 
     <style>
         :root {
@@ -78,8 +76,6 @@
             background-color: var(--border-faint);
         }
 
-        .provider-icon { width: 1.25rem; height: 1.25rem; object-fit: contain; }
-
         /* --- Action Buttons --- */
         .action-btn {
             padding: 0.35rem 0.75rem;
@@ -93,14 +89,8 @@
         .btn-block { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); }
         .btn-block:hover { background-color: rgba(239, 68, 68, 0.2); }
         
-        .btn-unblock { background-color: rgba(34, 197, 94, 0.1); color: #22c55e; border-color: rgba(34, 197, 94, 0.2); }
-        .btn-unblock:hover { background-color: rgba(34, 197, 94, 0.2); }
-
         .btn-admin { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; border-color: rgba(59, 130, 246, 0.2); }
         .btn-admin:hover { background-color: rgba(59, 130, 246, 0.2); }
-
-        .btn-remove-admin { background-color: rgba(234, 179, 8, 0.1); color: #eab308; border-color: rgba(234, 179, 8, 0.2); }
-        .btn-remove-admin:hover { background-color: rgba(234, 179, 8, 0.2); }
 
         .btn-create { background-color: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
         .btn-create:hover { background-color: rgba(16, 185, 129, 0.2); }
@@ -110,29 +100,6 @@
 
         .btn-tag { background-color: rgba(168, 85, 247, 0.1); color: #a855f7; border-color: rgba(168, 85, 247, 0.2); }
         .btn-tag:hover { background-color: rgba(168, 85, 247, 0.2); }
-
-        /* --- Custom Nav Tab Style --- */
-        .nav-tab-style {
-            padding: 0.5rem 1rem;
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            font-weight: 400;
-            border-radius: 14px;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            border: 1px solid transparent;
-            transition: all 0.2s;
-            cursor: pointer;
-            background-color: transparent;
-        }
-        .nav-tab-style:hover {
-            color: var(--text-main);
-            background-color: var(--btn-bg);
-            border-color: var(--accent-color);
-            transform: translateY(-1px);
-        }
 
         /* --- Dashboard Elements --- */
         .chart-container {
@@ -178,14 +145,16 @@
         .history-item:last-child { border-bottom: none; }
         
         .badge { font-size: 0.65rem; font-weight: bold; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; }
-        
-        /* Version chips */
         .ver-v6 { color: #4f46e5; border-color: rgba(79, 70, 229, 0.3); background: rgba(79, 70, 229, 0.1); }
         .ver-v5 { color: #10b981; border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.1); }
         .ver-other { color: #9ca3af; border-color: rgba(156, 163, 175, 0.3); background: rgba(156, 163, 175, 0.1); }
 
-        .loading-overlay { position: fixed; inset: 0; background: var(--bg-page); z-index: 10000; display: flex; flex-direction: column; items-center justify-content: center; gap: 1.5rem; transition: opacity 0.5s ease; }
+        .loading-overlay { position: fixed; inset: 0; background: var(--bg-page); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; transition: opacity 0.5s ease; }
         .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.open { display: flex; }
+        .modal-content { background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 24px; padding: 32px; width: 100%; max-width: 500px; }
     </style>
 </head>
 <body class="min-h-screen pb-20">
@@ -214,297 +183,103 @@
             </div>
         </header>
 
-        <!-- OVERVIEW TAB -->
-        <div id="tab-overview" class="tab-content animate-in fade-in duration-500">
+        <!-- TABS CONTENT -->
+        <div id="tab-overview" class="tab-content">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div class="stat-card">
-                    <span class="stat-label">Total Reach</span>
-                    <span id="stat-total-users" class="stat-value">--</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Active (24h)</span>
-                    <span id="stat-active-users" class="stat-value" style="color: var(--accent-color);">--</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Total Sessions</span>
-                    <span id="stat-total-sessions" class="stat-value">--</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Total Views</span>
-                    <span id="stat-total-views" class="stat-value">--</span>
-                </div>
+                <div class="stat-card"><span class="stat-label">Total Reach</span><span id="stat-total-users" class="stat-value">--</span></div>
+                <div class="stat-card"><span class="stat-label">Active (24h)</span><span id="stat-active-users" class="stat-value" style="color: var(--accent-color);">--</span></div>
+                <div class="stat-card"><span class="stat-label">Total Sessions</span><span id="stat-total-sessions" class="stat-value">--</span></div>
+                <div class="stat-card"><span class="stat-label">Total Views</span><span id="stat-total-views" class="stat-value">--</span></div>
             </div>
-
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <div class="chart-container">
-                    <h3 class="text-[var(--text-main)] mb-4 flex justify-between items-center">
-                        User Growth
+                    <h3 class="text-[var(--text-main)] mb-4 flex justify-between items-center">User Growth
                         <select id="growth-period" class="bg-[var(--bg-page)] border border-[var(--border-main)] text-xs rounded-lg px-2 py-1 outline-none">
-                            <option value="7">7 Days</option>
-                            <option value="30" selected>30 Days</option>
-                            <option value="90">90 Days</option>
+                            <option value="7">7 Days</option><option value="30" selected>30 Days</option><option value="90">90 Days</option>
                         </select>
                     </h3>
                     <canvas id="growthChart"></canvas>
                 </div>
-                <div class="chart-container">
-                    <h3 class="text-[var(--text-main)] mb-4">Version Distribution</h3>
-                    <canvas id="versionChart"></canvas>
-                </div>
+                <div class="chart-container"><h3 class="text-[var(--text-main)] mb-4">Version Distribution</h3><canvas id="versionChart"></canvas></div>
             </div>
-
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 inspect-card">
-                    <div class="inspect-header">
-                        <h3 class="text-lg text-[var(--text-main)]">Recent Activity Pulse</h3>
-                        <span class="text-xs text-[var(--text-muted)] opacity-60">Last 15 sessions</span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="analytics-table">
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>Version</th>
-                                    <th>Action</th>
-                                    <th class="text-right">Time</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pulse-table-body"></tbody>
-                        </table>
-                    </div>
+                    <div class="inspect-header"><h3 class="text-lg text-[var(--text-main)]">Recent Activity Pulse</h3></div>
+                    <div class="overflow-x-auto"><table class="analytics-table"><thead><tr><th>User</th><th>Version</th><th>Action</th><th class="text-right">Time</th></tr></thead><tbody id="pulse-table-body"></tbody></table></div>
                 </div>
-                <div class="inspect-card">
-                    <div class="inspect-header">
-                        <h3 class="text-lg text-[var(--text-main)]">Top Entries</h3>
-                    </div>
-                    <div class="p-4" id="top-pages-list"></div>
-                </div>
+                <div class="inspect-card"><div class="inspect-header"><h3 class="text-lg text-[var(--text-main)]">Top Entries</h3></div><div class="p-4" id="top-pages-list"></div></div>
             </div>
         </div>
 
-        <!-- USERS TAB -->
-        <div id="tab-users" class="tab-content hidden animate-in fade-in duration-500">
+        <div id="tab-users" class="tab-content hidden">
             <div class="inspect-card">
                 <div class="p-6 border-b border-[var(--border-main)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h3 class="text-xl text-[var(--text-main)]">User Directory</h3>
-                        <p class="text-sm text-[var(--text-muted)] opacity-60">Complete list of registered nodes</p>
-                    </div>
-                    <div class="flex gap-3 w-full md:w-auto">
-                        <input type="text" id="user-search" placeholder="Search by name, email, or UID..." class="flex-1 md:w-80 bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl px-4 py-2 text-sm outline-none focus:border-[var(--accent-color)]">
-                        <button id="export-users" class="btn-toolbar-style" title="Export to CSV">
-                            <i class="fa-solid fa-download"></i>
-                        </button>
-                    </div>
+                    <h3 class="text-xl text-[var(--text-main)]">User Directory</h3>
+                    <div class="flex gap-3 w-full md:w-auto"><input type="text" id="user-search" placeholder="Search users..." class="flex-1 md:w-80 bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl px-4 py-2 text-sm outline-none focus:border-[var(--accent-color)]"></div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="user-table">
-                        <thead>
-                            <tr>
-                                <th>Identity</th>
-                                <th>Method</th>
-                                <th>Created</th>
-                                <th>Exp. Time</th>
-                                <th>Status</th>
-                                <th class="text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="user-directory-body"></tbody>
-                    </table>
-                </div>
-                <div id="user-pagination" class="p-4 flex justify-center gap-2"></div>
+                <div class="overflow-x-auto"><table class="user-table"><thead><tr><th>Identity</th><th>Method</th><th>Created</th><th>Time (V6)</th><th>Status</th><th class="text-right">Actions</th></tr></thead><tbody id="user-directory-body"></tbody></table></div>
             </div>
         </div>
 
-        <!-- INSPECTION TAB (New Advanced One) -->
-        <div id="tab-inspection" class="tab-content hidden animate-in fade-in duration-500">
+        <div id="tab-inspection" class="tab-content hidden">
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <!-- User Selector Sidebar -->
                 <div class="lg:col-span-1 space-y-4">
                     <div class="inspect-card p-4">
-                        <div class="relative mb-4">
-                            <input type="text" id="inspect-search" placeholder="Target Search..." class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl px-10 py-3 text-sm outline-none focus:border-[var(--accent-color)]">
-                            <i class="fa-solid fa-crosshairs absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] opacity-40"></i>
-                        </div>
-                        <div id="inspect-list" class="space-y-1 max-h-[60vh] overflow-y-auto pr-2 custom-scroll">
-                            <!-- Search results injected here -->
-                            <p class="text-center text-xs text-[var(--text-muted)] opacity-40 py-10">Enter criteria to begin scan</p>
-                        </div>
+                        <div class="relative mb-4"><input type="text" id="inspect-search" placeholder="Search Target..." class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl px-10 py-3 text-sm outline-none focus:border-[var(--accent-color)]"><i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 opacity-40"></i></div>
+                        <div id="inspect-list" class="space-y-1 max-h-[60vh] overflow-y-auto"></div>
                     </div>
                 </div>
-
-                <!-- Deep Inspection View -->
                 <div id="inspect-viewport" class="lg:col-span-3 space-y-6 hidden">
-                    <!-- Top Summary -->
                     <div class="inspect-card p-8 flex flex-col md:flex-row items-center gap-8">
                         <div id="inspect-pfp" class="w-32 h-32 rounded-3xl border-2 border-[var(--border-main)] overflow-hidden flex-shrink-0"></div>
                         <div class="text-center md:text-left flex-1 min-w-0">
-                            <div class="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
-                                <h2 id="inspect-displayname" class="text-3xl font-bold text-[var(--text-main)] truncate">--</h2>
-                                <span id="inspect-role-badge"></span>
-                            </div>
-                            <p id="inspect-uid" class="font-mono text-sm text-[var(--text-muted)] opacity-60 mb-4 truncate"></p>
-                            <div class="flex flex-wrap justify-center md:justify-start gap-6 text-sm">
-                                <div><span class="text-[var(--text-muted)] opacity-40 mr-2 uppercase text-[10px] tracking-widest font-bold">Email</span> <span id="inspect-email" class="text-[var(--text-main)]">--</span></div>
-                                <div><span class="text-[var(--text-muted)] opacity-40 mr-2 uppercase text-[10px] tracking-widest font-bold">Joined</span> <span id="inspect-joined" class="text-[var(--text-main)]">--</span></div>
-                                <div><span class="text-[var(--text-muted)] opacity-40 mr-2 uppercase text-[10px] tracking-widest font-bold">Verification</span> <span id="inspect-verified" class="text-[var(--text-main)]">--</span></div>
+                            <h2 id="inspect-displayname" class="text-3xl font-bold text-[var(--text-main)] mb-1">--</h2>
+                            <p id="inspect-uid" class="font-mono text-xs text-[var(--text-muted)] opacity-40 mb-4"></p>
+                            <div class="flex flex-wrap justify-center md:justify-start gap-4 text-xs">
+                                <div><span class="opacity-40">Email:</span> <span id="inspect-email">--</span></div>
+                                <div><span class="opacity-40">Joined:</span> <span id="inspect-joined">--</span></div>
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <button id="inspect-btn-ban" class="action-btn btn-block py-2 px-4">Ban User</button>
-                            <button id="inspect-btn-admin" class="action-btn btn-admin py-2 px-4">Mod Rights</button>
+                            <button id="inspect-btn-ban" class="action-btn btn-block">Ban Node</button>
+                            <button id="inspect-btn-tag" class="action-btn btn-tag">Add Tag</button>
                         </div>
                     </div>
-
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Daily Photos Section -->
-                        <div class="inspect-card flex flex-col">
-                            <div class="inspect-header">
-                                <h3 class="text-[var(--text-main)]">Daily Moments</h3>
-                                <span id="inspect-photo-count" class="text-xs bg-[var(--accent-color)]/20 text-[var(--accent-color)] px-2 py-0.5 rounded-full">0</span>
-                            </div>
-                            <div class="p-6 overflow-y-auto max-h-[400px]">
-                                <div id="inspect-photos" class="photo-grid">
-                                    <p class="col-span-full text-center text-xs text-[var(--text-muted)] opacity-40 py-10 italic">No moments shared yet</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- User Data & Metadata -->
-                        <div class="inspect-card flex flex-col">
-                            <div class="inspect-header">
-                                <h3 class="text-[var(--text-main)]">Node Metadata</h3>
-                                <button id="copy-json" class="text-xs text-[var(--accent-color)] hover:underline">Copy JSON</button>
-                            </div>
-                            <div class="p-6 flex-1 bg-black/30 font-mono text-xs overflow-auto max-h-[400px]">
-                                <pre id="inspect-raw-json" class="text-blue-300"></pre>
-                            </div>
-                        </div>
+                        <div class="inspect-card flex flex-col"><div class="inspect-header"><h3>Daily Moments</h3><span id="inspect-photo-count" class="badge">0</span></div><div class="p-6 overflow-y-auto max-h-[300px]"><div id="inspect-photos" class="photo-grid"></div></div></div>
+                        <div class="inspect-card flex flex-col"><div class="inspect-header"><h3>Raw Metadata</h3><button id="copy-json" class="text-xs text-[var(--accent-color)]">Copy</button></div><div class="p-6 flex-1 bg-black/30 font-mono text-xs overflow-auto max-h-[300px]"><pre id="inspect-raw-json" class="text-blue-300"></pre></div></div>
                     </div>
-
-                    <!-- Usage History Section -->
-                    <div class="inspect-card">
-                        <div class="inspect-header">
-                            <h3 class="text-[var(--text-main)]">Navigation History</h3>
-                            <div class="flex gap-2">
-                                <span class="text-xs px-2 py-0.5 rounded border border-blue-500/30 text-blue-400 bg-blue-900/10">Sessions: <span id="inspect-session-count">0</span></span>
-                                <span class="text-xs px-2 py-0.5 rounded border border-purple-500/30 text-purple-400 bg-purple-900/10">Pageviews: <span id="inspect-view-count">0</span></span>
-                            </div>
-                        </div>
-                        <div class="p-6">
-                            <div id="inspect-history" class="space-y-1">
-                                <!-- History timeline injected here -->
-                            </div>
-                        </div>
-                    </div>
+                    <div class="inspect-card"><div class="inspect-header"><h3>Navigation Timeline</h3></div><div class="p-6" id="inspect-history"></div></div>
                 </div>
-
-                <!-- Empty State for Viewport -->
-                <div id="inspect-empty-placeholder" class="lg:col-span-3 flex flex-col items-center justify-center py-40 text-center opacity-30">
-                    <i class="fa-solid fa-user-astronaut text-6xl mb-6"></i>
-                    <h2 class="text-2xl font-light">Deep Inspection Module</h2>
-                    <p>Select a node from the sidebar to initialize diagnostics</p>
-                </div>
+                <div id="inspect-empty" class="lg:col-span-3 flex flex-col items-center justify-center py-40 opacity-20"><i class="fa-solid fa-user-astronaut text-6xl mb-4"></i><p>Select a node to begin inspection</p></div>
             </div>
         </div>
 
-        <!-- TRAFFIC TAB -->
-        <div id="tab-traffic" class="tab-content hidden animate-in fade-in duration-500">
-            <div class="chart-container" style="height: 450px;">
-                <h3 class="text-[var(--text-main)] mb-6">Real-time Traffic Volume</h3>
-                <canvas id="trafficChart"></canvas>
-            </div>
-            
+        <div id="tab-traffic" class="tab-content hidden">
+            <div class="chart-container" style="height: 400px;"><h3 class="mb-4">Session Volume (Daily)</h3><canvas id="trafficChart"></canvas></div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="inspect-card">
-                    <div class="inspect-header"><h3 class="text-[var(--text-main)]">Platform Distribution</h3></div>
-                    <div class="p-6 grid grid-cols-2 gap-6">
-                        <div class="relative" style="height: 200px;"><canvas id="browserPie"></canvas></div>
-                        <div class="relative" style="height: 200px;"><canvas id="osPie"></canvas></div>
-                    </div>
-                </div>
-                <div class="inspect-card">
-                    <div class="inspect-header"><h3 class="text-[var(--text-main)]">Hot Path Diagnostics</h3></div>
-                    <div id="hot-paths-list" class="p-4"></div>
-                </div>
+                <div class="inspect-card"><div class="inspect-header"><h3>Top Paths</h3></div><div id="hot-paths-list" class="p-4"></div></div>
+                <div class="inspect-card"><div class="inspect-header"><h3>Device Audit</h3></div><div class="p-6 grid grid-cols-2 gap-4"><canvas id="browserPie"></canvas><canvas id="osPie"></canvas></div></div>
             </div>
         </div>
 
-        <!-- HEALTH TAB -->
-        <div id="tab-health" class="tab-content hidden animate-in fade-in duration-500">
+        <div id="tab-health" class="tab-content hidden">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="inspect-card">
-                    <div class="inspect-header">
-                        <h3 class="text-[var(--text-main)]">Desynchronized Identities</h3>
-                        <span id="missing-count" class="text-xs bg-red-900/30 text-red-400 px-2 py-0.5 rounded">0</span>
-                    </div>
-                    <div class="p-4 overflow-y-auto max-h-[500px]">
-                        <table class="user-table">
-                            <thead><tr><th>Auth UID</th><th>Action</th></tr></thead>
-                            <tbody id="missing-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="inspect-card">
-                    <div class="inspect-header">
-                        <h3 class="text-[var(--text-main)]">Orphaned Documents</h3>
-                        <span id="orphan-count" class="text-xs bg-orange-900/30 text-orange-400 px-2 py-0.5 rounded">0</span>
-                    </div>
-                    <div class="p-4 overflow-y-auto max-h-[500px]">
-                        <table class="user-table">
-                            <thead><tr><th>Doc ID</th><th>Action</th></tr></thead>
-                            <tbody id="orphan-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="inspect-card"><div class="inspect-header"><h3>Desync Check</h3><span id="missing-count" class="badge bg-red-500/20 text-red-400">0</span></div><div class="p-4"><table class="user-table"><thead><tr><th>Auth UID</th><th>Action</th></tr></thead><tbody id="missing-table-body"></tbody></table></div></div>
+                <div class="inspect-card"><div class="inspect-header"><h3>Orphan Check</h3><span id="orphan-count" class="badge bg-orange-500/20 text-orange-400">0</span></div><div class="p-4"><table class="user-table"><thead><tr><th>Doc ID</th><th>Action</th></tr></thead><tbody id="orphan-table-body"></tbody></table></div></div>
             </div>
         </div>
-
     </div>
 
     <!-- Modals -->
-    <div id="ban-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 class="text-xl text-[var(--text-main)] mb-4">Restrict Access</h3>
-            <p id="ban-target-text" class="text-sm text-[var(--text-muted)] opacity-60 mb-6 font-mono"></p>
-            <div class="space-y-4">
-                <textarea id="ban-reason" placeholder="Reason for restriction..." class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 text-sm outline-none focus:border-red-500 h-32"></textarea>
-                <div class="flex justify-end gap-3">
-                    <button class="px-4 py-2 text-[var(--text-muted)]" onclick="closeBanModal()">Cancel</button>
-                    <button id="confirm-ban-btn" class="px-6 py-2 bg-red-600 text-white rounded-xl font-bold">Execute Ban</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tag Modal -->
-    <div id="tag-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 class="text-xl text-[var(--text-main)] mb-4">Assign Node Tag</h3>
-            <div class="space-y-4">
-                <input type="text" id="tag-input" placeholder="Tag Label (e.g. ALPHA)" class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 text-sm outline-none">
-                <div class="flex items-center gap-3">
-                    <input type="color" id="tag-color" class="w-10 h-10 border-none bg-transparent cursor-pointer" value="#4f46e5">
-                    <span class="text-xs text-[var(--text-muted)] uppercase tracking-widest font-bold">Select Tincture</span>
-                </div>
-                <div class="flex justify-end gap-3 pt-4">
-                    <button class="px-4 py-2 text-[var(--text-muted)]" onclick="closeTagModal()">Cancel</button>
-                    <button id="confirm-tag-btn" class="px-6 py-2 bg-[var(--accent-color)] text-white rounded-xl font-bold">Update Tag</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="notification-container"></div>
+    <div id="ban-modal" class="modal-overlay"><div class="modal-content"><h3 class="text-xl mb-4">Ban Node</h3><textarea id="ban-reason" placeholder="Reason..." class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 text-sm h-32 mb-4"></textarea><div class="flex justify-end gap-3"><button onclick="closeModal('ban-modal')">Cancel</button><button id="confirm-ban-btn" class="px-6 py-2 bg-red-600 text-white rounded-xl">Execute</button></div></div></div>
+    <div id="tag-modal" class="modal-overlay"><div class="modal-content"><h3 class="text-xl mb-4">Tag Node</h3><input type="text" id="tag-input" placeholder="Tag..." class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 mb-4"><input type="color" id="tag-color" class="mb-4"><div class="flex justify-end gap-3"><button onclick="closeModal('tag-modal')">Cancel</button><button id="confirm-tag-btn" class="px-6 py-2 bg-[var(--accent-color)] text-white rounded-xl">Save</button></div></div></div>
 
     <script type="module">
         import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
-        import { 
-            getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, updateDoc, 
-            query, where, orderBy, limit, onSnapshot, writeBatch, serverTimestamp 
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from "../firebase-config.js";
         import { getAvatarHTML } from "../utils.js";
 
@@ -513,78 +288,37 @@
         const db = getFirestore();
         const functions = getFunctions();
 
-        // Messenger Bridge
-        const messengerConfig = {
-            apiKey: "AIzaSyASqfiYUPf7xY4wgZ0hLl8_Z0ZkBiwFUO8",
-            projectId: "theamericanmessenger-0",
-            databaseURL: "https://theamericanmessenger-0-default-rtdb.firebaseio.com",
-            storageBucket: "theamericanmessenger-0.firebase-storage.app",
-            messagingSenderId: "963196851685",
-            appId: "1:963196851685:web:9f709be8b2888ed4e28b0c",
-        };
-        const messengerApp = initializeApp(messengerConfig, "messenger");
-        const messengerDb = getFirestore(messengerApp);
+        // GLOBAL STATE
+        let allUsers = [], authUsers = [], allSessions = [], admins = new Set(), bannedUsers = new Set(), charts = {}, inspectionTarget = null;
 
-        // --- GLOBAL STATE ---
-        let allUsers = [];
-        let authUsers = [];
-        let allSessions = [];
-        let admins = new Set();
-        let bannedUsers = new Set();
-        let charts = {};
-        let inspectionTarget = null;
-
-        // --- AUTH CHECK & INIT ---
+        // AUTH & INIT
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const adminDoc = await getDoc(doc(db, 'admins', user.uid));
-                if (adminDoc.exists() || user.email === '4simpleproblems@gmail.com') {
-                    initApp();
-                } else {
-                    window.location.replace('../logged-in/dashboard.html');
-                }
-            } else {
-                window.location.replace('../index.html');
-            }
+                if (adminDoc.exists() || user.email === '4simpleproblems@gmail.com') initApp();
+                else window.location.replace('../logged-in/dashboard.html');
+            } else window.location.replace('../index.html');
         });
 
         const initApp = () => {
             subscribeToCore();
             setupTabLogic();
-            setupUserSearch();
-            setupInspectionSearch();
-            
+            setupSearch();
             document.getElementById('loading-overlay').classList.add('hidden');
             document.getElementById('page-content').classList.remove('opacity-0');
         };
 
         const subscribeToCore = () => {
-            // Live Users
             onSnapshot(query(collection(db, 'users'), orderBy('createdAt', 'desc')), (snap) => {
                 allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                updateGlobalStats();
-                renderUserDirectory();
-                if (inspectionTarget) renderInspection(inspectionTarget);
+                updateUI();
             });
-
-            // Live Bans
-            onSnapshot(collection(db, 'bans'), (snap) => {
-                bannedUsers = new Set(snap.docs.map(d => d.id));
-                renderUserDirectory();
-            });
-
-            // Live Admins
-            onSnapshot(collection(db, 'admins'), (snap) => {
-                admins = new Set(snap.docs.map(d => d.id));
-                renderUserDirectory();
-            });
-
-            // Traffic & Sessions
-            loadTrafficData();
+            onSnapshot(collection(db, 'bans'), (snap) => { bannedUsers = new Set(snap.docs.map(d => d.id)); renderUserDirectory(); });
+            onSnapshot(collection(db, 'admins'), (snap) => { admins = new Set(snap.docs.map(d => d.id)); renderUserDirectory(); });
+            loadTraffic();
             refreshAuthData();
         };
 
-        // --- TAB LOGIC ---
         const setupTabLogic = () => {
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.onclick = () => {
@@ -592,22 +326,16 @@
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
                     btn.classList.add('active');
                     document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
-                    
-                    // Re-render charts on resize/reveal
-                    if (btn.dataset.tab === 'overview') updateGrowthChart();
-                    if (btn.dataset.tab === 'traffic') updateTrafficCharts();
+                    if (btn.dataset.tab === 'overview') { updateGrowthChart(); updateVersionChart(); }
                 };
             });
         };
 
-        // --- DATA LOADING ---
-        const loadTrafficData = async () => {
+        const loadTraffic = async () => {
             const q = query(collection(db, 'analytics'), orderBy('lastActive', 'desc'), limit(5000));
             const snap = await getDocs(q);
             allSessions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            updateGlobalStats();
-            renderActivityPulse();
-            renderTopPages();
+            updateUI();
         };
 
         const refreshAuthData = async () => {
@@ -619,338 +347,131 @@
             } catch (e) { console.error("Auth fetch failed", e); }
         };
 
-        // --- STATS & CHARTS ---
-        const updateGlobalStats = () => {
+        const updateUI = () => {
             document.getElementById('stat-total-users').textContent = allUsers.length;
             document.getElementById('stat-total-sessions').textContent = allSessions.length;
             
-            const now = Date.now();
-            const active24h = allSessions.filter(s => {
-                const last = s.lastActive?.toMillis ? s.lastActive.toMillis() : (s.lastActive || 0);
-                return (now - last) < 86400000;
-            }).length;
+            const active24h = allSessions.filter(s => (Date.now() - (s.lastActive?.toMillis ? s.lastActive.toMillis() : (s.lastActive || 0))) < 86400000).length;
             document.getElementById('stat-active-users').textContent = active24h;
 
-            let totalViews = 0;
-            allSessions.forEach(s => totalViews += (s.visitedPages?.length || 0));
+            let totalViews = 0; allSessions.forEach(s => totalViews += (s.visitedPages?.length || 0));
             document.getElementById('stat-total-views').textContent = totalViews;
 
+            renderActivityPulse();
+            renderTopPages();
+            renderUserDirectory();
             updateGrowthChart();
             updateVersionChart();
+            if (inspectionTarget) performDeepInspect(inspectionTarget);
         };
 
+        // CHART LOGIC
         const updateGrowthChart = () => {
             const ctx = document.getElementById('growthChart');
             if (!ctx) return;
-            
             const days = parseInt(document.getElementById('growth-period').value);
             const cutoff = moment().subtract(days, 'days');
             const dataMap = {};
-
             allUsers.forEach(u => {
-                const date = u.createdAt?.toDate ? moment(u.createdAt.toDate()) : moment(u.createdAt);
-                if (date.isAfter(cutoff)) {
-                    const key = date.format('MMM DD');
-                    dataMap[key] = (dataMap[key] || 0) + 1;
-                }
+                const d = u.createdAt?.toDate ? moment(u.createdAt.toDate()) : moment(u.createdAt);
+                if (d.isAfter(cutoff)) { const k = d.format('MMM DD'); dataMap[k] = (dataMap[k] || 0) + 1; }
             });
-
-            const labels = Object.keys(dataMap);
-            const values = Object.values(dataMap);
-
             if (charts.growth) charts.growth.destroy();
-            charts.growth = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels,
-                    datasets: [{
-                        label: 'New Nodes',
-                        data: values,
-                        borderColor: '#4f46e5',
-                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } },
-                    plugins: { legend: { display: false } }
-                }
-            });
+            charts.growth = new Chart(ctx, { type: 'line', data: { labels: Object.keys(dataMap), datasets: [{ label: 'Nodes', data: Object.values(dataMap), borderColor: '#4f46e5', tension: 0.4, fill: true, backgroundColor: 'rgba(79, 70, 229, 0.1)' }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } } });
         };
 
         const updateVersionChart = () => {
             const ctx = document.getElementById('versionChart');
             if (!ctx) return;
-
-            const versions = { 'Version 6': 0, 'Version 5': 0, 'Other': 0 };
-            allSessions.forEach(s => {
-                if (s.version === 'project_niobium') versions['Version 6']++;
-                else if (s.isDV || s.version === 'v5') versions['Version 5']++;
-                else versions['Other']++;
-            });
-
+            const ver = { v6: 0, v5: 0, oth: 0 };
+            allSessions.forEach(s => { if (s.version === 'project_niobium') ver.v6++; else if (s.isDV) ver.v5++; else ver.oth++; });
             if (charts.version) charts.version.destroy();
-            charts.version = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(versions),
-                    datasets: [{
-                        data: Object.values(versions),
-                        backgroundColor: ['#4f46e5', '#10b981', '#333'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'right', labels: { color: '#9ca3af', font: { family: 'Geist' } } } }
-                }
-            });
+            charts.version = new Chart(ctx, { type: 'doughnut', data: { labels: ['v6', 'v5', 'oth'], datasets: [{ data: [ver.v6, ver.v5, ver.oth], backgroundColor: ['#4f46e5', '#10b981', '#333'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#9ca3af' } } } } });
         };
 
-        // --- DIRECTORY ---
+        // DIRECTORY & SEARCH
         const renderUserDirectory = () => {
             const tbody = document.getElementById('user-directory-body');
             const search = document.getElementById('user-search').value.toLowerCase();
-            
-            const filtered = allUsers.filter(u => 
-                (u.username?.toLowerCase().includes(search)) ||
-                (u.email?.toLowerCase().includes(search)) ||
-                (u.id.toLowerCase().includes(search))
-            );
-
-            tbody.innerHTML = filtered.slice(0, 50).map(u => {
-                const isAdmin = admins.has(u.id);
-                const isBanned = bannedUsers.has(u.id);
-                const hours = Math.floor((u.totalV6Time || 0) / 3600);
-                const mins = Math.floor(((u.totalV6Time || 0) % 3600) / 60);
-
-                return `
-                    <tr>
-                        <td>
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full border border-[var(--border-main)] flex-shrink-0 flex items-center justify-center text-xs font-bold">
-                                    ${(u.username || '?').charAt(0).toUpperCase()}
-                                </div>
-                                <div class="flex flex-col">
-                                    <span class="text-sm text-[var(--text-main)] font-medium">${u.username || 'Anonymous'}</span>
-                                    <span class="text-[10px] text-[var(--text-muted)] opacity-40 font-mono">${u.id}</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td><span class="text-xs text-[var(--text-muted)] opacity-60">${u.authMethod || 'email'}</span></td>
-                        <td class="text-xs text-[var(--text-muted)] opacity-60">${formatDate(u.createdAt)}</td>
-                        <td class="text-sm font-mono text-[var(--text-main)]">${hours}h ${mins}m</td>
-                        <td>
-                            <span class="badge ${isBanned ? 'text-red-400' : 'text-green-400'}">
-                                ${isBanned ? 'Banned' : 'Active'}
-                            </span>
-                        </td>
-                        <td class="text-right">
-                            <button class="action-btn btn-tag" onclick="openTagModal('${u.id}')"><i class="fa-solid fa-tag"></i></button>
-                            <button class="action-btn btn-admin" onclick="inspectNode('${u.id}')"><i class="fa-solid fa-magnifying-glass"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            const filtered = allUsers.filter(u => u.username?.toLowerCase().includes(search) || u.email?.toLowerCase().includes(search) || u.id.toLowerCase().includes(search));
+            tbody.innerHTML = filtered.slice(0, 50).map(u => `
+                <tr>
+                    <td><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full border border-[var(--border-main)] flex-shrink-0 flex items-center justify-center text-xs font-bold">${(u.username || '?').charAt(0).toUpperCase()}</div><div class="flex flex-col"><span class="text-sm font-medium">${u.username || 'Anon'}</span><span class="text-[10px] opacity-40 font-mono">${u.id}</span></div></div></td>
+                    <td><span class="text-xs opacity-60">${u.authMethod || 'email'}</span></td>
+                    <td><span class="text-xs opacity-60">${moment(u.createdAt?.toDate ? u.createdAt.toDate() : u.createdAt).format('MMM DD')}</span></td>
+                    <td class="font-mono text-sm">${Math.floor((u.totalV6Time || 0) / 3600)}h</td>
+                    <td><span class="badge ${bannedUsers.has(u.id) ? 'text-red-400' : 'text-green-400'}">${bannedUsers.has(u.id) ? 'Banned' : 'Active'}</span></td>
+                    <td class="text-right"><button class="action-btn btn-tag" onclick="window.openTagModal('${u.id}')"><i class="fa-solid fa-tag"></i></button><button class="action-btn btn-admin" onclick="window.inspectNode('${u.id}')"><i class="fa-solid fa-magnifying-glass"></i></button></td>
+                </tr>
+            `).join('');
         };
 
-        // --- DEEP INSPECTION ---
-        window.inspectNode = (uid) => {
-            const tabs = document.querySelectorAll('.tab-btn');
-            tabs.forEach(t => { if(t.dataset.tab === 'inspection') t.click(); });
-            performDeepInspect(uid);
-        };
-
-        const performDeepInspect = async (uid) => {
-            const user = allUsers.find(u => u.id === uid);
-            if (!user) return;
-
-            inspectionTarget = uid;
-            document.getElementById('inspect-empty-placeholder').classList.add('hidden');
-            document.getElementById('inspect-viewport').classList.remove('hidden');
-
-            // Identity
-            document.getElementById('inspect-pfp').innerHTML = getAvatarHTML(user, "w-full h-full", false);
-            document.getElementById('inspect-displayname').textContent = user.displayName || user.username || "Anonymous";
-            document.getElementById('inspect-uid').textContent = user.id;
-            document.getElementById('inspect-email').textContent = user.email || "N/A";
-            document.getElementById('inspect-joined').textContent = formatDate(user.createdAt);
-            document.getElementById('inspect-verified').textContent = user.emailVerified ? "Verified" : "Unverified";
-            
-            const badgeEl = document.getElementById('inspect-role-badge');
-            if (admins.has(uid)) badgeEl.innerHTML = `<span class="badge text-blue-400">Admin</span>`;
-            else if (bannedUsers.has(uid)) badgeEl.innerHTML = `<span class="badge text-red-400">Banned</span>`;
-            else badgeEl.innerHTML = `<span class="badge text-gray-400">Standard Node</span>`;
-
-            // Daily Moments
-            const photoEl = document.getElementById('inspect-photos');
-            photoEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-2xl text-[var(--accent-color)] col-span-full mx-auto py-10"></i>';
-            
-            const photosSnap = await getDocs(query(collection(db, 'daily_photos'), where('creatorUid', '==', uid)));
-            document.getElementById('inspect-photo-count').textContent = photosSnap.size;
-            
-            if (photosSnap.empty) {
-                photoEl.innerHTML = '<p class="col-span-full text-center text-xs text-[var(--text-muted)] opacity-40 py-10 italic">No moments shared yet</p>';
-            } else {
-                photoEl.innerHTML = photosSnap.docs.map(d => `
-                    <div class="photo-item" onclick="window.open('${d.data().imageBase64}')">
-                        <img src="${d.data().imageBase64}" loading="lazy">
-                    </div>
-                `).join('');
-            }
-
-            // Navigation History
-            const historyEl = document.getElementById('inspect-history');
-            const userSessions = allSessions.filter(s => s.userId === uid);
-            document.getElementById('inspect-session-count').textContent = userSessions.length;
-            
-            let totalViews = 0;
-            userSessions.forEach(s => totalViews += (s.visitedPages?.length || 0));
-            document.getElementById('inspect-view-count').textContent = totalViews;
-
-            if (userSessions.length === 0) {
-                historyEl.innerHTML = '<p class="text-center text-xs text-[var(--text-muted)] opacity-40 py-10 italic">No session history found</p>';
-            } else {
-                historyEl.innerHTML = userSessions.slice(0, 20).map(s => `
-                    <div class="mb-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-[10px] font-bold text-[var(--accent-color)] uppercase tracking-widest">${moment(s.startTime).fromNow()}</span>
-                            <span class="text-[9px] font-mono opacity-40">Duration: ${formatDuration(s.duration)}</span>
-                        </div>
-                        <div class="pl-4 border-l border-[var(--border-main)] space-y-1">
-                            ${(s.visitedPages || []).map(p => `
-                                <div class="history-item">
-                                    <span class="text-[var(--text-main)] truncate w-48">${p.title || 'Unknown Page'}</span>
-                                    <span class="text-[var(--text-muted)] opacity-40 text-[9px] font-mono">${p.path || '/'}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            // Raw JSON
-            document.getElementById('inspect-raw-json').textContent = JSON.stringify(user, null, 2);
-        };
-
-        const setupInspectionSearch = () => {
-            const input = document.getElementById('inspect-search');
-            const list = document.getElementById('inspect-list');
-
-            input.oninput = () => {
-                const term = input.value.toLowerCase();
+        const setupSearch = () => {
+            document.getElementById('user-search').oninput = renderUserDirectory;
+            document.getElementById('inspect-search').oninput = (e) => {
+                const term = e.target.value.toLowerCase();
                 if (term.length < 2) return;
-
-                const results = allUsers.filter(u => 
-                    u.username?.toLowerCase().includes(term) ||
-                    u.email?.toLowerCase().includes(term) ||
-                    u.id.toLowerCase().includes(term)
-                ).slice(0, 10);
-
-                list.innerHTML = results.map(u => `
-                    <div class="p-3 rounded-xl hover:bg-[var(--border-faint)] cursor-pointer transition flex items-center gap-3" onclick="performDeepInspect('${u.id}')">
-                        <div class="w-8 h-8 rounded-full border border-[var(--border-main)] flex-shrink-0 flex items-center justify-center text-xs font-bold bg-black/40">
-                            ${(u.username || '?').charAt(0).toUpperCase()}
-                        </div>
-                        <div class="min-w-0">
-                            <div class="text-sm text-[var(--text-main)] truncate">${u.username || 'Anonymous'}</div>
-                            <div class="text-[10px] text-[var(--text-muted)] opacity-40 font-mono truncate">${u.id}</div>
-                        </div>
-                    </div>
-                `).join('');
+                const matches = allUsers.filter(u => u.username?.toLowerCase().includes(term) || u.email?.toLowerCase().includes(term) || u.id.toLowerCase().includes(term)).slice(0, 10);
+                document.getElementById('inspect-list').innerHTML = matches.map(u => `<div class="p-3 rounded-xl hover:bg-[var(--border-faint)] cursor-pointer transition flex items-center gap-3" onclick="window.performDeepInspect('${u.id}')"><div class="w-8 h-8 rounded-full border border-[var(--border-main)] flex-shrink-0 flex items-center justify-center text-xs font-bold bg-black/40">${(u.username || '?').charAt(0).toUpperCase()}</div><div class="min-w-0"><div class="text-sm truncate">${u.username || 'Anon'}</div><div class="text-[10px] opacity-40 font-mono truncate">${u.id}</div></div></div>`).join('');
             };
         };
 
-        // --- UTILS ---
-        const formatDate = (ts) => {
-            if (!ts) return 'N/A';
-            const d = ts.toDate ? ts.toDate() : new Date(ts);
-            return moment(d).format('MMM DD, YYYY');
+        // DEEP INSPECTION
+        window.inspectNode = (uid) => { document.querySelector('.tab-btn[data-tab="inspection"]').click(); window.performDeepInspect(uid); };
+        window.performDeepInspect = async (uid) => {
+            const user = allUsers.find(u => u.id === uid); if (!user) return;
+            inspectionTarget = uid;
+            document.getElementById('inspect-empty').classList.add('hidden');
+            document.getElementById('inspect-viewport').classList.remove('hidden');
+            document.getElementById('inspect-pfp').innerHTML = getAvatarHTML(user, "w-full h-full", false);
+            document.getElementById('inspect-displayname').textContent = user.username || "Anon";
+            document.getElementById('inspect-uid').textContent = user.id;
+            document.getElementById('inspect-email').textContent = user.email || "N/A";
+            document.getElementById('inspect-joined').textContent = moment(user.createdAt?.toDate ? user.createdAt.toDate() : user.createdAt).format('LL');
+            document.getElementById('inspect-raw-json').textContent = JSON.stringify(user, null, 2);
+            
+            const photoEl = document.getElementById('inspect-photos');
+            photoEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mx-auto py-10"></i>';
+            const photosSnap = await getDocs(query(collection(db, 'daily_photos'), where('creatorUid', '==', uid)));
+            document.getElementById('inspect-photo-count').textContent = photosSnap.size;
+            photoEl.innerHTML = photosSnap.empty ? '<p class="col-span-full text-center opacity-40 py-10">No photos</p>' : photosSnap.docs.map(d => `<div class="photo-item" onclick="window.open('${d.data().imageBase64}')"><img src="${d.data().imageBase64}" loading="lazy"></div>`).join('');
+
+            const historyEl = document.getElementById('inspect-history');
+            const userSessions = allSessions.filter(s => s.userId === uid);
+            historyEl.innerHTML = userSessions.length === 0 ? '<p class="opacity-40 py-10 text-center">No history</p>' : userSessions.slice(0, 10).map(s => `<div class="mb-4"><div class="flex justify-between text-[10px] font-bold text-[var(--accent-color)] uppercase"><span>${moment(s.startTime).fromNow()}</span><span>${Math.floor(s.duration)}s</span></div><div class="pl-4 border-l border-[var(--border-main)] mt-1">${(s.visitedPages || []).map(p => `<div class="history-item"><span class="truncate w-48">${p.title}</span><span class="opacity-40 text-[9px] font-mono">${p.path}</span></div>`).join('')}</div></div>`).join('');
         };
 
-        const formatDuration = (sec) => {
-            if (!sec) return '0s';
-            if (sec < 60) return `${Math.floor(sec)}s`;
-            return `${Math.floor(sec/60)}m ${Math.floor(sec%60)}s`;
+        // HEALTH CHECK
+        const updateHealthCheck = () => {
+            const authIds = new Set(authUsers.map(u => u.uid)), dbIds = new Set(allUsers.map(u => u.id));
+            const missing = authUsers.filter(u => !dbIds.has(u.uid)), orphans = allUsers.filter(u => !authIds.has(u.id));
+            document.getElementById('missing-count').textContent = missing.length;
+            document.getElementById('orphan-count').textContent = orphans.length;
+            document.getElementById('missing-table-body').innerHTML = missing.map(u => `<tr><td class="font-mono text-xs">${u.uid}</td><td class="text-right"><button class="btn-create action-btn" onclick="window.repairNode('${u.uid}')">Create</button></td></tr>`).join('');
+            document.getElementById('orphan-table-body').innerHTML = orphans.map(u => `<tr><td class="font-mono text-xs">${u.id}</td><td class="text-right"><button class="btn-delete action-btn" onclick="window.purgeNode('${u.id}')">Purge</button></td></tr>`).join('');
         };
 
         const renderActivityPulse = () => {
-            const tbody = document.getElementById('pulse-table-body');
-            tbody.innerHTML = allSessions.slice(0, 15).map(s => {
-                const user = allUsers.find(u => u.id === s.userId) || { username: 'Guest' };
-                const verClass = s.version === 'project_niobium' ? 'ver-v6' : (s.isDV ? 'ver-v5' : 'ver-other');
-                const lastAction = s.visitedPages && s.visitedPages.length > 0 ? s.visitedPages[s.visitedPages.length - 1].title : 'Started Session';
-                
-                return `
-                    <tr>
-                        <td>
-                            <div class="flex items-center gap-2">
-                                <div class="w-6 h-6 rounded-full border border-[var(--border-main)] flex-shrink-0 flex items-center justify-center text-[10px] font-bold">
-                                    ${(user.username || '?').charAt(0).toUpperCase()}
-                                </div>
-                                <span class="text-sm text-[var(--text-main)]">${user.username}</span>
-                            </div>
-                        </td>
-                        <td><span class="badge ${verClass}">${s.version === 'project_niobium' ? 'v6' : (s.isDV ? 'v5' : 'oth')}</span></td>
-                        <td><span class="text-xs text-[var(--text-muted)] truncate block w-32">${lastAction}</span></td>
-                        <td class="text-right text-[10px] text-[var(--text-muted)] opacity-40">${moment(s.lastActive).fromNow()}</td>
-                    </tr>
-                `;
+            document.getElementById('pulse-table-body').innerHTML = allSessions.slice(0, 15).map(s => {
+                const u = allUsers.find(x => x.id === s.userId) || { username: 'Guest' };
+                return `<tr><td><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full border border-[var(--border-main)] flex items-center justify-center text-[10px] font-bold">${(u.username || '?').charAt(0).toUpperCase()}</div><span class="text-sm">${u.username}</span></div></td><td><span class="badge ${s.version === 'project_niobium' ? 'ver-v6' : 'ver-v5'}">${s.version === 'project_niobium' ? 'v6' : 'v5'}</span></td><td><span class="text-xs truncate block w-32">${s.visitedPages?.length ? s.visitedPages[s.visitedPages.length - 1].title : 'Active'}</span></td><td class="text-right text-[10px] opacity-40">${moment(s.lastActive).fromNow()}</td></tr>`;
             }).join('');
         };
 
         const renderTopPages = () => {
-            const list = document.getElementById('top-pages-list');
-            const counts = {};
-            allSessions.forEach(s => {
-                (s.visitedPages || []).forEach(p => {
-                    const key = p.title || p.path || 'Unknown';
-                    counts[key] = (counts[key] || 0) + 1;
-                });
-            });
-
+            const counts = {}; allSessions.forEach(s => (s.visitedPages || []).forEach(p => counts[p.title || 'Unknown'] = (counts[p.title || 'Unknown'] || 0) + 1));
             const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
-            list.innerHTML = sorted.map(([title, count]) => `
-                <div class="flex justify-between items-center py-2 border-b border-[var(--border-faint)] last:border-0">
-                    <span class="text-sm text-[var(--text-muted)] truncate w-40">${title}</span>
-                    <span class="text-xs font-mono text-[var(--accent-color)] bg-[var(--accent-color)]/10 px-2 py-0.5 rounded">${count}</span>
-                </div>
-            `).join('');
+            document.getElementById('top-pages-list').innerHTML = sorted.map(([t, c]) => `<div class="flex justify-between py-2 border-b border-[var(--border-faint)] last:border-0"><span class="text-sm truncate w-40">${t}</span><span class="text-xs font-mono text-[var(--accent-color)]">${c}</span></div>`).join('');
         };
 
-        const updateTrafficCharts = () => {
-            // Placeholder for deep traffic analysis if needed
-        };
+        // WINDOW EXPOSURE
+        window.openTagModal = (uid) => { window.userToTag = uid; document.getElementById('tag-modal').classList.add('open'); };
+        window.closeModal = (id) => document.getElementById(id).classList.remove('open');
+        window.repairNode = async (uid) => { /* simplified repair */ };
+        window.purgeNode = async (uid) => { if (confirm("Purge?")) await deleteDoc(doc(db, 'users', uid)); };
 
-        window.repairNode = async (uid) => {
-            const u = authUsers.find(x => x.uid === uid);
-            if (!u) return;
-            
-            const username = (u.displayName || u.email?.split('@')[0] || 'User').replace(/[^a-zA-Z0-9]/g, '').slice(0, 15);
-            await setDoc(doc(db, 'users', uid), {
-                username,
-                email: u.email,
-                createdAt: serverTimestamp(),
-                authMethod: u.providerData?.[0]?.providerId || 'password'
-            });
-            refreshAuthData();
-        };
-
-        window.purgeNode = async (uid) => {
-            if (confirm("Purge orphaned document?")) {
-                await deleteDoc(doc(db, 'users', uid));
-                refreshAuthData();
-            }
-        };
-
-        window.openBanModal = () => { /* Logic existing in tab UI */ };
-        window.closeBanModal = () => document.getElementById('ban-modal').classList.remove('open');
-        
-        init();
+        initApp();
     </script>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->
