@@ -138,6 +138,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/party-js@latest/bundle/party.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -195,6 +196,12 @@
 
             const birthday = `${month}-${day}`;
             const btn = document.getElementById('finish-btn');
+            
+            // Celebration!
+            if (typeof party !== 'undefined') {
+                party.confetti(btn, { count: 40 });
+            }
+
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
 

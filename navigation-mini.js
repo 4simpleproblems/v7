@@ -92,31 +92,48 @@ window.applyTheme = (theme) => {
         root.style.setProperty('--menu-email-text', themeToApply['menu-email-text'] || DEFAULT_THEME['menu-email-text']);
     }
 
-    // --- Fireworks Logic ---
+    // --- Fireworks/Birthday Logic ---
     const fwContainer = document.getElementById('fireworks-container');
     if (fwContainer) {
         if (themeToApply.name === 'The New Year') {
             fwContainer.style.opacity = '1';
-            // Start fireworks if not already running
-            if (!fireworksInstance && typeof Fireworks !== 'undefined') {
-                 fireworksInstance = new Fireworks.default(fwContainer, {
-                     autoresize: true,
-                     opacity: 1.0,
-                     acceleration: 1.05,
-                     friction: 0.97,
-                     gravity: 1.5,
-                     particles: 50,
-                     traceLength: 3,
-                     traceSpeed: 10,
-                     explosion: 5,
-                     intensity: 5,
-                     flickering: 50,
-                     lineStyle: 'round',
-                     rocketsPoint: { min: 50, max: 50 }
+            const fireworksOptions = {
+                autoresize: true,
+                opacity: 1.0,
+                acceleration: 1.05,
+                friction: 0.97,
+                gravity: 1.5,
+                particles: 50,
+                traceLength: 3,
+                traceSpeed: 10,
+                explosion: 5,
+                intensity: 5,
+                flickering: 50,
+                lineStyle: 'round',
+                hue: { min: 0, max: 360 },
+                delay: { min: 30, max: 60 },
+                rocketsPoint: { min: 50, max: 50 }
+            };
+
+            if (typeof Fireworks !== 'undefined') {
+                if (!fireworksInstance) {
+                    fireworksInstance = new Fireworks.default(fwContainer, fireworksOptions);
+                    fireworksInstance.start();
+                } else {
+                    fireworksInstance.updateOptions(fireworksOptions);
+                }
+            }
+        } else if (themeToApply.name === 'Birthday') {
+            fwContainer.style.opacity = '0';
+            if (fireworksInstance) {
+                fireworksInstance.stop();
+            }
+            // Trigger party popper effect
+            if (typeof party !== 'undefined') {
+                party.confetti(document.body, {
+                    count: party.variation.range(40, 60),
+                    size: party.variation.range(0.8, 1.2),
                 });
-                fireworksInstance.start();
-            } else if (fireworksInstance) {
-                fireworksInstance.start();
             }
         } else {
             fwContainer.style.opacity = '0';
@@ -291,8 +308,9 @@ let db;
 
         let pages = {};
         await loadCSS("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css");
-        // Load Fireworks JS
+        // Load Fireworks JS and Party JS
         await loadScript("https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js");
+        await loadScript("https://cdn.jsdelivr.net/npm/party-js@latest/bundle/party.min.js");
         
         try {
             const response = await fetch(window.PAGE_CONFIG_URL);

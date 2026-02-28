@@ -61,33 +61,23 @@
         document.body.appendChild(overlay);
         
         // Trigger party popper effect if possible
-        if (typeof Fireworks !== 'undefined') {
-            const bdayContainer = document.createElement('div');
-            bdayContainer.style.cssText = 'position:fixed; inset:0; pointer-events:none; z-index:2000001;';
-            document.body.appendChild(bdayContainer);
-            
-            const fw = new Fireworks.default(bdayContainer, {
-                autoresize: true,
-                opacity: 1.0,
-                acceleration: 1.05,
-                friction: 0.97,
-                gravity: 1.5,
-                particles: 150,
-                traceLength: 1, // Integer value
-                traceSpeed: 1,
-                explosion: 12,
-                intensity: 40,
-                flickering: 50,
-                lineStyle: 'round',
-                hue: { min: 0, max: 360 },
-                delay: { min: 10, max: 20 },
-                rocketsPoint: { min: 0, max: 100 }
+        if (typeof party !== 'undefined') {
+            party.confetti(document.body, {
+                count: party.variation.range(60, 100),
+                size: party.variation.range(0.8, 1.4),
             });
-            fw.start();
-            setTimeout(() => {
-                fw.stop();
-                bdayContainer.remove();
-            }, 8000);
+            
+            // Continuous little pops while open? Let's do a few bursts
+            const interval = setInterval(() => {
+                if (!document.contains(overlay)) {
+                    clearInterval(interval);
+                    return;
+                }
+                party.confetti(document.body, {
+                    count: party.variation.range(20, 40),
+                    size: party.variation.range(0.8, 1.2),
+                });
+            }, 2000);
         }
 
         requestAnimationFrame(() => {

@@ -208,27 +208,9 @@ window.applyTheme = (theme) => {
     // --- Fireworks/Birthday Logic ---
     const fwContainer = document.getElementById('fireworks-container');
     if (fwContainer) {
-        if (themeToApply.name === 'The New Year' || themeToApply.name === 'Birthday') {
+        if (themeToApply.name === 'The New Year') {
             fwContainer.style.opacity = '1';
-            
-            const isBirthday = themeToApply.name === 'Birthday';
-            const fireworksOptions = isBirthday ? {
-                autoresize: true,
-                opacity: 1.0,
-                acceleration: 1.05,
-                friction: 0.97,
-                gravity: 1.5,
-                particles: 100,
-                traceLength: 1, // Integer value
-                traceSpeed: 1,
-                explosion: 8,
-                intensity: 30,
-                flickering: 50,
-                lineStyle: 'round',
-                hue: { min: 0, max: 360 },
-                delay: { min: 15, max: 30 },
-                rocketsPoint: { min: 0, max: 100 }
-            } : {
+            const fireworksOptions = {
                 autoresize: true,
                 opacity: 1.0,
                 acceleration: 1.05,
@@ -246,7 +228,6 @@ window.applyTheme = (theme) => {
                 rocketsPoint: { min: 50, max: 50 }
             };
 
-            // Start or Update fireworks
             if (typeof Fireworks !== 'undefined') {
                 if (!fireworksInstance) {
                     fireworksInstance = new Fireworks.default(fwContainer, fireworksOptions);
@@ -254,6 +235,18 @@ window.applyTheme = (theme) => {
                 } else {
                     fireworksInstance.updateOptions(fireworksOptions);
                 }
+            }
+        } else if (themeToApply.name === 'Birthday') {
+            fwContainer.style.opacity = '0';
+            if (fireworksInstance) {
+                fireworksInstance.stop();
+            }
+            // Trigger party popper effect
+            if (typeof party !== 'undefined') {
+                party.confetti(document.body, {
+                    count: party.variation.range(40, 60),
+                    size: party.variation.range(0.8, 1.2),
+                });
             }
         } else {
             fwContainer.style.opacity = '0';
@@ -509,8 +502,9 @@ let db;
 
         let pages = {};
         await loadCSS("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css");
-        // Load Fireworks JS
+        // Load Fireworks JS and Party JS
         await loadScript("https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js");
+        await loadScript("https://cdn.jsdelivr.net/npm/party-js@latest/bundle/party.min.js");
         
         // Load Schedule Notifications
         // Try/Catch to avoid blocking app if file missing/error
