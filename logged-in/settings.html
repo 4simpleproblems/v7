@@ -61,6 +61,11 @@
             color: #000000 !important;
         }
 
+        /* Invert x.png image for light themes */
+        html:not(.dark) img[src*="x.png"] {
+            filter: invert(1);
+        }
+
         /* --- THEME-AWARE STYLES --- */
         .btn-toolbar-style {
             background: var(--bg-secondary);
