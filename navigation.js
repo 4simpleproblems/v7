@@ -228,26 +228,15 @@ window.applyTheme = (theme) => {
         }
     });
 
-    // --- Global Theme Card Sync ---
-    const cardFixId = '4sp-theme-card-sync';
-    let cardStyleEl = document.getElementById(cardFixId);
-    if (!cardStyleEl) {
-        cardStyleEl = document.createElement('style');
-        cardStyleEl.id = cardFixId;
-        document.head.appendChild(cardStyleEl);
+    // Fix Pin Menu Direction - Open to the right
+    const pinFixId = '4sp-pin-menu-fix';
+    let pinStyleEl = document.getElementById(pinFixId);
+    if (!pinStyleEl) {
+        pinStyleEl = document.createElement('style');
+        pinStyleEl.id = pinFixId;
+        document.head.appendChild(pinStyleEl);
     }
-    cardStyleEl.textContent = `
-        .video-card:hover, .zone-item:hover, .other-zone-item:hover {
-            border-color: ${tintColor} !important;
-            box-shadow: 0 10px 30px ${accentGlow} !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            background-color: ${cardHoverBg} !important;
-        }
-        .play-btn-circle {
-            background-color: ${tintColor} !important;
-        }
-        /* Fix Pin Menu Direction - Open to the right */
+    pinStyleEl.textContent = `
         #pin-context-menu {
             left: 0 !important;
             right: auto !important;

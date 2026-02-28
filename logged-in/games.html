@@ -152,23 +152,35 @@
         
         /* Card Hover Effects */
         .zone-item {
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             will-change: transform;
+            border: 1px solid transparent;
         }
         .zone-item:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 25px var(--accent-glow);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px var(--accent-glow);
+            border-color: var(--accent-color) !important;
+            background-color: var(--accent-glow) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 20;
         }
         
         .other-zone-item {
             min-height: 250px;
-            transition: box-shadow 0.2s ease-in-out;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative; 
             z-index: 1; 
+            border: 1px solid transparent;
         }
         .other-zone-item:hover {
-            box-shadow: 0 8px 25px var(--accent-glow);
-            z-index: 10; 
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px var(--accent-glow);
+            border-color: var(--accent-color) !important;
+            background-color: var(--accent-glow) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 20; 
         }
         .other-zone-item .image-overlay {
             background: linear-gradient(90deg, rgba(7,7,7,0.85) 0%, rgba(7,7,7,0) 40%, rgba(7,7,7,0) 60%, rgba(7,7,7,0.85) 100%);

@@ -202,9 +202,13 @@
         }
 
         .video-card:hover {
-            border-color: var(--accent-color);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px -20px var(--accent-glow);
+            border-color: var(--accent-color) !important;
+            background-color: var(--accent-glow) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px var(--accent-glow);
+            z-index: 20;
         }
 
         .video-card img {
@@ -222,7 +226,7 @@
         .play-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.2);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -233,7 +237,7 @@
         .play-btn-circle {
             width: 60px;
             height: 60px;
-            background: var(--accent-color);
+            background: var(--accent-color) !important;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -242,7 +246,7 @@
             font-size: 1.5rem;
             transform: translateY(10px);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 10px 20px -5px var(--accent-glow);
+            box-shadow: 0 15px 30px var(--accent-glow);
         }
 
         .video-card:hover .play-overlay {
