@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to 4SP - Personalization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Geist', sans-serif;
+            background-color: var(--bg-primary, #040404);
+            color: var(--text-primary, #ffffff);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            overflow: hidden;
+        }
+        .slide {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 2rem;
+            text-align: center;
+            animation: slideIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .slide.active { display: flex; }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-style {
+            background: var(--bg-secondary, #080808);
+            border: 1px solid var(--border-primary, #1a1a1a);
+            border-radius: 16px;
+            padding: 1rem 1.5rem;
+            width: 100%;
+            max-width: 400px;
+            color: var(--text-primary, #ffffff);
+            outline: none;
+            transition: border-color 0.3s;
+            font-size: 1.25rem;
+        }
+        .input-style:focus { border-color: var(--accent-primary, #4f46e5); }
+
+        .btn-next {
+            background: var(--accent-primary, #4f46e5);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 16px;
+            font-weight: 700;
+            margin-top: 2rem;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 10px 20px var(--accent-secondary, rgba(79, 70, 229, 0.2));
+        }
+        .btn-next:hover { transform: translateY(-2px) scale(1.02); }
+        .btn-next:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 2rem;
+        }
+        .theme-card {
+            background: var(--bg-secondary, #080808);
+            border: 2px solid var(--border-primary, #1a1a1a);
+            padding: 1rem;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .theme-card.active { border-color: var(--accent-primary, #4f46e5); background: var(--button-bg); }
+        .theme-card:hover { transform: translateY(-4px); }
+
+        .dots-container {
+            position: fixed; inset: 0; pointer-events: none; z-index: -1; opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <div id="fireworks-container" class="dots-container"></div>
+
+    <!-- Step 1: Display Name -->
+    <div class="slide active" id="slide-1">
+        <h1 class="text-5xl font-extrabold mb-4">Hello! What's your name?</h1>
+        <p class="text-lg opacity-60 mb-8 max-w-lg">
+            This is your public display name. It will be visible on your profile and the global leaderboard.
+        </p>
+        <input type="text" id="display-name-input" class="input-style" placeholder="Enter name...">
+        <div class="mt-6 flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/5">
+            <input type="checkbox" id="leaderboard-opt-in" class="w-5 h-5 accent-indigo-500" checked>
+            <label for="leaderboard-opt-in" class="text-sm cursor-pointer">Opt-in to the Global Leaderboard</label>
+        </div>
+        <button class="btn-next" onclick="nextSlide(2)">Continue <i class="fa-solid fa-arrow-right ml-2"></i></button>
+    </div>
+
+    <!-- Step 2: Theme Selection -->
+    <div class="slide" id="slide-2">
+        <h1 class="text-5xl font-extrabold mb-4">Pick your style</h1>
+        <p class="text-lg opacity-60 mb-4">Choose a theme that fits you. You can change this anytime.</p>
+        <div class="theme-grid" id="theme-options">
+            <!-- Themes will be injected here -->
+        </div>
+        <button class="btn-next" onclick="nextSlide(3)">Looks Good! <i class="fa-solid fa-arrow-right ml-2"></i></button>
+    </div>
+
+    <!-- Step 3: Birthday -->
+    <div class="slide" id="slide-3">
+        <h1 class="text-5xl font-extrabold mb-4">When is your birthday?</h1>
+        <p class="text-lg opacity-60 mb-8 max-w-lg">
+            We only use this to celebrate with you! No years, just the day.
+        </p>
+        <div class="flex gap-4">
+            <select id="bday-month" class="input-style !w-40">
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <option value="03">March</option>
+                <option value="04">April</option>
+                <option value="05">May</option>
+                <option value="06">June</option>
+                <option value="07">July</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+            <input type="number" id="bday-day" class="input-style !w-24" placeholder="Day" min="1" max="31">
+        </div>
+        <button class="btn-next" id="finish-btn" onclick="finishIntro()">Finish Setup <i class="fa-solid fa-check ml-2"></i></button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="../navigation.js"></script>
+
+    <script>
+        let currentSlide = 1;
+        let selectedThemeName = 'Dark';
+        let themes = [];
+
+        async function init() {
+            // Load themes
+            const res = await fetch('../themes.json');
+            themes = await res.json();
+            
+            const grid = document.getElementById('theme-options');
+            themes.forEach(theme => {
+                const card = document.createElement('div');
+                card.className = `theme-card ${theme.name === 'Dark' ? 'active' : ''}`;
+                card.innerHTML = `<div class="font-bold">${theme.name}</div>`;
+                card.onclick = () => selectTheme(theme);
+                grid.appendChild(card);
+            });
+
+            // Init Firebase (using config from window via navigation.js)
+            if (!firebase.apps.length) {
+                firebase.initializeApp(window.FIREBASE_CONFIG);
+            }
+        }
+
+        function selectTheme(theme) {
+            selectedThemeName = theme.name;
+            document.querySelectorAll('.theme-card').forEach(c => {
+                c.classList.toggle('active', c.innerText === theme.name);
+            });
+            window.applyTheme(theme);
+        }
+
+        function nextSlide(n) {
+            document.getElementById(`slide-${currentSlide}`).classList.remove('active');
+            currentSlide = n;
+            document.getElementById(`slide-${currentSlide}`).classList.add('active');
+        }
+
+        async function finishIntro() {
+            const displayName = document.getElementById('display-name-input').value.trim();
+            const optIn = document.getElementById('leaderboard-opt-in').checked;
+            const month = document.getElementById('bday-month').value;
+            const day = String(document.getElementById('bday-day').value).padStart(2, '0');
+            
+            if (!day || day < 1 || day > 31) {
+                alert("Please enter a valid day!");
+                return;
+            }
+
+            const birthday = `${month}-${day}`;
+            const btn = document.getElementById('finish-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+            try {
+                // Store birthday locally
+                localStorage.setItem('user_birthday', birthday);
+                
+                // Store theme locally
+                const themeObj = themes.find(t => t.name === selectedThemeName);
+                localStorage.setItem('user-navbar-theme', JSON.stringify(themeObj));
+
+                // Update Firestore if logged in
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    await firebase.firestore().collection('users').doc(user.uid).set({
+                        displayName: displayName || user.displayName,
+                        leaderboardOptIn: optIn,
+                        navbarTheme: themeObj
+                    }, { merge: true });
+                }
+
+                // Redirect
+                window.location.href = 'dashboard.html';
+            } catch (e) {
+                console.error(e);
+                alert("Error saving settings. Please try again.");
+                btn.disabled = false;
+                btn.innerHTML = 'Finish Setup <i class="fa-solid fa-check ml-2"></i>';
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
+<!-- Made with ❤️ from 4SP -->

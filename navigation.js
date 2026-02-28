@@ -205,30 +205,50 @@ window.applyTheme = (theme) => {
         }
     `;
 
-    // --- Fireworks Logic ---
+    // --- Fireworks/Birthday Logic ---
     const fwContainer = document.getElementById('fireworks-container');
     if (fwContainer) {
-        if (themeToApply.name === 'The New Year') {
+        if (themeToApply.name === 'The New Year' || themeToApply.name === 'Birthday') {
             fwContainer.style.opacity = '1';
-            // Start fireworks if not already running
+            
+            const isBirthday = themeToApply.name === 'Birthday';
+            const fireworksOptions = isBirthday ? {
+                autoresize: true,
+                opacity: 1.0,
+                acceleration: 1.05,
+                friction: 0.97,
+                gravity: 1.5,
+                particles: 100,
+                traceLength: 0, // No traces for dots
+                traceSpeed: 0,
+                explosion: 10,
+                intensity: 10,
+                flickering: 50,
+                lineStyle: 'round',
+                shape: 'circle', // Use circles for dots
+                rocketsPoint: { min: 0, max: 100 }
+            } : {
+                autoresize: true,
+                opacity: 1.0,
+                acceleration: 1.05,
+                friction: 0.97,
+                gravity: 1.5,
+                particles: 50,
+                traceLength: 3,
+                traceSpeed: 10,
+                explosion: 5,
+                intensity: 5,
+                flickering: 50,
+                lineStyle: 'round',
+                rocketsPoint: { min: 50, max: 50 }
+            };
+
+            // Start or Update fireworks
             if (!fireworksInstance && typeof Fireworks !== 'undefined') {
-                 fireworksInstance = new Fireworks.default(fwContainer, {
-                     autoresize: true,
-                     opacity: 1.0,
-                     acceleration: 1.05,
-                     friction: 0.97,
-                     gravity: 1.5,
-                     particles: 50,
-                     traceLength: 3,
-                     traceSpeed: 10,
-                     explosion: 5,
-                     intensity: 5,
-                     flickering: 50,
-                     lineStyle: 'round',
-                     rocketsPoint: { min: 50, max: 50 }
-                });
-                fireworksInstance.start();
+                 fireworksInstance = new Fireworks.default(fwContainer, fireworksOptions);
+                 fireworksInstance.start();
             } else if (fireworksInstance) {
+                fireworksInstance.updateOptions(fireworksOptions);
                 fireworksInstance.start();
             }
         } else {

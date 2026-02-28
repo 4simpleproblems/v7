@@ -17,7 +17,8 @@
       { url: '/panic-key.js' },
       { url: '/analytics.js' },
       { url: '/navigation.js' },
-      { url: '/admin_keybinds.js' }
+      { url: '/admin_keybinds.js' },
+      { url: '/logged-in/birthday.js' }
     ];
 
     // 2. CORE DYNAMIC LOADING FUNCTION
