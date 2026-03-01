@@ -18,13 +18,20 @@
         };
     </script>
     <script src="/VORA/VERN_SYSTEM/baremux/index.js"></script>
-    <script>
+    <script type="module">
+        import * as libcurl from "/VORA/VERN_SYSTEM/libcurl/index.mjs";
+        
         window.checkBare = async () => {
             const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
             const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
             
             try {
+                // Ensure WASM is loaded for libcurl
+                if (libcurl && libcurl.load_wasm) {
+                    await libcurl.load_wasm();
+                }
+
                 const transport = await connection.getTransport();
                 if (!transport || transport.path !== transportPath) {
                     await connection.setTransport(transportPath, [
@@ -33,6 +40,7 @@
                     ]);
                 }
             } catch (e) {
+                console.error("BareMux/libcurl Setup Error:", e);
                 await connection.setTransport(transportPath, [
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }

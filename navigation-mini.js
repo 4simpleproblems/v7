@@ -209,21 +209,20 @@ let db;
 
 (function() {
     // BareMux MessagePort fix for service worker communication
-    let sharedWorkerInstance = null;
     if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
         navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'getPort' && event.data.port) {
                 try {
-                    if (!sharedWorkerInstance) {
-                        let workerPath = "/VELIUM/baremux/worker.js";
-                        if (window.location.pathname.includes('/VORA/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
-                        else if (window.location.pathname.includes('/VERN/')) workerPath = "/VERN/baremux/worker.js";
-                        else if (window.location.pathname.includes('/GAMES/')) workerPath = "/GAMES/baremux/worker.js";
-                        else if (window.location.pathname.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
+                    let workerPath = "/VELIUM/baremux/worker.js";
+                    if (window.location.pathname.includes('/VORA/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+                    else if (window.location.pathname.includes('/VERN/')) workerPath = "/VERN/baremux/worker.js";
+                    else if (window.location.pathname.includes('/GAMES/')) workerPath = "/GAMES/baremux/worker.js";
+                    else if (window.location.pathname.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
 
-                        sharedWorkerInstance = new SharedWorker(workerPath, "bare-mux-worker");
-                    }
-                    event.data.port.postMessage(sharedWorkerInstance.port, [sharedWorkerInstance.port]);
+                    // Create a NEW worker instance/port for EVERY request
+                    // because ports can only be transferred once!
+                    const worker = new SharedWorker(workerPath, "bare-mux-worker");
+                    event.data.port.postMessage(worker.port, [worker.port]);
                 } catch (e) {
                     // console.error("BareMux Port Error:", e);
                 }
