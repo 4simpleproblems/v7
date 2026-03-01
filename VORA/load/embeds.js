@@ -444,8 +444,20 @@ async function loadFromHash() {
 
 // Proxy Helper
 function proxyUrl(url) {
-    if (typeof Ultraviolet === 'undefined') return url;
-    return window.location.origin + "/VORA/VERN_SYSTEM/uv/service/" + Ultraviolet.codec.xor.encode(url);
+    if (!url) return url;
+    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+    
+    const prefix = "/VORA/VERN_SYSTEM/uv/service/";
+    const encoder = (window.__uv$config && window.__uv$config.encodeUrl) ? window.__uv$config.encodeUrl : (typeof Ultraviolet !== 'undefined' ? Ultraviolet.codec.xor.encode : null);
+    
+    if (encoder) {
+        const encoded = encoder(url);
+        const result = prefix + encoded;
+        // console.log("Vora Proxy:", url, "->", result);
+        return result;
+    }
+    
+    return url;
 }
 
 function renderPlayerUI(type, id, item) {

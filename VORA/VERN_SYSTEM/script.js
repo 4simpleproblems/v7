@@ -628,10 +628,15 @@ function playNextSong() { if (queueIndex > -1 && queueIndex < playQueue.length -
 function proxyUrl(url) {
     if (!url) return url;
     if (url.startsWith('data:') || url.startsWith('blob:')) return url;
-    // Check if Ultraviolet is available (it's loaded in index.html)
-    if (typeof Ultraviolet === 'undefined') return url;
-    // Use the VORA VERN_SYSTEM UV prefix
-    return window.location.origin + "/VORA/VERN_SYSTEM/uv/service/" + Ultraviolet.codec.xor.encode(url);
+    
+    const prefix = "/VORA/VERN_SYSTEM/uv/service/";
+    const encoder = (window.__uv$config && window.__uv$config.encodeUrl) ? window.__uv$config.encodeUrl : (typeof Ultraviolet !== 'undefined' ? Ultraviolet.codec.xor.encode : null);
+    
+    if (encoder) {
+        return prefix + encoder(url);
+    }
+    
+    return url;
 }
 
 function getImageUrl(item) { 

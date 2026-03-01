@@ -209,20 +209,23 @@ let db;
 
 (function() {
     // BareMux MessagePort fix for service worker communication
+    let sharedWorkerInstance = null;
     if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
         navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'getPort' && event.data.port) {
                 try {
-                    let workerPath = "/VELIUM/baremux/worker.js";
-                    if (window.location.pathname.includes('/VORA/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
-                    else if (window.location.pathname.includes('/VERN/')) workerPath = "/VERN/baremux/worker.js";
-                    else if (window.location.pathname.includes('/GAMES/')) workerPath = "/GAMES/baremux/worker.js";
-                    else if (window.location.pathname.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
+                    if (!sharedWorkerInstance) {
+                        let workerPath = "/VELIUM/baremux/worker.js";
+                        if (window.location.pathname.includes('/VORA/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+                        else if (window.location.pathname.includes('/VERN/')) workerPath = "/VERN/baremux/worker.js";
+                        else if (window.location.pathname.includes('/GAMES/')) workerPath = "/GAMES/baremux/worker.js";
+                        else if (window.location.pathname.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
 
-                    const worker = new SharedWorker(workerPath, "bare-mux-worker");
-                    event.data.port.postMessage(worker.port, [worker.port]);
+                        sharedWorkerInstance = new SharedWorker(workerPath, "bare-mux-worker");
+                    }
+                    event.data.port.postMessage(sharedWorkerInstance.port, [sharedWorkerInstance.port]);
                 } catch (e) {
-                    // SharedWorker might be blocked or unsupported
+                    // console.error("BareMux Port Error:", e);
                 }
             }
         });
