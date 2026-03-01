@@ -138,20 +138,15 @@ window.applyTheme = (theme) => {
             // Trigger initial party popper effect
             const triggerConfetti = () => {
                 if (typeof party !== 'undefined') {
-                    const nav = document.querySelector('nav') || document.body;
-                    // Pick a random point in the navbar
-                    const rect = nav.getBoundingClientRect();
-                    const randomX = rect.left + Math.random() * rect.width;
-                    const randomY = rect.top + Math.random() * rect.height;
-                    
-                    party.confetti({ x: randomX, y: randomY }, {
+                    const nav = document.getElementById('navbar-container') || document.body;
+
+                    party.confetti(nav, {
                         count: party.variation.range(20, 40),
                         size: party.variation.range(0.6, 1.0),
                         spread: party.variation.range(40, 60),
                     });
                 }
             };
-
             triggerConfetti();
             window._bdayInterval = setInterval(triggerConfetti, 3000);
         } else {
@@ -213,6 +208,36 @@ let auth;
 let db;
 
 (function() {
+    // BareMux MessagePort fix for service worker communication
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'getPort' && event.data.port) {
+                try {
+                    let workerPath = "/VELIUM/baremux/worker.js";
+                    if (window.location.pathname.includes('/VORA/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+                    else if (window.location.pathname.includes('/VERN/')) workerPath = "/VERN/baremux/worker.js";
+                    else if (window.location.pathname.includes('/GAMES/')) workerPath = "/GAMES/baremux/worker.js";
+                    else if (window.location.pathname.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
+
+                    const worker = new SharedWorker(workerPath, "bare-mux-worker");
+                    event.data.port.postMessage(worker.port, [worker.port]);
+                } catch (e) {
+                    // SharedWorker might be blocked or unsupported
+                }
+            }
+        });
+    }
+
+    let allPages = {};
+    let currentUser = null;
+    let currentUserData = null;
+    let currentIsPrivileged = false;
+    let currentScrollLeft = 0; 
+    let hasScrolledToActiveTab = false; 
+    let globalClickListenerAdded = false;
+    let authCheckCompleted = false; 
+    let isRedirecting = false;
+
     const loadScript = (src) => {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
@@ -259,428 +284,6 @@ let db;
         if (baseName) return `${stylePrefix} ${baseName}`;
         return '';
     };
-
-    const isTabActive = (tabUrl, aliases) => {
-        const currentPathname = window.location.pathname.toLowerCase();
-        
-        const cleanPath = (path) => {
-            try {
-                const resolved = new URL(path, window.location.origin).pathname.toLowerCase();
-                if (resolved.endsWith('/index.html')) return resolved.substring(0, resolved.lastIndexOf('/')) + '/';
-                if (resolved.length > 1 && resolved.endsWith('/')) return resolved.slice(0, -1);
-                return resolved;
-            } catch (e) {
-                return path; 
-            }
-        };
-
-        const currentCanonical = cleanPath(currentPathname);
-        const tabCanonical = cleanPath(tabUrl);
-        if (currentCanonical === tabCanonical) return true;
-
-        const tabPathSuffix = new URL(tabUrl, window.location.origin).pathname.toLowerCase();
-        const tabSuffixClean = tabPathSuffix.startsWith('/') ? tabPathSuffix.substring(1) : tabPathSuffix;
-        if (tabSuffixClean.length > 3 && currentPathname.endsWith(tabSuffixClean)) return true;
-
-        if (aliases && Array.isArray(aliases)) {
-            for (const alias of aliases) {
-                const aliasCanonical = cleanPath(alias);
-                if (currentCanonical === aliasCanonical) return true;
-                
-                const aliasPathSuffix = new URL(alias, window.location.origin).pathname.toLowerCase();
-                 const aliasSuffixClean = aliasPathSuffix.startsWith('/') ? aliasPathSuffix.substring(1) : aliasPathSuffix;
-                if (aliasSuffixClean.length > 3 && currentPathname.endsWith(aliasSuffixClean)) return true;
-            }
-        }
-
-        return false;
-    };
-
-    const run = async () => {
-        if (!document.getElementById('navbar-container')) {
-            const navbarDiv = document.createElement('div');
-            navbarDiv.id = 'navbar-container';
-            document.body.prepend(navbarDiv);
-        }
-        
-        if (!document.getElementById('notification-container')) {
-            const notifDiv = document.createElement('div');
-            notifDiv.id = 'notification-container';
-            document.body.appendChild(notifDiv);
-        }
-        
-        injectStyles();
-
-        const container = document.getElementById('navbar-container');
-        const logoPath = '/images/logo.png'; 
-        
-        // --- Structure ---
-        container.innerHTML = `
-            <div id="fireworks-container"></div>
-            
-            <a href="/" class="flex items-center space-x-2 flex-shrink-0 overflow-hidden relative" style="z-index: 20;">
-                <img src="${logoPath}" alt="4SP Logo" class="navbar-logo" id="navbar-logo">
-            </a>
-            
-            <!-- Tabs removed for mini navigation -->
-
-            <div id="auth-controls-wrapper" class="auth-controls-wrapper" style="z-index: 20;">
-                <div class="auth-toggle-placeholder"></div>
-            </div>
-        `;
-
-        let pages = {};
-        await loadCSS("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css");
-        // Load Fireworks JS and Party JS
-        await loadScript("https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js");
-        await loadScript("https://cdn.jsdelivr.net/npm/party-js@latest/bundle/party.min.js");
-        
-        try {
-            const response = await fetch(window.PAGE_CONFIG_URL);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            pages = await response.json();
-        } catch (error) {
-            console.error("Failed to load page identification config:", error);
-            pages = { 'home': { name: "Home", url: "../index.html", icon: "fa-solid fa-house" } };
-        }
-
-        try {
-            await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
-            await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js");
-            await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js");
-            initializeApp(pages, FIREBASE_CONFIG);
-        } catch (error) {
-            console.error("Failed to load core Firebase SDKs:", error);
-            renderNavbar(null, null, pages, false);
-        }
-    };
-
-    const injectStyles = () => {
-        const style = document.createElement('style');
-        style.textContent = `
-            /* Base Styles */
-            body { padding-top: 64px !important; }
-            
-            /* --- Navbar Styles --- */
-            #navbar-container {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                z-index: 9999 !important;
-                background: var(--navbar-bg, rgba(0, 0, 0, 0.6)) !important;
-                backdrop-filter: blur(12px) !important;
-                -webkit-backdrop-filter: blur(12px) !important;
-                border-bottom: 1px solid var(--navbar-border, rgba(255, 255, 255, 0.08)) !important;
-                height: 64px !important;
-                width: 100% !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: space-between !important;
-                padding: 0 1rem !important; /* Kept minimal padding so logo doesn't hit edge */
-                box-sizing: border-box !important;
-                transition: background-color 0.3s ease, border-color 0.3s ease !important;
-                overflow: visible !important;
-            }
-
-            /* Fireworks Container Style */
-            #fireworks-container {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                pointer-events: none;
-                z-index: 1; 
-                opacity: 0;
-                transition: opacity 0.5s ease;
-                overflow: hidden;
-            }
-            
-            /* Ensure navbar content sits ABOVE the fireworks */
-            #navbar-container > *:not(#fireworks-container) {
-                position: relative;
-                z-index: 10;
-            }
-
-            .navbar-logo { height: 40px; width: auto; transition: filter 0.3s ease; }
-
-            /* --- GLIDE / SCROLL STYLES --- */
-            .tab-wrapper { 
-                flex-grow: 1; 
-                display: flex; 
-                align-items: center; 
-                position: relative; 
-                min-width: 0; 
-                margin: 0 1rem; 
-                justify-content: center; 
-                overflow: hidden; 
-            }
-
-            .tab-scroll-container { 
-                display: flex; 
-                align-items: center; 
-                gap: 0.5rem; 
-                overflow-x: auto; 
-                scrollbar-width: none; 
-                white-space: nowrap; 
-                max-width: 100%;
-                scroll-behavior: smooth; 
-                padding-left: 20px;      
-                padding-right: 20px;
-                padding-block: 10px;
-            }
-            .tab-scroll-container::-webkit-scrollbar { display: none; }
-
-            /* Glide Buttons */
-            .scroll-glide-button {
-                position: absolute; 
-                top: 0; 
-                height: 100%; 
-                width: 60px; 
-                display: flex; 
-                align-items: center; 
-                justify-content: center; 
-                color: var(--glide-btn-color, #ffffff); 
-                font-size: 1rem; 
-                cursor: pointer; 
-                opacity: 1; 
-                transition: opacity 0.3s, color 0.3s ease, background-color 0.3s ease; 
-                z-index: 55; 
-                pointer-events: auto;
-                background: transparent;
-                border: none;
-            }
-
-            #glide-left { 
-                left: 0; 
-                background-color: var(--navbar-bg, #000000);
-                -webkit-mask-image: linear-gradient(to right, black 30%, transparent);
-                mask-image: linear-gradient(to right, black 30%, transparent);
-                justify-content: flex-start; 
-                padding-left: 8px; 
-            }
-            #glide-right { 
-                right: 0; 
-                background-color: var(--navbar-bg, #000000);
-                -webkit-mask-image: linear-gradient(to left, black 30%, transparent);
-                mask-image: linear-gradient(to left, black 30%, transparent);
-                justify-content: flex-end; 
-                padding-right: 8px; 
-            }
-            
-            .scroll-glide-button.hidden { opacity: 0 !important; pointer-events: none !important; }
-
-            .nav-tab { 
-                padding: 0.5rem 1rem; 
-                color: var(--tab-text, #9ca3af); 
-                font-size: 0.875rem; font-weight: 400; 
-                border-radius: 14px; /* Updated to 14px */
-                text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
-                border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
-                flex-shrink: 0; 
-                position: relative;
-            }
-            .nav-tab:hover { 
-                color: var(--tab-hover-text, #ffffff); 
-                background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
-                border-color: var(--tab-active-border, #4f46e5);
-                transform: translateY(-1px);
-                z-index: 50; 
-            }
-            .nav-tab.active { 
-                color: var(--tab-active-text, #4f46e5); 
-                border-color: var(--tab-active-border, #4f46e5); 
-                background-color: var(--tab-active-bg, rgba(79, 70, 229, 0.1)); 
-            }
-            .nav-tab.active:hover {
-                color: var(--tab-active-hover-text, #6366f1);
-                border-color: var(--tab-active-hover-border, #6366f1);
-                background-color: var(--tab-active-hover-bg, rgba(79, 70, 229, 0.15));
-            }
-
-            .auth-controls-wrapper { display: flex; align-items: center; gap: 1rem; position: relative; }
-            
-            .initial-avatar {
-                background: var(--avatar-gradient);
-                font-family: sans-serif; text-transform: uppercase; display: flex; align-items: center; justify-content: center; color: white;
-            }
-            #auth-toggle {
-                border-color: var(--avatar-border);
-                transition: border-color 0.3s ease;
-                border-radius: 14px; /* Updated to 14px */
-                border-width: 1px; /* Explicit 1px */
-                width: 40px; height: 40px;
-                display: flex; align-items: center; justify-content: center;
-                cursor: pointer; position: relative;
-            }
-            #auth-toggle:hover { z-index: 50; }
-
-            /* Auth Dropdown Menu Styles */
-            .auth-menu-container {
-                position: absolute; right: 0; top: 55px; width: 16rem;
-                background: var(--menu-bg, #000);
-                border: 1px solid var(--menu-border, #333);
-                border-radius: 1.25rem; 
-                padding: 0.75rem; /* Equal spacing on edges */
-                display: flex; flex-direction: column; gap: 0.5rem; /* Flex gap for equal internal spacing */
-                box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-                transition: transform 0.2s ease-out, opacity 0.2s ease-out, background-color 0.3s ease, border-color 0.3s ease;
-                transform-origin: top right; z-index: 10000;
-            }
-            .auth-menu-container .border-b { border-color: var(--menu-divider, #333) !important; transition: border-color 0.3s ease; }
-            .auth-menu-username {
-                color: var(--menu-username-text, white);
-                transition: color 0.3s ease;
-                text-align: left !important; margin: 0 !important; font-weight: 400 !important;
-            }
-            .auth-menu-email { color: var(--menu-email-text, #9ca3af); text-align: left !important; margin: 0 !important; font-weight: 400 !important; }
-            @keyframes menu-pop-in {
-                0% { opacity: 0; transform: translateY(-10px) scale(0.95); }
-                70% { transform: translateY(2px) scale(1.01); }
-                100% { opacity: 1; transform: translateY(0) scale(1); }
-            }
-            @keyframes menu-pop-out {
-                0% { opacity: 1; transform: translateY(0) scale(1); }
-                100% { opacity: 0; transform: translateY(-10px) scale(0.95); }
-            }
-
-            .auth-menu-container.open { 
-                display: flex !important; 
-                animation: menu-pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            }
-            .auth-menu-container.closing {
-                display: flex !important;
-                animation: menu-pop-out 0.3s ease-in forwards;
-                pointer-events: none;
-            }
-            .auth-menu-container.closed { opacity: 0; pointer-events: none; transform: translateY(-10px) scale(0.95); display: none !important; }
-
-            /* Show More Section - Updated to use Flex for spacing */
-            .auth-menu-more-section { 
-                display: none; /* Hidden by default */
-                padding-top: 0.5rem; 
-                margin-top: 0.5rem; 
-                border-top: 1px solid var(--menu-divider, #333); 
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-            .auth-menu-more-section.expanded { display: flex; }
-
-            /* Updated Auth Menu Buttons - Colored Default Background */
-            .auth-menu-link, .auth-menu-button { 
-                display: flex; align-items: center; gap: 0.75rem; width: 100%; text-align: left; 
-                padding: 0.75rem 1rem; font-size: 0.9rem; color: var(--menu-text, #d1d5db); 
-                background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); /* Default background color */
-                border-radius: 1rem; 
-                transition: all 0.2s ease; cursor: pointer;
-                /* FIXED: Border color now matches the background color */
-                border: 1px solid var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
-                margin-bottom: 0; 
-            }
-            .auth-menu-link:hover, .auth-menu-button:hover { 
-                background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); 
-                border-color: var(--tab-active-border, #4f46e5);
-                color: var(--menu-item-hover-text, #ffffff);
-                transform: translateY(-2px) scale(1.02);
-            }
-
-            .logged-out-auth-toggle { 
-                background: var(--logged-out-icon-bg, #010101); border: 1px solid var(--logged-out-icon-border, #374151); 
-                transition: background-color 0.3s ease, border-color 0.3s ease;
-                border-radius: 14px; /* Updated to 14px */
-            }
-            .logged-out-auth-toggle i { color: var(--logged-out-icon-color, #DADADA); transition: color 0.3s ease; }
-
-            .glass-menu { 
-                background: var(--glass-menu-bg, rgba(10, 10, 10, 0.8)); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); 
-                border: 1px solid var(--glass-menu-border, rgba(55, 65, 81, 0.8)); transition: background-color 0.3s ease, border-color 0.3s ease;
-            }
-            .auth-menu-link i.w-4, .auth-menu-button i.w-4 { width: 1rem; text-align: center; } 
-
-            #pin-button { 
-                border-color: var(--pin-btn-border, #4b5563); transition: background-color 0.2s, border-color 0.3s ease; 
-                display: flex; align-items: center; justify-content: center; 
-                border-radius: 14px; /* Updated to 14px */
-                border-width: 1px; /* Explicit 1px */
-                width: 40px; height: 40px;
-            }
-            #pin-button:hover { background-color: var(--pin-btn-hover-bg, #374151); z-index: 50; }
-            #pin-button-icon { color: var(--pin-btn-icon-color, #d1d5db); transition: color 0.3s ease; }
-
-            .pin-hint-container {
-                position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%) scale(0.8);
-                background: var(--hint-bg, #010101); border: 1px solid var(--hint-border, #374151); color: var(--hint-text, #ffffff);
-                padding: 0.5rem 1rem; border-radius: 0.9rem; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-                opacity: 0; pointer-events: none; z-index: 10001;
-                transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-                white-space: nowrap; font-size: 0.875rem;
-            }
-            .pin-hint-container.show { opacity: 1; transform: translateX(-50%) scale(1); transition-delay: 0.2s; }
-
-            .marquee-container { overflow: hidden; white-space: nowrap; position: relative; max-width: 100%; }
-            .marquee-container.active { mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%); }
-            .marquee-content { display: inline-block; white-space: nowrap; }
-            .marquee-container.active .marquee-content { animation: marquee 10s linear infinite; min-width: 100%; }
-            @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-
-            /* Notifications */
-            #notification-container {
-                position: fixed;
-                bottom: 2rem;
-                right: 2rem;
-                display: flex;
-                flex-direction: column;
-                gap: 0.75rem;
-                z-index: 20000;
-                pointer-events: none;
-            }
-            .notification-toast {
-                background-color: #0a0a0a; border: 1px solid #333; border-radius: 14px;
-                padding: 0.75rem 1.25rem; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-                display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem;
-                min-width: 200px; transform: translateX(120%);
-                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease, background-color 0.2s;
-                opacity: 0; pointer-events: auto; cursor: default;
-            }
-            .notification-toast.show { transform: translateX(0); opacity: 1; }
-            .notification-toast.show:hover {
-                transform: scale(1.02) translateX(-5px); background-color: #151515;
-                border-color: #555; box-shadow: 0 8px 25px rgba(0,0,0,0.7);
-            }
-        `;
-        document.head.appendChild(style);
-    };
-
-    const initializeApp = (pages, firebaseConfig) => {
-        if (!document.getElementById('navbar-container')) {
-            const navbarDiv = document.createElement('div');
-            navbarDiv.id = 'navbar-container';
-            document.body.prepend(navbarDiv);
-        }
-        
-        injectStyles();
-        
-        // Theme Syncing Removed - Force Default
-        window.applyTheme(DEFAULT_THEME); 
-
-        const app = firebase.initializeApp(firebaseConfig);
-        auth = firebase.auth();
-        db = firebase.firestore();
-
-        let allPages = pages;
-        let currentUser = null;
-        let currentUserData = null;
-        let currentIsPrivileged = false;
-        let currentScrollLeft = 0; 
-        let hasScrolledToActiveTab = false; 
-        let globalClickListenerAdded = false;
-        let authCheckCompleted = false; 
-        let isRedirecting = false;    
-
-        const PINNED_PAGE_KEY = 'navbar_pinnedPage';
-        const PIN_BUTTON_HIDDEN_KEY = 'navbar_pinButtonHidden';
-        const PIN_HINT_SHOWN_KEY = 'navbar_pinHintShown';
 
         const getCurrentPageKey = () => {
             const currentPathname = window.location.pathname.toLowerCase();
@@ -1404,6 +1007,420 @@ let db;
                 globalClickListenerAdded = true;
             }
         };
+
+    const isTabActive = (tabUrl, aliases) => {
+        const currentPathname = window.location.pathname.toLowerCase();
+        
+        const cleanPath = (path) => {
+            try {
+                const resolved = new URL(path, window.location.origin).pathname.toLowerCase();
+                if (resolved.endsWith('/index.html')) return resolved.substring(0, resolved.lastIndexOf('/')) + '/';
+                if (resolved.length > 1 && resolved.endsWith('/')) return resolved.slice(0, -1);
+                return resolved;
+            } catch (e) {
+                return path; 
+            }
+        };
+
+        const currentCanonical = cleanPath(currentPathname);
+        const tabCanonical = cleanPath(tabUrl);
+        if (currentCanonical === tabCanonical) return true;
+
+        const tabPathSuffix = new URL(tabUrl, window.location.origin).pathname.toLowerCase();
+        const tabSuffixClean = tabPathSuffix.startsWith('/') ? tabPathSuffix.substring(1) : tabPathSuffix;
+        if (tabSuffixClean.length > 3 && currentPathname.endsWith(tabSuffixClean)) return true;
+
+        if (aliases && Array.isArray(aliases)) {
+            for (const alias of aliases) {
+                const aliasCanonical = cleanPath(alias);
+                if (currentCanonical === aliasCanonical) return true;
+                
+                const aliasPathSuffix = new URL(alias, window.location.origin).pathname.toLowerCase();
+                 const aliasSuffixClean = aliasPathSuffix.startsWith('/') ? aliasPathSuffix.substring(1) : aliasPathSuffix;
+                if (aliasSuffixClean.length > 3 && currentPathname.endsWith(aliasSuffixClean)) return true;
+            }
+        }
+
+        return false;
+    };
+
+    const run = async () => {
+        if (!document.getElementById('navbar-container')) {
+            const navbarDiv = document.createElement('div');
+            navbarDiv.id = 'navbar-container';
+            document.body.prepend(navbarDiv);
+        }
+        
+        if (!document.getElementById('notification-container')) {
+            const notifDiv = document.createElement('div');
+            notifDiv.id = 'notification-container';
+            document.body.appendChild(notifDiv);
+        }
+        
+        injectStyles();
+
+        const container = document.getElementById('navbar-container');
+        const logoPath = '/images/logo.png'; 
+        
+        // --- Structure ---
+        container.innerHTML = `
+            <div id="fireworks-container"></div>
+            
+            <a href="/" class="flex items-center space-x-2 flex-shrink-0 overflow-hidden relative" style="z-index: 20;">
+                <img src="${logoPath}" alt="4SP Logo" class="navbar-logo" id="navbar-logo">
+            </a>
+            
+            <!-- Tabs removed for mini navigation -->
+
+            <div id="auth-controls-wrapper" class="auth-controls-wrapper" style="z-index: 20;">
+                <div class="auth-toggle-placeholder"></div>
+            </div>
+        `;
+
+        let pages = {};
+        await loadCSS("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css");
+        // Load Fireworks JS and Party JS
+        await loadScript("https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js");
+        await loadScript("https://cdn.jsdelivr.net/npm/party-js@latest/bundle/party.min.js");
+        
+        try {
+            const response = await fetch(window.PAGE_CONFIG_URL);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            pages = await response.json();
+        } catch (error) {
+            console.error("Failed to load page identification config:", error);
+            pages = { 'home': { name: "Home", url: "../index.html", icon: "fa-solid fa-house" } };
+        }
+
+        try {
+            await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
+            await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js");
+            await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js");
+            initializeApp(pages, FIREBASE_CONFIG);
+        } catch (error) {
+            console.error("Failed to load core Firebase SDKs:", error);
+            renderNavbar(null, null, pages, false);
+        }
+    };
+
+    const injectStyles = () => {
+        const style = document.createElement('style');
+        style.textContent = `
+            /* Base Styles */
+            body { padding-top: 64px !important; }
+            
+            /* --- Navbar Styles --- */
+            #navbar-container {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                z-index: 9999 !important;
+                background: var(--navbar-bg, rgba(0, 0, 0, 0.6)) !important;
+                backdrop-filter: blur(12px) !important;
+                -webkit-backdrop-filter: blur(12px) !important;
+                border-bottom: 1px solid var(--navbar-border, rgba(255, 255, 255, 0.08)) !important;
+                height: 64px !important;
+                width: 100% !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                padding: 0 1rem !important; /* Kept minimal padding so logo doesn't hit edge */
+                box-sizing: border-box !important;
+                transition: background-color 0.3s ease, border-color 0.3s ease !important;
+                overflow: visible !important;
+            }
+
+            /* Fireworks Container Style */
+            #fireworks-container {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 1; 
+                opacity: 0;
+                transition: opacity 0.5s ease;
+                overflow: hidden;
+            }
+            
+            /* Ensure navbar content sits ABOVE the fireworks */
+            #navbar-container > *:not(#fireworks-container) {
+                position: relative;
+                z-index: 10;
+            }
+
+            .navbar-logo { height: 40px; width: auto; transition: filter 0.3s ease; }
+
+            /* --- GLIDE / SCROLL STYLES --- */
+            .tab-wrapper { 
+                flex-grow: 1; 
+                display: flex; 
+                align-items: center; 
+                position: relative; 
+                min-width: 0; 
+                margin: 0 1rem; 
+                justify-content: center; 
+                overflow: hidden; 
+            }
+
+            .tab-scroll-container { 
+                display: flex; 
+                align-items: center; 
+                gap: 0.5rem; 
+                overflow-x: auto; 
+                scrollbar-width: none; 
+                white-space: nowrap; 
+                max-width: 100%;
+                scroll-behavior: smooth; 
+                padding-left: 20px;      
+                padding-right: 20px;
+                padding-block: 10px;
+            }
+            .tab-scroll-container::-webkit-scrollbar { display: none; }
+
+            /* Glide Buttons */
+            .scroll-glide-button {
+                position: absolute; 
+                top: 0; 
+                height: 100%; 
+                width: 60px; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                color: var(--glide-btn-color, #ffffff); 
+                font-size: 1rem; 
+                cursor: pointer; 
+                opacity: 1; 
+                transition: opacity 0.3s, color 0.3s ease, background-color 0.3s ease; 
+                z-index: 55; 
+                pointer-events: auto;
+                background: transparent;
+                border: none;
+            }
+
+            #glide-left { 
+                left: 0; 
+                background-color: var(--navbar-bg, #000000);
+                -webkit-mask-image: linear-gradient(to right, black 30%, transparent);
+                mask-image: linear-gradient(to right, black 30%, transparent);
+                justify-content: flex-start; 
+                padding-left: 8px; 
+            }
+            #glide-right { 
+                right: 0; 
+                background-color: var(--navbar-bg, #000000);
+                -webkit-mask-image: linear-gradient(to left, black 30%, transparent);
+                mask-image: linear-gradient(to left, black 30%, transparent);
+                justify-content: flex-end; 
+                padding-right: 8px; 
+            }
+            
+            .scroll-glide-button.hidden { opacity: 0 !important; pointer-events: none !important; }
+
+            .nav-tab { 
+                padding: 0.5rem 1rem; 
+                color: var(--tab-text, #9ca3af); 
+                font-size: 0.875rem; font-weight: 400; 
+                border-radius: 14px; /* Updated to 14px */
+                text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
+                border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
+                flex-shrink: 0; 
+                position: relative;
+            }
+            .nav-tab:hover { 
+                color: var(--tab-hover-text, #ffffff); 
+                background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
+                border-color: var(--tab-active-border, #4f46e5);
+                transform: translateY(-1px);
+                z-index: 50; 
+            }
+            .nav-tab.active { 
+                color: var(--tab-active-text, #4f46e5); 
+                border-color: var(--tab-active-border, #4f46e5); 
+                background-color: var(--tab-active-bg, rgba(79, 70, 229, 0.1)); 
+            }
+            .nav-tab.active:hover {
+                color: var(--tab-active-hover-text, #6366f1);
+                border-color: var(--tab-active-hover-border, #6366f1);
+                background-color: var(--tab-active-hover-bg, rgba(79, 70, 229, 0.15));
+            }
+
+            .auth-controls-wrapper { display: flex; align-items: center; gap: 1rem; position: relative; }
+            
+            .initial-avatar {
+                background: var(--avatar-gradient);
+                font-family: sans-serif; text-transform: uppercase; display: flex; align-items: center; justify-content: center; color: white;
+            }
+            #auth-toggle {
+                border-color: var(--avatar-border);
+                transition: border-color 0.3s ease;
+                border-radius: 14px; /* Updated to 14px */
+                border-width: 1px; /* Explicit 1px */
+                width: 40px; height: 40px;
+                display: flex; align-items: center; justify-content: center;
+                cursor: pointer; position: relative;
+            }
+            #auth-toggle:hover { z-index: 50; }
+
+            /* Auth Dropdown Menu Styles */
+            .auth-menu-container {
+                position: absolute; right: 0; top: 55px; width: 16rem;
+                background: var(--menu-bg, #000);
+                border: 1px solid var(--menu-border, #333);
+                border-radius: 1.25rem; 
+                padding: 0.75rem; /* Equal spacing on edges */
+                display: flex; flex-direction: column; gap: 0.5rem; /* Flex gap for equal internal spacing */
+                box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+                transition: transform 0.2s ease-out, opacity 0.2s ease-out, background-color 0.3s ease, border-color 0.3s ease;
+                transform-origin: top right; z-index: 10000;
+            }
+            .auth-menu-container .border-b { border-color: var(--menu-divider, #333) !important; transition: border-color 0.3s ease; }
+            .auth-menu-username {
+                color: var(--menu-username-text, white);
+                transition: color 0.3s ease;
+                text-align: left !important; margin: 0 !important; font-weight: 400 !important;
+            }
+            .auth-menu-email { color: var(--menu-email-text, #9ca3af); text-align: left !important; margin: 0 !important; font-weight: 400 !important; }
+            @keyframes menu-pop-in {
+                0% { opacity: 0; transform: translateY(-10px) scale(0.95); }
+                70% { transform: translateY(2px) scale(1.01); }
+                100% { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            @keyframes menu-pop-out {
+                0% { opacity: 1; transform: translateY(0) scale(1); }
+                100% { opacity: 0; transform: translateY(-10px) scale(0.95); }
+            }
+
+            .auth-menu-container.open { 
+                display: flex !important; 
+                animation: menu-pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            }
+            .auth-menu-container.closing {
+                display: flex !important;
+                animation: menu-pop-out 0.3s ease-in forwards;
+                pointer-events: none;
+            }
+            .auth-menu-container.closed { opacity: 0; pointer-events: none; transform: translateY(-10px) scale(0.95); display: none !important; }
+
+            /* Show More Section - Updated to use Flex for spacing */
+            .auth-menu-more-section { 
+                display: none; /* Hidden by default */
+                padding-top: 0.5rem; 
+                margin-top: 0.5rem; 
+                border-top: 1px solid var(--menu-divider, #333); 
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .auth-menu-more-section.expanded { display: flex; }
+
+            /* Updated Auth Menu Buttons - Colored Default Background */
+            .auth-menu-link, .auth-menu-button { 
+                display: flex; align-items: center; gap: 0.75rem; width: 100%; text-align: left; 
+                padding: 0.75rem 1rem; font-size: 0.9rem; color: var(--menu-text, #d1d5db); 
+                background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); /* Default background color */
+                border-radius: 1rem; 
+                transition: all 0.2s ease; cursor: pointer;
+                /* FIXED: Border color now matches the background color */
+                border: 1px solid var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
+                margin-bottom: 0; 
+            }
+            .auth-menu-link:hover, .auth-menu-button:hover { 
+                background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); 
+                border-color: var(--tab-active-border, #4f46e5);
+                color: var(--menu-item-hover-text, #ffffff);
+                transform: translateY(-2px) scale(1.02);
+            }
+
+            .logged-out-auth-toggle { 
+                background: var(--logged-out-icon-bg, #010101); border: 1px solid var(--logged-out-icon-border, #374151); 
+                transition: background-color 0.3s ease, border-color 0.3s ease;
+                border-radius: 14px; /* Updated to 14px */
+            }
+            .logged-out-auth-toggle i { color: var(--logged-out-icon-color, #DADADA); transition: color 0.3s ease; }
+
+            .glass-menu { 
+                background: var(--glass-menu-bg, rgba(10, 10, 10, 0.8)); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); 
+                border: 1px solid var(--glass-menu-border, rgba(55, 65, 81, 0.8)); transition: background-color 0.3s ease, border-color 0.3s ease;
+            }
+            .auth-menu-link i.w-4, .auth-menu-button i.w-4 { width: 1rem; text-align: center; } 
+
+            #pin-button { 
+                border-color: var(--pin-btn-border, #4b5563); transition: background-color 0.2s, border-color 0.3s ease; 
+                display: flex; align-items: center; justify-content: center; 
+                border-radius: 14px; /* Updated to 14px */
+                border-width: 1px; /* Explicit 1px */
+                width: 40px; height: 40px;
+            }
+            #pin-button:hover { background-color: var(--pin-btn-hover-bg, #374151); z-index: 50; }
+            #pin-button-icon { color: var(--pin-btn-icon-color, #d1d5db); transition: color 0.3s ease; }
+
+            .pin-hint-container {
+                position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%) scale(0.8);
+                background: var(--hint-bg, #010101); border: 1px solid var(--hint-border, #374151); color: var(--hint-text, #ffffff);
+                padding: 0.5rem 1rem; border-radius: 0.9rem; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+                opacity: 0; pointer-events: none; z-index: 10001;
+                transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+                white-space: nowrap; font-size: 0.875rem;
+            }
+            .pin-hint-container.show { opacity: 1; transform: translateX(-50%) scale(1); transition-delay: 0.2s; }
+
+            .marquee-container { overflow: hidden; white-space: nowrap; position: relative; max-width: 100%; }
+            .marquee-container.active { mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%); }
+            .marquee-content { display: inline-block; white-space: nowrap; }
+            .marquee-container.active .marquee-content { animation: marquee 10s linear infinite; min-width: 100%; }
+            @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+            /* Notifications */
+            #notification-container {
+                position: fixed;
+                bottom: 2rem;
+                right: 2rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+                z-index: 20000;
+                pointer-events: none;
+            }
+            .notification-toast {
+                background-color: #0a0a0a; border: 1px solid #333; border-radius: 14px;
+                padding: 0.75rem 1.25rem; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+                display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem;
+                min-width: 200px; transform: translateX(120%);
+                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease, background-color 0.2s;
+                opacity: 0; pointer-events: auto; cursor: default;
+            }
+            .notification-toast.show { transform: translateX(0); opacity: 1; }
+            .notification-toast.show:hover {
+                transform: scale(1.02) translateX(-5px); background-color: #151515;
+                border-color: #555; box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+            }
+        `;
+        document.head.appendChild(style);
+    };
+
+    const initializeApp = (pages, firebaseConfig) => {
+        if (!document.getElementById('navbar-container')) {
+            const navbarDiv = document.createElement('div');
+            navbarDiv.id = 'navbar-container';
+            document.body.prepend(navbarDiv);
+        }
+        
+        injectStyles();
+        
+        // Theme Syncing Removed - Force Default
+        window.applyTheme(DEFAULT_THEME); 
+
+        const app = firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        db = firebase.firestore();
+
+        allPages = pages;
+
+        const PINNED_PAGE_KEY = 'navbar_pinnedPage';
+        const PIN_BUTTON_HIDDEN_KEY = 'navbar_pinButtonHidden';
+        const PIN_HINT_SHOWN_KEY = 'navbar_pinHintShown';
 
         auth.onAuthStateChanged(async (user) => {
             let isPrivilegedUser = false;

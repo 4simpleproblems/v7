@@ -625,7 +625,29 @@ function handleSongEnd(player) { if (player.id === activePlayerId && !isCrossfad
 function playNextSong() { if (queueIndex > -1 && queueIndex < playQueue.length - 1) playSong(playQueue[queueIndex + 1], queueIndex + 1, playQueue); }
 
 // --- Helpers ---
-function getImageUrl(item) { if (item.song && item.song.img) { let i = item.song.img.big || item.song.img.small; return i.startsWith('/api/') ? API_BASE + i : i; } if (item.image) { if (Array.isArray(item.image)) return item.image[item.image.length - 1].link; else if (typeof item.image === 'string') return item.image; } return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='; }
+function proxyUrl(url) {
+    if (!url) return url;
+    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+    // Check if Ultraviolet is available (it's loaded in index.html)
+    if (typeof Ultraviolet === 'undefined') return url;
+    // Use the VORA VERN_SYSTEM UV prefix
+    return window.location.origin + "/VORA/VERN_SYSTEM/uv/service/" + Ultraviolet.codec.xor.encode(url);
+}
+
+function getImageUrl(item) { 
+    if (item.song && item.song.img) { 
+        let i = item.song.img.big || item.song.img.small; 
+        let url = i.startsWith('/api/') ? API_BASE + i : i;
+        return proxyUrl(url);
+    } 
+    if (item.image) { 
+        let url;
+        if (Array.isArray(item.image)) url = item.image[item.image.length - 1].link; 
+        else if (typeof item.image === 'string') url = item.image; 
+        return proxyUrl(url);
+    } 
+    return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='; 
+}
 function formatTime(v) { if (typeof v === 'object' && v !== null) { const s = v.hours * 3600 + v.minutes * 60 + v.seconds; return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`; } const m = Math.floor(v / 60) || 0, s = Math.floor(v % 60) || 0; return `${m}:${s < 10 ? '0' : ''}${s}`; }
 function formatNumber(n) { if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'; if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K'; return n; }
 async function downloadResource(url, filename) {

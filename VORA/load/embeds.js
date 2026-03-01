@@ -228,32 +228,39 @@ function createMediaCard(item) {
     if (isSeriesPage() && !isActuallyTV) return null;
 
     const title = item.title || item.name;
-    const poster = `https://image.tmdb.org/t/p/w500${item.poster_path}`;
+    const poster = proxyUrl(`https://image.tmdb.org/t/p/w500${item.poster_path}`);
     const effectiveType = isActuallyMovie ? 'movie' : 'tv';
     
-    // SPA Check: If we are on single_file.html or vora.html, don't redirect
-    const isSPA = window.location.pathname.includes('single_file.html') || window.location.pathname.includes('vora.html');
+    // SPA Check: If we are on any of the Vora pages, don't redirect
+    const isSPA = window.location.pathname.includes('single_file.html') || 
+                  window.location.pathname.includes('vora.html') ||
+                  window.location.pathname.includes('index.html') ||
+                  window.location.pathname.includes('movies.html') ||
+                  window.location.pathname.includes('series.html') ||
+                  window.location.pathname.endsWith('/VORA/');
     const link = isSPA ? '' : (isActuallyMovie ? 'movies.html' : 'series.html');
     
     // Explicit Hash: Include type to avoid ID collisions between movies and TV
     const hashValue = isSPA ? `${effectiveType}/${item.id}` : item.id;
 
     const card = document.createElement('div');
-    card.className = 'video-card group relative';
+    card.className = 'video-item group relative';
     const isFav = isLiked(item.id);
     const heartClass = isFav ? 'far text-purple-500 scale-110' : 'far opacity-40 group-hover:opacity-100';
 
     card.innerHTML = `
-        <img src="${poster}" loading="lazy" onerror="this.closest('.video-card').style.display='none'">
-        <a href="${link}#${hashValue}" class="play-overlay">
-            <div class="play-btn-circle">
-                <i class="fas fa-play"></i>
-            </div>
-        </a>
-        <button class="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-[var(--card-blur-bg)] backdrop-blur-md text-white border border-[var(--accent-glow)] hover:scale-110 transition-all fav-trigger z-10" data-id="${item.id}" title="Like">
+        <div class="thumbnail-container">
+            <img src="${poster}" loading="lazy" onerror="this.closest('.video-item').style.display='none'">
+            <a href="${link}#${hashValue}" class="play-overlay">
+                <div class="play-btn-circle">
+                    <i class="fas fa-play"></i>
+                </div>
+            </a>
+        </div>
+        <button class="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/10 hover:scale-110 transition-all fav-trigger z-10" data-id="${item.id}" title="Like">
             <i class="${heartClass} fa-star"></i>
         </button>
-        <div class="overlay-grad !bg-[var(--card-blur-bg)] !backdrop-blur-md border-t border-[var(--accent-glow)]">
+        <div class="absolute bottom-0 left-0 right-0 p-4 bg-black/80 backdrop-blur-md border-t border-white/10">
             <h3 class="text-white text-sm truncate mb-1 font-normal">${title}</h3>
             <p class="text-[10px] text-white/60">${formatFullDate(item.release_date || item.first_air_date) || ''}</p>
         </div>
@@ -268,7 +275,12 @@ function createMediaCard(item) {
 }
 
 function createViewAllCard(link) {
-    const isSPA = window.location.pathname.includes('single_file.html') || window.location.pathname.includes('vora.html');
+    const isSPA = window.location.pathname.includes('single_file.html') || 
+                  window.location.pathname.includes('vora.html') ||
+                  window.location.pathname.includes('index.html') ||
+                  window.location.pathname.includes('movies.html') ||
+                  window.location.pathname.includes('series.html') ||
+                  window.location.pathname.endsWith('/VORA/');
     const view = link.includes('movie') ? 'movies' : 'series';
     
     const card = document.createElement('a');
@@ -279,7 +291,7 @@ function createViewAllCard(link) {
         card.href = link;
     }
     
-    card.className = 'video-card group flex flex-col items-center justify-center min-h-[300px] border-dashed border-2 border-brand-border hover:border-solid hover:border-accent-purple bg-white/5 hover:bg-white/10 transition-all rounded-[22px] cursor-pointer';
+    card.className = 'video-item group flex flex-col items-center justify-center min-h-[300px] border-dashed border-2 border-brand-border hover:border-solid hover:border-accent-purple bg-white/5 hover:bg-white/10 transition-all rounded-[22px] cursor-pointer';
     card.innerHTML = `
         <i class="fas fa-arrow-right text-3xl mb-4 text-accent-purple group-hover:translate-x-2 transition-transform"></i>
         <span class="text-white font-medium">View All</span>
@@ -694,8 +706,8 @@ function performSearch() {
     if (grid) grid.innerHTML = '<div class="text-center py-20 col-span-full text-white"><i class="fas fa-spinner fa-spin text-3xl text-purple-500"></i></div>';
     
     // Only clear hash if NOT in SPA mode or if we explicitly want to close the player
-    const isSPA = window.location.pathname.includes('single_file.html') || window.location.pathname.includes('vora.html');
-    if (!isSPA) window.location.hash = ''; 
+    const isSingleFileSPA = window.location.pathname.includes('single_file.html') || window.location.pathname.includes('vora.html');
+    if (!isSingleFileSPA) window.location.hash = ''; 
 
     let endpoint = isMoviePage() ? 'search/movie' : (isSeriesPage() ? 'search/tv' : 'search/multi');
     window.themoviedb(endpoint, { params: { query: query, language: 'en-US' } });
@@ -717,8 +729,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadFromHash();
     } else {
         // Only auto-load if not in SPA mode (where switchView handles it)
-        const isSPA = window.location.pathname.includes('single_file.html') || window.location.pathname.includes('vora.html');
-        if (isSPA) return;
+        const isSingleFileSPA = window.location.pathname.includes('single_file.html') || window.location.pathname.includes('vora.html');
+        if (isSingleFileSPA) return;
 
         if (isIndexPage()) {
             window.themoviedb(`trending/movie/week?language=${getTmdbLanguage()}&page=1`);
