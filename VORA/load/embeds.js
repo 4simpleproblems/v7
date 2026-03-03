@@ -232,7 +232,7 @@ function createMediaCard(item) {
     const effectiveType = isActuallyMovie ? 'movie' : 'tv';
     
     // Improved SPA Check: More robust detection of VORA app context
-    const isSPA = window.location.pathname.toLowerCase().includes('/vora/') || 
+    const isSPA = window.location.pathname.toLowerCase().includes('vora') || 
                   !!document.getElementById('videoGrid') ||
                   !!document.getElementById('moviesGrid');
 
@@ -242,14 +242,14 @@ function createMediaCard(item) {
     const hashValue = isSPA ? `${effectiveType}/${item.id}` : item.id;
 
     const card = document.createElement('div');
-    // Added overflow-hidden and rounded-2xl to ensure clipping
-    card.className = 'video-item group relative overflow-hidden rounded-2xl';
+    // Added overflow-hidden and rounded-[22px] to match vora.html CSS exactly
+    card.className = 'video-item group relative overflow-hidden rounded-[22px] border border-white/5 hover:border-purple-500/50 transition-all bg-white/5';
     const isFav = isLiked(item.id);
     const heartClass = isFav ? 'far text-purple-500 scale-110' : 'far opacity-40 group-hover:opacity-100';
 
     card.innerHTML = `
-        <div class="thumbnail-container overflow-hidden rounded-2xl">
-            <img src="${poster}" loading="lazy" class="w-full h-full object-cover" onerror="this.closest('.video-item').style.display='none'">
+        <div class="thumbnail-container overflow-hidden rounded-[22px] w-full h-full">
+            <img src="${poster}" loading="lazy" class="w-full h-full object-cover rounded-[22px]" onerror="this.closest('.video-item').style.display='none'">
             <a href="${link}#${hashValue}" class="play-overlay">
                 <div class="play-btn-circle">
                     <i class="fas fa-play"></i>
@@ -259,7 +259,7 @@ function createMediaCard(item) {
         <button class="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/10 hover:scale-110 transition-all fav-trigger z-10" data-id="${item.id}" title="Like">
             <i class="${heartClass} fa-star"></i>
         </button>
-        <div class="absolute bottom-0 left-0 right-0 p-4 bg-black/80 backdrop-blur-md border-t border-white/10 rounded-b-2xl">
+        <div class="absolute bottom-0 left-0 right-0 p-4 bg-black/80 backdrop-blur-md border-t border-white/10 rounded-b-[22px]">
             <h3 class="text-white text-sm truncate mb-1 font-normal">${title}</h3>
             <p class="text-[10px] text-white/60">${formatFullDate(item.release_date || item.first_air_date) || ''}</p>
         </div>
@@ -274,12 +274,9 @@ function createMediaCard(item) {
 }
 
 function createViewAllCard(link) {
-    const isSPA = window.location.pathname.includes('single_file.html') || 
-                  window.location.pathname.includes('vora.html') ||
-                  window.location.pathname.includes('index.html') ||
-                  window.location.pathname.includes('movies.html') ||
-                  window.location.pathname.includes('series.html') ||
-                  window.location.pathname.endsWith('/VORA/');
+    const isSPA = window.location.pathname.toLowerCase().includes('vora') || 
+                  !!document.getElementById('videoGrid') ||
+                  !!document.getElementById('moviesGrid');
     const view = link.includes('movie') ? 'movies' : 'series';
     
     const card = document.createElement('a');
@@ -482,25 +479,25 @@ function renderPlayerUI(type, id, item) {
             <div class="flex flex-col md:flex-row gap-4">
                 <div class="flex-grow flex flex-col gap-2">
                     <label class="text-xs text-gray-500 font-medium ml-1 uppercase">Server / Provider</label>
-                    <select id="provider-select" class="bg-card-dark border border-brand-border text-white p-3 rounded-[12px] outline-none focus:border-purple-500 cursor-pointer">
+                    <select id="provider-select" class="bg-[var(--bg-card)] border border-brand-border text-white p-3 rounded-[12px] outline-none focus:border-purple-500 cursor-pointer">
                         ${PROVIDERS.map((p, i) => `<option value="${i}" ${i === currentProviderIndex ? 'selected' : ''}>${p.name}</option>`).join('')}
                     </select>
                 </div>
                 ${type === 'tv' ? `
                 <div class="flex-grow flex flex-col gap-2">
                     <label class="text-xs text-gray-500 font-medium ml-1 uppercase">Season</label>
-                    <select id="season-select" class="bg-card-dark border border-brand-border text-white p-3 rounded-[12px] outline-none focus:border-purple-500 cursor-pointer">
+                    <select id="season-select" class="bg-[var(--bg-card)] border border-brand-border text-white p-3 rounded-[12px] outline-none focus:border-purple-500 cursor-pointer">
                         ${sortedSeasons.map(s => `<option value="${s.season_number}" ${s.season_number === 1 ? 'selected' : ''}>Season ${s.season_number}</option>`).join('')}
                     </select>
                 </div>
                 ` : ''}
             </div>
 
-            <div id="series-controls" class="${type === 'tv' ? '' : 'hidden'} bg-card-dark p-6 rounded-[16px] border border-brand-border flex flex-col gap-4">
+            <div id="series-controls" class="${type === 'tv' ? '' : 'hidden'} bg-[var(--bg-card)] p-6 rounded-[16px] border border-brand-border flex flex-col gap-4">
                 <div id="episode-list" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-60 overflow-y-auto pr-2"></div>
             </div>
 
-            <div class="bg-card-dark p-8 rounded-[16px] border border-brand-border shadow-xl">
+            <div class="bg-[var(--bg-card)] p-8 rounded-[16px] border border-brand-border shadow-xl">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <h2 class="text-3xl text-white mb-2 font-normal">${title}</h2>
@@ -717,7 +714,8 @@ function performSearch() {
     if (grid) grid.innerHTML = '<div class="text-center py-20 col-span-full text-white"><i class="fas fa-spinner fa-spin text-3xl text-purple-500"></i></div>';
     
     // Only clear hash if NOT in SPA mode or if we explicitly want to close the player
-    const isSingleFileSPA = window.location.pathname.includes('single_file.html') || window.location.pathname.includes('vora.html');
+    const isSingleFileSPA = window.location.pathname.toLowerCase().includes('vora') || 
+                           window.location.pathname.includes('single_file.html');
     if (!isSingleFileSPA) window.location.hash = ''; 
 
     let endpoint = isMoviePage() ? 'search/movie' : (isSeriesPage() ? 'search/tv' : 'search/multi');
@@ -740,7 +738,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadFromHash();
     } else {
         // Only auto-load if not in SPA mode (where switchView handles it)
-        const isSingleFileSPA = window.location.pathname.includes('single_file.html') || window.location.pathname.includes('vora.html');
+        const isSingleFileSPA = window.location.pathname.toLowerCase().includes('vora') || 
+                               window.location.pathname.includes('single_file.html');
         if (isSingleFileSPA) return;
 
         if (isIndexPage()) {

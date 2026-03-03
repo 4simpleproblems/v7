@@ -214,7 +214,9 @@ let db;
             if (event.data && event.data.type === 'getPort' && event.data.port) {
                 try {
                     let workerPath = "/VELIUM/baremux/worker.js";
-                    if (window.location.pathname.includes('/VORA/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+                    // Prioritize Vora specific worker if on Vora page
+                    if (window.location.pathname.toLowerCase().includes('vora')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+                    else if (window.location.pathname.includes('/VORA/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
                     else if (window.location.pathname.includes('/VERN/')) workerPath = "/VERN/baremux/worker.js";
                     else if (window.location.pathname.includes('/GAMES/')) workerPath = "/GAMES/baremux/worker.js";
                     else if (window.location.pathname.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";

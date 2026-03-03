@@ -17,17 +17,24 @@
         };
     </script>
     <script src="/VORA/VERN_SYSTEM/baremux/index.js"></script>
-    <script>
-        window.checkBare = async () => {
+    <script type="module">
+        import * as libcurl from "/VORA/VERN_SYSTEM/libcurl/index.mjs";
+
+        window.checkBare = async (retries = 3) => {
             if (window.__4sp_bare_mux_connecting) return;
             window.__4sp_bare_mux_connecting = true;
 
-            try {
-                const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
-                const wispUrl = "wss://wisp.mercurywork.shop/";
-                const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
-                
+            const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
+            const wispUrl = "wss://wisp.mercurywork.shop/";
+            const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
+
+            for (let i = 0; i < retries; i++) {
                 try {
+                    // Ensure WASM is loaded for libcurl
+                    if (libcurl && libcurl.load_wasm) {
+                        await libcurl.load_wasm();
+                    }
+
                     const transport = await connection.getTransport();
                     if (!transport || transport.path !== transportPath) {
                         await connection.setTransport(transportPath, [
@@ -36,17 +43,20 @@
                         ]);
                     }
                     console.log("Vora: BareMux Transport Set");
+                    window.__4sp_bare_mux_connecting = false;
+                    return; // Success
                 } catch (e) {
-                    await connection.setTransport(transportPath, [
-                        { websocket: wispUrl },
-                        { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                    ]);
+                    console.error(`Vora: BareMux Setup Attempt ${i + 1} failed:`, e);
+                    if (i === retries - 1) {
+                        // Last attempt failed, try one last forceful set
+                        try {
+                            await connection.setTransport(transportPath, [{ websocket: wispUrl }]);
+                        } catch (err) {}
+                    }
+                    await new Promise(r => setTimeout(r, 500));
                 }
-            } catch (err) {
-                // Silently handle connection failures to prevent spam
-            } finally {
-                window.__4sp_bare_mux_connecting = false;
             }
+            window.__4sp_bare_mux_connecting = false;
         };
 
         (async () => {
@@ -190,8 +200,8 @@
             border: 1px solid var(--accent-glow);
         }
 
-        .video-card {
-            background: var(--bg-card);
+        .video-card, .video-item {
+            background: var(--btn-bg);
             border: 1px solid var(--border-main);
             border-radius: 22px; /* 24 - 2 */
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -201,7 +211,7 @@
             aspect-ratio: 2/3;
         }
 
-        .video-card:hover {
+        .video-card:hover, .video-item:hover {
             border-color: var(--accent-color) !important;
             background-color: var(--accent-glow) !important;
             backdrop-filter: blur(12px);
@@ -211,7 +221,7 @@
             z-index: 20;
         }
 
-        .video-card img {
+        .video-card img, .video-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -219,7 +229,7 @@
             border-radius: 22px; /* Matching card radius */
         }
 
-        .video-card:hover img {
+        .video-card:hover img, .video-item:hover img {
             transform: scale(1.05);
         }
 
@@ -249,11 +259,11 @@
             box-shadow: 0 15px 30px var(--accent-glow);
         }
 
-        .video-card:hover .play-overlay {
+        .video-card:hover .play-overlay, .video-item:hover .play-overlay {
             opacity: 1;
         }
 
-        .video-card:hover .play-btn-circle {
+        .video-card:hover .play-btn-circle, .video-item:hover .play-btn-circle {
             transform: translateY(0);
         }
 

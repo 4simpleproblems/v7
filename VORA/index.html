@@ -21,30 +21,36 @@
     <script type="module">
         import * as libcurl from "/VORA/VERN_SYSTEM/libcurl/index.mjs";
         
-        window.checkBare = async () => {
+        window.checkBare = async (retries = 3) => {
             const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
             const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
             
-            try {
-                // Ensure WASM is loaded for libcurl
-                if (libcurl && libcurl.load_wasm) {
-                    await libcurl.load_wasm();
-                }
+            for (let i = 0; i < retries; i++) {
+                try {
+                    // Ensure WASM is loaded for libcurl
+                    if (libcurl && libcurl.load_wasm) {
+                        await libcurl.load_wasm();
+                    }
 
-                const transport = await connection.getTransport();
-                if (!transport || transport.path !== transportPath) {
-                    await connection.setTransport(transportPath, [
-                        { websocket: wispUrl },
-                        { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                    ]);
+                    const transport = await connection.getTransport();
+                    if (!transport || transport.path !== transportPath) {
+                        await connection.setTransport(transportPath, [
+                            { websocket: wispUrl },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                        ]);
+                    }
+                    return;
+                } catch (e) {
+                    console.error(`BareMux/libcurl Setup Attempt ${i + 1} failed:`, e);
+                    if (i === retries - 1) {
+                        await connection.setTransport(transportPath, [
+                            { websocket: wispUrl },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                        ]);
+                    }
+                    await new Promise(r => setTimeout(r, 500));
                 }
-            } catch (e) {
-                console.error("BareMux/libcurl Setup Error:", e);
-                await connection.setTransport(transportPath, [
-                    { websocket: wispUrl },
-                    { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                ]);
             }
         };
 
@@ -170,7 +176,7 @@
         }
 
         .video-item {
-            background-color: #000000;
+            background-color: rgba(79, 70, 229, 0.05);
             border: 1px solid #333;
             border-radius: 1.25rem;
             overflow: hidden;
@@ -179,6 +185,7 @@
 
         .video-item:hover {
             border-color: #4f46e5;
+            background-color: rgba(79, 70, 229, 0.1);
             transform: translateY(-4px);
             box-shadow: 0 10px 30px rgba(79, 70, 229, 0.15);
         }
@@ -339,3 +346,4 @@
     </div>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->

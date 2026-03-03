@@ -1099,8 +1099,8 @@
                                 </button>
                                 
                                 <!-- MAC Modal -->
-                                <div id="mibi-mac-menu" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden backdrop-blur-sm">
-                                    <div class="relative bg-black rounded-[16px] shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden border border-[var(--border-main)]">
+                                <div id="mibi-mac-menu" class="fixed inset-0 bg-[var(--bg-page)] bg-opacity-80 flex items-center justify-center z-50 hidden backdrop-blur-sm">
+                                    <div class="relative bg-[var(--bg-secondary)] rounded-[16px] shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden border border-[var(--border-main)]">
                                         
                                         <!-- Header -->
                                         <div class="flex justify-between items-center p-6 border-b border-[var(--border-main)] bg-[var(--bg-secondary)]">
@@ -1114,7 +1114,7 @@
                                         <div class="flex flex-grow overflow-hidden relative">
                                             
                                             <!-- LEFT: Live Preview -->
-                                            <div id="mac-preview-wrapper" class="w-1/2 flex flex-col items-center justify-center bg-[#0a0a0a] p-8 border-r border-[var(--border-main)] transition-all duration-500 ease-in-out z-10">
+                                            <div id="mac-preview-wrapper" class="w-1/2 flex flex-col items-center justify-center bg-[var(--bg-page)] p-8 border-r border-[var(--border-main)] transition-all duration-500 ease-in-out z-10">
                                                 <div class="relative h-64 md:h-80 aspect-square rounded-[56px] overflow-hidden border-4 border-[var(--border-main)] shadow-lg mb-6 transition-all duration-300 hover:border-dashed hover:border-white cursor-pointer flex-shrink-0" id="mac-preview-container" style="aspect-ratio: 1/1;">
                                                     <!-- Background (Static) -->
                                                     <div id="mac-preview-bg" class="absolute inset-0 w-full h-full transition-colors duration-300"></div>
@@ -1131,14 +1131,14 @@
                                                 <div id="mac-sliders-container" class="hidden flex-col gap-6 w-full max-w-xs transition-opacity duration-300 opacity-0">
                                                     <div class="flex flex-col gap-2">
                                                         <label class="text-xs text-[var(--text-muted)] opacity-60 uppercase tracking-wider font-bold">Size</label>
-                                                        <input type="range" id="mac-size-slider" min="50" max="150" value="100" list="mac-size-ticks" class="mac-slider w-full h-2 bg-gray-700 rounded-[16px] appearance-none cursor-pointer">
+                                                        <input type="range" id="mac-size-slider" min="50" max="150" value="100" list="mac-size-ticks" class="mac-slider w-full h-2 bg-[var(--bg-secondary)] rounded-[16px] appearance-none cursor-pointer">
                                                         <datalist id="mac-size-ticks">
                                                             <option value="100"></option>
                                                         </datalist>
                                                     </div>
                                                     <div class="flex flex-col gap-2">
                                                         <label class="text-xs text-[var(--text-muted)] opacity-60 uppercase tracking-wider font-bold">Rotation</label>
-                                                        <input type="range" id="mac-rotation-slider" min="-180" max="180" value="0" list="mac-rotation-ticks" class="mac-slider w-full h-2 bg-gray-700 rounded-[16px] appearance-none cursor-pointer">
+                                                        <input type="range" id="mac-rotation-slider" min="-180" max="180" value="0" list="mac-rotation-ticks" class="mac-slider w-full h-2 bg-[var(--bg-secondary)] rounded-[16px] appearance-none cursor-pointer">
                                                         <datalist id="mac-rotation-ticks">
                                                             <option value="0"></option>
                                                         </datalist>
@@ -1150,7 +1150,7 @@
                                             </div>
 
                                             <!-- RIGHT: Controls & Options -->
-                                            <div id="mac-controls-wrapper" class="w-1/2 flex flex-col bg-black transition-transform duration-500 ease-in-out translate-x-0">
+                                            <div id="mac-controls-wrapper" class="w-1/2 flex flex-col bg-[var(--bg-secondary)] transition-transform duration-500 ease-in-out translate-x-0">
                                                 
                                                 <!-- Tabs -->
                                                 <div class="flex border-b border-[var(--border-main)]">
@@ -1180,7 +1180,7 @@
                                         </div>
                                         
                                         <!-- Footer Actions -->
-                                        <div class="p-6 border-t border-[var(--border-main)] bg-black flex justify-end gap-4 items-center">
+                                        <div class="p-6 border-t border-[var(--border-main)] bg-[var(--bg-secondary)] flex justify-end gap-4 items-center">
                                             <button id="mac-reset-btn" class="btn-toolbar-style mr-auto px-4 py-2 rounded-[16px]" title="Reset Avatar">
                                                 <i class="fa-solid fa-rotate-left"></i>
                                             </button>
@@ -3713,13 +3713,19 @@ const performAccountDeletion = async (credential) => {
                 const updatePfpUi = (type) => {
                     pfpModeBtns.forEach(btn => {
                         btn.classList.toggle('active', btn.dataset.mode === type);
-                        btn.classList.toggle('bg-[#222]', btn.dataset.mode === type);
+                        if (btn.dataset.mode === type) {
+                            btn.style.backgroundColor = 'var(--btn-bg)';
+                            btn.style.borderColor = 'var(--accent-color)';
+                        } else {
+                            btn.style.backgroundColor = '';
+                            btn.style.borderColor = '';
+                        }
                     });
-                    
+
                     pfpLetterSettings.classList.toggle('hidden', type !== 'letter');
                     mibiSettings.classList.toggle('hidden', type !== 'mibi');
                     customSettings.classList.toggle('hidden', type !== 'custom');
-                    
+
                     // Update preview if possible
                     if (type === 'custom' && userData.customPfp) {
                         previewImg.src = userData.customPfp;
@@ -3730,7 +3736,7 @@ const performAccountDeletion = async (credential) => {
                         previewPlaceholder.style.display = 'flex';
                         const text = userData.letterAvatarText || (userData.username || 'U').charAt(0).toUpperCase();
                         previewPlaceholder.innerText = text;
-                        previewPlaceholder.style.backgroundColor = userData.pfpLetterBg || '#3B82F6';
+                        previewPlaceholder.style.background = userData.pfpLetterBg || '#3B82F6';
                         previewPlaceholder.style.color = '#FFFFFF';
                     } else {
                         previewImg.style.display = 'none';
@@ -3739,7 +3745,6 @@ const performAccountDeletion = async (credential) => {
                         previewPlaceholder.style.background = '';
                     }
                 };
-
                 // Mode Button Clicks
                 pfpModeBtns.forEach(btn => {
                     btn.addEventListener('click', async () => {
@@ -3767,10 +3772,7 @@ const performAccountDeletion = async (credential) => {
                 if (pfpLetterInput) pfpLetterInput.value = userData.letterAvatarText || "";
                 
                 if (pfpLetterPreview) {
-                    pfpLetterPreview.style.backgroundColor = selectedLetterColor;
-                    if (selectedLetterColor.includes('gradient')) {
-                        pfpLetterPreview.style.background = selectedLetterColor;
-                    }
+                    pfpLetterPreview.style.background = selectedLetterColor;
                 }
 
                 if (pfpColorGrid) {
@@ -3788,8 +3790,9 @@ const performAccountDeletion = async (credential) => {
                             pfpColorGrid.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
                             d.classList.add('selected');
                             // Update live preview
-                            pfpLetterPreview.style.background = 'none';
-                            pfpLetterPreview.style.backgroundColor = hexColor;
+                            if (pfpLetterPreview) {
+                                pfpLetterPreview.style.background = hexColor;
+                            }
                         };
                         pfpColorGrid.appendChild(d);
                     });
@@ -4151,10 +4154,10 @@ const performAccountDeletion = async (credential) => {
                     
                     const isActive = savedTheme && savedTheme.name === theme.name;
                     
-                    // Use the new standardized variables for the button preview
+                    // Use the theme's own background/accent for the button preview
                     const activeText = theme['text-primary'] || theme['tab-active-text'] || '#ffffff';
                     const activeBorder = theme['accent-primary'] || theme['tab-active-border'] || '#4f46e5';
-                    const activeBg = theme['bg-primary'] || theme['navbar-bg'] || '#000000'; 
+                    const activeBg = theme['avatar-gradient'] || theme['bg-primary'] || theme['navbar-bg'] || '#000000'; 
                     
                     // Hover states (using accents)
                     const hoverText = theme['text-primary'] || '#ffffff';
@@ -4168,7 +4171,7 @@ const performAccountDeletion = async (credential) => {
                             style="
                                 color: ${activeText}; 
                                 border-color: ${activeBorder}; 
-                                background-color: ${activeBg};
+                                background: ${activeBg};
                                 --hover-color: ${hoverText};
                                 --hover-border: ${hoverBorder};
                                 --hover-bg: ${hoverBg};

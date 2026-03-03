@@ -151,9 +151,10 @@
         
         /* Card Hover Effects */
         .zone-item {
+            background-color: var(--btn-bg);
+            border: 1px solid var(--border-main);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             will-change: transform;
-            border: 1px solid transparent;
         }
         .zone-item:hover {
             transform: translateY(-8px) scale(1.02);
@@ -166,11 +167,12 @@
         }
         
         .other-zone-item {
+            background-color: var(--btn-bg);
+            border: 1px solid var(--border-main);
             min-height: 250px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative; 
             z-index: 1; 
-            border: 1px solid transparent;
         }
         .other-zone-item:hover {
             transform: translateY(-4px);
