@@ -83,7 +83,7 @@
                     colors: {
                         'deep-black': '#000000',
                         'card-dark': '#000000',
-                        'accent-red': 'var(--accent-color)',
+                        'accent-red': '#4f46e5',
                         'brand-border': '#333333',
                     },
                     fontFamily: {
@@ -143,9 +143,9 @@
         }
 
         .nav-link:hover, .nav-link.active {
-            background-color: var(--accent-glow);
-            color: var(--accent-color);
-            border: 1px solid var(--accent-color);
+            background-color: rgba(79, 70, 229, 0.1);
+            color: #4f46e5;
+            border: 1px solid #4f46e5;
         }
 
         .nav-link i {
@@ -176,7 +176,7 @@
         }
 
         .video-item {
-            background-color: var(--accent-glow);
+            background-color: rgba(79, 70, 229, 0.05);
             border: 1px solid #333;
             border-radius: 1.25rem;
             overflow: hidden;
@@ -184,8 +184,8 @@
         }
 
         .video-item:hover {
-            border-color: var(--accent-color);
-            background-color: var(--accent-glow);
+            border-color: #4f46e5;
+            background-color: rgba(79, 70, 229, 0.1);
             transform: translateY(-4px);
             box-shadow: 0 10px 30px rgba(79, 70, 229, 0.15);
         }
@@ -232,9 +232,9 @@
             border-radius: 14px;
         }
         .search-input:focus {
-            border-color: var(--accent-color);
+            border-color: #4f46e5;
             outline: none;
-            box-shadow: 0 0 0 2px var(--accent-glow);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
         }
 
         button, a, .rounded-xl {
@@ -246,6 +246,7 @@
     <script src="./cachedFetch.js"></script>
     <script src="./utils.js"></script>
     <script src="./load/embeds.js"></script>
+    <script src="../navigation.js"></script>
     <script src="/injector.js"></script>
 </head>
 <body class="bg-deep-black">
