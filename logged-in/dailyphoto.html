@@ -55,6 +55,7 @@
             color: var(--text-muted);
             font-weight: 300; 
             overflow: hidden;
+            padding-top: 64px; /* Space for navbar */
         }
 
         h1, h2, h3, h4, h5, h6 {
@@ -71,7 +72,7 @@
             display: grid;
             grid-template-areas: "sidebar main";
             grid-template-columns: 280px 1fr;
-            height: 100vh;
+            height: calc(100vh - 64px);
             width: 100%;
             background: var(--bg-page);
         }
@@ -104,13 +105,14 @@
             font-size: 0.9rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-            border-radius: 18px; /* 20 - 2 */
+            border-radius: 18px; 
             margin: 0 16px;
             font-weight: 300;
         }
 
         .nav-item:hover, .nav-item.active {
             color: var(--text-main);
+            opacity: 1;
             background: var(--border-faint);
         }
 
@@ -369,10 +371,14 @@
         let pendingImgData = null;
         let feedMode = 'following';
         let userDailySlots = [];
+        let cachedFollowingUids = [];
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
+                // Pre-cache following list for friend-only visibility checks
+                const followingSnap = await getDocs(collection(db, 'users', currentUser.uid, 'following'));
+                cachedFollowingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
                 initUI();
             } else {
                 window.location.href = '/authentication.html';
@@ -420,7 +426,6 @@
 
         function setupMainUpload() {
             document.getElementById('main-upload-btn').onclick = () => {
-                // Find first empty slot
                 let emptyIdx = userDailySlots.findIndex(s => !s || s === 'DELETED');
                 if (emptyIdx === -1 && userDailySlots.length < 5) emptyIdx = userDailySlots.length;
                 
@@ -491,7 +496,7 @@
             if (!confirm("Remove this moment?")) return;
             const userRef = doc(db, 'users', currentUser.uid);
             const userSnap = await getDoc(userRef);
-            const slots = [...userSnap.data().dailySlotsUsed];
+            const slots = [...(userSnap.data().dailySlotsUsed || [])];
             slots[idx] = 'DELETED';
             await deleteDoc(doc(db, 'daily_photos', postId));
             await updateDoc(userRef, { dailySlotsUsed: slots });
@@ -519,7 +524,7 @@
                     const div = document.createElement('div');
                     div.className = 'nav-item !mx-0 !px-4 !py-2 hover:!bg-white/5';
                     div.innerHTML = `
-                        <div class="w-6 h-6 rounded-lg overflow-hidden">${getAvatarHTML(d, "w-full h-full", false, currentUser)}</div>
+                        <div class="w-6 h-6 rounded-lg overflow-hidden">${getAvatarHTML(d, "w-6 h-6", false, currentUser)}</div>
                         <span class="text-[11px] text-[var(--text-muted)] opacity-60">@${d.username}</span>
                     `;
                     div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
@@ -555,32 +560,48 @@
                 );
                 feedUnsub = onSnapshot(q, renderFeedGrid);
             } else {
-                getDocs(collection(db, 'users', currentUser.uid, 'following')).then(snap => {
-                    const uids = [currentUser.uid, ...snap.docs.map(d => d.id)].slice(0, 10);
-                    if (uids.length === 0) {
-                        grid.innerHTML = '<p class="text-gray-700 col-span-full text-center py-20 text-sm">Follow users to see their moments here.</p>';
-                        return;
+                // Following Feed - Check friendship status for each photo or filter creator list
+                const uids = [currentUser.uid, ...cachedFollowingUids].slice(0, 10);
+                if (uids.length <= 1 && uids[0] === currentUser.uid) {
+                    grid.innerHTML = '<p class="text-gray-700 col-span-full text-center py-20 text-sm">Follow users to see their moments here.</p>';
+                    return;
+                }
+                const q = query(
+                    collection(db, 'daily_photos'),
+                    where('status', '==', 'active'),
+                    where('createdAt', '>=', today),
+                    where('creatorUid', 'in', uids),
+                    orderBy('createdAt', 'desc')
+                );
+                feedUnsub = onSnapshot(q, async (snap) => {
+                    // Logic for friend-only visibility:
+                    // If isPublic is false, we must both be follow each other.
+                    const visibleDocs = [];
+                    for(const d of snap.docs) {
+                        const data = d.data();
+                        if (data.creatorUid === currentUser.uid || data.isPublic) {
+                            visibleDocs.push(d);
+                        } else {
+                            // Private photo - check if creator follows us back
+                            const followingMeSnap = await getDoc(doc(db, 'users', data.creatorUid, 'following', currentUser.uid));
+                            if (followingMeSnap.exists()) {
+                                visibleDocs.push(d);
+                            }
+                        }
                     }
-                    const q = query(
-                        collection(db, 'daily_photos'),
-                        where('status', '==', 'active'),
-                        where('createdAt', '>=', today),
-                        where('creatorUid', 'in', uids),
-                        orderBy('createdAt', 'desc')
-                    );
-                    feedUnsub = onSnapshot(q, renderFeedGrid);
+                    renderVisibleFeed(visibleDocs);
                 });
             }
         }
 
-        function renderFeedGrid(snap) {
+        function renderVisibleFeed(docs) {
             const grid = document.getElementById('photo-feed');
             grid.innerHTML = '';
-            if (snap.empty) {
+            if (docs.length === 0) {
                 grid.innerHTML = '<p class="text-gray-800 col-span-full text-center py-20 text-sm italic">No moments shared today yet.</p>';
                 return;
             }
-            snap.forEach(docSnap => {
+            docs.forEach(docSnap => {
                 const data = docSnap.data();
                 const div = document.createElement('div');
                 div.className = 'photo-card';
@@ -594,6 +615,10 @@
                 div.onclick = () => window.viewPost(docSnap.id);
                 grid.appendChild(div);
             });
+        }
+
+        function renderFeedGrid(snap) {
+            renderVisibleFeed(snap.docs);
         }
 
         function setupNav() {
@@ -630,7 +655,7 @@
             document.getElementById('modal-post-date').textContent = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Just now";
             
             const authorSnap = await getDoc(doc(db, 'users', data.creatorUid));
-            document.getElementById('modal-author-avatar').innerHTML = getAvatarHTML(authorSnap.data(), "w-full h-full", false, currentUser);
+            document.getElementById('modal-author-avatar').innerHTML = getAvatarHTML(authorSnap.data(), "w-12 h-12", false, currentUser);
             
             renderComments(data.comments || []);
             document.getElementById('view-modal').classList.add('open');

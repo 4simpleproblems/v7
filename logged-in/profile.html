@@ -504,6 +504,14 @@
         };
 
         async function loadDailyPhotos() {
+            // Check if we are friends (both following each other)
+            let areFriends = false;
+            if (!isOwnProfile && firebaseAuthUser) {
+                const followingThemSnap = await getDoc(doc(db, 'users', firebaseAuthUser.uid, 'following', profileOwnerId));
+                const followingMeSnap = await getDoc(doc(db, 'users', profileOwnerId, 'following', firebaseAuthUser.uid));
+                areFriends = followingThemSnap.exists() && followingMeSnap.exists();
+            }
+
             const q = query(
                 collection(db, 'daily_photos'),
                 where('creatorUid', '==', profileOwnerId),
@@ -514,12 +522,21 @@
             const snap = await getDocs(q);
             
             dailyphotoContainer.innerHTML = '';
-            if (snap.empty) {
-                dailyphotoContainer.innerHTML = '<p class="text-gray-600 italic py-8 col-span-full text-center">No photos shared yet.</p>';
+            
+            const visiblePhotos = snap.docs.filter(doc => {
+                const data = doc.data();
+                if (isOwnProfile) return true;
+                if (data.isPublic) return true;
+                if (areFriends) return true;
+                return false;
+            });
+
+            if (visiblePhotos.length === 0) {
+                dailyphotoContainer.innerHTML = '<p class="text-gray-600 italic py-8 col-span-full text-center">No visible photos shared yet.</p>';
                 return;
             }
 
-            snap.forEach(doc => {
+            visiblePhotos.forEach(doc => {
                 const data = doc.data();
                 const div = document.createElement('div');
                 div.className = 'photo-grid-item';

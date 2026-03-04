@@ -11,13 +11,31 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script>
         // SPA Redirect Logic for Profile Pages
         (function() {
             const path = window.location.pathname;
             if (path.includes('/@')) {
-                // Redirect to profile.html while keeping the path for client-side routing
-                window.location.href = '/logged-in/profile.html?path=' + encodeURIComponent(path);
+                const firebaseConfig = {
+                    apiKey: "AIzaSyAZBKAckVa4IMvJGjcyndZx6Y1XD52lgro",
+                    authDomain: "project-zirconium.firebaseapp.com",
+                    projectId: "project-zirconium",
+                    storageBucket: "project-zirconium.firebasestorage.app",
+                    messagingSenderId: "1096564243475",
+                    appId: "1:1096564243475:web:6d0956a70125eeea1ad3e6",
+                    measurementId: "G-1D4F692C1Q"
+                };
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                
+                firebase.auth().onAuthStateChanged(user => {
+                    if (user) {
+                        window.location.href = '/logged-in/profile.html?path=' + encodeURIComponent(path);
+                    } else {
+                        window.location.href = '/authentication.html';
+                    }
+                });
             }
         })();
     </script>
