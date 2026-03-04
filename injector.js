@@ -16,10 +16,16 @@
       { url: '/tab-disguiser.js' },
       { url: '/panic-key.js' },
       { url: '/analytics.js' },
-      { url: '/navigation.js' },
       { url: '/admin_keybinds.js' },
       { url: '/logged-in/birthday.js' }
     ];
+
+    // Conditionally load navigation based on flag
+    if (window.__4sp_nav_mini) {
+        scriptsToLoad.push({ url: '/navigation-mini.js' });
+    } else {
+        scriptsToLoad.push({ url: '/navigation.js' });
+    }
 
     // 2. CORE DYNAMIC LOADING FUNCTION
     /**

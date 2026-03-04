@@ -200,10 +200,16 @@
         'vern.html': 'Vern',
         'velium.html': 'Velium',
         'securly-tester.html': 'Securly Tester',
-        'settings.html': 'Settings'
+        'settings.html': 'Settings',
+        'index.html': 'Home'
     };
 
     const getCleanTitle = (path, originalTitle) => {
+        // Special case for VELIUM folder
+        if (path.includes('/VELIUM/')) return 'Velium';
+        if (path.includes('/VORA/')) return 'Vora';
+        if (path.includes('/VERN/')) return 'Vern';
+        
         const fileName = path.split('/').pop().split('?')[0];
         if (PAGE_NAME_LOOKUP[fileName]) return PAGE_NAME_LOOKUP[fileName];
         if (originalTitle && !originalTitle.includes('VERSION 5 CLIENT')) return originalTitle;
