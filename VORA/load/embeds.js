@@ -72,7 +72,7 @@ window.switchView = function(view, clearHash = true) {
         if (movies) movies.classList.add('hidden');
         if (series) series.classList.add('hidden');
         if (dynamic) dynamic.classList.remove('hidden');
-        if (singleGrid) singleGrid.innerHTML = '<div class="text-center py-20 col-span-full text-white"><i class="fas fa-spinner fa-spin text-3xl text-purple-500"></i></div>';
+        if (singleGrid) singleGrid.innerHTML = '<div class="text-center py-20 col-span-full text-white"><i class="fas fa-spinner fa-spin text-3xl text-[var(--accent-color)]"></i></div>';
         
         const dynamicTitle = document.getElementById('dynamic-title');
         if (dynamicTitle) dynamicTitle.innerText = view === 'movies' ? 'Movies' : 'Series';
@@ -202,17 +202,17 @@ function toggleLike(item) {
     
     document.querySelectorAll(`.fav-trigger[data-id="${item.id}"] i`).forEach(icon => {
         if (favorited) {
-            icon.className = 'far fa-star text-purple-500 scale-110';
+            icon.className = 'far fa-star text-[var(--accent-color)] scale-110';
             icon.classList.remove('opacity-40');
             icon.classList.add('opacity-100');
         } else {
             icon.className = 'far fa-star opacity-40';
-            icon.classList.remove('text-purple-500', 'scale-110');
+            icon.classList.remove('text-[var(--accent-color)]', 'scale-110');
         }
     });
 
     const btn = document.getElementById('fav-btn-player');
-    if (btn) btn.innerHTML = isLiked(item.id) ? '<i class="far fa-star text-purple-500"></i>' : '<i class="far fa-star"></i>';
+    if (btn) btn.innerHTML = isLiked(item.id) ? '<i class="far fa-star text-[var(--accent-color)]"></i>' : '<i class="far fa-star"></i>';
 }
 
 // Rendering Logic
@@ -243,16 +243,16 @@ function createMediaCard(item) {
 
     const card = document.createElement('div');
     // Added overflow-hidden and rounded-[22px] to match vora.html CSS exactly
-    card.className = 'video-item group relative overflow-hidden rounded-[22px] border border-white/5 hover:border-purple-500/50 transition-all bg-white/5';
+    card.className = 'video-item group relative overflow-hidden rounded-[22px] border border-[var(--border-color)] hover:border-[var(--accent-color)] transition-all bg-[var(--bg-container)]';
     const isFav = isLiked(item.id);
-    const heartClass = isFav ? 'far text-purple-500 scale-110' : 'far opacity-40 group-hover:opacity-100';
+    const heartClass = isFav ? 'far text-[var(--accent-color)] scale-110' : 'far opacity-40 group-hover:opacity-100';
 
     card.innerHTML = `
         <div class="thumbnail-container overflow-hidden rounded-[22px] w-full h-full">
             <img src="${poster}" loading="lazy" class="w-full h-full object-cover rounded-[22px]" onerror="this.closest('.video-item').style.display='none'">
             <a href="${link}#${hashValue}" class="play-overlay">
-                <div class="play-btn-circle">
-                    <i class="fas fa-play"></i>
+                <div class="play-btn-circle" style="background: var(--accent-color);">
+                    <i class="fas fa-play text-white"></i>
                 </div>
             </a>
         </div>
@@ -287,9 +287,9 @@ function createViewAllCard(link) {
         card.href = link;
     }
     
-    card.className = 'video-item group flex flex-col items-center justify-center min-h-[300px] border-dashed border-2 border-brand-border hover:border-solid hover:border-accent-purple bg-white/5 hover:bg-white/10 transition-all rounded-[22px] cursor-pointer';
+    card.className = 'video-item group flex flex-col items-center justify-center min-h-[300px] border-dashed border-2 border-[var(--border-color)] hover:border-solid hover:border-[var(--accent-color)] bg-[var(--bg-container)] hover:bg-[var(--accent-glow)] transition-all rounded-[22px] cursor-pointer';
     card.innerHTML = `
-        <i class="fas fa-arrow-right text-3xl mb-4 text-accent-purple group-hover:translate-x-2 transition-transform"></i>
+        <i class="fas fa-arrow-right text-3xl mb-4 text-[var(--accent-color)] group-hover:translate-x-2 transition-transform"></i>
         <span class="text-white font-medium">View All</span>
     `;
     return card;
@@ -421,7 +421,7 @@ async function loadFromHash() {
         playerView.className = 'w-full mb-12';
         main.prepend(playerView);
     }
-    playerView.innerHTML = `<div class="text-center py-20"><i class="fas fa-spinner fa-spin text-3xl text-purple-500"></i></div>`;
+    playerView.innerHTML = `<div class="text-center py-20"><i class="fas fa-spinner fa-spin text-3xl text-[var(--accent-color)]"></i></div>`;
     async function tryLoad(t, currentId) {
         try {
             if (window.checkBare) await window.checkBare();
@@ -464,7 +464,7 @@ function renderPlayerUI(type, id, item) {
     const playerView = document.getElementById('player-view');
     const title = item.title || item.name;
     const embedUrl = proxyUrl(getEmbedUrl(type, id));
-    const heartClass = isLiked(item.id) ? 'far text-purple-500' : 'far';
+    const heartClass = isLiked(item.id) ? 'far text-[var(--accent-color)]' : 'far';
     const sortedSeasons = [...(item.seasons || [])].sort((a, b) => {
         if (a.season_number === 0) return 1;
         if (b.season_number === 0) return -1;
@@ -711,7 +711,7 @@ function performSearch() {
         document.getElementById('dynamic-section')?.classList.remove('hidden');
     }
     const grid = document.getElementById('videoGrid');
-    if (grid) grid.innerHTML = '<div class="text-center py-20 col-span-full text-white"><i class="fas fa-spinner fa-spin text-3xl text-purple-500"></i></div>';
+    if (grid) grid.innerHTML = '<div class="text-center py-20 col-span-full text-white"><i class="fas fa-spinner fa-spin text-3xl text-[var(--accent-color)]"></i></div>';
     
     // Only clear hash if NOT in SPA mode or if we explicitly want to close the player
     const isSingleFileSPA = window.location.pathname.toLowerCase().includes('vora') || 
@@ -740,8 +740,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Only auto-load if not in SPA mode (where switchView handles it)
         const isSingleFileSPA = window.location.pathname.toLowerCase().includes('vora') || 
                                window.location.pathname.includes('single_file.html');
-        if (isSingleFileSPA) return;
-
         if (isIndexPage()) {
             window.themoviedb(`trending/movie/week?language=${getTmdbLanguage()}&page=1`);
             window.themoviedb(`trending/tv/week?language=${getTmdbLanguage()}&page=1`);

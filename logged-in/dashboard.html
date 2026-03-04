@@ -431,7 +431,15 @@
             if (pfpType === 'custom' && userData.customPfp) {
                 avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover">`;
             } else if (pfpType === 'mibi' && userData.mibiConfig) {
-                avatarHtml = `<div class="w-full h-full" style="background-color: ${userData.mibiConfig.bgColor || '#3B82F6'};"></div>`;
+                const { eyes, mouths, hats, bgColor } = userData.mibiConfig || {};
+                avatarHtml = `
+                    <div class="relative w-full h-full" style="background-color: ${bgColor || '#3B82F6'};">
+                        <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
+                        ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                        ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                        ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                    </div>
+                `;
             } else if (pfpType === 'letter') {
                 const bg = userData.pfpLetterBg || '#333';
                 avatarHtml = `<div class="w-full h-full flex items-center justify-center font-bold text-white" style="background: ${bg};">${initial}</div>`;
@@ -709,7 +717,15 @@
             if (pfpType === 'custom' && userData.customPfp) {
                 avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover">`;
             } else if (pfpType === 'mibi' && userData.mibiConfig) {
-                avatarHtml = `<div class="w-full h-full" style="background-color: ${userData.mibiConfig.bgColor || '#3B82F6'};"></div>`;
+                const { eyes, mouths, hats, bgColor } = userData.mibiConfig || {};
+                avatarHtml = `
+                    <div class="relative w-full h-full" style="background-color: ${bgColor || '#3B82F6'};">
+                        <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
+                        ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                        ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                        ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                    </div>
+                `;
             } else if (pfpType === 'letter') {
                 const bg = userData.pfpLetterBg || '#333';
                 avatarHtml = `<div class="w-full h-full flex items-center justify-center font-bold text-white" style="background: ${bg};">${initial}</div>`;

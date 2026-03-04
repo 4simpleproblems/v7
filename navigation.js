@@ -659,8 +659,8 @@ let db;
 
             const statusHtml = isOnline 
                 ? `<div class="flex items-center gap-1.5 mt-1 overflow-hidden">
-                     <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_#6366f1] flex-shrink-0"></span>
-                     <span class="text-[10px] text-indigo-400 font-medium uppercase tracking-wider truncate">${currentActivity ? `On: ${currentActivity}` : 'Online'}</span>
+                     <span class="w-2 h-2 rounded-full bg-[var(--accent-color)] animate-pulse shadow-[0_0_8px_var(--accent-glow)] flex-shrink-0"></span>
+                     <span class="text-[10px] text-[var(--accent-color)] font-medium uppercase tracking-wider truncate">${currentActivity ? `On: ${currentActivity}` : 'Online'}</span>
                    </div>`
                 : `<div class="flex items-center gap-1.5 mt-1 overflow-hidden">
                      <span class="w-2 h-2 rounded-full bg-gray-600 flex-shrink-0"></span>
@@ -669,9 +669,9 @@ let db;
 
             return `
                 <div id="profile-area-wrapper" class="relative flex-shrink-0 flex items-center">
-                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 14px; position: relative;">
+                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 14px; position: relative; background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));">
                         <i class="fa-solid fa-address-card text-gray-300"></i>
-                        ${isOnline ? '<span class="absolute bottom-0.5 right-0.5 w-3 h-3 bg-indigo-500 border-2 border-black rounded-full shadow-[0_0_5px_#6366f1]"></span>' : ''}
+                        ${isOnline ? '<span class="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[var(--accent-color)] border-2 border-black rounded-full shadow-[0_0_5px_var(--accent-glow)]"></span>' : ''}
                     </button>
                     <div id="profile-menu-container" class="auth-menu-container closed">
                         <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center gap-3 pb-2 cursor-pointer hover:bg-white/5 transition rounded-2xl p-1" onclick="window.location.href='/logged-in/@${username}'">
@@ -1825,8 +1825,8 @@ let db;
                 100% { opacity: 1; transform: translateY(0) scale(1); }
             }
             @keyframes menu-pop-out {
-                0% { opacity: 1; transform: translateY(0) scale(1); }
-                100% { opacity: 0; transform: translateY(-10px) scale(0.95); }
+                0% { opacity: 1; transform: translateY(0); }
+                100% { opacity: 0; transform: translateY(-10px); }
             }
 
             .auth-menu-container.open { 
@@ -1838,7 +1838,7 @@ let db;
                 animation: menu-pop-out 0.3s ease-in forwards;
                 pointer-events: none;
             }
-            .auth-menu-container.closed { opacity: 0; pointer-events: none; transform: translateY(-10px) scale(0.95); display: none !important; }
+            .auth-menu-container.closed { opacity: 0; pointer-events: none; transform: translateY(-10px); display: none !important; }
 
             /* Show More Section - Updated to use Flex for spacing */
             .auth-menu-more-section { 
@@ -1961,8 +1961,8 @@ let db;
             }
 
             @keyframes notif-fade-out {
-                0% { opacity: 1; transform: scale(1); }
-                100% { opacity: 0; transform: scale(0.9); }
+                0% { opacity: 1; }
+                100% { opacity: 0; }
             }
 
             .viro-notif-content {
@@ -2150,71 +2150,61 @@ let db;
         auth.onAuthStateChanged(async (user) => {
             let isPrivilegedUser = false;
             let userData = null;
+            currentUser = user;
+
             if (user) {
                 // Check if hardcoded privileged email
                 isPrivilegedUser = user.email === PRIVILEGED_EMAIL;
 
+                // Set up real-time listener for user data
+                db.collection('users').doc(user.uid).onSnapshot(async (doc) => {
+                    userData = doc.exists ? doc.data() : null;
+                    currentUserData = userData;
+
+                    // --- DATA CORRECTION LOGIC ---
+                    if (userData) {
+                        let updated = false;
+                        const originalUsername = userData.username || user.displayName || 'user';
+                        const correctedUsername = originalUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        
+                        // If username violates new strict rules, fix it
+                        if (originalUsername !== correctedUsername) {
+                            if (!userData.displayName) userData.displayName = originalUsername.slice(0, 24);
+                            userData.username = correctedUsername;
+                            updated = true;
+                        } else if (!userData.displayName) {
+                            userData.displayName = originalUsername.slice(0, 24);
+                            updated = true;
+                        }
+
+                        if (updated) {
+                            try {
+                                await db.collection('users').doc(user.uid).update({
+                                    username: userData.username,
+                                    displayName: userData.displayName
+                                });
+                            } catch (e) { console.error("Error updating user data:", e); }
+                        }
+                    }
+
+                    // --- Apply Theme from Firestore ---
+                    if (userData && userData.navbarTheme) {
+                        window.applyTheme(userData.navbarTheme);
+                        localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(userData.navbarTheme));
+                    }
+
+                    renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
+                });
+
                 try {
-                    // Fetch user data and check admin status in parallel
-                    const userDocPromise = db.collection('users').doc(user.uid).get();
-                    const adminDocPromise = db.collection('admins').doc(user.uid).get();
-
-                    const [userDoc, adminDoc] = await Promise.all([userDocPromise, adminDocPromise]);
-                    
-                    userData = userDoc.exists ? userDoc.data() : null;
-
-                    // If not already privileged via email, check if they are in the admins collection
+                    const adminDoc = await db.collection('admins').doc(user.uid).get();
                     if (!isPrivilegedUser && adminDoc.exists) {
                         isPrivilegedUser = true;
                     }
-
                 } catch (error) {
-                    console.error("Error fetching user or admin data:", error);
+                    console.error("Error fetching admin data:", error);
                 }
             }
-            currentUser = user;
-            currentUserData = userData;
-
-            // --- DATA CORRECTION LOGIC ---
-            if (user && userData) {
-                let updated = false;
-                const originalUsername = userData.username || user.displayName || 'user';
-                const correctedUsername = originalUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
-                
-                // If username violates new strict rules, fix it
-                if (originalUsername !== correctedUsername) {
-                    // Save original as displayName if displayName doesn't exist
-                    if (!userData.displayName) {
-                        userData.displayName = originalUsername.slice(0, 24);
-                    }
-                    userData.username = correctedUsername;
-                    updated = true;
-                } else if (!userData.displayName) {
-                    // Ensure displayName exists even if username was already clean
-                    userData.displayName = originalUsername.slice(0, 24);
-                    updated = true;
-                }
-
-                if (updated) {
-                    try {
-                        await db.collection('users').doc(user.uid).update({
-                            username: userData.username,
-                            displayName: userData.displayName
-                        });
-                    } catch (e) {
-                        console.error("Error updating user data:", e);
-                    }
-                }
-            }
-            // -----------------------------
-
-            // --- Apply Theme from Firestore ---
-            if (userData && userData.navbarTheme) {
-                window.applyTheme(userData.navbarTheme);
-                // Sync to local storage for future page loads
-                localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(userData.navbarTheme));
-            }
-            // ---------------------------------------
 
             currentIsPrivileged = isPrivilegedUser;
             renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
@@ -2227,9 +2217,8 @@ let db;
             // Only redirect if auth check is completed, user is logged out, and we are not already redirecting
             if (authCheckCompleted && !user && !isRedirecting) {
                 const targetUrl = '../index.html'; 
-                
                 console.log(`User logged out. Restricting access and redirecting to ${targetUrl}`);
-                isRedirecting = true; // Set flag to prevent multiple redirects
+                isRedirecting = true;
                 window.location.href = targetUrl;
             }
         });

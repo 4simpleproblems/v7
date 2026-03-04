@@ -289,7 +289,11 @@ let db;
         return '';
     };
 
-        const getCurrentPageKey = () => {
+        const PINNED_PAGE_KEY = 'navbar_pinnedPage';
+    const PIN_BUTTON_HIDDEN_KEY = 'navbar_pinButtonHidden';
+    const PIN_HINT_SHOWN_KEY = 'navbar_pinHintShown';
+
+    const getCurrentPageKey = () => {
             const currentPathname = window.location.pathname.toLowerCase();
             let bestMatchKey = null;
             let longestMatchLength = 0; 
@@ -450,6 +454,105 @@ let db;
                 return '#FFFFFF';
             }
         };
+
+        const getProfileButtonHtml = (user, userData) => {
+            if (!user) return '';
+            const username = userData?.username || user.displayName?.toLowerCase().replace(/[^a-z0-9]/g, "") || "user";
+            const displayName = userData?.displayName || user.displayName || username;
+            const pfpType = userData?.pfpType || 'google'; 
+
+            let avatarHtml = '';
+            const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
+            if (pfpType === 'custom' && userData?.customPfp) {
+                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 20px;" alt="Profile">`;
+            } else if (pfpType === 'mibi' && userData?.mibiConfig) {
+                const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = userData.mibiConfig;
+                avatarHtml = `
+                    <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 20px;">
+                         <div class="absolute inset-0 w-full h-full" style="transform: translate(${offsetX || 0}%, ${offsetY || 0}%) rotate(${rotation || 0}deg) scale(${(size || 100) / 100}); transform-origin: center;">
+                             <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
+                             ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                             ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                             ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                         </div>
+                    </div>
+                `;
+            } else if (pfpType === 'letter') {
+                const bg = userData?.pfpLetterBg || DEFAULT_THEME['avatar-gradient'];
+                const textColor = getLetterAvatarTextColor(bg); 
+                const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
+                avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 20px;">${initial}</div>`;
+            } else {
+                const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
+                const googlePhoto = googleProvider ? googleProvider.photoURL : null;
+                const displayPhoto = googlePhoto || user.photoURL;
+                if (displayPhoto) {
+                    avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 20px;" alt="Profile">`;
+                } else {
+                    const bg = DEFAULT_THEME['avatar-gradient'];
+                    const textColor = getLetterAvatarTextColor(bg);
+                    const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
+                    avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 20px;">${initial}</div>`;
+                }
+            }
+
+            const followers = userData?.followerCount || 0;
+            const following = userData?.followingCount || 0;
+            const followersDisplay = followers > 999 ? (followers / 1000).toFixed(1) + 'k' : followers;
+            const followingDisplay = following > 999 ? (following / 1000).toFixed(1) + 'k' : following;
+            const isOnline = userData?.isOnline || false;
+            const currentActivity = userData?.currentActivity || null;
+
+            const userTagHtml = (userData?.userTag) 
+                ? `<div class="text-xs font-italic" style="color: ${userData.userTag.color}; font-style: italic; margin-top: 2px;">${userData.userTag.text}</div>`
+                : '';
+
+            const statusHtml = isOnline 
+                ? `<div class="flex items-center gap-1.5 mt-1 overflow-hidden">
+                     <span class="w-2 h-2 rounded-full bg-[var(--accent-color)] animate-pulse shadow-[0_0_8px_var(--accent-glow)] flex-shrink-0"></span>
+                     <span class="text-[10px] text-[var(--accent-color)] font-medium uppercase tracking-wider truncate">${currentActivity ? `On: ${currentActivity}` : 'Online'}</span>
+                   </div>`
+                : `<div class="flex items-center gap-1.5 mt-1 overflow-hidden">
+                     <span class="w-2 h-2 rounded-full bg-gray-600 flex-shrink-0"></span>
+                     <span class="text-[10px] text-gray-500 font-medium uppercase tracking-wider truncate">Offline</span>
+                   </div>`;
+
+            return `
+                <div id="profile-area-wrapper" class="relative flex-shrink-0 flex items-center">
+                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 14px; position: relative; background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));">
+                        <i class="fa-solid fa-address-card text-gray-300"></i>
+                        ${isOnline ? '<span class="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[var(--accent-color)] border-2 border-black rounded-full shadow-[0_0_5px_var(--accent-glow)]"></span>' : ''}
+                    </button>
+                    <div id="profile-menu-container" class="auth-menu-container closed">
+                        <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center gap-3 pb-2 cursor-pointer hover:bg-white/5 transition rounded-2xl p-1" onclick="window.location.href='/logged-in/@${username}'">
+                            <div class="w-10 h-10 flex-shrink-0 relative" id="auth-menu-avatar-container">
+                                ${avatarHtml}
+                            </div>
+                            <div class="min-w-0 flex-1 overflow-hidden">
+                                <div class="marquee-container" id="displayname-marquee">
+                                    <p class="text-sm auth-menu-displayname marquee-content">${displayName}</p>
+                                </div>
+                                <div class="marquee-container" id="username-marquee">
+                                    <p class="text-xs auth-menu-username-handle marquee-content">@${username}</p>
+                                </div>
+                                ${statusHtml}
+                                ${userTagHtml}
+                            </div>
+                        </div>
+                        <div class="profile-stat-container">
+                            <div class="profile-stat-item" onclick="window.location.href='/logged-in/@${username}/followers'">
+                                <span class="stat-count">${followersDisplay}</span>
+                                <span class="stat-label">Followers</span>
+                            </div>
+                            <div class="profile-stat-item" onclick="window.location.href='/logged-in/@${username}/following'">
+                                <span class="stat-count">${followingDisplay}</span>
+                                <span class="stat-label">Following</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         const getAuthControlsHtml = () => {
             const user = currentUser;
@@ -669,7 +772,9 @@ let db;
         const updateAuthControlsArea = () => {
             const authWrapper = document.getElementById('auth-controls-wrapper');
             if (!authWrapper) return;
-            authWrapper.innerHTML = getAuthControlsHtml();
+            const profileHtml = getProfileButtonHtml(currentUser, currentUserData);
+            const authHtml = getAuthControlsHtml();
+            authWrapper.innerHTML = `${profileHtml}${authHtml}`;
             setupPinEventListeners();
             setupAuthToggleListeners(currentUser); 
         }
@@ -724,12 +829,13 @@ let db;
             
             // Tabs Removed in Mini Navigation
 
+            const profileHtml = getProfileButtonHtml(user, userData);
             const authControlsHtml = getAuthControlsHtml();
 
             // Tabs container removed
 
             if (authControlsWrapper) {
-                authControlsWrapper.innerHTML = authControlsHtml;
+                authControlsWrapper.innerHTML = `${profileHtml}${authControlsHtml}`;
             }
             
             // Tab scroll logic removed
@@ -1293,12 +1399,12 @@ let db;
                 100% { opacity: 1; transform: translateY(0) scale(1); }
             }
             @keyframes menu-pop-out {
-                0% { opacity: 1; transform: translateY(0) scale(1); }
-                100% { opacity: 0; transform: translateY(-10px) scale(0.95); }
+                0% { opacity: 1; transform: translateY(0); }
+                100% { opacity: 0; transform: translateY(-10px); }
             }
 
-            .auth-menu-container.open { 
-                display: flex !important; 
+            .auth-menu-container.open {
+                display: flex !important;
                 animation: menu-pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             }
             .auth-menu-container.closing {
@@ -1306,8 +1412,7 @@ let db;
                 animation: menu-pop-out 0.3s ease-in forwards;
                 pointer-events: none;
             }
-            .auth-menu-container.closed { opacity: 0; pointer-events: none; transform: translateY(-10px) scale(0.95); display: none !important; }
-
+            .auth-menu-container.closed { opacity: 0; pointer-events: none; transform: translateY(-10px); display: none !important; }
             /* Show More Section - Updated to use Flex for spacing */
             .auth-menu-more-section { 
                 display: none; /* Hidden by default */
@@ -1422,40 +1527,32 @@ let db;
 
         allPages = pages;
 
-        const PINNED_PAGE_KEY = 'navbar_pinnedPage';
-        const PIN_BUTTON_HIDDEN_KEY = 'navbar_pinButtonHidden';
-        const PIN_HINT_SHOWN_KEY = 'navbar_pinHintShown';
-
         auth.onAuthStateChanged(async (user) => {
             let isPrivilegedUser = false;
             let userData = null;
+            currentUser = user;
+
             if (user) {
                 // Check if hardcoded privileged email
                 isPrivilegedUser = user.email === PRIVILEGED_EMAIL;
 
+                // Set up real-time listener for user data
+                db.collection('users').doc(user.uid).onSnapshot(async (doc) => {
+                    userData = doc.exists ? doc.data() : null;
+                    currentUserData = userData;
+                    renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
+                });
+
                 try {
-                    // Fetch user data and check admin status in parallel
-                    const userDocPromise = db.collection('users').doc(user.uid).get();
-                    const adminDocPromise = db.collection('admins').doc(user.uid).get();
-
-                    const [userDoc, adminDoc] = await Promise.all([userDocPromise, adminDocPromise]);
-                    
-                    userData = userDoc.exists ? userDoc.data() : null;
-
-                    // If not already privileged via email, check if they are in the admins collection
+                    const adminDoc = await db.collection('admins').doc(user.uid).get();
                     if (!isPrivilegedUser && adminDoc.exists) {
                         isPrivilegedUser = true;
                     }
-
                 } catch (error) {
-                    console.error("Error fetching user or admin data:", error);
+                    console.error("Error fetching admin data:", error);
                 }
             }
-            currentUser = user;
-            currentUserData = userData;
-
-
-
+            
             currentIsPrivileged = isPrivilegedUser;
             renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
 
