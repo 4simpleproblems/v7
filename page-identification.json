@@ -68,7 +68,7 @@
     "velium": {
         "name": "Velium",
         "icon": "fa-solid fa-music",
-        "url": "../logged-in/velium.html",
+        "url": "../VELIUM",
         "aliases": ["/logged-in/velium"]
     },
 
