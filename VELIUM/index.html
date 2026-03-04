@@ -12,6 +12,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- VERN_SYSTEM Proxy Scripts (Local) -->
+    <script src="/VELIUM/baremux/index.js"></script>
     <script src="/VELIUM/uv/uv.bundle.js"></script>
     <script>
         const basePath = "/VELIUM/uv/";
@@ -34,13 +35,49 @@
             stockSW: "/sw.js",
         };
     </script>
-    <script src="/VELIUM/baremux/index.js"></script>
-    <script>
-        // Immediate Initialization of VERN_SYSTEM Proxy
+    <script type="module">
+        import * as libcurl from "/VELIUM/libcurl/index.mjs";
+
+        window.checkBare = async (retries = 3) => {
+            if (window.__4sp_bare_mux_connecting) return;
+            window.__4sp_bare_mux_connecting = true;
+
+            const connection = new BareMux.BareMuxConnection("/VELIUM/baremux/worker.js");
+            const wispUrl = "wss://wisp.mercurywork.shop/";
+            const transportPath = "/VELIUM/libcurl/index.mjs";
+            
+            for (let i = 0; i < retries; i++) {
+                try {
+                    if (libcurl && libcurl.load_wasm) {
+                        await libcurl.load_wasm();
+                    }
+
+                    const transport = await connection.getTransport();
+                    if (!transport || transport.path !== transportPath) {
+                        await connection.setTransport(transportPath, [
+                            { websocket: wispUrl },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                        ]);
+                    }
+                    console.log("Velium: BareMux Initialized");
+                    window.__4sp_bare_mux_connecting = false;
+                    return;
+                } catch (e) {
+                    console.error(`BareMux/libcurl Setup Attempt ${i + 1} failed:`, e);
+                    if (i === retries - 1) {
+                        await connection.setTransport(transportPath, [
+                            { websocket: wispUrl }
+                        ]);
+                    }
+                    await new Promise(r => setTimeout(r, 500));
+                }
+            }
+            window.__4sp_bare_mux_connecting = false;
+        };
+
         (async () => {
             if ("serviceWorker" in navigator) {
                 try {
-                    // Register Root SW with broad scope
                     await navigator.serviceWorker.register("/sw.js", {
                         scope: "/"
                     });
@@ -49,26 +86,10 @@
                     console.error("SW Register Failed", e);
                 }
             }
-            
-            if (window.__4sp_bare_mux_connecting) return;
-            window.__4sp_bare_mux_connecting = true;
-
-            try {
-                // SharedWorker support check and initialization
-                const connection = new BareMux.BareMuxConnection("/VELIUM/baremux/worker.js");
-                const wispUrl = "wss://wisp.mercurywork.shop/";
-                await connection.setTransport("/VELIUM/libcurl/index.mjs", [
-                    { websocket: wispUrl },
-                    { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                ]);
-                console.log("Velium: BareMux Initialized");
-            } catch (e) {
-                // Silently handle init failures to prevent console spam
-            } finally {
-                window.__4sp_bare_mux_connecting = false;
-            }
+            await window.checkBare();
         })();
     </script>
+    <script src="/injector.js"></script>
 
     <script>
         tailwind.config = {
