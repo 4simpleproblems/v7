@@ -131,6 +131,8 @@
             font-weight: 300; 
             overflow: hidden;
             transition: background-color 0.3s ease, color 0.3s ease;
+            margin: 0;
+            padding: 0;
         }
 
         h1, h2, h3, h4, h5, h6 {
@@ -149,9 +151,10 @@
                 "playbar playbar";
             grid-template-columns: 280px 1fr;
             grid-template-rows: 1fr 90px;
-            height: 100vh;
+            height: calc(100vh - 64px);
             width: 100%;
             background: var(--bg-page);
+            box-sizing: border-box;
         }
 
         @media (max-width: 768px) {
@@ -161,6 +164,7 @@
                     "main"
                     "playbar";
                 grid-template-rows: 1fr 90px;
+                height: calc(100vh - 64px);
             }
 
             .sidebar {

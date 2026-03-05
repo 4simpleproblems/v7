@@ -9,6 +9,31 @@
     if (window.__4sp_injector_loaded) return;
     window.__4sp_injector_loaded = true;
 
+    // Immediate Loader for perceived speed
+    if (!document.getElementById('universal-loader')) {
+        const loaderDiv = document.createElement('div');
+        loaderDiv.id = 'universal-loader';
+        loaderDiv.className = 'fixed inset-0 bg-[#000000] z-[100000] flex flex-col items-center justify-center p-12 transition-all duration-500';
+        loaderDiv.style.visibility = 'visible';
+        loaderDiv.style.opacity = '1';
+        loaderDiv.innerHTML = `
+            <div class="flex flex-col items-center gap-8 scale-110">
+                <img src="/images/logo.png" class="h-20 w-auto animate-pulse" alt="Logo">
+                <div class="flex flex-col items-center gap-4">
+                    <h2 id="loader-title" class="text-white text-4xl font-light tracking-tighter uppercase font-[Geist] italic">Initializing</h2>
+                    <div class="w-64 h-1 bg-white/10 rounded-full overflow-hidden">
+                        <div id="loader-bar" class="h-full bg-white w-0 transition-all duration-700 ease-out shadow-[0_0_15px_#fff]"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.prepend(loaderDiv);
+        requestAnimationFrame(() => {
+            const bar = document.getElementById('loader-bar');
+            if (bar) bar.style.width = '30%';
+        });
+    }
+
     // 1. DEFINE YOUR SCRIPTS HERE
     // Update this array (and ONLY this array) to manage your application's scripts.
     const scriptsToLoad = [
