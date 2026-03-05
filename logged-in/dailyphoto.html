@@ -294,50 +294,50 @@
 
     <!-- Upload Modal -->
     <div id="upload-modal" class="modal-overlay">
-        <div class="modal-content max-w-md flex-col p-8 h-auto">
-            <h2 class="text-2xl font-bold mb-6">Share a Moment</h2>
-            <div id="upload-preview" class="aspect-square rounded-3xl bg-black border border-white/5 mb-6 overflow-hidden flex items-center justify-center cursor-pointer hover:border-indigo-500 transition-colors">
-                <i class="fas fa-cloud-upload-alt text-4xl text-gray-800"></i>
+        <div class="modal-content max-w-md flex-col p-8 h-auto" style="background: var(--bg-card); border-color: var(--border-main);">
+            <h2 class="text-2xl font-bold mb-6 text-[var(--text-main)]">Share a Moment</h2>
+            <div id="upload-preview" class="aspect-square rounded-3xl bg-black border border-[var(--border-faint)] mb-6 overflow-hidden flex items-center justify-center cursor-pointer hover:border-[var(--accent-color)] transition-colors">
+                <i class="fas fa-cloud-upload-alt text-4xl text-[var(--text-muted)] opacity-20"></i>
             </div>
             <input type="file" id="file-input" class="hidden" accept="image/*">
             
             <div class="space-y-4 mb-8">
                 <div>
-                    <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Caption</label>
-                    <input type="text" id="post-title" class="w-full bg-black border border-brand-border rounded-xl p-3 outline-none focus:border-indigo-500 text-white text-sm" placeholder="Give it a title...">
+                    <label class="text-[10px] font-bold text-[var(--text-muted)] opacity-60 uppercase tracking-widest mb-2 block">Caption</label>
+                    <input type="text" id="post-title" class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] text-sm" placeholder="Give it a title...">
                 </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-xs text-gray-500">Public Visibility</span>
-                    <input type="checkbox" id="post-public" class="w-5 h-5 accent-indigo-500">
+                    <span class="text-xs text-[var(--text-muted)]">Public Visibility</span>
+                    <input type="checkbox" id="post-public" class="w-5 h-5" style="accent-color: var(--accent-color);">
                 </div>
             </div>
 
             <div class="flex gap-3">
-                <button onclick="window.closeModal('upload-modal')" class="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:text-white transition-colors">Cancel</button>
-                <button id="confirm-upload-btn" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-900/20 hover:bg-indigo-700 transition-all">Post Moment</button>
+                <button onclick="window.closeModal('upload-modal')" class="flex-1 py-3 rounded-xl font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">Cancel</button>
+                <button id="confirm-upload-btn" class="flex-1 py-3 text-white rounded-xl font-bold shadow-lg transition-all" style="background: var(--accent-color); shadow: 0 10px 20px var(--accent-glow);">Post Moment</button>
             </div>
         </div>
     </div>
 
     <!-- View Modal -->
     <div id="view-modal" class="modal-overlay">
-        <div class="modal-content">
+        <div class="modal-content" style="background: var(--bg-card); border-color: var(--border-main);">
             <div class="flex-1 bg-black flex items-center justify-center relative overflow-hidden">
                 <img id="modal-img" class="w-full h-full object-contain">
                 <button onclick="window.closeModal('view-modal')" class="absolute top-6 left-6 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-colors">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="w-80 border-l border-white/5 flex flex-col p-8">
+            <div class="w-80 border-l border-[var(--border-main)] flex flex-col p-8">
                 <div class="flex items-center gap-4 mb-8">
-                    <div id="modal-author-avatar" class="w-12 h-12 rounded-2xl overflow-hidden bg-gray-900"></div>
+                    <div id="modal-author-avatar" class="w-12 h-12 rounded-2xl overflow-hidden bg-[var(--bg-page)]"></div>
                     <div class="min-w-0">
-                        <p id="modal-author-name" class="text-sm font-bold text-white truncate"></p>
-                        <p id="modal-post-date" class="text-[10px] text-gray-500 font-mono"></p>
+                        <p id="modal-author-name" class="text-sm font-bold text-[var(--text-main)] truncate"></p>
+                        <p id="modal-post-date" class="text-[10px] text-[var(--text-muted)] opacity-60 font-mono"></p>
                     </div>
                 </div>
                 
-                <h3 id="modal-post-title" class="text-lg font-medium text-white mb-6"></h3>
+                <h3 id="modal-post-title" class="text-lg font-medium text-[var(--text-main)] mb-6"></h3>
 
                 <div id="modal-comments" class="flex-1 overflow-y-auto custom-scroll space-y-4 mb-6">
                     <!-- Comments -->
@@ -345,8 +345,8 @@
 
                 <div class="mt-auto">
                     <div class="flex gap-2">
-                        <input type="text" id="comment-input" placeholder="Add a comment..." class="flex-1 bg-black border border-white/5 rounded-xl p-3 text-xs outline-none focus:border-indigo-500 text-white">
-                        <button id="send-comment-btn" class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-700 transition-colors">
+                        <input type="text" id="comment-input" placeholder="Add a comment..." class="flex-1 bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)] text-[var(--text-main)]">
+                        <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center text-white hover:opacity-90 transition-colors" style="background: var(--accent-color);">
                             <i class="fas fa-paper-plane text-xs"></i>
                         </button>
                     </div>

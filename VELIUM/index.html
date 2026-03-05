@@ -148,7 +148,7 @@
                 "sidebar main"
                 "playbar playbar";
             grid-template-columns: 280px 1fr;
-            grid-template-rows: 1fr 100px;
+            grid-template-rows: 1fr 90px;
             height: 100vh;
             width: 100%;
             background: var(--bg-page);
@@ -160,6 +160,7 @@
                 grid-template-areas: 
                     "main"
                     "playbar";
+                grid-template-rows: 1fr 90px;
             }
 
             .sidebar {
@@ -204,6 +205,8 @@
             padding: 0 32px;
             align-items: center;
             z-index: 100;
+            height: 90px;
+            box-sizing: border-box;
         }
 
         .nav-item {
@@ -478,10 +481,6 @@
                 <div class="nav-item" data-view="library">
                     <i class="fas fa-layer-group"></i>
                     <span>Library</span>
-                </div>
-                <div class="nav-item hidden" id="admin-test-tab" onclick="window.location.href='/testVELIUM/index.html'">
-                    <i class="fas fa-vial text-amber-500"></i>
-                    <span class="text-amber-500">Test Env</span>
                 </div>
 
                 <div class="h-px bg-brand-border my-6 mx-8"></div>

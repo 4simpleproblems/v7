@@ -181,11 +181,11 @@
             z-index: 20; 
         }
         .other-zone-item .image-overlay {
-            background: linear-gradient(90deg, rgba(7,7,7,0.85) 0%, rgba(7,7,7,0) 40%, rgba(7,7,7,0) 60%, rgba(7,7,7,0.85) 100%);
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0) 100%);
             border-radius: 1.25rem; 
         }
         .other-zone-item:hover .image-overlay {
-            background: linear-gradient(90deg, rgba(7,7,7,0.7) 0%, rgba(7,7,7,0) 50%, rgba(7,7,7,0) 50%, rgba(7,7,7,0.7) 100%);
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%);
         }
 
         /* --- Animations --- */
@@ -1043,7 +1043,7 @@
                     <div class="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between rounded-2xl">
                         <div class="flex items-start justify-between w-full">
                             <h3 class="text-4xl font-bold text-[var(--text-main)] truncate drop-shadow-lg" style="max-width: 80%;" title="${game.name}">${game.name}</h3>
-                            <div class="flex items-center gap-1.5 bg-[var(--card-blur-bg)] backdrop-blur-md rounded-2xl p-1.5 border border-[var(--accent-glow)]">
+                            <div class="flex items-center gap-1.5 bg-[var(--bg-card)]/40 backdrop-blur-xl rounded-2xl p-1.5 border border-[var(--border-main)]">
                                 ${gameButtonsHtml}
                                 ${favoriteButtonHtml}
                             </div>
@@ -1097,8 +1097,8 @@
             card.innerHTML = `
                 <div class="relative w-full cursor-pointer group">
                     <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover"></div>
-                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--card-blur-bg)] backdrop-blur-md rounded-xl px-3 py-1.5 text-[var(--text-main)] truncate text-sm font-semibold shadow-lg border border-[var(--accent-glow)]" title="${game.name}">${game.name}</h3>
-                    <div class="absolute bottom-2 right-2 bg-[var(--card-blur-bg)] backdrop-blur-md rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg border border-[var(--accent-glow)]">
+                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--bg-card)]/40 backdrop-blur-xl rounded-xl px-3 py-1.5 text-[var(--text-main)] truncate text-sm font-semibold shadow-lg border border-[var(--border-main)]" title="${game.name}">${game.name}</h3>
+                    <div class="absolute bottom-2 right-2 bg-[var(--bg-card)]/40 backdrop-blur-xl rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg border border-[var(--border-main)]">
                         <button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>
                         <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>
                     </div>
@@ -1462,7 +1462,7 @@
                         </div>
                     </div>
                     <div class="flex items-center flex-shrink-0">
-                        <div class="bg-black/50 backdrop-blur-sm rounded-2xl p-1.5 flex items-center gap-1.5">
+                        <div class="bg-[var(--bg-card)]/40 backdrop-blur-xl rounded-2xl p-1.5 flex items-center gap-1.5 border border-[var(--border-main)]">
                             <button class="btn-card-action play-action" title="Play Game">
                                 <i class="fa-solid fa-play transition-colors"></i>
                             </button>

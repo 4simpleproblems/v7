@@ -109,11 +109,11 @@
         }
 
         /* --- COMPONENTS --- */
-        .time-display { font-size: 5.5rem; font-weight: 200; line-height: 1; letter-spacing: -0.04em; color: var(--text-main); }
+        .time-display { font-size: 4.5rem; font-weight: 200; line-height: 1; letter-spacing: -0.04em; color: var(--text-main); }
         
         /* Scalable clock for large screens */
         @media (min-width: 1600px) {
-            .time-display { font-size: 7vw; }
+            .time-display { font-size: 6vw; }
         }
 
         .date-display { font-size: 1.2rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 0.5rem; opacity: 0.6; }
@@ -559,7 +559,9 @@
         function startClock() {
             const update = () => {
                 const now = new Date();
-                document.getElementById('clock-time').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                const [time, ampm] = timeStr.split(' ');
+                document.getElementById('clock-time').innerHTML = `${time}<span class="text-3xl ml-2 opacity-60 uppercase font-light">${ampm}</span>`;
                 document.getElementById('clock-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
             };
             update();
@@ -845,7 +847,9 @@
         function startClock() {
             const update = () => {
                 const now = new Date();
-                document.getElementById('clock-time').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                const [time, ampm] = timeStr.split(' ');
+                document.getElementById('clock-time').innerHTML = `${time}<span class="text-3xl ml-2 opacity-60 uppercase font-light">${ampm}</span>`;
                 document.getElementById('clock-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
             };
             update();
