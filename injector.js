@@ -10,7 +10,8 @@
     window.__4sp_injector_loaded = true;
 
     // Immediate Loader for perceived speed
-    if (!document.getElementById('universal-loader')) {
+    const injectLoader = () => {
+        if (document.getElementById('universal-loader')) return;
         const loaderDiv = document.createElement('div');
         loaderDiv.id = 'universal-loader';
         loaderDiv.className = 'fixed inset-0 bg-[#000000] z-[100000] flex flex-col items-center justify-center p-12 transition-all duration-500';
@@ -27,11 +28,25 @@
                 </div>
             </div>
         `;
-        document.body.prepend(loaderDiv);
+        
+        if (document.body) {
+            document.body.prepend(loaderDiv);
+        } else {
+            document.documentElement.prepend(loaderDiv);
+        }
+
         requestAnimationFrame(() => {
             const bar = document.getElementById('loader-bar');
             if (bar) bar.style.width = '30%';
         });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', injectLoader);
+        // Also try immediately in case we are in the head but body exists (rare but possible with some parsers)
+        injectLoader();
+    } else {
+        injectLoader();
     }
 
     // 1. DEFINE YOUR SCRIPTS HERE

@@ -1,10 +1,25 @@
 /**
- * navigation.js
- * * This is a fully self-contained script to create a dynamic, authentication-aware
- * navigation bar for your website. It handles everything from Firebase initialization
- * to rendering user-specific information. It now includes a horizontally scrollable
- * tab menu loaded from page-identification.json.
+ * navigation-mini.js
  */
+
+// BareMux MessagePort fix - MUST RUN IMMEDIATELY
+if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'getPort' && event.data.port) {
+            try {
+                const path = window.location.pathname.toLowerCase();
+                let workerPath = "/VELIUM/baremux/worker.js";
+                if (path.includes('vora') || path.includes('/vora/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+                else if (path.includes('/vern/')) workerPath = "/VERN/baremux/worker.js";
+                else if (path.includes('/games/')) workerPath = "/GAMES/baremux/worker.js";
+                else if (path.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
+
+                const worker = new SharedWorker(workerPath, "bare-mux-worker");
+                event.data.port.postMessage(worker.port, [worker.port]);
+            } catch (e) {}
+        }
+    });
+}
 
 // =========================================================================
 // >> ACTION REQUIRED: PASTE YOUR FIREBASE CONFIGURATION OBJECT HERE <<
@@ -208,30 +223,6 @@ let auth;
 let db;
 
 (function() {
-    // BareMux MessagePort fix for service worker communication
-    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
-        navigator.serviceWorker.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'getPort' && event.data.port) {
-                try {
-                    let workerPath = "/VELIUM/baremux/worker.js";
-                    // Prioritize Vora specific worker if on Vora page
-                    if (window.location.pathname.toLowerCase().includes('vora')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
-                    else if (window.location.pathname.includes('/VORA/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
-                    else if (window.location.pathname.includes('/VERN/')) workerPath = "/VERN/baremux/worker.js";
-                    else if (window.location.pathname.includes('/GAMES/')) workerPath = "/GAMES/baremux/worker.js";
-                    else if (window.location.pathname.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
-
-                    // Create a NEW worker instance/port for EVERY request
-                    // because ports can only be transferred once!
-                    const worker = new SharedWorker(workerPath, "bare-mux-worker");
-                    event.data.port.postMessage(worker.port, [worker.port]);
-                } catch (e) {
-                    // console.error("BareMux Port Error:", e);
-                }
-            }
-        });
-    }
-
     let allPages = {};
     let currentUser = null;
     let currentUserData = null;
