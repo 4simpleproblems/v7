@@ -2,6 +2,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const axios = require("axios");
+const cors = require("cors")({ origin: true });
 
 admin.initializeApp();
 
@@ -23,9 +24,6 @@ exports.getWordData = onRequest({ cors: true }, async (req, res) => {
             return;
         }
 
-        // logger.info(`Fetching data for word: ${word}`);
-
-        // Execute both API calls in parallel
         const [dictResponse, thesResponse] = await Promise.all([
             axios.get(`https://www.dictionaryapi.com/api/v3/references/collegiate/json/${encodeURIComponent(word)}?key=${MW_DICT_KEY}`),
             axios.get(`https://www.dictionaryapi.com/api/v3/references/thesaurus/json/${encodeURIComponent(word)}?key=${MW_THES_KEY}`)
@@ -38,27 +36,17 @@ exports.getWordData = onRequest({ cors: true }, async (req, res) => {
 
     } catch (error) {
         logger.error("Error in getWordData:", error);
-        
         const status = error.response ? error.response.status : 500;
         const message = error.message || "Internal Server Error";
-        
-        res.status(status).json({ 
-            error: message,
-            details: "Check Cloud Function logs for more info." 
-        });
+        res.status(status).json({ error: message });
     }
 });
 
 exports.leviumProxy = onRequest({ cors: true }, async (req, res) => {
     const TARGET_ORIGIN = "https://levium-student-management.global.ssl.fastly.net";
-    const PROXY_BASE_PATH = "/leviumProxy/"; // Define proxy base path here
-    
-    // Default to levium.html if root is requested
+    const PROXY_BASE_PATH = "/leviumProxy/";
     let path = req.path;
-    if (!path || path === "/") {
-        path = "/levium.html";
-    }
-
+    if (!path || path === "/") path = "/levium.html";
     const url = TARGET_ORIGIN + path;
 
     try {
@@ -66,64 +54,42 @@ exports.leviumProxy = onRequest({ cors: true }, async (req, res) => {
             method: req.method,
             url: url,
             params: req.query,
-            responseType: 'arraybuffer', // vital for binary files and manual string decoding
-            validateStatus: () => true, // capture all statuses
+            responseType: 'arraybuffer',
+            validateStatus: () => true,
             headers: {
                 ...req.headers,
-                // Spoof headers to make the target think it's a direct request
                 host: new URL(TARGET_ORIGIN).host,
                 origin: TARGET_ORIGIN,
                 referer: TARGET_ORIGIN + '/'
             }
         });
 
-        // Forward headers from the target response to the client
         for (const [key, value] of Object.entries(response.headers)) {
             const lowerKey = key.toLowerCase();
-            // content-length: we might modify the body, so let the framework set it
-            // content-encoding: axios decodes it, so we don't want to say it's gzip if we send plain text
-            // host: never forward host
             if (!['host', 'content-length', 'content-encoding'].includes(lowerKey)) {
                 res.setHeader(key, value);
             }
         }
 
         const contentType = response.headers['content-type'] || '';
-
-        // If it's HTML, we need to rewrite paths so the browser keeps using the proxy
         if (contentType.includes('text/html')) {
             let html = response.data.toString('utf8');
-
-            // 1. Rewrite HTML attributes that start with '/' (absolute paths)
-            // src="/foo.js" -> src="/leviumProxy/foo.js"
-            // Negative lookahead (?!\/) ensures we don't match protocol relative URLs (//example.com)
             html = html.replace(/(src|href|action|data-url)=["']\/(?!\/)(.*?)["']/g, (match, attr, path) => {
                 const quote = match.includes("'") ? "'" : '"';
                 return `${attr}=${quote}${PROXY_BASE_PATH}${path}${quote}`;
             });
-            
-            // 2. Rewrite specific UV/Bare patterns often found in JS strings
-            // Catch "/uv/" literal strings in JS
             html = html.replace(/"\/uv\//g, `"${PROXY_BASE_PATH}uv/`);
             html = html.replace(/'\/uv\//g, `'${PROXY_BASE_PATH}uv/`);
-            
-            // 3. Rewrite usage of /bare/ if it exists
             html = html.replace(/"\/bare\//g, `"${PROXY_BASE_PATH}bare/`);
             html = html.replace(/'\/bare\//g, `'${PROXY_BASE_PATH}bare/`);
-
-            // 4. Rewrite <base href="/..."> tags to point to the proxy base path
-            // This is crucial if the original page sets a different base for relative URLs
             html = html.replace(/<base\s+href=["']\/(?!\/)(.*?)["']\s*\/?>/i, `<base href="${PROXY_BASE_PATH}$1">`);
-
-
-            res.status(response.status).send(html); // Ensure status is forwarded
+            res.status(response.status).send(html);
         } else {
-            // For non-HTML (JS, CSS, Images, etc.), just send the buffer
             res.status(response.status).send(response.data);
         }
     } catch (error) {
         logger.error("Proxy Error", error);
-        res.status(500).send("Proxy Error: " + error.message); // More descriptive error
+        res.status(500).send("Proxy Error: " + error.message);
     }
 });
 
@@ -135,13 +101,11 @@ exports.reportContent = onRequest({ cors: true }, async (req, res) => {
         }
 
         const { collectionName, docId, reason, reportedBy } = req.body;
-
         if (!collectionName || !docId) {
-            res.status(400).json({ error: "Missing required parameters: collectionName, docId" });
+            res.status(400).json({ error: "Missing required parameters" });
             return;
         }
 
-        // 1. Log the report in a separate collection for admin review
         await admin.firestore().collection('reports').add({
             targetCollection: collectionName,
             targetDocId: docId,
@@ -150,114 +114,101 @@ exports.reportContent = onRequest({ cors: true }, async (req, res) => {
             timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        // 2. Mark the content as reported in its original document
-        //    This allows for client-side filtering (e.g., hiding it from the reporter)
-        //    and potential global hiding if a threshold is reached.
         await admin.firestore().collection(collectionName).doc(docId).update({
-             reported: true, // Simple flag
-             reportedBy: admin.firestore.FieldValue.arrayUnion(reportedBy) // Track who reported it
+             reported: true,
+             reportedBy: admin.firestore.FieldValue.arrayUnion(reportedBy)
         });
 
         res.status(200).json({ success: true, message: "Report submitted successfully." });
-
-        } catch (error) {
+    } catch (error) {
         logger.error("Report Function Error", error);
-        res.status(500).json({ error: "Internal Server Error", details: error.message });
-        }
-        });
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
 
-        exports.deleteUser = onRequest({ cors: true }, async (req, res) => {
+exports.deleteUser = onRequest(async (req, res) => {
+    return cors(req, res, async () => {
         try {
-        if (req.method !== 'POST') {
-            res.status(405).send('Method Not Allowed');
-            return;
-        }
-
-        const { uid, adminUid } = req.body;
-
-        if (!uid || !adminUid) {
-            res.status(400).json({ error: "Missing required parameters: uid, adminUid" });
-            return;
-        }
-
-        // Verify requester is an admin
-        const adminDoc = await admin.firestore().collection('admins').doc(adminUid).get();
-        if (!adminDoc.exists) {
-            res.status(403).json({ error: "Unauthorized: Requester is not an admin." });
-            return;
-        }
-
-        // 1. Delete from Firebase Auth
-        try {
-            await admin.auth().deleteUser(uid);
-        } catch (authError) {
-            // If user doesn't exist in Auth, we still want to try deleting from Firestore
-            if (authError.code !== 'auth/user-not-found') {
-                throw authError;
+            if (req.method !== 'POST') {
+                res.status(405).send('Method Not Allowed');
+                return;
             }
-        }
 
-        // 2. Delete Firestore documents
-        const collections = ['users', 'admins', 'bans'];
-        const deletePromises = collections.map(col => 
-            admin.firestore().collection(col).doc(uid).delete()
-        );
-        await Promise.all(deletePromises);
+            const { uid, adminUid } = req.body;
+            if (!uid || !adminUid) {
+                res.status(400).json({ error: "Missing required parameters" });
+                return;
+            }
 
-        // 3. Optional: Delete associated data (e.g., reports, dailyphotos, etc.)
-        // This can be expanded based on project needs.
+            const adminDoc = await admin.firestore().collection('admins').doc(adminUid).get();
+            const isOwner = adminUid === 'TscUv6Y3hWNAw87Y2X694z0k1I3';
+            
+            if (!adminDoc.exists && !isOwner) {
+                res.status(403).json({ error: "Unauthorized" });
+                return;
+            }
 
-        res.status(200).json({ success: true, message: `User ${uid} deleted successfully.` });
+            try {
+                await admin.auth().deleteUser(uid);
+            } catch (authError) {
+                if (authError.code !== 'auth/user-not-found') throw authError;
+            }
 
+            const collections = ['users', 'admins', 'bans'];
+            await Promise.all(collections.map(col => 
+                admin.firestore().collection(col).doc(uid).delete()
+            ));
+
+            res.status(200).json({ success: true, message: `User ${uid} deleted successfully.` });
         } catch (error) {
-        logger.error("Delete User Error", error);
-        res.status(500).json({ error: "Internal Server Error", details: error.message });
+            logger.error("Delete User Error", error);
+            res.status(500).json({ error: error.message });
         }
-        });
+    });
+});
 
-        exports.listAuthUsers = onRequest({ cors: true }, async (req, res) => {
+exports.listAuthUsers = onRequest(async (req, res) => {
+    return cors(req, res, async () => {
         try {
-        if (req.method !== 'POST') {
-            res.status(405).send('Method Not Allowed');
-            return;
-        }
+            if (req.method !== 'POST') {
+                res.status(405).send('Method Not Allowed');
+                return;
+            }
 
-        const { adminUid } = req.body;
+            const { adminUid } = req.body;
+            if (!adminUid) {
+                res.status(400).json({ error: "Missing adminUid" });
+                return;
+            }
 
-        if (!adminUid) {
-            res.status(400).json({ error: "Missing required parameter: adminUid" });
-            return;
-        }
+            const adminDoc = await admin.firestore().collection('admins').doc(adminUid).get();
+            const isOwner = adminUid === 'TscUv6Y3hWNAw87Y2X694z0k1I3';
 
-        // Verify requester is an admin
-        const adminDoc = await admin.firestore().collection('admins').doc(adminUid).get();
-        if (!adminDoc.exists) {
-            res.status(403).json({ error: "Unauthorized: Requester is not an admin." });
-            return;
-        }
+            if (!adminDoc.exists && !isOwner) {
+                res.status(403).json({ error: "Unauthorized" });
+                return;
+            }
 
-        const users = [];
-        let nextPageToken;
-
-        // List all users in batches
-        do {
-            const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
-            listUsersResult.users.forEach((userRecord) => {
-                users.push({
-                    uid: userRecord.uid,
-                    email: userRecord.email,
-                    displayName: userRecord.displayName,
-                    providerId: userRecord.providerData[0]?.providerId || 'unknown',
-                    createdAt: userRecord.metadata.creationTime
+            const users = [];
+            let nextPageToken;
+            do {
+                const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
+                listUsersResult.users.forEach((u) => {
+                    users.push({
+                        uid: u.uid,
+                        email: u.email,
+                        displayName: u.displayName,
+                        providerId: u.providerData[0]?.providerId || 'unknown',
+                        createdAt: u.metadata.creationTime
+                    });
                 });
-            });
-            nextPageToken = listUsersResult.pageToken;
-        } while (nextPageToken);
+                nextPageToken = listUsersResult.pageToken;
+            } while (nextPageToken);
 
-        res.status(200).json({ success: true, users });
-
+            res.status(200).json({ success: true, users });
         } catch (error) {
-        logger.error("List Auth Users Error", error);
-        res.status(500).json({ error: "Internal Server Error", details: error.message });
+            logger.error("List Auth Users Error", error);
+            res.status(500).json({ error: error.message });
         }
-        });
+    });
+});

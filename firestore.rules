@@ -157,7 +157,7 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------------------
-    // IX. Analytics Collection (`analytics`)
+    // IX. Analytics Collection (`analytics` and `analytics_sessions`)
     // ----------------------------------------------------------------------------------
     match /analytics/{sessionId} {
       allow read: if isAdminOrSuperAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
@@ -167,6 +167,12 @@ service cloud.firestore {
                                (isAuthenticated() && request.resource.data.userId == request.auth.uid);
 
       allow delete: if false;
+    }
+
+    match /analytics_sessions/{sessionId} {
+      allow read, list: if isAdminOrSuperAdmin();
+      allow create, update: if true; // Allow anyone to track sessions
+      allow delete: if isAdminOrSuperAdmin();
     }
 
     // ----------------------------------------------------------------------------------
