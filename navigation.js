@@ -233,7 +233,7 @@ window.applyTheme = (theme) => {
                 }
             }
         } else if (themeToApply.name === 'Birthday') {
-            fwContainer.style.opacity = '0';
+            fwContainer.style.opacity = '1';
             if (fireworksInstance) {
                 fireworksInstance.stop();
             }
@@ -247,11 +247,10 @@ window.applyTheme = (theme) => {
             // Trigger initial party popper effect
             const triggerConfetti = () => {
                 if (typeof party !== 'undefined') {
-                    const nav = document.getElementById('navbar-container') || document.body;
-                    
-                    party.confetti(nav, {
-                        count: party.variation.range(20, 40),
-                        size: party.variation.range(0.6, 1.0),
+                    party.confetti(fwContainer, {
+                        container: fwContainer,
+                        count: party.variation.range(15, 30),
+                        size: party.variation.range(0.3, 0.5),
                         spread: party.variation.range(40, 60),
                     });
                 }
@@ -1029,13 +1028,21 @@ let db;
             if (!container) return; 
 
             // --- Updated Selectors to Match new structure ---
-            const tabContainer = document.getElementById('tabs-container'); 
+            const tabContainer = document.getElementById('tabs-container');
             const authControlsWrapper = document.getElementById('auth-controls-wrapper');
             const navLeftControls = document.getElementById('nav-left-controls');
             const logos = document.querySelectorAll('.navbar-logo, #navbar-logo');
 
-            let currentTheme;
-            try {
+            // Preserve menu states
+            const menuStates = {
+                auth: document.getElementById('auth-menu-container')?.classList.contains('open'),
+                profile: document.getElementById('profile-menu-container')?.classList.contains('open'),
+                pin: document.getElementById('pin-context-menu')?.classList.contains('open'),
+                notif: document.getElementById('notification-menu-container')?.classList.contains('open'),
+                more: document.getElementById('more-section')?.classList.contains('expanded')
+            };
+
+            let currentTheme;            try {
                 currentTheme = JSON.parse(localStorage.getItem(THEME_STORAGE_KEY)) || DEFAULT_THEME;
             } catch (e) { currentTheme = DEFAULT_THEME; }
 
@@ -1075,9 +1082,34 @@ let db;
                 const authHtml = getAuthControlsHtml();
                 authControlsWrapper.innerHTML = `${profileHtml}${authHtml}`;
             }
-            
-            const tabCount = tabContainer ? tabContainer.querySelectorAll('.nav-tab').length : 0;
 
+            // Restore menu states
+            if (menuStates.auth) {
+                const m = document.getElementById('auth-menu-container');
+                if (m) { m.classList.remove('closed'); m.classList.add('open'); }
+            }
+            if (menuStates.profile) {
+                const m = document.getElementById('profile-menu-container');
+                if (m) { m.classList.remove('closed'); m.classList.add('open'); }
+            }
+            if (menuStates.pin) {
+                const m = document.getElementById('pin-context-menu');
+                if (m) { m.classList.remove('closed'); m.classList.add('open'); }
+            }
+            if (menuStates.notif) {
+                const m = document.getElementById('notification-menu-container');
+                if (m) { m.classList.remove('closed'); m.classList.add('open'); }
+            }
+            if (menuStates.more) {
+                const s = document.getElementById('more-section');
+                const t = document.getElementById('more-button-text');
+                const i = document.getElementById('more-button-icon');
+                if (s) s.classList.add('expanded');
+                if (t) t.textContent = 'Show Less';
+                if (i) { i.classList.remove('fa-chevron-down'); i.classList.add('fa-chevron-up'); }
+            }
+
+            const tabCount = tabContainer ? tabContainer.querySelectorAll('.nav-tab').length : 0;
             if (tabCount <= 9) {
                 if(tabContainer) {
                     tabContainer.style.justifyContent = 'center';
@@ -1551,25 +1583,25 @@ let db;
 
             /* Fireworks Container Style */
             #fireworks-container {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                pointer-events: none;
-                z-index: 1; 
-                opacity: 0;
-                transition: opacity 0.5s ease;
-                overflow: hidden;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                pointer-events: none !important;
+                z-index: 1 !important; 
+                opacity: 0 !important;
+                transition: opacity 0.5s ease !important;
+                overflow: hidden !important;
             }
             
             /* Ensure navbar content sits ABOVE the fireworks */
             #navbar-container > *:not(#fireworks-container) {
-                position: relative;
-                z-index: 10;
+                position: relative !important;
+                z-index: 10 !important;
             }
 
-            .navbar-logo { height: 40px; width: auto; transition: filter 0.3s ease; }
+            .navbar-logo { height: 40px !important; width: auto !important; transition: filter 0.3s ease !important; }
 
             /* --- GLIDE / SCROLL STYLES --- */
             .tab-wrapper { 

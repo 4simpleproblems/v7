@@ -111,7 +111,7 @@ window.applyTheme = (theme) => {
                 }
             }
         } else if (themeToApply.name === 'Birthday') {
-            fwContainer.style.opacity = '0';
+            fwContainer.style.opacity = '1';
             if (fireworksInstance) {
                 fireworksInstance.stop();
             }
@@ -125,11 +125,10 @@ window.applyTheme = (theme) => {
             // Trigger initial party popper effect
             const triggerConfetti = () => {
                 if (typeof party !== 'undefined') {
-                    const nav = document.getElementById('navbar-container') || document.body;
-
-                    party.confetti(nav, {
-                        count: party.variation.range(20, 40),
-                        size: party.variation.range(0.6, 1.0),
+                    party.confetti(fwContainer, {
+                        container: fwContainer,
+                        count: party.variation.range(15, 30),
+                        size: party.variation.range(0.3, 0.5),
                         spread: party.variation.range(40, 60),
                     });
                 }
@@ -423,6 +422,12 @@ let db;
                 padding: 0.75rem 1rem !important; border-radius: 16px !important; background: var(--tab-hover-bg) !important;
                 color: var(--menu-text) !important; border: 1px solid transparent !important; transition: all 0.2s !important;
             }
+            #fireworks-container {
+                position: absolute !important; top: 0 !important; left: 0 !important;
+                width: 100% !important; height: 100% !important; pointer-events: none !important;
+                z-index: 1 !important; opacity: 0 !important; transition: opacity 0.5s ease !important;
+                overflow: hidden !important;
+            }
         `;
         document.head.appendChild(style);
     };
@@ -437,6 +442,7 @@ let db;
         injectStyles();
         const container = document.getElementById('navbar-container');
         container.innerHTML = `
+            <div id="fireworks-container"></div>
             <a href="/" class="flex items-center space-x-2 flex-shrink-0" style="z-index: 20;">
                 <img src="/images/logo.png" alt="4SP Logo" class="navbar-logo" id="navbar-logo">
             </a>
@@ -474,8 +480,32 @@ let db;
     const renderNavbar = (user, userData) => {
         const left = document.getElementById('nav-left-controls');
         const right = document.getElementById('auth-controls-wrapper');
+
+        // Preserve menu states
+        const menuStates = {
+            auth: document.getElementById('auth-menu-container')?.classList.contains('open') || !document.getElementById('auth-menu-container')?.classList.contains('closed'),
+            profile: document.getElementById('profile-menu-container')?.classList.contains('open') || !document.getElementById('profile-menu-container')?.classList.contains('closed'),
+            pin: document.getElementById('pin-context-menu')?.classList.contains('open') || !document.getElementById('pin-context-menu')?.classList.contains('closed')
+        };
+        // Note: navigation-mini uses 'closed' class instead of just absence of 'open' in some cases
+
         if (left) left.innerHTML = getPinButtonHtml();
         if (right) right.innerHTML = getProfileButtonHtml(user, userData) + getAuthControlsHtml();
+
+        // Restore menu states
+        if (menuStates.auth) {
+            const m = document.getElementById('auth-menu-container');
+            if (m) m.classList.remove('closed');
+        }
+        if (menuStates.profile) {
+            const m = document.getElementById('profile-menu-container');
+            if (m) m.classList.remove('closed');
+        }
+        if (menuStates.pin) {
+            const m = document.getElementById('pin-context-menu');
+            if (m) m.classList.remove('closed');
+        }
+
         setupToggleListeners();
     };
 
