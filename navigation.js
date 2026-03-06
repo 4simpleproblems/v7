@@ -1479,54 +1479,6 @@ let db;
             document.body.appendChild(notifDiv);
         }
 
-        if (!document.getElementById('universal-loader')) {
-            const loaderDiv = document.createElement('div');
-            loaderDiv.id = 'universal-loader';
-            loaderDiv.className = 'fixed inset-0 bg-[#000000] z-[9999] opacity-0 flex flex-col items-end justify-end p-12 transition-opacity duration-200 hidden';
-            loaderDiv.innerHTML = `
-                <img src="https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png" class="absolute top-6 right-6 h-12 w-auto opacity-50" alt="Logo">
-                <div class="flex flex-col items-end gap-2">
-                    <h2 id="loader-title" class="text-white text-3xl font-light italic font-[Geist]">Loading...</h2>
-                    <div class="w-64 h-1 bg-[#333] rounded-full overflow-hidden">
-                        <div id="loader-bar" class="h-full bg-white w-0"></div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(loaderDiv);
-        }
-
-        window.showLoader = (title = "Loading...") => {
-            const loader = document.getElementById('universal-loader');
-            const loaderTitle = document.getElementById('loader-title');
-            const loaderBar = document.getElementById('loader-bar');
-            if (loader && loaderTitle && loaderBar) {
-                loaderTitle.textContent = title;
-                loaderBar.style.width = '0%';
-                loader.classList.remove('hidden');
-                requestAnimationFrame(() => {
-                    loader.classList.add('active');
-                    loader.classList.remove('opacity-0');
-                    setTimeout(() => { loaderBar.style.width = '70%'; }, 10);
-                });
-            }
-        };
-
-        window.hideLoader = () => {
-            const loader = document.getElementById('universal-loader');
-            const loaderBar = document.getElementById('loader-bar');
-            if (loader && loaderBar) {
-                loaderBar.style.width = '100%';
-                setTimeout(() => {
-                    loader.classList.add('opacity-0');
-                    loader.classList.remove('active');
-                    setTimeout(() => {
-                        loader.classList.add('hidden');
-                        loaderBar.style.width = '0%';
-                    }, 200);
-                }, 200);
-            }
-        };
-        
         injectStyles();
         const container = document.getElementById('navbar-container');
         const logoPath = '/images/logo.png'; 
@@ -2141,15 +2093,11 @@ let db;
             currentUser = user;
 
             if (user) {
-                // Hide loader after a reasonable time even if Firestore is slow
-                const authTimeout = setTimeout(() => window.hideLoader(), 2500);
-
                 // Check if hardcoded privileged email
                 isPrivilegedUser = user.email === PRIVILEGED_EMAIL;
 
                 // Set up real-time listener for user data
                 db.collection('users').doc(user.uid).onSnapshot(async (doc) => {
-                    clearTimeout(authTimeout);
                     userData = doc.exists ? doc.data() : null;
                     currentUserData = userData;
 
@@ -2186,10 +2134,7 @@ let db;
                     }
 
                     renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
-                    window.hideLoader();
-                }, (err) => {
-                    clearTimeout(authTimeout);
-                    window.hideLoader();
+                    
                 });
 
                 try {
@@ -2202,7 +2147,7 @@ let db;
                 }
             } else {
                 renderNavbar(null, null, allPages, false);
-                window.hideLoader();
+                
             }
 
             currentIsPrivileged = isPrivilegedUser;

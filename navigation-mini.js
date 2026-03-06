@@ -85,7 +85,7 @@ let fireworksInstance = null; // Store fireworks instance globally
 window.applyTheme = (theme) => {
     const root = document.documentElement;
     if (!root) return;
-    const themeToApply = DEFAULT_THEME; // Force Default (Dark) Theme
+    const themeToApply = theme && typeof theme === 'object' ? theme : DEFAULT_THEME;
     
     // Determine if it's a light theme
     const isLightTheme = lightThemeNames.includes(themeToApply.name);
@@ -348,6 +348,81 @@ let db;
         `;
     };
 
+    const PINNED_PAGE_KEY = 'navbar_pinnedPage';
+    const PIN_BUTTON_HIDDEN_KEY = 'navbar_pinButtonHidden';
+    const PIN_HINT_SHOWN_KEY = 'navbar_pinHintShown';
+
+    const getCurrentPageKey = () => {
+        const currentPathname = window.location.pathname.toLowerCase();
+        const cleanPath = (path) => {
+            try {
+                let resolved = new URL(path, window.location.origin).pathname.toLowerCase();
+                if (resolved.endsWith('/index.html')) resolved = resolved.substring(0, resolved.lastIndexOf('/')) + '/';
+                if (resolved.endsWith('.html')) resolved = resolved.slice(0, -5);
+                if (resolved.length > 1 && resolved.endsWith('/')) resolved = resolved.slice(0, -1);
+                return resolved;
+            } catch (e) { return path; }
+        };
+        const currentCanonical = cleanPath(currentPathname);
+        for (const [key, page] of Object.entries(allPages)) {
+            if (currentCanonical === cleanPath(page.url)) return key;
+            if (page.aliases && Array.isArray(page.aliases)) {
+                for (const alias of page.aliases) {
+                    if (currentCanonical === cleanPath(alias)) return key;
+                }
+            }
+        }
+        return null;
+    };
+
+    const getPinButtonHtml = () => {
+        if (!currentUser) return '';
+        const pinnedPageKey = localStorage.getItem(PINNED_PAGE_KEY);
+        const isPinButtonHidden = localStorage.getItem(PIN_BUTTON_HIDDEN_KEY) === 'true';
+        if (isPinButtonHidden) return '';
+        const pages = allPages;
+        const pinnedPageData = (pinnedPageKey && pages[pinnedPageKey]) ? pages[pinnedPageKey] : null;
+        const pinButtonIcon = pinnedPageData ? getIconClass(pinnedPageData.icon) : 'fa-solid fa-map-pin';
+        const pinButtonUrl = pinnedPageData ? pinnedPageData.url : '#'; 
+        const pinButtonTitle = pinnedPageData ? `Go to ${pinnedPageData.name}` : 'Pin current page';
+        const currentPageKey = getCurrentPageKey();
+        const shouldShowRepin = (pinnedPageKey && pinnedPageKey !== currentPageKey) || (!pinnedPageKey && currentPageKey);
+        
+        return `
+            <div id="pin-area-wrapper" class="relative flex-shrink-0 flex items-center">
+                <a href="${pinButtonUrl}" id="pin-button" class="w-10 h-10 border flex items-center justify-center hover:bg-gray-700 transition" title="${pinButtonTitle}" style="border-radius: 14px; border-width: 1px; border-color: var(--pin-btn-border); color: var(--pin-btn-icon-color);">
+                    <i id="pin-button-icon" class="${pinButtonIcon}"></i>
+                </a>
+                <div id="pin-context-menu" class="auth-menu-container closed" style="width: 12rem;">
+                    ${shouldShowRepin ? `<button id="repin-button" class="auth-menu-link"><i class="fa-solid fa-thumbtack w-4"></i>Repin</button>` : ''}
+                    ${pinnedPageData ? `<button id="remove-pin-button" class="auth-menu-link text-red-400 hover:text-red-300"><i class="fa-solid fa-xmark w-4"></i>Remove Pin</button>` : `<button id="hide-pin-button" class="auth-menu-link text-red-400 hover:text-red-300"><i class="fa-solid fa-eye-slash w-4"></i>Hide Button</button>`}
+                </div>
+            </div>
+        `;
+    };
+
+    const getAuthControlsHtml = () => {
+        const user = currentUser;
+        const loggedOutView = `
+            <button id="auth-toggle" class="w-10 h-10 border flex items-center justify-center hover:bg-gray-700 transition logged-out-auth-toggle">
+                <i class="fa-solid fa-user"></i>
+            </button>
+            <div id="auth-menu-container" class="auth-menu-container closed" style="width: 16rem;">
+                <a href="/authentication.html" class="auth-menu-link"><i class="fa-solid fa-lock w-4"></i>Authenticate</a>
+            </div>
+        `;
+        const loggedInView = `
+            <button id="auth-toggle" class="w-10 h-10 border border-gray-600 overflow-hidden" style="border-radius: 14px;">
+                <i class="fa-solid fa-user-gear text-gray-300"></i>
+            </button>
+            <div id="auth-menu-container" class="auth-menu-container closed">
+                <a href="/logged-in/settings.html" class="auth-menu-link"><i class="fa-solid fa-gear w-4"></i>Settings</a>
+                <button id="logout-button" class="auth-menu-button text-red-400"><i class="fa-solid fa-right-from-bracket w-4"></i>Log Out</button>
+            </div>
+        `;
+        return user ? loggedInView : loggedOutView;
+    };
+
     const injectStyles = () => {
         const style = document.createElement('style');
         style.textContent = `
@@ -385,18 +460,13 @@ let db;
             document.body.prepend(navbarDiv);
         }
         
-        if (!document.getElementById('notification-container')) {
-            const notifDiv = document.createElement('div');
-            notifDiv.id = 'notification-container';
-            document.body.appendChild(notifDiv);
-        }
-        
         injectStyles();
         const container = document.getElementById('navbar-container');
         container.innerHTML = `
             <a href="/" class="flex items-center space-x-2 flex-shrink-0" style="z-index: 20;">
                 <img src="/images/logo.png" alt="4SP Logo" class="navbar-logo" id="navbar-logo">
             </a>
+            <div id="nav-left-controls" style="z-index: 20; display: flex; align-items: center; gap: 0.5rem; margin-left: 1rem;"></div>
             <div id="auth-controls-wrapper" class="auth-controls-wrapper" style="z-index: 20; display: flex; align-items: center; gap: 1rem;"></div>
         `;
 
@@ -410,32 +480,66 @@ let db;
             auth = firebase.auth();
             db = firebase.firestore();
 
+            const response = await fetch(window.PAGE_CONFIG_URL);
+            allPages = await response.json();
+
             auth.onAuthStateChanged(async (user) => {
                 currentUser = user;
                 if (user) {
-                    const authTimeout = setTimeout(() => window.hideLoader(), 2500);
                     db.collection('users').doc(user.uid).onSnapshot(doc => {
-                        clearTimeout(authTimeout);
                         currentUserData = doc.data();
-                        const wrapper = document.getElementById('auth-controls-wrapper');
-                        if (wrapper) wrapper.innerHTML = getProfileButtonHtml(user, currentUserData);
-                        window.hideLoader();
-                    }, (err) => {
-                        clearTimeout(authTimeout);
-                        window.hideLoader();
+                        renderNavbar(user, currentUserData);
                     });
                 } else {
-                    window.hideLoader();
+                    renderNavbar(null, null);
                 }
             });
-        } catch (e) {
-            window.hideLoader();
-        }
+        } catch (e) { console.error(e); }
     };
 
-    if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', run);
-} else {
-    run();
-}
+    const renderNavbar = (user, userData) => {
+        const left = document.getElementById('nav-left-controls');
+        const right = document.getElementById('auth-controls-wrapper');
+        if (left) left.innerHTML = getPinButtonHtml();
+        if (right) right.innerHTML = getProfileButtonHtml(user, userData) + getAuthControlsHtml();
+        setupToggleListeners();
+    };
+
+    const setupToggleListeners = () => {
+        const authBtn = document.getElementById('auth-toggle');
+        const authMenu = document.getElementById('auth-menu-container');
+        const profBtn = document.getElementById('profile-toggle');
+        const profMenu = document.getElementById('profile-menu-container');
+        const pinBtn = document.getElementById('pin-button');
+        const pinMenu = document.getElementById('pin-context-menu');
+
+        const toggle = (btn, menu) => {
+            if (!btn || !menu) return;
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const wasOpen = !menu.classList.contains('closed');
+                document.querySelectorAll('.auth-menu-container').forEach(m => m.classList.add('closed'));
+                if (!wasOpen) menu.classList.remove('closed');
+            };
+        };
+
+        toggle(authBtn, authMenu);
+        toggle(profBtn, profMenu);
+        if (pinBtn) {
+            pinBtn.oncontextmenu = (e) => {
+                e.preventDefault();
+                const wasOpen = !pinMenu.classList.contains('closed');
+                document.querySelectorAll('.auth-menu-container').forEach(m => m.classList.add('closed'));
+                if (!wasOpen) pinMenu.classList.remove('closed');
+            };
+        }
+
+        document.onclick = () => document.querySelectorAll('.auth-menu-container').forEach(m => m.classList.add('closed'));
+        
+        const logout = document.getElementById('logout-button');
+        if (logout) logout.onclick = () => auth.signOut();
+    };
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+    else run();
 })();
