@@ -2,34 +2,6 @@
  * navigation.js
  */
 
-// BareMux MessagePort fix - MUST RUN IMMEDIATELY
-if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
-    navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'getPort' && event.data.port) {
-            try {
-                const path = window.location.pathname.toLowerCase();
-                let workerPath = "/VELIUM/baremux/worker.js";
-                if (path.includes('vora') || path.includes('/vora/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
-                else if (path.includes('/vern/')) workerPath = "/VERN/baremux/worker.js";
-                else if (path.includes('/games/')) workerPath = "/GAMES/baremux/worker.js";
-                else if (path.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
-
-                const worker = new SharedWorker(workerPath, "bare-mux-worker");
-                // Check if port is valid before sending
-                if (worker.port) {
-                    event.data.port.postMessage(worker.port, [worker.port]);
-                }
-            } catch (e) {
-                // Fallback to simple MessageChannel if SharedWorker fails
-                try {
-                    const channel = new MessageChannel();
-                    event.data.port.postMessage(channel.port1, [channel.port1]);
-                } catch (e2) {}
-            }
-        }
-    });
-}
-
 // Prevent multiple loads
 if (window.__4sp_nav_loaded) {
     console.warn("Navigation.js already loaded, skipping...");
@@ -614,11 +586,11 @@ let db;
             let avatarHtml = '';
             const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
             if (pfpType === 'custom' && userData?.customPfp) {
-                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 20px;" alt="Profile">`;
+                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
             } else if (pfpType === 'mibi' && userData?.mibiConfig) {
                 const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = userData.mibiConfig;
                 avatarHtml = `
-                    <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 20px;">
+                    <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 14px;">
                          <div class="absolute inset-0 w-full h-full" style="transform: translate(${offsetX || 0}%, ${offsetY || 0}%) rotate(${rotation || 0}deg) scale(${(size || 100) / 100}); transform-origin: center;">
                              <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
                              ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
@@ -631,18 +603,18 @@ let db;
                 const bg = userData?.pfpLetterBg || DEFAULT_THEME['avatar-gradient'];
                 const textColor = getLetterAvatarTextColor(bg); 
                 const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
-                avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 20px;">${initial}</div>`;
+                avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 14px;">${initial}</div>`;
             } else {
                 const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
                 const googlePhoto = googleProvider ? googleProvider.photoURL : null;
                 const displayPhoto = googlePhoto || user.photoURL;
                 if (displayPhoto) {
-                    avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 20px;" alt="Profile">`;
+                    avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
                 } else {
                     const bg = DEFAULT_THEME['avatar-gradient'];
                     const textColor = getLetterAvatarTextColor(bg);
                     const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
-                    avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 20px;">${initial}</div>`;
+                    avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 14px;">${initial}</div>`;
                 }
             }
 
@@ -766,11 +738,11 @@ let db;
                 const pfpType = userData?.pfpType || 'google'; 
 
                 if (pfpType === 'custom' && userData?.customPfp) {
-                    avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 20px;" alt="Profile">`;
+                    avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
                 } else if (pfpType === 'mibi' && userData?.mibiConfig) {
                     const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = userData.mibiConfig;
                     avatarHtml = `
-                        <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 20px;">
+                        <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 14px;">
                              <div class="absolute inset-0 w-full h-full" style="transform: translate(${offsetX || 0}%, ${offsetY || 0}%) rotate(${rotation || 0}deg) scale(${(size || 100) / 100}); transform-origin: center;">
                                  <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
                                  ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
@@ -784,19 +756,19 @@ let db;
                     const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
                     const textColor = getLetterAvatarTextColor(bg); 
                     const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
-                    avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 20px;">${initial}</div>`;
+                    avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 14px;">${initial}</div>`;
                 } else {
                     const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
                     const googlePhoto = googleProvider ? googleProvider.photoURL : null;
                     const displayPhoto = googlePhoto || user.photoURL;
                     if (displayPhoto) {
-                        avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 20px;" alt="Profile">`;
+                        avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
                     } else {
                         const bg = DEFAULT_THEME['avatar-gradient'];
                         const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
                         const textColor = getLetterAvatarTextColor(bg);
                         const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
-                        avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 20px;">${initial}</div>`;
+                        avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 14px;">${initial}</div>`;
                     }
                 }
                 
@@ -1890,7 +1862,7 @@ let db;
                 pointer-events: auto;
                 background: var(--menu-bg, #ffffff);
                 border: 1px solid var(--menu-border, rgba(0,0,0,0.08));
-                border-radius: 20px;
+                border-radius: 14px;
                 padding: 12px 16px;
                 box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
                 display: flex;

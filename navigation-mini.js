@@ -2,32 +2,6 @@
  * navigation-mini.js
  */
 
-// BareMux MessagePort fix - MUST RUN IMMEDIATELY
-if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
-    navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'getPort' && event.data.port) {
-            try {
-                const path = window.location.pathname.toLowerCase();
-                let workerPath = "/VELIUM/baremux/worker.js";
-                if (path.includes('vora') || path.includes('/vora/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
-                else if (path.includes('/vern/')) workerPath = "/VERN/baremux/worker.js";
-                else if (path.includes('/games/')) workerPath = "/GAMES/baremux/worker.js";
-                else if (path.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
-
-                const worker = new SharedWorker(workerPath, "bare-mux-worker");
-                if (worker.port) {
-                    event.data.port.postMessage(worker.port, [worker.port]);
-                }
-            } catch (e) {
-                try {
-                    const channel = new MessageChannel();
-                    event.data.port.postMessage(channel.port1, [channel.port1]);
-                } catch (e2) {}
-            }
-        }
-    });
-}
-
 // =========================================================================
 // >> ACTION REQUIRED: PASTE YOUR FIREBASE CONFIGURATION OBJECT HERE <<
 // =========================================================================
@@ -332,7 +306,7 @@ let db;
 
         return `
             <div id="profile-area-wrapper" class="relative flex-shrink-0 flex items-center">
-                <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 16px; position: relative; background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));">
+                <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 20px; position: relative; background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));">
                     <i class="fa-solid fa-address-card text-gray-300"></i>
                 </button>
                 <div id="profile-menu-container" class="auth-menu-container closed">
@@ -390,7 +364,7 @@ let db;
         
         return `
             <div id="pin-area-wrapper" class="relative flex-shrink-0 flex items-center">
-                <a href="${pinButtonUrl}" id="pin-button" class="w-10 h-10 border flex items-center justify-center hover:bg-gray-700 transition" title="${pinButtonTitle}" style="border-radius: 14px; border-width: 1px; border-color: var(--pin-btn-border); color: var(--pin-btn-icon-color);">
+                <a href="${pinButtonUrl}" id="pin-button" class="w-10 h-10 border flex items-center justify-center hover:bg-gray-700 transition" title="${pinButtonTitle}" style="border-radius: 20px; border-width: 1px; border-color: var(--pin-btn-border); color: var(--pin-btn-icon-color);">
                     <i id="pin-button-icon" class="${pinButtonIcon}"></i>
                 </a>
                 <div id="pin-context-menu" class="auth-menu-container closed" style="width: 12rem;">
@@ -412,7 +386,7 @@ let db;
             </div>
         `;
         const loggedInView = `
-            <button id="auth-toggle" class="w-10 h-10 border border-gray-600 overflow-hidden" style="border-radius: 14px;">
+            <button id="auth-toggle" class="w-10 h-10 border border-gray-600 overflow-hidden" style="border-radius: 20px;">
                 <i class="fa-solid fa-user-gear text-gray-300"></i>
             </button>
             <div id="auth-menu-container" class="auth-menu-container closed">

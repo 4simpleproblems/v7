@@ -16,7 +16,7 @@
         /**
          * Returns the HTML for a user's avatar, wrapped in a container.
          */
-        export function getAvatarHTML(userData, sizeClass = "w-10 h-10", forceCSS = false, authUser = null, roundedClass = "rounded-full", scaleClass = "", clipOuterContainer = true) {
+        export function getAvatarHTML(userData, sizeClass = "w-10 h-10", forceCSS = false, authUser = null, roundedClass = "rounded-xl", scaleClass = "", clipOuterContainer = true) {
             const pT = userData?.pfpType || 'user';
             const dN = userData?.displayName || userData?.username || authUser?.displayName || 'User';
             

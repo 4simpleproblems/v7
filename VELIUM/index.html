@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
+    <script src="/injector.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>4SP - VELIUM V2</title>
@@ -37,59 +38,6 @@
     </script>
     <script type="module">
         import * as libcurl from "/VELIUM/libcurl/index.mjs";
-
-        window.checkBare = async (retries = 3) => {
-            if (window.__4sp_bare_mux_connecting) return;
-            window.__4sp_bare_mux_connecting = true;
-
-            const connection = new BareMux.BareMuxConnection("/VELIUM/baremux/worker.js");
-            const wispUrl = "wss://wisp.mercurywork.shop/";
-            const transportPath = "/VELIUM/libcurl/index.mjs";
-            
-            for (let i = 0; i < retries; i++) {
-                try {
-                    if (libcurl && libcurl.load_wasm) {
-                        await libcurl.load_wasm();
-                    }
-
-                    const transport = await connection.getTransport();
-                    if (!transport || transport.path !== transportPath) {
-                        await connection.setTransport(transportPath, [
-                            { websocket: wispUrl },
-                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                        ]);
-                    }
-                    console.log("Velium: BareMux Initialized");
-                    window.__4sp_bare_mux_connecting = false;
-                    return;
-                } catch (e) {
-                    console.error(`BareMux/libcurl Setup Attempt ${i + 1} failed:`, e);
-                    if (i === retries - 1) {
-                        await connection.setTransport(transportPath, [
-                            { websocket: wispUrl }
-                        ]);
-                    }
-                    await new Promise(r => setTimeout(r, 500));
-                }
-            }
-            window.__4sp_bare_mux_connecting = false;
-        };
-
-        (async () => {
-            if ("serviceWorker" in navigator) {
-                try {
-                    await navigator.serviceWorker.register("/sw.js", {
-                        scope: "/"
-                    });
-                    console.log("VERN_SYSTEM SW Registered at root");
-                } catch (e) {
-                    console.error("SW Register Failed", e);
-                }
-            }
-            await window.checkBare();
-        })();
-    </script>
-    <script src="/injector.js"></script>
 
     <script>
         tailwind.config = {

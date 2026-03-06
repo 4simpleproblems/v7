@@ -4,6 +4,40 @@
  * all listed files, ensuring only this file needs to be updated 
  * when adding or removing application dependencies.
  */
+
+// BareMux MessagePort fix - MUST RUN IMMEDIATELY before anything else
+if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'getPort' && event.data.port) {
+            try {
+                const path = window.location.pathname.toLowerCase();
+                let workerPath = "/VELIUM/baremux/worker.js";
+                if (path.includes('vora') || path.includes('/vora/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+                else if (path.includes('/vern/')) workerPath = "/VERN/baremux/worker.js";
+                else if (path.includes('/games/')) workerPath = "/GAMES/baremux/worker.js";
+                else if (path.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
+
+                const worker = new SharedWorker(workerPath, "bare-mux-worker");
+                
+                // Ensure the worker is started and provide the port
+                if (worker && worker.port) {
+                    event.data.port.postMessage(worker.port, [worker.port]);
+                } else {
+                    throw new Error("Invalid SharedWorker port");
+                }
+            } catch (e) {
+                // console.warn("BareMux SharedWorker failed, falling back to MessageChannel", e);
+                try {
+                    const channel = new MessageChannel();
+                    event.data.port.postMessage(channel.port1, [channel.port1]);
+                } catch (e2) {
+                    // console.error("BareMux Fallback failed", e2);
+                }
+            }
+        }
+    });
+}
+
 (function() {
     // Prevent multiple loads
     if (window.__4sp_injector_loaded) return;
