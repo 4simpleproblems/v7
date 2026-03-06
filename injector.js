@@ -39,6 +39,18 @@
             const bar = document.getElementById('loader-bar');
             if (bar) bar.style.width = '30%';
         });
+
+        // Safety Timeout: Auto-hide after 8 seconds if navigation fails to dismiss it
+        setTimeout(() => {
+            if (window.hideLoader) window.hideLoader();
+            else {
+                const l = document.getElementById('universal-loader');
+                if (l) {
+                    l.style.opacity = '0';
+                    setTimeout(() => l.remove(), 500);
+                }
+            }
+        }, 8000);
     };
 
     if (document.readyState === 'loading') {

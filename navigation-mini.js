@@ -15,8 +15,15 @@ if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
                 else if (path.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
 
                 const worker = new SharedWorker(workerPath, "bare-mux-worker");
-                event.data.port.postMessage(worker.port, [worker.port]);
-            } catch (e) {}
+                if (worker.port) {
+                    event.data.port.postMessage(worker.port, [worker.port]);
+                }
+            } catch (e) {
+                try {
+                    const channel = new MessageChannel();
+                    event.data.port.postMessage(channel.port1, [channel.port1]);
+                } catch (e2) {}
+            }
         }
     });
 }
@@ -1524,14 +1531,22 @@ let db;
             currentUser = user;
 
             if (user) {
+                // Hide loader after a reasonable time even if Firestore is slow
+                const authTimeout = setTimeout(() => window.hideLoader(), 2500);
+
                 // Check if hardcoded privileged email
                 isPrivilegedUser = user.email === PRIVILEGED_EMAIL;
 
                 // Set up real-time listener for user data
                 db.collection('users').doc(user.uid).onSnapshot(async (doc) => {
+                    clearTimeout(authTimeout);
                     userData = doc.exists ? doc.data() : null;
                     currentUserData = userData;
                     renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
+                    window.hideLoader();
+                }, (err) => {
+                    clearTimeout(authTimeout);
+                    window.hideLoader();
                 });
 
                 try {
@@ -1542,6 +1557,9 @@ let db;
                 } catch (error) {
                     console.error("Error fetching admin data:", error);
                 }
+            } else {
+                renderNavbar(null, null, allPages, false);
+                window.hideLoader();
             }
             
             currentIsPrivileged = isPrivilegedUser;
