@@ -493,16 +493,21 @@
             };
 
             displayTime(userData.totalV6Time || 0);
-            document.getElementById('stat-pageviews').textContent = totalPageViews;
-
-            onSnapshot(doc(db, 'users', uid), docSnap => {
-                if (docSnap.exists()) displayTime(docSnap.data().totalV6Time || 0);
-            });
+            document.getElementById('stat-pageviews').textContent = "409";
 
             const listEl = document.getElementById('recent-pages-list');
             listEl.innerHTML = '';
             
-            sortedPages.slice(0, 6).forEach(([path, data]) => {
+            const teaserPages = [
+                { title: 'Dashboard', count: 155, icon: 'fa-solid fa-house', path: 'dashboard.html' },
+                { title: 'Vora', count: 107, icon: 'fa-solid fa-tv', path: 'vora.html' },
+                { title: 'Games', count: 71, icon: 'fa-solid fa-gamepad', path: 'games.html' },
+                { title: 'Velium', count: 44, icon: 'fa-solid fa-music', path: 'velium.html' },
+                { title: 'Soundboard', count: 19, icon: 'fa-solid fa-volume-high', path: 'soundboard.html' },
+                { title: 'Settings', count: 13, icon: 'fa-solid fa-gear', path: 'settings.html' }
+            ];
+
+            teaserPages.forEach((data) => {
                 const item = document.createElement('div');
                 item.className = 'page-btn';
                 
@@ -518,11 +523,9 @@
 
                 item.onclick = () => {
                     if (window.parent && window.parent.loadPage) {
-                        window.parent.loadPage(path);
-                    } else if (window.loadPage) {
-                        window.loadPage(path);
+                        window.parent.loadPage(data.path);
                     } else {
-                        window.location.href = path;
+                        window.location.href = data.path;
                     }
                 };
 
