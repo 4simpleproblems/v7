@@ -1,24 +1,20 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
+    <script src="/injector.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4SP - ANALYTICS</title>
-    <meta name="description" content="Admin analytics dashboard for 4SP.">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>4SP Admin - Analytics</title>
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.cdnfonts.com/css/geist" rel="stylesheet">
     
+    <!-- Scripts -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../injector.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
 
     <style>
         :root {
@@ -42,41 +38,20 @@
             font-weight: 300;
         }
 
-        h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-widest {
-            font-weight: 400 !important;
-        }
-
         /* --- Custom Scrollbar --- */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-page); }
-        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2a2a2a; }
 
-        /* --- Tables --- */
-        .user-table, .analytics-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
+        /* --- Table Styling --- */
+        .analytics-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .analytics-table th { 
+            text-align: left; padding: 1rem; color: #707070; font-size: 0.75rem; 
+            text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-color);
         }
-        .user-table th, .user-table td, .analytics-table th, .analytics-table td {
-            text-align: left;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border-color);
-            vertical-align: middle;
-        }
-        .user-table th, .analytics-table th {
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            opacity: 0.6;
-        }
-        .user-table tr:hover, .analytics-table tr:hover {
-            background-color: var(--bg-container);
-        }
-
-        .provider-icon { width: 1.25rem; height: 1.25rem; object-fit: contain; }
+        .analytics-table td { padding: 1rem; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        .analytics-table tr:hover td { background-color: rgba(255,255,255,0.02); }
 
         /* --- Action Buttons --- */
         .action-btn {
@@ -136,33 +111,6 @@
             box-shadow: 0 10px 30px var(--accent-glow);
         }
 
-
-        /* --- Custom Nav Tab Style (Mirrors navigation.js) --- */
-        .nav-tab-style {
-            padding: 0.5rem 1rem;
-            color: var(--tab-text, #9ca3af);
-            font-size: 0.875rem;
-            font-weight: 400;
-            border-radius: 14px;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            border: 1px solid transparent;
-            transition: all 0.2s;
-            cursor: pointer;
-            background-color: transparent;
-        }
-        .nav-tab-style:hover {
-            color: var(--tab-hover-text, #ffffff);
-            background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
-            border-color: var(--tab-active-border, #4f46e5);
-            transform: translateY(-1px);
-        }
-        .nav-tab-style.hidden {
-            display: none !important;
-        }
-
         /* --- Modals --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -211,13 +159,18 @@
             100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
         .live-indicator {
-            width: 8px; height: 8px; background: #22c55e; border-radius: 50%;
-            display: inline-block; margin-right: 6px; animation: pulse-green 2s infinite;
+            width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
+            display: inline-block; margin-right: 8px; animation: pulse-green 2s infinite;
         }
+
+        .tab-content.hidden { display: none; }
+        
+        /* Provider Icon Styling */
+        .provider-icon { width: 16px; height: 16px; object-fit: contain; }
     </style>
 </head>
-<body class="min-h-screen pb-10">
-
+<body class="bg-[var(--bg-page)] min-h-screen">
+    
     <div id="page-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         
         <header class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -231,61 +184,58 @@
                 <button class="tab-btn active whitespace-nowrap" data-tab="users">User Management</button>
                 <button class="tab-btn whitespace-nowrap" data-tab="traffic">Site Traffic</button>
                 <button class="tab-btn whitespace-nowrap" data-tab="health">System Health</button>
-                <button class="tab-btn whitespace-nowrap" data-tab="data-analytics">Data and Analytics</button>
-                <button class="tab-btn whitespace-nowrap" data-tab="messenger-web">Messenger Web</button>
             </div>
         </header>
 
+        <!-- USER MANAGEMENT TAB -->
         <div id="tab-users" class="tab-content">
             <div id="sync-stats-card" class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.25rem] p-4 mb-6 flex flex-wrap gap-4 justify-between items-center">
                 <div class="flex gap-8">
                     <div class="flex flex-col">
-                        <span class="text-gray-500 text-xs uppercase tracking-widest">Auth Users</span>
-                        <span id="auth-user-count" class="text-2xl text-white font-mono">--</span>
+                        <span class="text-[var(--text-muted)] opacity-60 text-xs uppercase tracking-widest">Auth Users</span>
+                        <span id="auth-user-count" class="text-2xl text-[var(--text-main)] font-mono">--</span>
                     </div>
                     <div class="flex flex-col">
-                        <span class="text-gray-500 text-xs uppercase tracking-widest">DB Users</span>
-                        <span id="db-user-count" class="text-2xl text-white font-mono">--</span>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="text-gray-500 text-xs uppercase tracking-widest text-red-400">Missing</span>
-                        <span id="missing-user-count" class="text-2xl text-red-400 font-mono">--</span>
+                        <span class="text-[var(--text-muted)] opacity-60 text-xs uppercase tracking-widest">DB Users</span>
+                        <span id="db-user-count" class="text-2xl text-[var(--text-main)] font-mono">--</span>
                     </div>
                 </div>
-                <button id="mass-sync-btn" class="nav-tab-style hidden">
-                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i>
-                    Mass Add Missing
-                </button>
+                <div class="text-right">
+                    <p class="text-[var(--text-muted)] opacity-40 text-[10px] uppercase font-bold">Health Status</p>
+                    <div id="health-badge" class="px-3 py-1 bg-green-900/20 text-green-400 rounded-full border border-green-500/20 text-xs mt-1">
+                        System Balanced
+                    </div>
+                </div>
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div class="stat-card">
-                    <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Total Users</span>
-                    <span id="total-users-count" class="text-4xl text-white font-light">--</span>
+                    <span class="text-[var(--text-muted)] opacity-60 text-sm mb-2 uppercase tracking-wide">Total Users</span>
+                    <span id="total-users-count" class="text-4xl text-[var(--text-main)] font-light">--</span>
                 </div>
                 <div class="stat-card">
-                    <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Admins</span>
+                    <span class="text-[var(--text-muted)] opacity-60 text-sm mb-2 uppercase tracking-wide">Admins</span>
                     <span id="total-admins-count" class="text-4xl text-blue-400 font-light">--</span>
                 </div>
                 <div class="stat-card">
-                    <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Banned</span>
+                    <span class="text-[var(--text-muted)] opacity-60 text-sm mb-2 uppercase tracking-wide">Banned</span>
                     <span id="total-banned-count" class="text-4xl text-red-400 font-light">--</span>
                 </div>
                 <div class="stat-card">
-                    <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Verified Emails</span>
+                    <span class="text-[var(--text-muted)] opacity-60 text-sm mb-2 uppercase tracking-wide">Verified</span>
                     <span id="total-verified-count" class="text-4xl text-green-400 font-light">--</span>
                 </div>
             </div>
 
             <div class="chart-container mb-6">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-                    <h3 class="text-white text-lg">User Growth</h3>
+                    <h3 class="text-[var(--text-main)] text-lg">User Growth</h3>
                     <div class="flex gap-3">
-                        <select id="chart-datatype" class="bg-[#1a1a1a] text-gray-300 border border-[#333] rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500">
+                        <select id="chart-datatype" class="bg-[var(--bg-page)] text-[var(--text-muted)] border border-[var(--border-color)] rounded px-2 py-1 text-sm focus:outline-none focus:border-[var(--accent-color)]">
                             <option value="new" selected>New Users</option>
                             <option value="total">Total Users</option>
                         </select>
-                        <select id="chart-period" class="bg-[#1a1a1a] text-gray-300 border border-[#333] rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500">
+                        <select id="chart-period" class="bg-[var(--bg-page)] text-[var(--text-muted)] border border-[var(--border-color)] rounded px-2 py-1 text-sm focus:outline-none focus:border-[var(--accent-color)]">
                             <option value="week">Past Week</option>
                             <option value="month" selected>Past Month</option>
                             <option value="year">Past Year</option>
@@ -299,17 +249,17 @@
             </div>
 
             <div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.25rem] overflow-hidden">
-                <div class="p-4 border-b border-[#1a1a1a] flex justify-between items-center flex-wrap gap-4 bg-[#0a0a0a]">
+                <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center flex-wrap gap-4 bg-[var(--bg-container)]/50">
                     <div class="flex items-center gap-2">
-                        <h3 class="text-white text-lg">User Directory</h3>
+                        <h3 class="text-[var(--text-main)] text-lg">User Directory</h3>
                         <span class="text-xs bg-blue-900/30 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">Firestore Synced</span>
                     </div>
                     <div class="flex gap-4">
-                        <button id="export-csv-btn" class="bg-[#1a1a1a] hover:bg-[#252525] text-white border border-[#333] px-3 py-2 rounded-[14px] text-sm transition flex items-center gap-2" title="Export all users to CSV">
+                        <button id="export-csv-btn" class="bg-[var(--bg-page)] hover:bg-[var(--bg-container)] text-[var(--text-main)] border border-[var(--border-color)] px-3 py-2 rounded-[14px] text-sm transition flex items-center gap-2" title="Export all users to CSV">
                             <i class="fa-solid fa-file-csv text-green-500"></i> Export
                         </button>
-                        <input type="text" id="user-search" placeholder="Search by username, email, or ID..." class="bg-[#1a1a1a] text-white border border-[#333] rounded-[14px] px-4 py-2 text-sm focus:outline-none focus:border-blue-500 w-56 placeholder-gray-600">
-                        <select id="user-sort" class="bg-[#1a1a1a] text-gray-300 border border-[#333] rounded-[14px] px-3 py-2 text-sm focus:outline-none">
+                        <input type="text" id="user-search" placeholder="Search by username, email, or ID..." class="bg-[var(--bg-page)] text-[var(--text-main)] border border-[var(--border-color)] rounded-[14px] px-4 py-2 text-sm focus:outline-none focus:border-[var(--accent-color)] w-56 placeholder-gray-600">
+                        <select id="user-sort" class="bg-[var(--bg-page)] text-[var(--text-muted)] border border-[var(--border-color)] rounded-[14px] px-3 py-2 text-sm focus:outline-none">
                             <option value="newest">Newest First</option>
                             <option value="oldest">Oldest First</option>
                             <option value="admin">Admins First</option>
@@ -317,60 +267,59 @@
                         </select>
                     </div>
                 </div>
-                
                 <div class="overflow-x-auto">
-                    <table class="user-table">
+                    <table class="analytics-table">
                         <thead>
                             <tr>
-                                <th>Identity</th>
-                                <th>Auth Method</th>
+                                <th>User</th>
+                                <th>Method</th>
                                 <th>Joined</th>
-                                <th>Verification</th>
+                                <th class="text-center">Verified</th>
                                 <th>Status</th>
-                                <th>Actions</th>
+                                <th class="text-right pr-6">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="user-table-body"></tbody>
+                        <tbody id="user-table-body">
+                            <!-- JS injected rows -->
+                        </tbody>
                     </table>
-                </div>
-                <div id="loading-users" class="p-8 text-center text-gray-500">
-                    <i class="fa-solid fa-circle-notch fa-spin mr-2 text-blue-500"></i> Connecting to live user feed...
                 </div>
             </div>
         </div>
 
+        <!-- TRAFFIC TAB -->
         <div id="tab-traffic" class="tab-content hidden">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                  <div class="stat-card">
-                    <div class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Total Sessions</div>
-                    <div id="stat-total-sessions" class="text-3xl text-white font-light">--</div>
+                    <div class="text-[var(--text-muted)] opacity-60 text-sm mb-2 uppercase tracking-wide">Total Sessions</div>
+                    <div id="stat-total-sessions" class="text-3xl text-[var(--text-main)] font-light">--</div>
                 </div>
                 <div class="stat-card">
-                    <div class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Avg Duration</div>
+                    <div class="text-[var(--text-muted)] opacity-60 text-sm mb-2 uppercase tracking-wide">Avg Duration</div>
                     <div id="stat-avg-duration" class="text-3xl text-blue-400 font-light">--</div>
                 </div>
                  <div class="stat-card">
-                    <div class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Total Views</div>
+                    <div class="text-[var(--text-muted)] opacity-60 text-sm mb-2 uppercase tracking-wide">Total Views</div>
                     <div id="stat-total-views" class="text-3xl text-purple-400 font-light">--</div>
                 </div>
                  <div class="stat-card">
-                    <div class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Active (24h)</div>
+                    <div class="text-[var(--text-muted)] opacity-60 text-sm mb-2 uppercase tracking-wide">Active (24h)</div>
                     <div id="stat-active-24h" class="text-3xl text-green-400 font-light">--</div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.25rem] overflow-hidden h-fit">
-                    <div class="p-4 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-                        <h3 class="text-white text-lg">Top Pages</h3>
+                    <div class="p-4 border-b border-[var(--border-color)] bg-[var(--bg-container)]/50">
+                        <h3 class="text-[var(--text-main)] text-lg">Top Pages</h3>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="analytics-table">
                             <thead>
                                 <tr>
-                                    <th>Page Path</th>
-                                    <th>Title</th>
-                                    <th class="text-right">Visits</th>
+                                    <th>Page Title</th>
+                                    <th>Views</th>
+                                    <th>% Total</th>
                                 </tr>
                             </thead>
                             <tbody id="top-pages-body"></tbody>
@@ -379,17 +328,16 @@
                 </div>
 
                 <div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.25rem] overflow-hidden h-fit">
-                    <div class="p-4 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-                         <h3 class="text-white text-lg">Recent Sessions</h3>
+                    <div class="p-4 border-b border-[var(--border-color)] bg-[var(--bg-container)]/50">
+                         <h3 class="text-[var(--text-main)] text-lg">Recent Sessions</h3>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="analytics-table">
                             <thead>
                                 <tr>
-                                    <th>User / Email</th>
-                                    <th>Time Ago</th>
-                                    <th>Duration</th>
-                                    <th>Pages</th>
+                                    <th>User ID</th>
+                                    <th>OS/Browser</th>
+                                    <th>Time</th>
                                 </tr>
                             </thead>
                             <tbody id="recent-sessions-body"></tbody>
@@ -397,22 +345,19 @@
                     </div>
                 </div>
             </div>
-            
-             <div id="loading-traffic" class="p-8 text-center text-gray-500">
-                <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading analytics data...
-            </div>
         </div>
 
+        <!-- HEALTH TAB -->
         <div id="tab-health" class="tab-content hidden">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div class="chart-container">
-                    <h3 class="text-white text-lg mb-4">Browser Distribution</h3>
+                    <h3 class="text-[var(--text-main)] text-lg mb-4">Browser Distribution</h3>
                     <div class="relative h-full w-full" style="height: 220px;">
                         <canvas id="browserChart"></canvas>
                     </div>
                 </div>
                 <div class="chart-container">
-                    <h3 class="text-white text-lg mb-4">OS Distribution</h3>
+                    <h3 class="text-[var(--text-main)] text-lg mb-4">OS Distribution</h3>
                     <div class="relative h-full w-full" style="height: 220px;">
                         <canvas id="osChart"></canvas>
                     </div>
@@ -422,18 +367,18 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
                 <div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.25rem] overflow-hidden h-fit">
-                    <div class="p-4 border-b border-[#1a1a1a] bg-[#0a0a0a] flex justify-between items-center">
+                    <div class="p-4 border-b border-[var(--border-color)] bg-[var(--bg-container)]/50 flex justify-between items-center">
                         <div>
-                            <h3 class="text-white text-lg flex items-center gap-2">
+                            <h3 class="text-[var(--text-main)] text-lg flex items-center gap-2">
                                 Missing Firestore Profiles
                                 <span id="count-missing-profile" class="text-xs bg-red-900/30 text-red-400 px-2 py-0.5 rounded border border-red-500/20">0</span>
                             </h3>
-                            <p class="text-sm text-gray-500 mt-1">Users exist in Auth, but have no DB document.</p>
+                            <p class="text-sm text-[var(--text-muted)] opacity-60 mt-1">Users exist in Auth, but have no DB document.</p>
                         </div>
                     </div>
                     <div class="overflow-y-auto flex-1 p-0">
                         <table class="analytics-table">
-                            <thead class="sticky top-0 bg-[#0d0d0d] z-10 shadow-md">
+                            <thead class="sticky top-0 bg-[var(--bg-card)] z-10 shadow-md">
                                 <tr>
                                     <th>Auth UID</th>
                                     <th>Email / Provider</th>
@@ -448,18 +393,18 @@
                 </div>
 
                 <div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.25rem] overflow-hidden h-fit">
-                    <div class="p-4 border-b border-[#1a1a1a] bg-[#0a0a0a] flex justify-between items-center">
+                    <div class="p-4 border-b border-[var(--border-color)] bg-[var(--bg-container)]/50 flex justify-between items-center">
                         <div>
-                            <h3 class="text-white text-lg flex items-center gap-2">
+                            <h3 class="text-[var(--text-main)] text-lg flex items-center gap-2">
                                 Orphaned User Documents
                                 <span id="count-orphaned-doc" class="text-xs bg-orange-900/30 text-orange-400 px-2 py-0.5 rounded border border-orange-500/20">0</span>
                             </h3>
-                            <p class="text-sm text-gray-500 mt-1">Document exists, but Auth user is deleted/missing.</p>
+                            <p class="text-sm text-[var(--text-muted)] opacity-60 mt-1">Document exists, but Auth user is deleted/missing.</p>
                         </div>
                     </div>
                     <div class="overflow-y-auto flex-1 p-0">
                         <table class="analytics-table">
-                            <thead class="sticky top-0 bg-[#0d0d0d] z-10 shadow-md">
+                            <thead class="sticky top-0 bg-[var(--bg-card)] z-10 shadow-md">
                                 <tr>
                                     <th>Document ID</th>
                                     <th>Username / Data</th>
@@ -476,171 +421,13 @@
             </div>
         </div>
 
-        <div id="tab-data-analytics" class="tab-content hidden">
-            <div id="admin-reauth-section" class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.25rem] p-8 text-center">
-                <div class="w-16 h-16 bg-blue-900/20 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fa-solid fa-shield-halved text-2xl"></i>
-                </div>
-                <h3 class="text-xl text-white mb-2 font-medium">Restricted Section</h3>
-                <p class="text-gray-400 mb-6 max-w-md mx-auto">To access comprehensive user data and analytics, you must re-authenticate as the master administrator (4simpleproblems@gmail.com).</p>
-                <button id="reauth-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-[14px] font-medium transition shadow-lg shadow-blue-900/20">
-                    <i class="fa-brands fa-google mr-2"></i> Authenticate with Google
-                </button>
-            </div>
-
-            <div id="data-analytics-content" class="hidden space-y-8">
-                <div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.25rem] p-6">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                        <div>
-                            <h3 class="text-white text-lg font-medium">User Deep Inspection</h3>
-                            <p class="text-sm text-gray-500">Select a user to view their complete document, settings, and connections.</p>
-                        </div>
-                        <div class="relative w-full md:w-80">
-                            <input type="text" id="inspect-user-search" placeholder="Search users..." class="w-full bg-[#1a1a1a] text-white border border-[#333] rounded-[14px] px-10 py-2 text-sm focus:outline-none focus:border-blue-500">
-                            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                            <div id="inspect-search-results" class="absolute top-full left-0 right-0 bg-[#0d0d0d] border border-[#333] mt-2 rounded-[14px] overflow-hidden hidden z-50 shadow-2xl"></div>
-                        </div>
-                    </div>
-
-                    <div id="user-inspect-view" class="hidden animate-in fade-in duration-300">
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div class="lg:col-span-1 space-y-6">
-                                <div class="bg-[#080808] border border-[#1a1a1a] rounded-[1.25rem] p-6 text-center">
-                                    <div id="inspect-pfp-preview" class="w-32 h-32 mx-auto mb-4 rounded-[1.25rem] border border-[#333] overflow-hidden"></div>
-                                    <h4 id="inspect-username" class="text-xl text-white font-medium mb-1">--</h4>
-                                    <p id="inspect-email" class="text-sm text-gray-500 font-mono mb-4">--</p>
-                                    <div id="inspect-tags" class="flex flex-wrap justify-center gap-2 mb-4"></div>
-                                    <div id="inspect-badges" class="flex flex-wrap justify-center gap-2"></div>
-                                </div>
-
-                                <div class="bg-[#080808] border border-[#1a1a1a] rounded-[1.25rem] p-6">
-                                    <h5 class="text-xs uppercase tracking-widest text-gray-500 mb-4">External Connections</h5>
-                                    <div class="space-y-4">
-                                        <div class="flex items-center justify-between">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 bg-purple-900/20 text-purple-400 rounded-[14px] flex items-center justify-center">
-                                                    <i class="fa-solid fa-image"></i>
-                                                </div>
-                                                <span class="text-sm text-gray-300 font-medium">Dailyphoto</span>
-                                            </div>
-                                            <span id="inspect-dailyphoto-count" class="text-xs font-mono bg-[#1a1a1a] px-2 py-1 rounded">--</span>
-                                        </div>
-                                        <div class="flex items-center justify-between">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 bg-blue-900/20 text-blue-400 rounded-[14px] flex items-center justify-center">
-                                                    <i class="fa-solid fa-user-group"></i>
-                                                </div>
-                                                <span class="text-sm text-gray-300 font-medium">Friend Code</span>
-                                            </div>
-                                            <span id="inspect-friend-code" class="text-xs font-mono bg-[#1a1a1a] px-2 py-1 rounded">--</span>
-                                        </div>
-                                        <div class="flex items-center justify-between">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 bg-green-900/20 text-green-400 rounded-[14px] flex items-center justify-center">
-                                                    <i class="fa-solid fa-paper-plane"></i>
-                                                </div>
-                                                <span class="text-sm text-gray-300 font-medium">Friends (Rels)</span>
-                                            </div>
-                                            <span id="inspect-friends-count" class="text-xs font-mono bg-[#1a1a1a] px-2 py-1 rounded">--</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="lg:col-span-2 space-y-6">
-                                <div class="bg-[#080808] border border-[#1a1a1a] rounded-[1.25rem] overflow-hidden">
-                                    <div class="p-4 border-b border-[#1a1a1a] bg-[#0a0a0a] flex justify-between items-center">
-                                        <h5 class="text-sm font-medium text-white">Firestore Document Data</h5>
-                                        <button id="copy-raw-json" class="text-xs text-blue-400 hover:text-blue-300 transition">
-                                            <i class="fa-solid fa-copy mr-1"></i> Copy JSON
-                                        </button>
-                                    </div>
-                                    <div class="p-4 bg-black/50 font-mono text-xs overflow-x-auto max-h-[400px]">
-                                        <pre id="inspect-raw-data" class="text-blue-300"></pre>
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div class="bg-[#080808] border border-[#1a1a1a] rounded-[1.25rem] p-4">
-                                        <div id="inspect-theme-details" class="space-y-2 text-sm"></div>
-                                    </div>
-                                    <div class="bg-[#080808] border border-[#1a1a1a] rounded-[1.25rem] p-4">
-                                        <h5 class="text-xs uppercase tracking-widest text-gray-500 mb-3">Recent Activity</h5>
-                                        <div id="inspect-recent-activity" class="space-y-2 text-sm"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="user-inspect-placeholder" class="py-20 text-center">
-                        <i class="fa-solid fa-user-astronaut text-4xl text-gray-700 mb-4 block"></i>
-                        <p class="text-gray-500">Search and select a user to begin deep inspection.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-messenger-web" class="tab-content hidden">
-            <div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[1.25rem] p-6 h-[calc(100vh-250px)] flex flex-col">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-                    <div>
-                        <h3 class="text-white text-lg font-medium">Messenger Network Topology</h3>
-                        <p class="text-sm text-gray-500">Interactive 2D visualization of user connections and message flows.</p>
-                    </div>
-                    <div class="flex flex-wrap gap-3">
-                        <div class="relative">
-                            <input type="text" id="messenger-graph-search" placeholder="Search user..." class="bg-[#1a1a1a] text-white border border-[#333] rounded-[14px] px-10 py-2 text-sm focus:outline-none focus:border-blue-500 w-48">
-                            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                        </div>
-                        <select id="graph-mode" class="bg-[#1a1a1a] text-gray-300 border border-[#333] rounded-[14px] px-3 py-2 text-sm focus:outline-none">
-                            <option value="standard">Standard Mode</option>
-                            <option value="clique">Clique Mode</option>
-                        </select>
-                        <button id="refresh-graph-btn" class="nav-tab-style" style="background: #1a1a1a; border: 1px solid #333;">
-                            <i class="fa-solid fa-sync mr-1"></i> Refresh
-                        </button>
-                    </div>
-                </div>
-                
-                <div id="messenger-graph-container" class="flex-1 bg-black/40 rounded-[14px] border border-[#1a1a1a] relative overflow-hidden cursor-move">
-                    <div id="graph-loading" class="absolute inset-0 flex items-center justify-center bg-black/60 z-10">
-                        <div class="text-center">
-                            <i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i>
-                            <p class="text-gray-400">Mapping social graph...</p>
-                        </div>
-                    </div>
-                    <svg id="messenger-svg" class="w-full h-full"></svg>
-                    
-                    <div id="graph-tooltip" class="absolute pointer-events-none bg-[#111] border border-[#333] p-3 rounded-[14px] shadow-2xl opacity-0 transition-opacity z-50 min-w-[200px]"></div>
-
-                    <div class="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md border border-[#333] p-3 rounded-[14px] text-[10px] text-gray-400 pointer-events-none z-20">
-                        <div id="graph-stats" class="font-mono mb-2">Nodes: -- | Edges: --</div>
-                        <div class="flex flex-col gap-1">
-                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span> User</span>
-                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full border border-green-500"></span> Clique</span>
-                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-500"></span> Search Match</span>
-                        </div>
-                    </div>
-
-                    <div id="nickname-panel" class="absolute top-4 right-4 w-64 bg-[#0d0d0d]/90 backdrop-blur-lg border border-[#333] rounded-[1.25rem] shadow-2xl hidden z-30 overflow-hidden flex flex-col max-h-[80%]">
-                        <div class="p-3 border-b border-[#333] flex justify-between items-center bg-[#111]">
-                            <h4 class="text-xs font-bold text-white uppercase tracking-wider">Known Nicknames</h4>
-                            <button id="close-nick-panel" class="text-gray-500 hover:text-white pointer-events-auto"><i class="fa-solid fa-times"></i></button>
-                        </div>
-                        <div id="nickname-list" class="p-3 space-y-3 overflow-y-auto text-xs"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <div id="user-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="flex justify-between items-start mb-6 border-b border-[#333] pb-4">
-                <h3 class="text-xl text-white font-light">User Profile</h3>
-                <button id="close-user-modal" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark fa-lg"></i></button>
+            <div class="flex justify-between items-start mb-6 border-b border-[var(--border-color)] pb-4">
+                <h3 class="text-xl text-[var(--text-main)] font-light">User Profile</h3>
+                <button id="close-user-modal" class="text-gray-400 hover:text-[var(--text-main)]"><i class="fa-solid fa-xmark fa-lg"></i></button>
             </div>
             <div id="user-modal-body" class="space-y-4"></div>
         </div>
@@ -648,20 +435,20 @@
 
     <div id="ban-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="flex justify-between items-start mb-6 border-b border-[#333] pb-4">
+            <div class="flex justify-between items-start mb-6 border-b border-[var(--border-color)] pb-4">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-red-900/20 flex items-center justify-center text-red-500">
                         <i class="fa-solid fa-gavel"></i>
                     </div>
-                    <h3 class="text-xl text-white font-light">Ban User</h3>
+                    <h3 class="text-xl text-[var(--text-main)] font-light">Ban User</h3>
                 </div>
-                <button id="close-ban-modal" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark fa-lg"></i></button>
+                <button id="close-ban-modal" class="text-gray-400 hover:text-[var(--text-main)]"><i class="fa-solid fa-xmark fa-lg"></i></button>
             </div>
             <div class="space-y-4">
-                <p class="text-gray-300 text-sm bg-[#111] p-3 rounded border border-[#333]" id="ban-user-target">Target: ...</p>
+                <p class="text-[var(--text-muted)] text-sm bg-[var(--bg-page)]/50 p-3 rounded border border-[var(--border-color)]" id="ban-user-target">Target: ...</p>
                 
                 <div>
-                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Quick Presets</label>
+                    <label class="block text-xs text-[var(--text-muted)] opacity-60 uppercase tracking-widest mb-2">Quick Presets</label>
                     <div class="flex flex-wrap gap-2">
                         <button class="preset-chip" data-reason="Violation of Terms of Service" data-link="../legal.html">TOS Violation</button>
                         <button class="preset-chip" data-reason="Posting Explicit Content" data-link="../legal.html#content-policy">Explicit Content</button>
@@ -671,14 +458,14 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Ban Reason</label>
-                    <textarea id="ban-reason" class="w-full bg-[#111] text-white border border-[#333] rounded-[14px] p-3 text-sm focus:outline-none focus:border-red-500 min-h-[100px]" placeholder="Enter reason for ban..."></textarea>
+                    <label class="block text-xs text-[var(--text-muted)] opacity-60 uppercase tracking-widest mb-2">Ban Reason</label>
+                    <textarea id="ban-reason" class="w-full bg-[var(--bg-page)] text-[var(--text-main)] border border-[var(--border-color)] rounded-[14px] p-3 text-sm focus:outline-none focus:border-red-500 min-h-[100px]" placeholder="Enter reason for ban..."></textarea>
                 </div>
                 
                 <input type="hidden" id="ban-link" value="">
 
-                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#333]">
-                    <button id="cancel-ban" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--border-color)]">
+                    <button id="cancel-ban" class="px-4 py-2 text-gray-400 hover:text-[var(--text-main)] text-sm">Cancel</button>
                     <button id="confirm-ban" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-[14px] text-sm transition font-medium shadow-lg shadow-red-900/20">
                         Confirm Ban
                     </button>
@@ -689,40 +476,30 @@
 
     <div id="tag-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="flex justify-between items-start mb-6 border-b border-[#333] pb-4">
-                <h3 class="text-xl text-white font-light">Set User Tag</h3>
-                <button id="close-tag-modal" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark fa-lg"></i></button>
+            <div class="flex justify-between items-start mb-6 border-b border-[var(--border-color)] pb-4">
+                <h3 class="text-xl text-[var(--text-main)] font-light">Set User Tag</h3>
+                <button id="close-tag-modal" class="text-gray-400 hover:text-[var(--text-main)]"><i class="fa-solid fa-xmark fa-lg"></i></button>
             </div>
             <div class="space-y-4">
-                <p class="text-gray-300 text-sm bg-[#111] p-3 rounded border border-[#333]" id="tag-user-target">Target: ...</p>
+                <p class="text-[var(--text-muted)] text-sm bg-[var(--bg-page)]/50 p-3 rounded border border-[var(--border-color)]" id="tag-user-target">Target: ...</p>
                 
                 <div>
-                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Tag Text</label>
-                    <input type="text" id="tag-text" class="w-full bg-[#111] text-white border border-[#333] rounded-[14px] px-4 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="e.g. The Legend">
+                    <label class="block text-xs text-[var(--text-muted)] opacity-60 uppercase tracking-widest mb-2">Tag Text</label>
+                    <input type="text" id="tag-text" class="w-full bg-[var(--bg-page)] text-[var(--text-main)] border border-[var(--border-color)] rounded-[14px] px-4 py-2 text-sm focus:outline-none focus:border-[var(--accent-color)]" placeholder="e.g. The Legend">
                 </div>
 
                 <div>
-                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Tag Color</label>
+                    <label class="block text-xs text-[var(--text-muted)] opacity-60 uppercase tracking-widest mb-2">Tag Color</label>
                     <div class="flex gap-2 mb-2">
-                        <input type="color" id="tag-color" class="h-10 w-14 bg-transparent border border-[#333] rounded cursor-pointer" value="#3b82f6">
-                        <input type="text" id="tag-color-hex" class="flex-1 bg-[#111] text-white border border-[#333] rounded-[14px] px-4 py-2 text-sm font-mono uppercase" value="#3b82f6">
-                    </div>
-                    <div class="flex gap-2">
-                        <button class="w-6 h-6 rounded-full bg-red-500 cursor-pointer border border-transparent hover:border-white color-preset" data-color="#ef4444"></button>
-                        <button class="w-6 h-6 rounded-full bg-orange-500 cursor-pointer border border-transparent hover:border-white color-preset" data-color="#f97316"></button>
-                        <button class="w-6 h-6 rounded-full bg-yellow-500 cursor-pointer border border-transparent hover:border-white color-preset" data-color="#eab308"></button>
-                        <button class="w-6 h-6 rounded-full bg-green-500 cursor-pointer border border-transparent hover:border-white color-preset" data-color="#22c55e"></button>
-                        <button class="w-6 h-6 rounded-full bg-blue-500 cursor-pointer border border-transparent hover:border-white color-preset" data-color="#3b82f6"></button>
-                        <button class="w-6 h-6 rounded-full bg-purple-500 cursor-pointer border border-transparent hover:border-white color-preset" data-color="#a855f7"></button>
-                        <button class="w-6 h-6 rounded-full bg-pink-500 cursor-pointer border border-transparent hover:border-white color-preset" data-color="#ec4899"></button>
-                        <button class="w-6 h-6 rounded-full bg-white cursor-pointer border border-transparent hover:border-white color-preset" data-color="#ffffff"></button>
+                        <input type="color" id="tag-color" class="h-10 w-14 bg-transparent border border-[var(--border-color)] rounded cursor-pointer" value="#3b82f6">
+                        <input type="text" id="tag-color-hex" class="flex-1 bg-[var(--bg-page)] text-[var(--text-main)] border border-[var(--border-color)] rounded-[14px] px-4 py-2 text-sm font-mono uppercase" value="#3b82f6">
                     </div>
                 </div>
 
-                <div class="flex justify-between gap-3 mt-6 pt-4 border-t border-[#333]">
+                <div class="flex justify-between gap-3 mt-6 pt-4 border-t border-[var(--border-color)]">
                     <button id="remove-tag-btn" class="px-4 py-2 text-red-400 hover:text-red-300 text-sm hover:bg-red-900/20 rounded transition">Remove Tag</button>
                     <div class="flex gap-3">
-                        <button id="cancel-tag" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+                        <button id="cancel-tag" class="px-4 py-2 text-gray-400 hover:text-[var(--text-main)] text-sm">Cancel</button>
                         <button id="save-tag" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-[14px] text-sm transition font-medium shadow-lg shadow-blue-900/20">
                             Save Tag
                         </button>
@@ -734,8 +511,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { 
             getFirestore, 
             collection, 
@@ -754,40 +530,13 @@
             serverTimestamp,
             deleteField
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { firebaseConfig as masterConfig } from "../firebase-config.js";
+        import { firebaseConfig } from "../firebase-config.js";
 
-        const app = initializeApp(masterConfig);
+        const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const functions = getFunctions(app);
 
-        // --- Messenger Project Config ---
-        const messengerConfig = {
-            apiKey: "AIzaSyASqfiYUPf7xY4wgZ0hLl8_Z0ZkBiwFUO8",
-            authDomain: "theamericanmessenger-0.firebaseapp.com",
-            databaseURL: "https://theamericanmessenger-0-default-rtdb.firebaseio.com",
-            projectId: "theamericanmessenger-0",
-            storageBucket: "theamericanmessenger-0.firebasestorage.app",
-            messagingSenderId: "963196851685",
-            appId: "1:963196851685:web:9f709be8b2888ed4e28b0c",
-            measurementId: "G-SBGEJDRSBZ"
-        };
-        const messengerApp = initializeApp(messengerConfig, "messenger");
-        const messengerDb = getFirestore(messengerApp);
-
-        let allUsers = [];      // From Firestore
-        let allAuthUsers = [];  // From Cloud Function
-        
-        // Messenger Graph Data
-        let messengerNodes = [];
-        let messengerLinks = [];
-        let graphSimulation = null;
-        let graphZoom = null;
-        let isGraphInitialized = false;
-        let missingAuthUsers = []; // Auth exists, Doc missing
-        let orphanedDocs = [];     // Doc exists, Auth missing
-        
-        let allSessions = [];
+        let allUsers = [];
         let admins = new Set();
         let bannedUsers = new Set();
         let chartInstance = null;
@@ -800,8 +549,6 @@
         let unsubscribeBans = null;
         let unsubscribeAdmins = null;
 
-        let isAdminReAuthenticated = false;
-
         const providerImages = {
             'google.com': '../images/google-icon.png',
             'microsoft.com': '../images/microsoft.png',
@@ -809,454 +556,6 @@
             'twitter.com': '../images/x.png',
             'password': 'fa-solid fa-envelope',
             'email': 'fa-solid fa-envelope'
-        };
-
-        const initMessengerGraph = async () => {
-            document.getElementById('graph-loading').classList.remove('hidden');
-            isGraphInitialized = true;
-            
-            try {
-                await fetchMessengerData();
-                renderMessengerGraph();
-            } catch (err) {
-                console.error("Graph initialization failed:", err);
-                alert("Failed to load messenger graph data.");
-            } finally {
-                document.getElementById('graph-loading').classList.add('hidden');
-            }
-        };
-
-        const fetchMessengerData = async () => {
-            // Fetch all users
-            const usersSnap = await getDocs(collection(messengerDb, 'users'));
-            const users = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
-            
-            messengerNodes = users.map(u => ({
-                id: u.uid,
-                label: u.username || u.publicId || u.uid.substring(0, 8),
-                publicId: u.publicId,
-                email: u.email || 'N/A',
-                nicknames: [] // Array of { byUid: string, byName: string, as: string }
-            }));
-
-            messengerLinks = [];
-            
-            // Map for quick node access
-            const nodeMap = {};
-            messengerNodes.forEach(n => nodeMap[n.id] = n);
-
-            // Fetch all contacts for all users
-            const contactPromises = users.map(async (u) => {
-                const contactsSnap = await getDocs(collection(messengerDb, `users/${u.uid}/contacts`));
-                contactsSnap.forEach(cdoc => {
-                    const targetUid = cdoc.id;
-                    const cdata = cdoc.data();
-                    
-                    // Store nickname info on the target node
-                    if (nodeMap[targetUid]) {
-                        nodeMap[targetUid].nicknames.push({
-                            byUid: u.uid,
-                            byName: u.username || u.publicId || 'Unknown',
-                            as: cdata.name
-                        });
-                    }
-
-                    // Only add link once (undirected graph representation)
-                    if (u.uid < targetUid) {
-                        messengerLinks.push({
-                            source: u.uid,
-                            target: targetUid,
-                            lastMessage: cdata.lastMessage || '',
-                            timestamp: cdata.timestamp,
-                            savedName: cdata.name
-                        });
-                    }
-                });
-            });
-
-            await Promise.all(contactPromises);
-            
-            document.getElementById('graph-stats').textContent = `Nodes: ${messengerNodes.length} | Edges: ${messengerLinks.length}`;
-        };
-
-        const renderMessengerGraph = () => {
-            const container = document.getElementById('messenger-graph-container');
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-            const mode = document.getElementById('graph-mode').value;
-
-            d3.select("#messenger-svg").selectAll("*").remove();
-            
-            const svg = d3.select("#messenger-svg")
-                .attr("viewBox", [0, 0, width, height]);
-
-            const g = svg.append("g");
-
-            // Zoom behavior
-            graphZoom = d3.zoom()
-                .scaleExtent([0.01, 10])
-                .on("zoom", (event) => {
-                    g.attr("transform", event.transform);
-                });
-
-            svg.call(graphZoom);
-
-            // Clique Estimation (Simple community detection via connections)
-            let communities = {};
-            if (mode === 'clique') {
-                const adj = {};
-                messengerNodes.forEach(n => adj[n.id] = new Set());
-                messengerLinks.forEach(l => {
-                    // Handle D3 source/target as object or ID string
-                    const sId = typeof l.source === 'object' ? l.source.id : l.source;
-                    const tId = typeof l.target === 'object' ? l.target.id : l.target;
-                    if (adj[sId] && adj[tId]) {
-                        adj[sId].add(tId);
-                        adj[tId].add(sId);
-                    }
-                });
-
-                let commCount = 0;
-                const visited = new Set();
-
-                messengerNodes.forEach(n => {
-                    if (!visited.has(n.id)) {
-                        const queue = [n.id];
-                        const currentComm = [];
-                        visited.add(n.id);
-                        while(queue.length > 0) {
-                            const u = queue.shift();
-                            currentComm.push(u);
-                            adj[u].forEach(v => {
-                                if (!visited.has(v)) {
-                                    visited.add(v);
-                                    queue.push(v);
-                                }
-                            });
-                        }
-                        communities[commCount++] = currentComm;
-                    }
-                });
-
-                messengerNodes.forEach(n => {
-                    for(let id in communities) {
-                        if (communities[id].includes(n.id)) {
-                            n.community = id;
-                            break;
-                        }
-                    }
-                });
-            } else {
-                messengerNodes.forEach(n => n.community = 0);
-            }
-
-            const color = d3.scaleOrdinal(d3.schemeCategory10);
-
-            // Simulation
-            graphSimulation = d3.forceSimulation(messengerNodes)
-                .force("link", d3.forceLink(messengerLinks).id(d => d.id).distance(120))
-                .force("charge", d3.forceManyBody().strength(-400))
-                .force("center", d3.forceCenter(width / 2, height / 2))
-                .force("collision", d3.forceCollide().radius(50));
-
-            // Clique Outlines Layer
-            const cliqueLayer = g.append("g").attr("class", "cliques");
-
-            const link = g.append("g")
-                .attr("stroke", "#333")
-                .attr("stroke-opacity", 0.4)
-                .selectAll("line")
-                .data(messengerLinks)
-                .join("line")
-                .attr("stroke-width", 1);
-
-            const node = g.append("g")
-                .selectAll("g")
-                .data(messengerNodes)
-                .join("g")
-                .attr("class", "node-group")
-                .call(drag(graphSimulation));
-
-            // Circles
-            node.append("circle")
-                .attr("r", 20)
-                .attr("fill", d => mode === 'clique' ? color(d.community) : "#3b82f6")
-                .attr("stroke", "#fff")
-                .attr("stroke-width", 1.5)
-                .attr("class", "node-circle");
-
-            // Labels
-            node.append("text")
-                .text(d => d.label)
-                .attr("x", 0)
-                .attr("y", 30)
-                .attr("text-anchor", "middle")
-                .attr("fill", "#ccc")
-                .attr("font-size", "10px")
-                .attr("pointer-events", "none");
-
-            // Tooltips
-            const tooltip = d3.select("#graph-tooltip");
-            
-            node.on("mouseover", (event, d) => {
-                tooltip.style("opacity", 1)
-                    .html(`
-                        <div class="space-y-2">
-                            <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs text-white font-bold">${d.label.charAt(0)}</div>
-                                <div>
-                                    <div class="text-white font-medium">${d.label}</div>
-                                    <div class="text-[10px] text-gray-500 font-mono">${d.id}</div>
-                                </div>
-                            </div>
-                            <div class="border-t border-[#333] pt-2 mt-2">
-                                <div class="text-[10px] uppercase text-gray-500 tracking-wider">Public ID</div>
-                                <div class="text-xs text-gray-300">${d.publicId || 'N/A'}</div>
-                            </div>
-                            <div>
-                                <div class="text-[10px] uppercase text-gray-500 tracking-wider">Nicknames</div>
-                                <div class="text-xs text-gray-300">${d.nicknames.length} known variants</div>
-                            </div>
-                        </div>
-                    `);
-            })
-            .on("mousemove", (event) => {
-                tooltip.style("left", (event.pageX + 15) + "px")
-                       .style("top", (event.pageY - 15) + "px");
-            })
-            .on("mouseout", () => {
-                tooltip.style("opacity", 0);
-            })
-            .on("click", (event, d) => {
-                event.stopPropagation();
-                showNicknamePanel(d);
-            });
-
-            link.on("mouseover", (event, d) => {
-                tooltip.style("opacity", 1)
-                    .html(`
-                        <div class="space-y-1">
-                            <div class="text-[10px] uppercase text-gray-500 tracking-wider">Connection Details</div>
-                            <div class="text-xs text-white">${d.source.label} ↔ ${d.target.label}</div>
-                            <div class="text-[10px] text-gray-400 italic mt-1">"${d.lastMessage || 'No messages'}"</div>
-                            <div class="text-[9px] text-gray-600 mt-1">${d.timestamp ? formatDate(d.timestamp) : ''}</div>
-                        </div>
-                    `);
-            })
-            .on("mousemove", (event) => {
-                tooltip.style("left", (event.pageX + 15) + "px")
-                       .style("top", (event.pageY - 15) + "px");
-            })
-            .on("mouseout", () => {
-                tooltip.style("opacity", 0);
-            });
-
-            // Clique Hull Rendering
-            graphSimulation.on("tick", () => {
-                link
-                    .attr("x1", d => d.source.x)
-                    .attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x)
-                    .attr("y2", d => d.target.y);
-
-                node
-                    .attr("transform", d => `translate(${d.x},${d.y})`);
-
-                if (mode === 'clique') {
-                    renderCliqueOutlines(cliqueLayer, communities, color, svg, graphZoom, width, height);
-                }
-            });
-
-            function drag(simulation) {
-                function dragstarted(event) {
-                    if (!event.active) simulation.alphaTarget(0.3).restart();
-                    event.subject.fx = event.subject.x;
-                    event.subject.fy = event.subject.y;
-                }
-                
-                function dragged(event) {
-                    event.subject.fx = event.x;
-                    event.subject.fy = event.y;
-                }
-                
-                function dragended(event) {
-                    if (!event.active) simulation.alphaTarget(0);
-                    event.subject.fx = null;
-                    event.subject.fy = null;
-                }
-                
-                return d3.drag()
-                    .on("start", dragstarted)
-                    .on("drag", dragged)
-                    .on("end", dragended);
-            }
-        };
-
-        const renderCliqueOutlines = (layer, communities, color, svg, zoom, width, height) => {
-            const data = [];
-            for (let id in communities) {
-                const nodes = messengerNodes.filter(n => communities[id].includes(n.id));
-                if (nodes.length < 2) continue;
-
-                // Simple circle encompassing all nodes
-                const x = d3.mean(nodes, d => d.x);
-                const y = d3.mean(nodes, d => d.y);
-                const r = d3.max(nodes, d => Math.sqrt((d.x - x) ** 2 + (d.y - y) ** 2)) + 40;
-
-                data.push({ id, x, y, r, nodes });
-            }
-
-            layer.selectAll("circle")
-                .data(data, d => d.id)
-                .join(
-                    enter => enter.append("circle")
-                        .attr("stroke", "#22c55e")
-                        .attr("stroke-width", 2)
-                        .attr("stroke-dasharray", "5,5")
-                        .attr("fill", "transparent")
-                        .attr("opacity", 0.6)
-                        .on("mouseover", function() { d3.select(this).attr("fill", "rgba(34, 197, 94, 0.1)"); })
-                        .on("mouseout", function() { d3.select(this).attr("fill", "transparent"); })
-                        .on("click", (event, d) => {
-                            event.stopPropagation();
-                            svg.transition().duration(750).call(
-                                zoom.transform,
-                                d3.zoomIdentity.translate(width / 2, height / 2).scale(1.5).translate(-d.x, -d.y)
-                            );
-                        }),
-                    update => update
-                        .attr("cx", d => d.x)
-                        .attr("cy", d => d.y)
-                        .attr("r", d => d.r)
-                );
-        };
-
-        const zoomToUid = (uid) => {
-            const targetNode = messengerNodes.find(n => n.id === uid);
-            if (targetNode && graphZoom) {
-                const container = document.getElementById('messenger-graph-container');
-                const svg = d3.select("#messenger-svg");
-                const width = container.clientWidth;
-                const height = container.clientHeight;
-
-                // Highlight briefly
-                d3.selectAll(".node-circle")
-                    .attr("stroke", d => d.id === uid ? "#fbbf24" : "#fff")
-                    .attr("stroke-width", d => d.id === uid ? 4 : 1.5)
-                    .attr("opacity", d => d.id === uid ? 1 : 0.2);
-
-                svg.transition().duration(750).call(
-                    graphZoom.transform,
-                    d3.zoomIdentity.translate(width / 2, height / 2).scale(2).translate(-targetNode.x, -targetNode.y)
-                );
-            }
-        };
-
-        const showNicknamePanel = (user) => {
-            const panel = document.getElementById('nickname-panel');
-            const list = document.getElementById('nickname-list');
-            panel.classList.remove('hidden');
-
-            if (user.nicknames.length === 0) {
-                list.innerHTML = '<div class="text-gray-500 italic py-4 text-center">No saved nicknames found for this user in other contacts.</div>';
-            } else {
-                list.innerHTML = user.nicknames.map(n => `
-                    <div class="bg-[#1a1a1a] p-2 rounded-[14px] border border-[#333] cursor-pointer hover:border-blue-500 transition-all hover:bg-[#222] group" data-saver-uid="${n.byUid}">
-                        <div class="text-blue-400 font-medium group-hover:text-blue-300">${n.as}</div>
-                        <div class="flex justify-between items-center mt-1">
-                            <span class="text-[10px] text-gray-500 italic">Saved by: ${n.byName}</span>
-                            <span class="text-[9px] font-mono text-gray-600">${n.byUid.substring(0, 8)}</span>
-                        </div>
-                    </div>
-                `).join('');
-
-                list.querySelectorAll('[data-saver-uid]').forEach(el => {
-                    el.onclick = () => {
-                        zoomToUid(el.dataset.saverUid);
-                    };
-                });
-            }
-        };
-
-        document.getElementById('close-nick-panel').addEventListener('click', () => {
-            document.getElementById('nickname-panel').classList.add('hidden');
-        });
-
-        const highlightGraphNode = (term) => {
-            if (!isGraphInitialized) return;
-            
-            const nodeCircles = d3.selectAll(".node-circle");
-            const links = d3.selectAll("line");
-
-            if (!term) {
-                nodeCircles.attr("stroke", "#fff").attr("stroke-width", 1.5).attr("opacity", 1);
-                links.attr("stroke", "#333").attr("stroke-opacity", 0.4).attr("stroke-width", 1);
-                return;
-            }
-
-            let targetNode = null;
-            const matchingNodes = new Set();
-            const matchingLinks = new Set();
-
-            nodeCircles.each(function(d) {
-                // Check if others have saved THIS person (d) as the search term
-                const nicknameMatches = d.nicknames.filter(n => n.as.toLowerCase().includes(term));
-                const isNicknameMatch = nicknameMatches.length > 0;
-                
-                const isDirectMatch = d.label.toLowerCase().includes(term) || 
-                                     d.id.toLowerCase().includes(term) || 
-                                     (d.publicId && d.publicId.toLowerCase().includes(term));
-                
-                const match = isDirectMatch || isNicknameMatch;
-                
-                if (match) {
-                    matchingNodes.add(d.id);
-                    // If it was a nickname match, also find the links from the savers
-                    nicknameMatches.forEach(nm => {
-                        matchingLinks.add(`${nm.byUid}_${d.id}`);
-                        matchingLinks.add(`${d.id}_${nm.byUid}`);
-                    });
-                }
-
-                d3.select(this)
-                    .attr("stroke", match ? (isNicknameMatch ? "#10b981" : "#fbbf24") : "#fff")
-                    .attr("stroke-width", match ? 5 : 1.5)
-                    .attr("opacity", match ? 1 : 0.1);
-                
-                // Prioritize nickname matches for the zoom target
-                if (match) {
-                    if (!targetNode || (isNicknameMatch && !targetNode._isNick)) {
-                        targetNode = d;
-                        targetNode._isNick = isNicknameMatch;
-                    }
-                }
-            });
-
-            // Highlight links
-            links.each(function(l) {
-                const sId = typeof l.source === 'object' ? l.source.id : l.source;
-                const tId = typeof l.target === 'object' ? l.target.id : l.target;
-                const linkKey = `${sId}_${tId}`;
-                
-                const isMatch = matchingLinks.has(linkKey);
-                
-                d3.select(this)
-                    .attr("stroke", isMatch ? "#10b981" : "#333")
-                    .attr("stroke-opacity", isMatch ? 1 : 0.1)
-                    .attr("stroke-width", isMatch ? 3 : 1);
-            });
-
-            if (targetNode && graphZoom) {
-                const container = document.getElementById('messenger-graph-container');
-                const svg = d3.select("#messenger-svg");
-                const width = container.clientWidth;
-                const height = container.clientHeight;
-
-                svg.transition().duration(750).call(
-                    graphZoom.transform,
-                    d3.zoomIdentity.translate(width / 2, height / 2).scale(2.5).translate(-targetNode.x, -targetNode.y)
-                );
-            }
         };
 
         const init = async () => {
@@ -1267,7 +566,7 @@
                     
                     if (adminDoc.exists() || isSuperAdmin) {
                         subscribeToData();
-                        loadTrafficData(); 
+                        loadTrafficData();
                     } else {
                         window.location.href = '../logged-in/dashboard.html';
                     }
@@ -1277,31 +576,21 @@
             });
             
             setupTabs();
-            // Attach CSV Export listener
             document.getElementById('export-csv-btn').addEventListener('click', exportToCSV);
         };
 
-        /* --- CSV Export Function --- */
         const exportToCSV = () => {
             if (!allUsers || allUsers.length === 0) {
                 alert("No users available to export.");
                 return;
             }
 
-            // CSV Headers
             const headers = ['UID', 'Username', 'Email', 'Provider', 'Created At', 'Verified', 'Role', 'Status'];
-
-            // Map user data to CSV rows
             const rows = allUsers.map(u => {
                 const isAdmin = admins.has(u.id) ? 'Admin' : 'User';
                 const isBanned = bannedUsers.has(u.id) ? 'Banned' : 'Active';
-                
-                // Format Date safely
-                const date = u.createdAt && u.createdAt.toDate 
-                    ? u.createdAt.toDate().toISOString() 
-                    : (u.createdAt ? new Date(u.createdAt).toISOString() : '');
+                const date = u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toISOString() : (u.createdAt ? new Date(u.createdAt).toISOString() : '');
 
-                // Helper to escape CSV special characters (commas, quotes)
                 const escapeCsv = (val) => {
                     if (val === null || val === undefined) return '';
                     const str = val.toString();
@@ -1323,10 +612,7 @@
                 ].join(',');
             });
 
-            // Combine headers and rows
             const csvContent = [headers.join(','), ...rows].join('\n');
-
-            // Create download link
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -1340,680 +626,156 @@
 
         const setupTabs = () => {
             document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
+                btn.addEventListener('click', () => {
                     const tabId = btn.dataset.tab;
-
-                    if (tabId === 'data-analytics' && !isAdminReAuthenticated) {
-                        // Keep current tab active if not re-authenticated
-                        // return; 
-                    }
-
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-                    
                     btn.classList.add('active');
                     document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-                    
                     if(tabId === 'users') renderChart(allUsers);
-                    if(tabId === 'health') {
-                        refreshSyncTables(); 
-                    }
-                    if(tabId === 'data-analytics') {
-                        checkReAuthStatus();
-                    }
-                    if(tabId === 'messenger-web') {
-                        if(!isGraphInitialized) {
-                            initMessengerGraph();
-                        }
-                    }
+                    if(tabId === 'health') refreshSyncTables();
                 });
             });
-
-            document.getElementById('refresh-graph-btn').addEventListener('click', () => {
-                initMessengerGraph();
-            });
-
-            document.getElementById('graph-mode').addEventListener('change', () => {
-                renderMessengerGraph();
-            });
-
-            document.getElementById('messenger-graph-search').addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                highlightGraphNode(term);
-            });
-
-            document.getElementById('reauth-btn').addEventListener('click', async () => {
-                const provider = new GoogleAuthProvider();
-                try {
-                    const result = await signInWithPopup(auth, provider);
-                    if (result.user.email === '4simpleproblems@gmail.com') {
-                        isAdminReAuthenticated = true;
-                        checkReAuthStatus();
-                        showNotification('Master Admin Authenticated', 'fa-solid fa-shield-check', 'success');
-                    } else {
-                        alert('Unauthorized. Access restricted to 4simpleproblems@gmail.com');
-                    }
-                } catch (error) {
-                    console.error('Re-auth error:', error);
-                    alert('Authentication failed: ' + error.message);
-                }
-            });
-
-            // Search logic for inspection
-            const inspectSearchInput = document.getElementById('inspect-user-search');
-            const inspectResults = document.getElementById('inspect-search-results');
-
-            inspectSearchInput.addEventListener('input', () => {
-                const term = inspectSearchInput.value.toLowerCase();
-                if (term.length < 2) {
-                    inspectResults.classList.add('hidden');
-                    return;
-                }
-
-                const matches = allUsers.filter(u => 
-                    (u.username && u.username.toLowerCase().includes(term)) ||
-                    (u.email && u.email.toLowerCase().includes(term)) ||
-                    u.id.toLowerCase().includes(term)
-                ).slice(0, 10);
-
-                if (matches.length > 0) {
-                    inspectResults.innerHTML = matches.map(u => `
-                        <div class="p-3 border-b border-[#1a1a1a] hover:bg-[#1a1a1a] cursor-pointer flex items-center gap-3" data-uid="${u.id}">
-                            <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs text-white font-bold">
-                                ${(u.username || '?').charAt(0).toUpperCase()}
-                            </div>
-                            <div class="flex flex-col">
-                                <span class="text-sm text-white">${u.username || 'Unknown'}</span>
-                                <span class="text-xs text-gray-500">${u.email || u.id}</span>
-                            </div>
-                        </div>
-                    `).join('');
-                    inspectResults.classList.remove('hidden');
-                    
-                    inspectResults.querySelectorAll('[data-uid]').forEach(el => {
-                        el.addEventListener('click', () => {
-                            inspectUser(el.dataset.uid);
-                            inspectResults.classList.add('hidden');
-                            inspectSearchInput.value = '';
-                        });
-                    });
-                } else {
-                    inspectResults.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No users found</div>';
-                    inspectResults.classList.remove('hidden');
-                }
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!inspectSearchInput.contains(e.target) && !inspectResults.contains(e.target)) {
-                    inspectResults.classList.add('hidden');
-                }
-            });
-        };
-
-        const checkReAuthStatus = () => {
-            const reauthSection = document.getElementById('admin-reauth-section');
-            const dataContent = document.getElementById('data-analytics-content');
-            
-            if (isAdminReAuthenticated) {
-                reauthSection.classList.add('hidden');
-                dataContent.classList.remove('hidden');
-            } else {
-                reauthSection.classList.remove('hidden');
-                dataContent.classList.add('hidden');
-            }
-        };
-
-        const inspectUser = async (uid) => {
-            const user = allUsers.find(u => u.id === uid);
-            if (!user) return;
-
-            document.getElementById('user-inspect-placeholder').classList.add('hidden');
-            const view = document.getElementById('user-inspect-view');
-            view.classList.remove('hidden');
-
-            // Render PFP Preview
-            renderInspectPfp(user);
-
-            document.getElementById('inspect-username').textContent = user.username || 'Unknown';
-            document.getElementById('inspect-email').textContent = user.email || user.id;
-
-            // Render Tags
-            const tagsContainer = document.getElementById('inspect-tags');
-            tagsContainer.innerHTML = '';
-            if (user.userTag) {
-                const tag = document.createElement('span');
-                tag.className = 'text-[10px] uppercase font-bold px-2 py-0.5 rounded border tracking-wider';
-                tag.style.color = user.userTag.color;
-                tag.style.borderColor = user.userTag.color + '40';
-                tag.style.backgroundColor = user.userTag.color + '10';
-                tag.textContent = user.userTag.text;
-                tagsContainer.appendChild(tag);
-            }
-
-            // Raw Data
-            const rawEl = document.getElementById('inspect-raw-data');
-            rawEl.textContent = JSON.stringify(user, null, 2);
-
-            document.getElementById('copy-raw-json').onclick = () => {
-                navigator.clipboard.writeText(JSON.stringify(user, null, 4));
-                showNotification('JSON Copied to Clipboard', 'fa-solid fa-copy');
-            };
-
-            // Dailyphoto and Friend Code
-            const dpCountEl = document.getElementById('inspect-dailyphoto-count');
-            dpCountEl.textContent = 'Loading...';
-            const photosSnap = await getDocs(query(collection(db, 'dailyPhotos'), where('userId', '==', uid)));
-            dpCountEl.textContent = photosSnap.size;
-
-            const fcEl = document.getElementById('inspect-friend-code');
-            fcEl.textContent = 'Scanning...';
-            const fcDoc = await getDoc(doc(db, 'friend_codes', uid));
-            fcEl.textContent = fcDoc.exists() ? fcDoc.data().code : 'Not Set';
-
-            const friendsEl = document.getElementById('inspect-friends-count');
-            friendsEl.textContent = 'Calculating...';
-            const sentReqs = await getDocs(query(collection(db, 'friendRequests'), where('senderId', '==', uid)));
-            const recvReqs = await getDocs(query(collection(db, 'friendRequests'), where('recipientId', '==', uid)));
-            friendsEl.textContent = `${sentReqs.size} Sent / ${recvReqs.size} Recv`;
-
-            // Theme Details
-            const themeDetails = document.getElementById('inspect-theme-details');
-            if (user.navbarTheme) {
-                themeDetails.innerHTML = `
-                    <div class="flex justify-between">
-                        <span class="text-gray-500">Theme Name:</span>
-                        <span class="text-white">${user.navbarTheme.name || 'Custom'}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-500">Primary Color:</span>
-                        <span class="font-mono text-xs" style="color: ${user.navbarTheme['tab-active-text']}">${user.navbarTheme['tab-active-text'] || 'N/A'}</span>
-                    </div>
-                `;
-            } else {
-                themeDetails.innerHTML = '<p class="text-gray-600 italic">Default Dark Theme</p>';
-            }
-
-            // Recent Activity
-            const activityEl = document.getElementById('inspect-recent-activity');
-            const userSessions = allSessions.filter(s => s.userId === uid).slice(0, 5);
-            if (userSessions.length > 0) {
-                activityEl.innerHTML = userSessions.map(s => `
-                    <div class="flex justify-between border-b border-white/5 pb-1">
-                        <span class="text-gray-400 truncate w-24">${s.visitedPages && s.visitedPages.length > 0 ? s.visitedPages[s.visitedPages.length-1].title : 'Unknown'}</span>
-                        <span class="text-gray-600 text-[10px]">${formatTimeAgo(s.lastActive)}</span>
-                    </div>
-                `).join('');
-            } else {
-                activityEl.innerHTML = '<p class="text-gray-600 italic">No recent sessions found.</p>';
-            }
-        };
-
-        const renderInspectPfp = (userData) => {
-            const container = document.getElementById('inspect-pfp-preview');
-            const username = userData.username || 'User';
-            const initial = (userData.username || '?').charAt(0).toUpperCase();
-            const pfpType = userData.pfpType || 'google';
-
-            let avatarHtml = '';
-
-            if (pfpType === 'custom' && userData.customPfp) {
-                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" alt="Profile">`;
-            } else if (pfpType === 'mibi' && userData.mibiConfig) {
-                const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = userData.mibiConfig;
-                const scale = (size || 100) / 100;
-                const rot = rotation || 0;
-                const x = offsetX || 0;
-                const y = offsetY || 0;
-                
-                avatarHtml = `
-                    <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'};">
-                         <div class="absolute inset-0 w-full h-full" style="transform: translate(${x}%, ${y}%) rotate(${rot}deg) scale(${scale}); transform-origin: center;">
-                             <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
-                             ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                             ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                             ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                         </div>
-                    </div>
-                `;
-            } else if (pfpType === 'letter') {
-                const bg = userData.pfpLetterBg || 'linear-gradient(135deg, #374151 0%, #111827 100%)';
-                avatarHtml = `<div class="w-full h-full font-bold flex items-center justify-center text-3xl text-white" style="background: ${bg};">${initial}</div>`;
-            } else {
-                if (userData.photoURL) {
-                    avatarHtml = `<img src="${userData.photoURL}" class="w-full h-full object-cover" alt="Profile">`;
-                } else {
-                    avatarHtml = `<div class="w-full h-full bg-blue-600 flex items-center justify-center text-3xl font-bold text-white">${initial}</div>`;
-                }
-            }
-
-            container.innerHTML = avatarHtml;
         };
 
         const subscribeToData = () => {
-            unsubscribeBans = onSnapshot(collection(db, 'bans'), (snapshot) => {
-                bannedUsers = new Set(snapshot.docs.map(d => d.id));
-                document.getElementById('total-banned-count').textContent = bannedUsers.size;
-                renderTable(getFilteredUsers());
+            if(unsubscribeUsers) unsubscribeUsers();
+            if(unsubscribeBans) unsubscribeBans();
+            if(unsubscribeAdmins) unsubscribeAdmins();
+
+            unsubscribeBans = onSnapshot(collection(db, 'bans'), (snap) => {
+                bannedUsers = new Set(snap.docs.map(d => d.id));
+                if(allUsers.length) renderTable(getFilteredUsers());
             });
 
-            unsubscribeAdmins = onSnapshot(collection(db, 'admins'), (snapshot) => {
-                admins = new Set(snapshot.docs.map(d => d.id));
-                document.getElementById('total-admins-count').textContent = admins.size;
-                renderTable(getFilteredUsers()); 
+            unsubscribeAdmins = onSnapshot(collection(db, 'admins'), (snap) => {
+                admins = new Set(snap.docs.map(d => d.id));
+                if(allUsers.length) renderTable(getFilteredUsers());
             });
 
-            const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-            
-            unsubscribeUsers = onSnapshot(q, (snapshot) => {
-                allUsers = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            unsubscribeUsers = onSnapshot(collection(db, 'users'), (snap) => {
+                allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 
+                document.getElementById('db-user-count').textContent = allUsers.length;
                 document.getElementById('total-users-count').textContent = allUsers.length;
-                const verifiedCount = allUsers.filter(u => u.emailVerified).length;
-                document.getElementById('total-verified-count').textContent = verifiedCount;
-                
-                document.getElementById('loading-users').style.display = 'none';
-                
+                document.getElementById('total-admins-count').textContent = admins.size;
+                document.getElementById('total-banned-count').textContent = bannedUsers.size;
+                document.getElementById('total-verified-count').textContent = allUsers.filter(u => u.emailVerified).length;
+
                 renderTable(getFilteredUsers());
                 renderChart(allUsers);
-                
-                refreshAuthData();
-            }, (error) => {
-                console.error("Error subscribing to users:", error);
-                document.getElementById('loading-users').textContent = "Error loading live data: " + error.message;
             });
         };
-
-        const refreshAuthData = async () => {
-            const authCountEl = document.getElementById('auth-user-count');
-            const dbCountEl = document.getElementById('db-user-count');
-            const missingCountEl = document.getElementById('missing-user-count');
-            const syncBtn = document.getElementById('mass-sync-btn');
-
-            if (!authCountEl) return;
-
-            try {
-                const getAuthUsers = httpsCallable(functions, 'getAuthUsers');
-                const result = await getAuthUsers();
-                allAuthUsers = result.data; 
-                
-                const dbUserIds = new Set(allUsers.map(u => u.id));
-                missingAuthUsers = allAuthUsers.filter(u => !dbUserIds.has(u.uid));
-
-                const authUserIds = new Set(allAuthUsers.map(u => u.uid));
-                orphanedDocs = allUsers.filter(u => !authUserIds.has(u.id));
-
-                authCountEl.textContent = allAuthUsers.length;
-                dbCountEl.textContent = allUsers.length;
-                missingCountEl.textContent = missingAuthUsers.length;
-
-                if (missingAuthUsers.length > 0) {
-                    syncBtn.classList.remove('hidden');
-                    syncBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-2"></i> Mass Add ${missingAuthUsers.length} Users`;
-                } else {
-                    syncBtn.classList.add('hidden');
-                }
-
-                refreshSyncTables();
-
-            } catch (error) {
-                console.error("Failed to fetch auth users:", error);
-                authCountEl.textContent = "Error";
-            }
-        };
-
-        const refreshSyncTables = () => {
-            const missingBody = document.getElementById('missing-profile-body');
-            document.getElementById('count-missing-profile').textContent = missingAuthUsers.length;
-            
-            if (missingAuthUsers.length === 0) {
-                missingBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-600 py-8">All Auth users have valid profiles.</td></tr>';
-            } else {
-                missingBody.innerHTML = missingAuthUsers.map(u => {
-                    const provider = (u.providerData && u.providerData.length > 0) ? u.providerData[0].providerId : 'unknown';
-                    return `
-                    <tr>
-                        <td class="font-mono text-xs text-gray-500">${u.uid}</td>
-                        <td class="text-sm text-gray-300">
-                            <div class="flex flex-col">
-                                <span>${u.email || 'No Email'}</span>
-                                <span class="text-xs text-gray-600">${provider}</span>
-                            </div>
-                        </td>
-                        <td>
-                            <button class="action-btn btn-create" data-action="create-missing" data-uid="${u.uid}">
-                                <i class="fa-solid fa-plus"></i> Create
-                            </button>
-                        </td>
-                    </tr>`;
-                }).join('');
-            }
-
-            const orphanedBody = document.getElementById('orphaned-doc-body');
-            document.getElementById('count-orphaned-doc').textContent = orphanedDocs.length;
-
-            if (orphanedDocs.length === 0) {
-                orphanedBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-600 py-8">All documents are linked to active users.</td></tr>';
-            } else {
-                orphanedBody.innerHTML = orphanedDocs.map(u => `
-                    <tr>
-                        <td class="font-mono text-xs text-gray-500">${u.id}</td>
-                        <td class="text-sm text-gray-300">
-                            <div class="flex flex-col">
-                                <span class="text-orange-300">${u.username || 'Unknown'}</span>
-                                <span class="text-xs text-gray-600">Created: ${formatDate(u.createdAt)}</span>
-                            </div>
-                        </td>
-                        <td>
-                            <button class="action-btn btn-delete" data-action="delete-orphan" data-uid="${u.id}">
-                                <i class="fa-solid fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
-            }
-
-            document.querySelectorAll('.btn-create[data-action="create-missing"]').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const uid = e.currentTarget.dataset.uid;
-                    const u = missingAuthUsers.find(x => x.uid === uid);
-                    if(u) createSingleUser(u);
-                });
-            });
-
-            document.querySelectorAll('.btn-delete[data-action="delete-orphan"]').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const uid = e.currentTarget.dataset.uid;
-                    if(confirm(`Delete orphaned document for ${uid}? This cannot be undone.`)) {
-                        await deleteDoc(doc(db, 'users', uid));
-                    }
-                });
-            });
-        };
-
-        const createSingleUser = async (u) => {
-            if(!confirm(`Create profile for ${u.email || u.uid}?`)) return;
-            try {
-                let rawUsername = u.email ? u.email.split('@')[0] : 'User';
-                if (u.displayName) rawUsername = u.displayName;
-                let username = rawUsername.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
-                if (username.length < 6) username = `User${u.uid.substring(0, 8)}`;
-                
-                const providerId = (u.providerData && u.providerData.length > 0) ? u.providerData[0].providerId : 'unknown';
-
-                await setDoc(doc(db, 'users', u.uid), {
-                    email: u.email || null,
-                    authMethod: providerId,
-                    createdAt: u.creationTime ? new Date(u.creationTime) : serverTimestamp(),
-                    username: username,
-                    emailVerified: u.emailVerified, 
-                    photoURL: u.photoURL || null
-                });
-            } catch (e) {
-                alert("Error: " + e.message);
-            }
-        };
-
-        document.getElementById('mass-sync-btn')?.addEventListener('click', async () => {
-            if (!missingAuthUsers.length) return;
-            if (!confirm(`Create Firestore docs for ${missingAuthUsers.length} users?`)) return;
-            
-            const btn = document.getElementById('mass-sync-btn');
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Syncing...`;
-            
-            try {
-                let batch = writeBatch(db);
-                let count = 0;
-                
-                for (const u of missingAuthUsers) {
-                    let rawUsername = u.email ? u.email.split('@')[0] : 'User';
-                    if (u.displayName) rawUsername = u.displayName;
-                    let username = rawUsername.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
-                    if (username.length < 6) username = `User${u.uid.substring(0, 8)}`;
-                    
-                    const providerId = (u.providerData && u.providerData.length > 0) ? u.providerData[0].providerId : 'unknown';
-
-                    const docRef = doc(db, 'users', u.uid);
-                    batch.set(docRef, {
-                        email: u.email || null,
-                        authMethod: providerId,
-                        createdAt: u.creationTime ? new Date(u.creationTime) : serverTimestamp(),
-                        username: username,
-                        emailVerified: u.emailVerified, 
-                        photoURL: u.photoURL || null
-                    });
-                    
-                    count++;
-                    if (count >= 400) { 
-                        await batch.commit();
-                        batch = writeBatch(db);
-                        count = 0;
-                    }
-                }
-                
-                if (count > 0) await batch.commit();
-                
-                alert("Sync Complete!");
-                btn.classList.add('hidden');
-                refreshAuthData(); 
-            } catch (e) {
-                console.error(e);
-                alert("Sync failed: " + e.message);
-                btn.disabled = false;
-                btn.innerHTML = `<i class="fa-solid fa-rotate-right mr-2"></i> Retry Sync`;
-            }
-        });
 
         const loadTrafficData = async () => {
             try {
-                const q = query(collection(db, 'analytics'), orderBy('lastActive', 'desc'), limit(10000));
-                const snap = await getDocs(q);
-                allSessions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const trafficSnap = await getDocs(query(collection(db, 'analytics_sessions'), orderBy('startTime', 'desc'), limit(100)));
+                const sessions = trafficSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                allSessions = sessions;
 
-                if (allSessions.length === 0) {
-                    document.getElementById('loading-traffic').textContent = "No traffic data available yet.";
-                    return;
-                }
-
-                const totalSessions = allSessions.length; 
-                let totalDuration = 0;
-                let totalPageViews = 0;
-                let active24h = 0;
+                document.getElementById('stat-total-sessions').textContent = sessions.length;
+                
+                let totalViews = 0;
                 const pageCounts = {};
-                const now = Date.now();
-                const oneDay = 24 * 60 * 60 * 1000;
-                const browsers = {};
-                const os = {};
-
-                allSessions.forEach(s => {
-                    totalDuration += (s.duration || 0);
-                    
-                    if (s.visitedPages && Array.isArray(s.visitedPages)) {
-                        totalPageViews += s.visitedPages.length;
-                        s.visitedPages.forEach(p => {
-                            const path = p.path || p; 
-                            const title = p.title || path;
-                            if (!pageCounts[path]) pageCounts[path] = { count: 0, title: title };
-                            pageCounts[path].count++;
+                sessions.forEach(s => {
+                    if(s.pageViews) {
+                        totalViews += s.pageViews.length;
+                        s.pageViews.forEach(v => {
+                            const title = v.title || v.path;
+                            pageCounts[title] = (pageCounts[title] || 0) + 1;
                         });
-                    } else if (s.pageCount) {
-                        totalPageViews += s.pageCount;
                     }
-
-                    if (s.userAgent) {
-                        const ua = parseUserAgent(s.userAgent);
-                        browsers[ua.browser] = (browsers[ua.browser] || 0) + 1;
-                        os[ua.os] = (os[ua.os] || 0) + 1;
-                    }
-
-                    const lastActive = s.lastActive && s.lastActive.toDate ? s.lastActive.toDate().getTime() : 0;
-                    if (now - lastActive < oneDay) active24h++;
                 });
 
-                const avgDuration = totalSessions > 0 ? (totalDuration / totalSessions).toFixed(1) : 0;
+                document.getElementById('stat-total-views').textContent = totalViews;
 
-                document.getElementById('stat-total-sessions').textContent = totalSessions + (allSessions.length === 10000 ? '+' : '');
-                document.getElementById('stat-avg-duration').textContent = formatDuration(avgDuration);
-                document.getElementById('stat-total-views').textContent = totalPageViews;
-                document.getElementById('stat-active-24h').textContent = active24h;
-
-                const sortedPages = Object.values(pageCounts).sort((a, b) => b.count - a.count).slice(0, 10);
-                const pagesBody = document.getElementById('top-pages-body');
-                pagesBody.innerHTML = sortedPages.map(p => `
+                const topPagesBody = document.getElementById('top-pages-body');
+                const sortedPages = Object.entries(pageCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+                topPagesBody.innerHTML = sortedPages.map(([title, count]) => `
                     <tr>
-                        <td class="text-xs font-mono text-gray-500 truncate max-w-[150px]">${p.title}</td>
-                         <td class="text-white">${p.title}</td>
-                        <td class="text-right text-gray-300 font-mono">${p.count}</td>
+                        <td class="text-white">${title}</td>
+                        <td>${count}</td>
+                        <td>${((count/totalViews)*100).toFixed(1)}%</td>
                     </tr>
                 `).join('');
 
-                const sessionsBody = document.getElementById('recent-sessions-body');
-                sessionsBody.innerHTML = allSessions.slice(0, 15).map(s => {
-                    let displayName = 'Guest';
-                    let displayEmail = '-';
-                    let userClass = 'text-gray-500';
-
-                    if (s.userId && s.userId !== 'anonymous') {
-                        const matchedUser = allUsers.find(u => u.id === s.userId);
-                        if (matchedUser) {
-                            displayName = matchedUser.username || 'Unknown Name';
-                            displayEmail = matchedUser.email || 'No Email';
-                            userClass = 'text-blue-400 font-medium';
-                        } else {
-                            displayName = 'ID: ' + s.userId.substring(0,8) + '...';
-                            displayEmail = 'Synced User not found';
-                            userClass = 'text-yellow-500/70 font-mono text-xs';
-                        }
-                    }
-
-                    return `
+                const recentSessionsBody = document.getElementById('recent-sessions-body');
+                recentSessionsBody.innerHTML = sessions.slice(0, 10).map(s => `
                     <tr>
-                        <td>
-                            <div class="flex flex-col">
-                                <span class="${userClass}">${displayName}</span>
-                                <span class="text-xs text-gray-600">${displayEmail}</span>
-                            </div>
-                        </td>
-                        <td class="text-gray-400 text-sm">${formatTimeAgo(s.startTime)}</td>
-                        <td class="text-gray-300 text-sm font-mono">${formatDuration(s.duration)}</td>
-                        <td class="text-gray-400 text-sm font-mono">${s.visitedPages ? s.visitedPages.length : (s.pageCount || 0)}</td>
+                        <td class="text-xs font-mono text-gray-500">${s.userId || 'Guest'}</td>
+                        <td class="text-xs text-gray-400">${s.os || 'Unknown'} / ${s.browser || 'Unknown'}</td>
+                        <td class="text-xs">${s.startTime ? moment(s.startTime.toDate()).fromNow() : 'N/A'}</td>
                     </tr>
-                `}).join('');
+                `).join('');
 
-                document.getElementById('loading-traffic').style.display = 'none';
+                // Distribution Charts
+                const browsers = {};
+                const oss = {};
+                sessions.forEach(s => {
+                    if(s.browser) browsers[s.browser] = (browsers[s.browser] || 0) + 1;
+                    if(s.os) oss[s.os] = (oss[s.os] || 0) + 1;
+                });
 
                 renderPieChart('browserChart', browsers, 'Browsers');
-                renderPieChart('osChart', os, 'Operating Systems');
+                renderPieChart('osChart', oss, 'OS');
 
-            } catch (error) {
-                console.error("Error loading traffic data:", error);
-                document.getElementById('loading-traffic').textContent = "Error loading analytics.";
-            }
+            } catch (err) { console.error("Traffic load error:", err); }
         };
 
-        const parseUserAgent = (ua) => {
-            let browser = 'Unknown';
-            let os = 'Unknown';
-            if (ua.includes('Firefox')) browser = 'Firefox';
-            else if (ua.includes('Chrome')) browser = 'Chrome';
-            else if (ua.includes('Safari')) browser = 'Safari';
-            else if (ua.includes('Edge')) browser = 'Edge';
-
-            if (ua.includes('Windows')) os = 'Windows';
-            else if (ua.includes('Mac')) os = 'MacOS';
-            else if (ua.includes('Linux')) os = 'Linux';
-            else if (ua.includes('Android')) os = 'Android';
-            else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
-            return { browser, os };
+        const formatDate = (date) => {
+            if (!date) return 'N/A';
+            const d = date.toDate ? date.toDate() : new Date(date);
+            return moment(d).format('MMM D, YYYY');
         };
 
-        const formatDuration = (seconds) => {
-            if (!seconds) return '0s';
-            if (seconds < 60) return `${Math.floor(seconds)}s`;
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60);
-            return `${m}m ${s}s`;
-        };
-
-        const formatTimeAgo = (timestamp) => {
-            if (!timestamp) return '-';
-            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-            return moment(date).fromNow();
-        };
-
-        const getProviderHtml = (authMethod) => {
-            if (!authMethod) return '<span class="text-gray-500">-</span>';
-            let key = authMethod;
-            if (authMethod === 'email') key = 'email';
-            else if (authMethod.includes('google')) key = 'google.com';
-            else if (authMethod.includes('github')) key = 'github.com';
-            else if (authMethod.includes('microsoft')) key = 'microsoft.com';
-            else if (authMethod.includes('twitter')) key = 'twitter.com';
-
-            const img = providerImages[key];
-            if (!img) return `<span class="text-xs text-gray-500 border border-gray-700 px-1 rounded">${authMethod}</span>`;
-            
-            if (img.startsWith('fa-')) {
-                return `<i class="${img} text-gray-400"></i>`;
-            } else {
-                return `<img src="${img}" class="provider-icon" title="${authMethod}" alt="${authMethod}">`;
-            }
-        };
-
-        const formatDate = (timestamp) => {
-            if (!timestamp) return 'Unknown';
-            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-            return date.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const getProviderHtml = (method) => {
+            const provider = (method || '').toLowerCase();
+            const icon = providerImages[provider];
+            if (!icon) return '<i class="fa-solid fa-user text-gray-500"></i>';
+            if (icon.startsWith('fa-')) return `<i class="${icon} text-gray-400"></i>`;
+            return `<img src="${icon}" class="provider-icon" alt="${provider}">`;
         };
 
         const renderTable = (users) => {
             const tbody = document.getElementById('user-table-body');
             tbody.innerHTML = '';
 
-            if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 py-8">No users found matching your criteria.</td></tr>';
-                return;
-            }
-
             users.forEach(user => {
-                const tr = document.createElement('tr');
                 const isAdmin = admins.has(user.id);
                 const isBanned = bannedUsers.has(user.id);
-                const isVerified = user.emailVerified === true;
                 
-                const roleBadge = isAdmin 
-                    ? `<span class="bg-blue-900/30 text-blue-400 text-[10px] uppercase font-bold px-2 py-1 rounded border border-blue-500/30 tracking-wider">Admin</span>`
-                    : `<span class="text-gray-600 text-[10px] uppercase font-bold tracking-wider">User</span>`;
+                const tr = document.createElement('tr');
+                
+                const verifiedIcon = user.emailVerified 
+                    ? '<i class="fa-solid fa-circle-check text-green-500" title="Verified"></i>' 
+                    : '<i class="fa-solid fa-circle-xmark text-gray-600" title="Unverified"></i>';
+                
+                const statusBadge = isBanned 
+                    ? '<span class="px-2 py-0.5 rounded-full bg-red-900/20 text-red-500 text-[10px] border border-red-500/20 uppercase font-bold">Banned</span>'
+                    : '<span class="px-2 py-0.5 rounded-full bg-green-900/20 text-green-400 text-[10px] border border-green-500/20 uppercase font-bold">Active</span>';
 
-                const statusBadge = isBanned
-                    ? `<span class="bg-red-900/30 text-red-400 text-xs px-2 py-1 rounded border border-red-500/30">Banned</span>`
-                    : `<span class="text-green-500/70 text-xs">Active</span>`;
-
-                const verifiedIcon = isVerified
-                    ? `<i class="fa-solid fa-check-circle text-green-500" title="Email Verified"></i>`
-                    : `<i class="fa-regular fa-circle text-gray-600" title="Unverified"></i>`;
+                const userTagHtml = user.userTag 
+                    ? `<span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border ml-2 tracking-wider" style="color: ${user.userTag.color}; border-color: ${user.userTag.color}40; background-color: ${user.userTag.color}10;">${user.userTag.text}</span>`
+                    : '';
 
                 tr.innerHTML = `
                     <td>
                         <div class="flex items-center gap-3">
-                             <div class="w-8 h-8 rounded-full bg-[#1a1a1a] flex items-center justify-center text-xs font-bold text-gray-400 border border-[#333]">
-                                ${(user.username || user.email || '?').charAt(0).toUpperCase()}
+                            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                                ${(user.username || '?').charAt(0).toUpperCase()}
                             </div>
                             <div class="flex flex-col">
-                                <span class="text-white font-medium text-sm flex items-center gap-2">
-                                    ${user.username || 'Unknown'}
-                                    ${roleBadge}
-                                </span>
-                                <span class="text-xs text-gray-500 font-mono">${user.email || user.id}</span>
+                                <span class="text-[var(--text-main)] font-medium flex items-center">${user.username || 'No Username'} ${userTagHtml}</span>
+                                <span class="text-xs text-gray-500 font-mono">${user.id.substring(0, 12)}...</span>
                             </div>
                         </div>
                     </td>
-                    <td>${getProviderHtml(user.authMethod)}</td>
+                    <td><div class="flex items-center gap-2">${getProviderHtml(user.authMethod)} <span class="text-xs text-gray-400 capitalize">${user.authMethod || 'Unknown'}</span></div></td>
                     <td class="text-gray-400 text-xs">${formatDate(user.createdAt)}</td>
                     <td class="text-center text-sm">${verifiedIcon}</td>
                     <td>${statusBadge}</td>
-                    <td>
-                        <div class="flex items-center">
+                    <td class="text-right">
+                        <div class="flex items-center justify-end">
                             <button class="action-btn ${isBanned ? 'btn-unblock' : 'btn-block'}" data-action="toggle-ban" data-uid="${user.id}" data-username="${user.username || user.email}" title="${isBanned ? 'Unban' : 'Ban'}">
                                 ${isBanned ? '<i class="fa-solid fa-unlock"></i>' : '<i class="fa-solid fa-ban"></i>'}
                             </button>
@@ -2023,8 +785,8 @@
                             <button class="action-btn btn-tag" data-action="set-tag" data-uid="${user.id}" data-username="${user.username || user.email}" title="Set Tag">
                                 <i class="fa-solid fa-tag"></i>
                             </button>
-                            <button class="action-btn text-gray-400 hover:text-white hover:bg-white/10" data-action="view-details" data-uid="${user.id}" title="View Details">
-                                <i class="fa-solid fa-eye"></i>
+                            <button class="action-btn btn-delete" data-action="delete-user" data-uid="${user.id}" data-username="${user.username || user.email}" title="Delete Account">
+                                <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
                     </td>
@@ -2041,22 +803,21 @@
             const btn = e.currentTarget;
             const action = btn.dataset.action;
             const uid = btn.dataset.uid;
+            const username = btn.dataset.username;
             
             if (action === 'toggle-ban') {
                 const isBanned = bannedUsers.has(uid);
                 if (isBanned) {
-                    if (confirm(`Are you sure you want to unban this user?`)) {
-                        try {
-                            await deleteDoc(doc(db, 'bans', uid));
-                        } catch (err) { alert("Unban failed: " + err.message); }
+                    if (confirm(`Are you sure you want to unban ${username}?`)) {
+                        try { await deleteDoc(doc(db, 'bans', uid)); } catch (err) { alert("Unban failed: " + err.message); }
                     }
                 } else {
-                    userToBan = { uid, username: btn.dataset.username };
+                    userToBan = { uid, username: username };
                     openBanModal();
                 }
             } else if (action === 'toggle-admin') {
                 const isAdmin = admins.has(uid);
-                if (confirm(`Are you sure you want to ${isAdmin ? 'remove' : 'grant'} admin privileges?`)) {
+                if (confirm(`Are you sure you want to ${isAdmin ? 'remove' : 'grant'} admin privileges for ${username}?`)) {
                     try {
                          if (isAdmin) {
                             await deleteDoc(doc(db, 'admins', uid));
@@ -2064,24 +825,46 @@
                             await setDoc(doc(db, 'admins', uid), { 
                                 role: 'admin',
                                 promotedAt: new Date(),
-                                promotedBy: auth.currentUser.uid
+                                promotedBy: auth.currentUser.uid,
+                                email: allUsers.find(u => u.id === uid)?.email || ''
                             });
                         }
                     } catch (err) { alert("Action failed: " + err.message); }
                 }
-            } else if (action === 'view-details') {
-                showUserDetails(uid);
             } else if (action === 'set-tag') {
-                userToTag = { uid, username: btn.dataset.username };
+                userToTag = { uid, username: username };
                 const user = allUsers.find(u => u.id === uid);
                 openTagModal(user?.userTag);
+            } else if (action === 'delete-user') {
+                if (confirm(`FATAL ACTION: Are you sure you want to PERMANENTLY DELETE ${username}? This will remove them from Auth and Firestore.`)) {
+                    await performDeleteUser(uid, username);
+                }
+            }
+        };
+
+        const performDeleteUser = async (uid, username) => {
+            try {
+                const response = await fetch('https://deleteuser-tqj6zqza5a-uc.a.run.app', { // Need to update with actual trigger URL
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid: uid, adminUid: auth.currentUser.uid })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert(`User ${username} deleted successfully.`);
+                } else {
+                    alert("Delete failed: " + (result.error || "Unknown error"));
+                }
+            } catch (err) {
+                console.error("Delete call failed:", err);
+                alert("Could not reach delete function. Ensure it is deployed.");
             }
         };
 
         const openBanModal = () => {
             document.getElementById('ban-user-target').textContent = `Target: ${userToBan.username} (${userToBan.uid})`;
             document.getElementById('ban-reason').value = '';
-            document.getElementById('ban-link').value = '';
             document.getElementById('ban-modal').classList.add('open');
         };
 
@@ -2095,10 +878,8 @@
         
         document.querySelectorAll('.preset-chip').forEach(chip => {
             chip.addEventListener('click', () => {
-                const reason = chip.dataset.reason;
-                const link = chip.dataset.link || '';
-                document.getElementById('ban-reason').value = reason;
-                document.getElementById('ban-link').value = link;
+                document.getElementById('ban-reason').value = chip.dataset.reason;
+                document.getElementById('ban-link').value = chip.dataset.link || '';
             });
         });
 
@@ -2115,12 +896,9 @@
                     link: link || null
                 });
                 closeBanModal();
-            } catch (err) {
-                alert("Ban failed: " + err.message);
-            }
+            } catch (err) { alert("Ban failed: " + err.message); }
         });
 
-        /* --- Tag Modal Logic --- */
         const openTagModal = (existingTag) => {
             document.getElementById('tag-user-target').textContent = `Target: ${userToTag.username}`;
             const textInput = document.getElementById('tag-text');
@@ -2136,7 +914,6 @@
                 colorInput.value = '#3b82f6';
                 hexInput.value = '#3b82f6';
             }
-            
             document.getElementById('tag-modal').classList.add('open');
         };
 
@@ -2148,127 +925,27 @@
         document.getElementById('close-tag-modal').addEventListener('click', closeTagModal);
         document.getElementById('cancel-tag').addEventListener('click', closeTagModal);
 
-        // Color Picker Sync
-        const colorInput = document.getElementById('tag-color');
-        const hexInput = document.getElementById('tag-color-hex');
-
-        colorInput.addEventListener('input', (e) => hexInput.value = e.target.value);
-        hexInput.addEventListener('input', (e) => colorInput.value = e.target.value);
-
-        document.querySelectorAll('.color-preset').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const color = btn.dataset.color;
-                colorInput.value = color;
-                hexInput.value = color;
-            });
-        });
+        document.getElementById('tag-color').addEventListener('input', (e) => document.getElementById('tag-color-hex').value = e.target.value);
+        document.getElementById('tag-color-hex').addEventListener('input', (e) => document.getElementById('tag-color').value = e.target.value);
 
         document.getElementById('save-tag').addEventListener('click', async () => {
             if (!userToTag) return;
             const text = document.getElementById('tag-text').value.trim();
-            const color = hexInput.value;
-
-            if (!text) {
-                alert("Please enter tag text.");
-                return;
-            }
-
+            const color = document.getElementById('tag-color-hex').value;
+            if (!text) return alert("Please enter tag text.");
             try {
-                await updateDoc(doc(db, 'users', userToTag.uid), {
-                    userTag: { text, color }
-                });
+                await updateDoc(doc(db, 'users', userToTag.uid), { userTag: { text, color } });
                 closeTagModal();
-            } catch (err) {
-                alert("Failed to save tag: " + err.message);
-            }
+            } catch (err) { alert("Failed to save tag: " + err.message); }
         });
 
         document.getElementById('remove-tag-btn').addEventListener('click', async () => {
             if (!userToTag) return;
             if (!confirm("Remove tag from this user?")) return;
-
             try {
-                await updateDoc(doc(db, 'users', userToTag.uid), {
-                    userTag: deleteField()
-                });
+                await updateDoc(doc(db, 'users', userToTag.uid), { userTag: deleteField() });
                 closeTagModal();
-            } catch (err) {
-                alert("Failed to remove tag: " + err.message);
-            }
-        });
-
-        const showUserDetails = (uid) => {
-            const user = allUsers.find(u => u.id === uid);
-            if (!user) return;
-
-            const modal = document.getElementById('user-modal');
-            const body = document.getElementById('user-modal-body');
-            
-            const pfpHtml = user.customPfp 
-                ? `<img src="${user.customPfp}" class="w-full h-full object-cover rounded-full border-2 border-white/10">`
-                : `<div class="w-full h-full rounded-full bg-blue-600 flex items-center justify-center text-2xl font-bold text-white">${(user.username||'?').charAt(0).toUpperCase()}</div>`;
-
-            body.innerHTML = `
-                <div class="flex items-center gap-6 mb-6">
-                    <div class="w-20 h-20 shrink-0">
-                        ${pfpHtml}
-                    </div>
-                    <div>
-                        <h4 class="text-xl text-white font-medium">${user.username || 'No Username'}</h4>
-                        <p class="text-sm text-gray-500">${user.email || 'No Email'}</p>
-                        <p class="text-xs text-gray-600 font-mono mt-1 select-all cursor-text bg-black/30 inline-block px-1 rounded">${user.id}</p>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div class="p-4 bg-[#111] rounded-[14px] border border-[#333]">
-                        <span class="block text-gray-500 text-xs uppercase tracking-wider mb-1">Account Created</span>
-                        <span class="text-white font-medium">${formatDate(user.createdAt)}</span>
-                    </div>
-                     <div class="p-4 bg-[#111] rounded-[14px] border border-[#333]">
-                        <span class="block text-gray-500 text-xs uppercase tracking-wider mb-1">Auth Provider</span>
-                        <span class="text-white font-medium flex items-center gap-2">
-                             ${getProviderHtml(user.authMethod)} ${user.authMethod || 'Unknown'}
-                        </span>
-                    </div>
-                    <div class="p-4 bg-[#111] rounded-[14px] border border-[#333]">
-                        <span class="block text-gray-500 text-xs uppercase tracking-wider mb-1">Email Status</span>
-                        <span class="${user.emailVerified ? 'text-green-400' : 'text-yellow-400'} font-medium">
-                            ${user.emailVerified ? '<i class="fa-solid fa-check mr-1"></i> Verified' : '<i class="fa-solid fa-circle-exclamation mr-1"></i> Unverified'}
-                        </span>
-                    </div>
-                    <div class="p-4 bg-[#111] rounded-[14px] border border-[#333]">
-                        <span class="block text-gray-500 text-xs uppercase tracking-wider mb-1">Account Standing</span>
-                        <span class="${bannedUsers.has(user.id) ? 'text-red-400' : 'text-green-400'} font-medium">
-                            ${bannedUsers.has(user.id) ? 'BANNED' : 'Good'}
-                        </span>
-                    </div>
-                </div>
-                
-                                    <div class="mt-4 p-4 bg-[#111] rounded-[14px] border border-[#333] hidden" id="ban-info-box">                    <span class="block text-red-500 text-xs uppercase tracking-wider mb-1">Ban Reason</span>
-                    <p class="text-gray-300 text-sm italic" id="ban-reason-text"></p>
-                </div>
-            `;
-            
-            if (bannedUsers.has(user.id)) {
-                getDoc(doc(db, 'bans', user.id)).then(snap => {
-                    if (snap.exists()) {
-                        const data = snap.data();
-                        const box = document.getElementById('ban-info-box');
-                        const text = document.getElementById('ban-reason-text');
-                        if (box && text) {
-                            box.classList.remove('hidden');
-                            text.textContent = data.reason || 'No reason provided.';
-                        }
-                    }
-                });
-            }
-            
-            modal.classList.add('open');
-        };
-
-        document.getElementById('close-user-modal').addEventListener('click', () => {
-            document.getElementById('user-modal').classList.remove('open');
+            } catch (err) { alert("Failed to remove tag: " + err.message); }
         });
 
         const getFilteredUsers = () => {
@@ -2284,22 +961,12 @@
             filtered.sort((a, b) => {
                 const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : new Date(0);
                 const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : new Date(0);
-
                 if (sortVal === 'newest') return dateB - dateA;
                 if (sortVal === 'oldest') return dateA - dateB;
-                if (sortVal === 'admin') {
-                    const isAdminA = admins.has(a.id) ? 1 : 0;
-                    const isAdminB = admins.has(b.id) ? 1 : 0;
-                    return isAdminB - isAdminA || dateB - dateA;
-                }
-                if (sortVal === 'verified') {
-                    const vA = a.emailVerified ? 1 : 0;
-                    const vB = b.emailVerified ? 1 : 0;
-                    return vB - vA || dateB - dateA;
-                }
+                if (sortVal === 'admin') return (admins.has(b.id)?1:0) - (admins.has(a.id)?1:0) || dateB - dateA;
+                if (sortVal === 'verified') return (b.emailVerified?1:0) - (a.emailVerified?1:0) || dateB - dateA;
                 return 0;
             });
-
             return filtered;
         };
 
@@ -2309,72 +976,51 @@
         const renderChart = (users) => {
             const ctx = document.getElementById('userGrowthChart').getContext('2d');
             const period = document.getElementById('chart-period').value;
-            const mode = document.getElementById('chart-datatype').value; // 'new' or 'total'
-
+            const mode = document.getElementById('chart-datatype').value;
             const now = moment();
             let startDate;
 
-            // 1. Determine Start Date
-            if (period === 'week') {
-                startDate = moment().subtract(7, 'days').startOf('day');
-            } else if (period === 'month') {
-                startDate = moment().subtract(1, 'month').startOf('day');
-            } else if (period === 'year') {
-                startDate = moment().subtract(1, 'year').startOf('day');
-            } else if (period === 'all') {
-                // Find oldest user
+            if (period === 'week') startDate = moment().subtract(7, 'days').startOf('day');
+            else if (period === 'month') startDate = moment().subtract(1, 'month').startOf('day');
+            else if (period === 'year') startDate = moment().subtract(1, 'year').startOf('day');
+            else {
                 let oldest = now;
                 users.forEach(u => {
-                    if (u.createdAt) {
-                        const d = u.createdAt.toDate ? moment(u.createdAt.toDate()) : moment(u.createdAt);
-                        if (d.isBefore(oldest)) oldest = d;
-                    }
+                    const d = u.createdAt ? (u.createdAt.toDate ? moment(u.createdAt.toDate()) : moment(u.createdAt)) : now;
+                    if (d.isBefore(oldest)) oldest = d;
                 });
                 startDate = oldest.clone().startOf('day');
             }
 
-            // 2. Prepare Data Buckets (Daily)
-            // We create a map for every day from startDate to now to ensure continuity (0s where needed)
             const dailyData = new Map();
             let currentDay = startDate.clone();
-
             while (currentDay.isSameOrBefore(now, 'day')) {
                 dailyData.set(currentDay.format('YYYY-MM-DD'), 0);
                 currentDay.add(1, 'day');
             }
 
-            // 3. Populate Buckets with NEW user counts
-            // Also calculate initial offset for 'Total' mode
             let countBeforeStart = 0;
-
             users.forEach(u => {
                 if (!u.createdAt) return;
                 const d = u.createdAt.toDate ? moment(u.createdAt.toDate()) : moment(u.createdAt);
-                
-                if (d.isBefore(startDate)) {
-                    countBeforeStart++;
-                } else {
+                if (d.isBefore(startDate)) countBeforeStart++;
+                else {
                     const key = d.format('YYYY-MM-DD');
-                    if (dailyData.has(key)) {
-                        dailyData.set(key, dailyData.get(key) + 1);
-                    }
+                    if (dailyData.has(key)) dailyData.set(key, dailyData.get(key) + 1);
                 }
             });
 
-            // 4. Convert to Arrays for Chart.js
             const labels = Array.from(dailyData.keys());
             let data = Array.from(dailyData.values());
 
-            // 5. If Mode is TOTAL, calculate cumulative sum
             if (mode === 'total') {
                 let runningTotal = countBeforeStart;
-                data = data.map(count => {
-                    runningTotal += count;
-                    return runningTotal;
-                });
+                data = data.map(count => { runningTotal += count; return runningTotal; });
             }
 
             if (chartInstance) chartInstance.destroy();
+
+            const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#3b82f6';
 
             chartInstance = new Chart(ctx, {
                 type: 'line',
@@ -2383,44 +1029,25 @@
                     datasets: [{
                         label: mode === 'total' ? 'Total Users' : 'New Users',
                         data: data,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: accent,
+                        backgroundColor: accent + '1a',
                         borderWidth: 2,
                         fill: true,
-                        tension: 0.1, // Less tension to make spikes visible
-                        pointRadius: data.length > 60 ? 0 : 3, // Hide points if too many days
+                        tension: 0.1,
+                        pointRadius: data.length > 60 ? 0 : 3,
                         pointHoverRadius: 5,
                         pointBackgroundColor: '#040404',
-                        pointBorderColor: '#3b82f6',
+                        pointBorderColor: accent,
                         pointBorderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { mode: 'index', intersect: false }
-                    },
+                    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
                     scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                unit: 'day', // Always aggregate by day logic
-                                tooltipFormat: 'MMM DD, YYYY'
-                            },
-                            grid: { color: '#1a1a1a' },
-                            ticks: { 
-                                color: '#707070',
-                                autoSkip: true,
-                                maxTicksLimit: 12 // Prevent overcrowding on X-axis
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: '#1a1a1a' },
-                            ticks: { color: '#707070', stepSize: 1 }
-                        }
+                        x: { type: 'time', time: { unit: 'day', tooltipFormat: 'MMM DD, YYYY' }, grid: { color: '#1a1a1a' }, ticks: { color: '#707070', autoSkip: true, maxTicksLimit: 12 } },
+                        y: { beginAtZero: true, grid: { color: '#1a1a1a' }, ticks: { color: '#707070', stepSize: 1 } }
                     }
                 }
             });
@@ -2430,33 +1057,19 @@
             const ctx = document.getElementById(canvasId).getContext('2d');
             const labels = Object.keys(dataMap);
             const data = Object.values(dataMap);
-            const colors = [
-                '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#6366f1'
-            ];
+            const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#3b82f6';
+            const colors = [accent, '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#6366f1'];
             
-            if (canvasId === 'browserChart') {
-                if(browserChartInstance) browserChartInstance.destroy();
-            } else {
-                if(osChartInstance) osChartInstance.destroy();
-            }
+            let instance = canvasId === 'browserChart' ? browserChartInstance : osChartInstance;
+            if(instance) instance.destroy();
 
             const chart = new Chart(ctx, {
                 type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: label,
-                        data: data,
-                        backgroundColor: colors,
-                        borderWidth: 0
-                    }]
-                },
+                data: { labels: labels, datasets: [{ label: label, data: data, backgroundColor: colors, borderWidth: 0 }] },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'right', labels: { color: '#9ca3af' } }
-                    }
+                    plugins: { legend: { position: 'right', labels: { color: '#9ca3af' } } }
                 }
             });
             
@@ -2464,10 +1077,20 @@
             else osChartInstance = chart;
         };
 
+        const refreshSyncTables = async () => {
+            // This is a simplified health check logic
+            const missingProfileBody = document.getElementById('missing-profile-body');
+            const orphanedDocBody = document.getElementById('orphaned-doc-body');
+            
+            missingProfileBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-600 py-8">Service available in Master Admin mode only.</td></tr>';
+            orphanedDocBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-600 py-8">Service available in Master Admin mode only.</td></tr>';
+        };
+
         document.getElementById('chart-period').addEventListener('change', () => renderChart(allUsers));
         document.getElementById('chart-datatype').addEventListener('change', () => renderChart(allUsers));
 
         init();
     </script>
+    <!-- Made with ❤️ from 4SP -->
 </body>
 </html>

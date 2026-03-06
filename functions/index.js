@@ -160,8 +160,57 @@ exports.reportContent = onRequest({ cors: true }, async (req, res) => {
 
         res.status(200).json({ success: true, message: "Report submitted successfully." });
 
-    } catch (error) {
+        } catch (error) {
         logger.error("Report Function Error", error);
         res.status(500).json({ error: "Internal Server Error", details: error.message });
-    }
-});
+        }
+        });
+
+        exports.deleteUser = onRequest({ cors: true }, async (req, res) => {
+        try {
+        if (req.method !== 'POST') {
+            res.status(405).send('Method Not Allowed');
+            return;
+        }
+
+        const { uid, adminUid } = req.body;
+
+        if (!uid || !adminUid) {
+            res.status(400).json({ error: "Missing required parameters: uid, adminUid" });
+            return;
+        }
+
+        // Verify requester is an admin
+        const adminDoc = await admin.firestore().collection('admins').doc(adminUid).get();
+        if (!adminDoc.exists) {
+            res.status(403).json({ error: "Unauthorized: Requester is not an admin." });
+            return;
+        }
+
+        // 1. Delete from Firebase Auth
+        try {
+            await admin.auth().deleteUser(uid);
+        } catch (authError) {
+            // If user doesn't exist in Auth, we still want to try deleting from Firestore
+            if (authError.code !== 'auth/user-not-found') {
+                throw authError;
+            }
+        }
+
+        // 2. Delete Firestore documents
+        const collections = ['users', 'admins', 'bans'];
+        const deletePromises = collections.map(col => 
+            admin.firestore().collection(col).doc(uid).delete()
+        );
+        await Promise.all(deletePromises);
+
+        // 3. Optional: Delete associated data (e.g., reports, dailyphotos, etc.)
+        // This can be expanded based on project needs.
+
+        res.status(200).json({ success: true, message: `User ${uid} deleted successfully.` });
+
+        } catch (error) {
+        logger.error("Delete User Error", error);
+        res.status(500).json({ error: "Internal Server Error", details: error.message });
+        }
+        });
