@@ -52,13 +52,13 @@
             left: 50%;
             transform: translateX(-50%) translateY(20px);
             z-index: 10000000;
-            background-color: rgba(13, 13, 13, 0.95);
-            backdrop-filter: blur(5px);
+            background-color: var(--bg-card, rgba(13, 13, 13, 0.95));
+            backdrop-filter: blur(8px);
             padding: 0.75rem 1.5rem;
             border-radius: 18px;
-            border: 1px solid #333;
+            border: 1px solid var(--border-color, #333);
             font-size: 0.85rem;
-            color: #fff;
+            color: var(--text-main, #fff);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease, transform 0.3s ease;
@@ -66,6 +66,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         #admin-status-toaster.visible {
             opacity: 1;

@@ -38,6 +38,50 @@
     </script>
     <script type="module">
         import * as libcurl from "/VELIUM/libcurl/index.mjs";
+        
+        window.checkBare = async (retries = 3) => {
+            const connection = new BareMux.BareMuxConnection("/VELIUM/baremux/worker.js");
+            const wispUrl = "wss://wisp.mercurywork.shop/";
+            const transportPath = "/VELIUM/libcurl/index.mjs";
+            
+            for (let i = 0; i < retries; i++) {
+                try {
+                    if (libcurl && libcurl.load_wasm) {
+                        await libcurl.load_wasm();
+                    }
+
+                    const transport = await connection.getTransport();
+                    if (!transport || transport.path !== transportPath) {
+                        await connection.setTransport(transportPath, [
+                            { websocket: wispUrl },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                        ]);
+                    }
+                    return;
+                } catch (e) {
+                    console.error(`BareMux/libcurl Setup Attempt ${i + 1} failed:`, e);
+                    if (i === retries - 1) {
+                        await connection.setTransport(transportPath, [
+                            { websocket: wispUrl },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                        ]);
+                    }
+                    await new Promise(r => setTimeout(r, 500));
+                }
+            }
+        };
+
+        (async () => {
+            if ("serviceWorker" in navigator) {
+                try {
+                    await navigator.serviceWorker.register("/sw.js", {
+                        scope: "/"
+                    });
+                } catch (e) { console.error("VERN Proxy Error", e); }
+            }
+            await window.checkBare();
+        })();
+    </script>
 
     <script>
         tailwind.config = {
@@ -518,9 +562,9 @@
                     </div>
                     <div class="flex-1">
                         <span class="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] opacity-60">Playlist</span>
-                        <h1 class="text-7xl font-black tracking-tighter mb-4 text-[var(--text-main)]">Liked Songs</h1>
+                        <h1 class="text-7xl font-black tracking-tighter mb-4 text-white">Liked Songs</h1>
                         <div class="flex items-center gap-2">
-                            <span class="font-bold text-[var(--text-main)]" id="likedSongsCount">0 songs</span>
+                            <span class="font-bold text-white opacity-80" id="likedSongsCount">0 songs</span>
                         </div>
                     </div>
                 </div>

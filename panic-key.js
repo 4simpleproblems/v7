@@ -13,8 +13,8 @@
 console.log("Debug: panic-key.js script has started.");
 
 // --- IndexedDB Configuration ---
-const DB_NAME = 'userLocalSettingsDB';
-const STORE_NAME = 'panicKeyStore';
+const PANIC_DB_NAME = 'userLocalSettingsDB';
+const PANIC_STORE_NAME = 'panicKeyStore';
 
 /**
  * Opens the IndexedDB and creates the object store if needed.
@@ -23,15 +23,15 @@ const STORE_NAME = 'panicKeyStore';
 function openDB() {
     return new Promise((resolve, reject) => {
         // This will open the latest version of the database.
-        const request = indexedDB.open(DB_NAME);
+        const request = indexedDB.open(PANIC_DB_NAME);
 
         // This event handles the creation and updating of the database schema.
         request.onupgradeneeded = event => {
             const db = event.target.result;
             // Create the 'panicKeyStore' object store if it doesn't already exist.
             // We use 'id' as the keyPath (e.g., 'panicKey1', 'panicKey2').
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            if (!db.objectStoreNames.contains(PANIC_STORE_NAME)) {
+                db.createObjectStore(PANIC_STORE_NAME, { keyPath: 'id' });
                 console.log("Debug: IndexedDB object store 'panicKeyStore' created.");
             }
         };
@@ -48,8 +48,8 @@ function openDB() {
  */
 function getSettings(db) {
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction(STORE_NAME, 'readonly');
-        const store = transaction.objectStore(STORE_NAME);
+        const transaction = db.transaction(PANIC_STORE_NAME, 'readonly');
+        const store = transaction.objectStore(PANIC_STORE_NAME);
         // Request all objects from the store. This will return an array of all panic key configs.
         const request = store.getAll();
 

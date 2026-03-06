@@ -202,17 +202,16 @@ function toggleLike(item) {
     
     document.querySelectorAll(`.fav-trigger[data-id="${item.id}"] i`).forEach(icon => {
         if (favorited) {
-            icon.className = 'far fa-star text-purple-500 scale-110';
-            icon.classList.remove('opacity-40');
-            icon.classList.add('opacity-100');
+            icon.className = 'far fa-star scale-110 opacity-100';
+            icon.style.color = '#a855f7'; 
         } else {
             icon.className = 'far fa-star opacity-40';
-            icon.classList.remove('text-purple-500', 'scale-110');
+            icon.style.color = '';
         }
     });
 
     const btn = document.getElementById('fav-btn-player');
-    if (btn) btn.innerHTML = isLiked(item.id) ? '<i class="far fa-star text-purple-500"></i>' : '<i class="far fa-star"></i>';
+    if (btn) btn.innerHTML = isLiked(item.id) ? '<i class="far fa-star" style="color: #a855f7;"></i>' : '<i class="far fa-star"></i>';
 }
 
 // Rendering Logic
@@ -257,10 +256,10 @@ function createMediaCard(item) {
             </a>
         </div>
         <button class="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/10 hover:scale-110 transition-all fav-trigger z-10" data-id="${item.id}" title="Like">
-            <i class="${heartClass} fa-star"></i>
+            <i class="${heartClass} fa-star" ${isFav ? 'style="color: #a855f7 !important;"' : ''}></i>
         </button>
         <div class="absolute bottom-0 left-0 right-0 p-4 bg-black/80 backdrop-blur-md border-t border-white/10 rounded-b-[22px]">
-            <h3 class="text-white text-sm truncate mb-1 font-normal">${title}</h3>
+            <h3 class="text-sm truncate mb-1 font-normal" style="color: white !important;">${title}</h3>
             <p class="text-[10px] text-white/60">${formatFullDate(item.release_date || item.first_air_date) || ''}</p>
         </div>
     `;
@@ -464,7 +463,9 @@ function renderPlayerUI(type, id, item) {
     const playerView = document.getElementById('player-view');
     const title = item.title || item.name;
     const embedUrl = proxyUrl(getEmbedUrl(type, id));
-    const heartClass = isLiked(item.id) ? 'far text-purple-500' : 'far';
+    const isFav = isLiked(item.id);
+    const starStyle = isFav ? 'style="color: #a855f7 !important;"' : '';
+    const heartClass = 'far';
     const sortedSeasons = [...(item.seasons || [])].sort((a, b) => {
         if (a.season_number === 0) return 1;
         if (b.season_number === 0) return -1;
@@ -504,7 +505,7 @@ function renderPlayerUI(type, id, item) {
                         <p class="text-gray-500 text-sm">${formatFullDate(item.release_date || item.first_air_date) || ''}</p>
                     </div>
                     <button id="fav-btn-player" class="w-12 h-12 flex items-center justify-center rounded-full bg-deep-black border border-brand-border hover:border-purple-500 transition-all text-xl">
-                        <i class="${heartClass} fa-star"></i>
+                        <i class="${heartClass} fa-star" ${starStyle}></i>
                     </button>
                 </div>
                 <p class="text-gray-400 leading-relaxed mb-8">${item.overview || 'No description available.'}</p>
