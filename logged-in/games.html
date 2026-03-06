@@ -125,17 +125,17 @@
             width: 2.25rem;
             height: 2.25rem;
             border-radius: 14px; /* MATCHES auth-btn */
-            background-color: var(--btn-bg);
-            border: 1px solid var(--border-main);
-            color: var(--btn-text);
+            background-color: var(--bg-page) !important;
+            border: 1px solid var(--border-main) !important;
+            color: var(--accent-color) !important;
             cursor: pointer;
             transition: all 0.2s;
             font-size: 1rem;
         }
         .btn-card-action:hover {
-            background-color: var(--accent-color);
-            color: white;
-            border-color: var(--accent-color);
+            background-color: var(--accent-glow) !important;
+            color: var(--text-main) !important;
+            border-color: var(--accent-color) !important;
             transform: scale(1.1);
         }
         
@@ -143,30 +143,30 @@
         .btn-card-action.fav-action .fa-solid-star { display: none; }
         .btn-card-action.fav-action .fa-regular-star { display: inline-block; }
         
-        .btn-card-action.fav-action.favorited .fa-solid-star { display: inline-block; color: #facc15; }
+        .btn-card-action.fav-action.favorited .fa-solid-star { display: inline-block; color: var(--accent-color) !important; }
         .btn-card-action.fav-action.favorited .fa-regular-star { display: none; }
         
-        .btn-card-action.fav-action:not(.favorited):hover .fa-regular-star { color: var(--accent-color); }
+        .btn-card-action.fav-action:not(.favorited):hover .fa-regular-star { color: var(--accent-color) !important; }
         
         /* Card Hover Effects */
         .zone-item {
-            background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
-            border: 1px solid var(--border-main);
+            background-color: var(--bg-card) !important;
+            border: 1px solid var(--border-main) !important;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             will-change: transform;
             border-radius: 20px;
         }
         .zone-item:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px var(--accent-glow);
+            box-shadow: 0 10px 30px var(--accent-secondary) !important;
             border-color: var(--accent-color) !important;
-            background-color: var(--tab-active-bg, rgba(79, 70, 229, 0.1)) !important;
+            background-color: var(--bg-secondary) !important;
             z-index: 20;
         }
         
         .other-zone-item {
-            background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
-            border: 1px solid var(--border-main);
+            background-color: var(--bg-card) !important;
+            border: 1px solid var(--border-main) !important;
             min-height: 250px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative; 
@@ -175,9 +175,9 @@
         }
         .other-zone-item:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px var(--accent-glow);
+            box-shadow: 0 10px 30px var(--accent-secondary) !important;
             border-color: var(--accent-color) !important;
-            background-color: var(--tab-active-bg, rgba(79, 70, 229, 0.1)) !important;
+            background-color: var(--bg-secondary) !important;
             z-index: 20; 
         }
         .other-zone-item .image-overlay {
@@ -1043,7 +1043,7 @@
                     <div class="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between rounded-2xl">
                         <div class="flex items-start justify-between w-full">
                             <h3 class="text-4xl font-bold text-[var(--text-main)] truncate drop-shadow-lg" style="max-width: 80%;" title="${game.name}">${game.name}</h3>
-                            <div class="flex items-center gap-1.5 bg-[var(--bg-card)]/40 backdrop-blur-xl rounded-2xl p-1.5 border border-[var(--border-main)]">
+                            <div class="flex items-center gap-1.5 bg-[var(--bg-page)] rounded-2xl p-1.5 border border-[var(--border-main)] shadow-lg">
                                 ${gameButtonsHtml}
                                 ${favoriteButtonHtml}
                             </div>
@@ -1097,8 +1097,8 @@
             card.innerHTML = `
                 <div class="relative w-full cursor-pointer group">
                     <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover"></div>
-                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--bg-card)]/40 backdrop-blur-xl rounded-xl px-3 py-1.5 text-[var(--text-main)] truncate text-sm font-semibold shadow-lg border border-[var(--border-main)]" title="${game.name}">${game.name}</h3>
-                    <div class="absolute bottom-2 right-2 bg-[var(--bg-card)]/40 backdrop-blur-xl rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg border border-[var(--border-main)]">
+                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--bg-page)] rounded-xl px-3 py-1.5 text-[var(--text-main)] truncate text-sm font-semibold shadow-lg border border-[var(--border-main)]" title="${game.name}">${game.name}</h3>
+                    <div class="absolute bottom-2 right-2 bg-[var(--bg-page)] rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg border border-[var(--border-main)]">
                         <button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>
                         <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>
                     </div>
@@ -1462,7 +1462,7 @@
                         </div>
                     </div>
                     <div class="flex items-center flex-shrink-0">
-                        <div class="bg-[var(--bg-card)]/40 backdrop-blur-xl rounded-2xl p-1.5 flex items-center gap-1.5 border border-[var(--border-main)]">
+                        <div class="bg-[var(--bg-page)] rounded-2xl p-1.5 flex items-center gap-1.5 border border-[var(--border-main)] shadow-lg">
                             <button class="btn-card-action play-action" title="Play Game">
                                 <i class="fa-solid fa-play transition-colors"></i>
                             </button>
