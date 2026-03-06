@@ -55,12 +55,28 @@
             z-index: -1;
         }
 
+        #avatar-preview {
+            border-radius: 38px;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+        #avatar-preview img, #avatar-preview div {
+            border-radius: 38px !important;
+        }
+
         .feature-card {
             border-radius: 32px;
             border: 1px solid var(--border-faint);
             background: var(--bg-card);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .sidebar-extended {
+            min-height: calc(100vh - 8rem);
+            display: flex;
+            flex-direction: column;
         }
 
         .btn-base {
@@ -144,65 +160,76 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Sidebar / Info -->
             <div class="lg:col-span-1">
-                <div class="feature-card p-8 flex flex-col items-center sticky top-24">
-                    <div class="absolute top-6 right-6 flex gap-2">
-                        <div class="relative">
-                            <button id="profile-options-btn" class="text-gray-500 hover:text-white w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/5 transition">
-                                <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
-                            </button>
-                            <div id="profile-options-menu" class="hidden absolute top-full right-0 mt-2 w-48 bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-xl z-50 p-2 overflow-hidden">
-                                <button id="btn-share-profile" class="w-full text-left p-3 hover:bg-white/5 rounded-xl transition flex items-center gap-3 text-sm font-medium text-gray-300">
-                                    <i class="fa-solid fa-share-nodes w-4 text-indigo-500"></i> Share Profile
+                <div class="feature-card p-8 sidebar-extended sticky top-24">
+                    <div class="flex flex-col items-center w-full">
+                        <div class="absolute top-6 right-6 flex gap-2">
+                            <div class="relative">
+                                <button id="profile-options-btn" class="text-gray-500 hover:text-white w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/5 transition">
+                                    <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
                                 </button>
-                                <button id="btn-block-user" class="w-full text-left p-3 hover:bg-red-900/20 rounded-xl transition flex items-center gap-3 text-sm font-medium text-red-500 hidden">
-                                    <i class="fa-solid fa-ban w-4"></i> Block User
-                                </button>
+                                <div id="profile-options-menu" class="hidden absolute top-full right-0 mt-2 w-48 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl shadow-xl z-50 p-2 overflow-hidden">
+                                    <button id="btn-share-profile" class="w-full text-left p-3 hover:bg-white/5 rounded-xl transition flex items-center gap-3 text-sm font-medium text-gray-300">
+                                        <i class="fa-solid fa-share-nodes w-4 text-[var(--accent-color)]"></i> Share Profile
+                                    </button>
+                                    <button id="btn-block-user" class="w-full text-left p-3 hover:bg-red-900/20 rounded-xl transition flex items-center gap-3 text-sm font-medium text-red-500 hidden">
+                                        <i class="fa-solid fa-ban w-4"></i> Block User
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div id="avatar-container" class="mb-6 relative group w-28 h-28">
-                        <div id="avatar-preview" class="w-full h-full"></div>
-                        <div id="status-indicator" class="absolute bottom-1 right-1 w-6 h-6 border-4 border-[#080808] rounded-full status-offline"></div>
-                    </div>
-                    
-                    <div class="text-center w-full">
-                        <div id="self-indicator" class="hidden mb-2">
-                            <span class="text-[9px] font-bold bg-[var(--accent-color)]/20 text-[var(--accent-color)] px-2 py-0.5 rounded-full uppercase tracking-widest border border-[var(--accent-color)]/30">Your Profile</span>
+                        <div id="avatar-container" class="mb-6 relative group w-28 h-28">
+                            <div id="avatar-preview" class="w-full h-full"></div>
+                            <div id="status-indicator" class="absolute bottom-1 right-1 w-6 h-6 border-4 border-[#080808] rounded-full status-offline"></div>
                         </div>
-                        <div class="flex items-center justify-center gap-1">
-                            <h1 id="display-name" class="text-3xl font-light tracking-tight text-[var(--text-main)] px-2 py-1">--</h1>
-                        </div>
-                        <p id="username" class="text-[var(--text-muted)] opacity-60 font-mono text-sm mt-1">@--</p>
                         
-                        <div id="activity-label" class="mt-3 text-[10px] text-[var(--accent-color)] font-medium uppercase tracking-widest hidden">
-                            On: <span id="current-activity-text" class="text-[var(--text-main)]">--</span>
+                        <div class="text-center w-full">
+                            <div id="self-indicator" class="hidden mb-2">
+                                <span class="text-[9px] font-bold bg-[var(--accent-color)]/20 text-[var(--accent-color)] px-2 py-0.5 rounded-full uppercase tracking-widest border border-[var(--accent-color)]/30">Your Profile</span>
+                            </div>
+                            <div class="flex items-center justify-center gap-1">
+                                <h1 id="display-name" class="text-3xl font-light tracking-tight text-[var(--text-main)] px-2 py-1">--</h1>
+                            </div>
+                            <p id="username" class="text-[var(--text-muted)] opacity-60 font-mono text-sm mt-1">@--</p>
+                            
+                            <div id="activity-label" class="mt-3 text-[10px] text-[var(--accent-color)] font-medium uppercase tracking-widest hidden">
+                                On: <span id="current-activity-text" class="text-[var(--text-main)]">--</span>
+                            </div>
+                        </div>
+
+                        <div id="edit-profile-btn-container" class="hidden mt-6 w-full">
+                            <button id="open-edit-modal-btn" class="w-full py-2.5 bg-[var(--border-faint)] border border-[var(--border-faint)] text-[var(--text-muted)] rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-[var(--border-faint)]/20 transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit Profile
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 w-full mt-8 pt-8 border-t border-[var(--border-faint)]">
+                            <div class="bg-[var(--border-faint)] p-4 rounded-2xl border border-[var(--border-faint)] text-center cursor-pointer hover:bg-[var(--border-faint)]/20 transition" id="btn-show-followers">
+                                <p class="text-2xl font-medium text-[var(--text-main)]" id="followers-count">0</p>
+                                <p class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] opacity-60 font-bold">Followers</p>
+                            </div>
+                            <div class="bg-[var(--border-faint)] p-4 rounded-2xl border border-[var(--border-faint)] text-center cursor-pointer hover:bg-[var(--border-faint)]/20 transition" id="btn-show-following">
+                                <p class="text-2xl font-medium text-[var(--text-main)]" id="following-count">0</p>
+                                <p class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] opacity-60 font-bold">Following</p>
+                            </div>
+                        </div>
+
+                        <div id="description-container" class="mt-6 text-center w-full">
+                            <p id="description" class="text-gray-400 text-sm leading-relaxed px-2 py-1 italic"></p>
+                        </div>
+
+                        <div id="follow-actions" class="mt-8 w-full flex gap-3 hidden">
+                            <button id="follow-btn" class="btn-base primary-cta w-full py-3 transition-all duration-200">Follow</button>
                         </div>
                     </div>
 
-                    <div id="edit-profile-btn-container" class="hidden mt-6 w-full">
-                        <button id="open-edit-modal-btn" class="w-full py-2.5 bg-[var(--border-faint)] border border-[var(--border-faint)] text-[var(--text-muted)] rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-[var(--border-faint)]/20 transition flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-pen-to-square"></i> Edit Profile
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 w-full mt-8 pt-8 border-t border-[var(--border-faint)]">
-                        <div class="bg-[var(--border-faint)] p-4 rounded-2xl border border-[var(--border-faint)] text-center cursor-pointer hover:bg-[var(--border-faint)]/20 transition" id="btn-show-followers">
-                            <p class="text-2xl font-medium text-[var(--text-main)]" id="followers-count">0</p>
-                            <p class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] opacity-60 font-bold">Followers</p>
+                    <div class="mt-auto pt-8">
+                        <div class="p-6 feature-card bg-[var(--border-faint)] border-dashed border-[var(--border-main)] rounded-2xl">
+                            <h3 class="text-sm font-bold uppercase tracking-widest mb-3 text-[var(--text-main)] opacity-80">About 4SP Profiles</h3>
+                            <p class="text-[11px] text-[var(--text-muted)] opacity-60 leading-relaxed">
+                                4SP profiles connect you with your peers. Follow users to see their activity, total experience time, and daily moments.
+                            </p>
                         </div>
-                        <div class="bg-[var(--border-faint)] p-4 rounded-2xl border border-[var(--border-faint)] text-center cursor-pointer hover:bg-[var(--border-faint)]/20 transition" id="btn-show-following">
-                            <p class="text-2xl font-medium text-[var(--text-main)]" id="following-count">0</p>
-                            <p class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] opacity-60 font-bold">Following</p>
-                        </div>
-                    </div>
-
-                    <div id="description-container" class="mt-6 text-center w-full">
-                        <p id="description" class="text-gray-400 text-sm leading-relaxed px-2 py-1 italic"></p>
-                    </div>
-
-                    <div id="follow-actions" class="mt-8 w-full flex gap-3 hidden">
-                        <button id="follow-btn" class="btn-base primary-cta w-full py-3 transition-all duration-200">Follow</button>
                     </div>
                 </div>
             </div>
@@ -219,13 +246,6 @@
                 
                 <div id="dailyphoto-container" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <!-- Photos will be dynamically inserted here -->
-                </div>
-
-                <div class="mt-12 p-8 feature-card bg-[var(--border-faint)] border-dashed border-[var(--border-main)]">
-                    <h3 class="text-lg font-light mb-4 text-[var(--text-main)]">About 4SP Profiles</h3>
-                    <p class="text-sm text-[var(--text-muted)] opacity-60 leading-relaxed">
-                        4SP profiles connect you with your peers. Follow users to see their activity, total experience time, and daily moments.
-                    </p>
                 </div>
             </div>
         </div>
