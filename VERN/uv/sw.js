@@ -1,8 +1,11 @@
+importScripts('../baremux/index.js');
 importScripts('uv.bundle.js');
 importScripts('uv.config.js');
 importScripts(__uv$config.sw || 'uv.sw.js');
 
 const uv = new UVServiceWorker();
+uv.bareClient = new BareMux.BareClient();
+
 let config = {
     blocklist: new Set(),
 }
