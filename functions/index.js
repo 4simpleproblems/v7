@@ -214,3 +214,50 @@ exports.reportContent = onRequest({ cors: true }, async (req, res) => {
         res.status(500).json({ error: "Internal Server Error", details: error.message });
         }
         });
+
+        exports.listAuthUsers = onRequest({ cors: true }, async (req, res) => {
+        try {
+        if (req.method !== 'POST') {
+            res.status(405).send('Method Not Allowed');
+            return;
+        }
+
+        const { adminUid } = req.body;
+
+        if (!adminUid) {
+            res.status(400).json({ error: "Missing required parameter: adminUid" });
+            return;
+        }
+
+        // Verify requester is an admin
+        const adminDoc = await admin.firestore().collection('admins').doc(adminUid).get();
+        if (!adminDoc.exists) {
+            res.status(403).json({ error: "Unauthorized: Requester is not an admin." });
+            return;
+        }
+
+        const users = [];
+        let nextPageToken;
+
+        // List all users in batches
+        do {
+            const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
+            listUsersResult.users.forEach((userRecord) => {
+                users.push({
+                    uid: userRecord.uid,
+                    email: userRecord.email,
+                    displayName: userRecord.displayName,
+                    providerId: userRecord.providerData[0]?.providerId || 'unknown',
+                    createdAt: userRecord.metadata.creationTime
+                });
+            });
+            nextPageToken = listUsersResult.pageToken;
+        } while (nextPageToken);
+
+        res.status(200).json({ success: true, users });
+
+        } catch (error) {
+        logger.error("List Auth Users Error", error);
+        res.status(500).json({ error: "Internal Server Error", details: error.message });
+        }
+        });

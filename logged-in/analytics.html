@@ -558,6 +558,41 @@
             'email': 'fa-solid fa-envelope'
         };
 
+        const updateVeliumUI = () => {
+            window.isAdmin = true;
+            const adminTab = document.getElementById('admin-test-tab');
+            if (adminTab) adminTab.classList.remove('hidden');
+        };
+
+        const showNotification = (message, icon = 'fa-solid fa-info-circle', type = 'info') => {
+            // Simplified version or using existing notification system if available
+            console.log(`[Notification] ${message}`);
+            // If soundboard style toast exists:
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+                background: var(--bg-card); border: 1px solid var(--border-color);
+                color: var(--text-main); padding: 12px 24px; border-radius: 16px;
+                display: flex; align-items: center; gap: 12px; z-index: 9999;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-size: 14px;
+                animation: slideUp 0.3s ease;
+            `;
+            
+            let color = '#3b82f6';
+            if (type === 'success') color = '#22c55e';
+            if (type === 'error') color = '#ef4444';
+            
+            toast.innerHTML = `<i class="${icon}" style="color: ${color}"></i><span>${message}</span>`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(-50%) translateY(10px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
         const init = async () => {
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -1078,12 +1113,111 @@
         };
 
         const refreshSyncTables = async () => {
-            // This is a simplified health check logic
             const missingProfileBody = document.getElementById('missing-profile-body');
             const orphanedDocBody = document.getElementById('orphaned-doc-body');
             
-            missingProfileBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-600 py-8">Service available in Master Admin mode only.</td></tr>';
-            orphanedDocBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-600 py-8">Service available in Master Admin mode only.</td></tr>';
+            missingProfileBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-600 py-8"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Scanning Auth...</td></tr>';
+            orphanedDocBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-600 py-8"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Scanning Documents...</td></tr>';
+
+            try {
+                const response = await fetch('https://listauthusers-tqj6zqza5a-uc.a.run.app', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminUid: auth.currentUser.uid })
+                });
+
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error);
+
+                const authUsers = result.users;
+                document.getElementById('auth-user-count').textContent = authUsers.length;
+
+                // 1. Find Missing Profiles (Auth exists, Doc missing)
+                const firestoreUids = new Set(allUsers.map(u => u.id));
+                const missingProfiles = authUsers.filter(au => !firestoreUids.has(au.uid));
+                
+                document.getElementById('count-missing-profile').textContent = missingProfiles.length;
+                if (missingProfiles.length === 0) {
+                    missingProfileBody.innerHTML = '<tr><td colspan="3" class="text-center text-green-500 py-8"><i class="fa-solid fa-circle-check mr-2"></i>All Auth users have profiles.</td></tr>';
+                } else {
+                    missingProfileBody.innerHTML = missingProfiles.map(u => `
+                        <tr>
+                            <td class="text-[10px] font-mono text-gray-500">${u.uid}</td>
+                            <td class="text-xs text-white">${u.email || 'N/A'} <span class="text-[10px] text-gray-600">(${u.providerId})</span></td>
+                            <td class="text-right">
+                                <button class="action-btn btn-create" data-uid="${u.uid}" data-email="${u.email || ''}" data-method="${u.providerId}" onclick="createProfileFromAuth(this)">
+                                    <i class="fa-solid fa-plus mr-1"></i> Create
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // 2. Find Orphaned Documents (Doc exists, Auth missing)
+                const authUids = new Set(authUsers.map(au => au.uid));
+                const orphaned = allUsers.filter(u => !authUids.has(u.id));
+
+                document.getElementById('count-orphaned-doc').textContent = orphaned.length;
+                if (orphaned.length === 0) {
+                    orphanedDocBody.innerHTML = '<tr><td colspan="3" class="text-center text-green-500 py-8"><i class="fa-solid fa-circle-check mr-2"></i>No orphaned documents found.</td></tr>';
+                } else {
+                    orphanedDocBody.innerHTML = orphaned.map(u => `
+                        <tr>
+                            <td class="text-[10px] font-mono text-gray-500">${u.id}</td>
+                            <td class="text-xs text-white">${u.username || 'N/A'} <span class="text-[10px] text-gray-600">(${u.email || 'No Email'})</span></td>
+                            <td class="text-right">
+                                <button class="action-btn btn-delete" data-uid="${u.id}" onclick="deleteOrphanedDoc(this)">
+                                    <i class="fa-solid fa-trash mr-1"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Update health badge
+                const healthBadge = document.getElementById('health-badge');
+                if (missingProfiles.length === 0 && orphaned.length === 0) {
+                    healthBadge.className = 'px-3 py-1 bg-green-900/20 text-green-400 rounded-full border border-green-500/20 text-xs mt-1';
+                    healthBadge.textContent = 'System Balanced';
+                } else {
+                    healthBadge.className = 'px-3 py-1 bg-orange-900/20 text-orange-400 rounded-full border border-orange-500/20 text-xs mt-1';
+                    healthBadge.textContent = 'Sync Recommended';
+                }
+
+            } catch (err) {
+                console.error("Health Check Failed:", err);
+                missingProfileBody.innerHTML = `<tr><td colspan="3" class="text-center text-red-500 py-8">Error: ${err.message}</td></tr>`;
+                orphanedDocBody.innerHTML = `<tr><td colspan="3" class="text-center text-red-500 py-8">Error: ${err.message}</td></tr>`;
+            }
+        };
+
+        window.createProfileFromAuth = async (btn) => {
+            const { uid, email, method } = btn.dataset;
+            if (!confirm(`Create Firestore profile for ${uid}?`)) return;
+            
+            try {
+                await setDoc(doc(db, 'users', uid), {
+                    username: email ? email.split('@')[0] : 'User',
+                    email: email,
+                    authMethod: method,
+                    createdAt: new Date(),
+                    emailVerified: false,
+                    isBanned: false
+                });
+                showNotification('Profile Created', 'fa-solid fa-plus', 'success');
+                refreshSyncTables();
+            } catch (err) { alert("Failed to create profile: " + err.message); }
+        };
+
+        window.deleteOrphanedDoc = async (btn) => {
+            const { uid } = btn.dataset;
+            if (!confirm(`Permanently delete orphaned document ${uid}?`)) return;
+
+            try {
+                await deleteDoc(doc(db, 'users', uid));
+                showNotification('Document Deleted', 'fa-solid fa-trash', 'success');
+                refreshSyncTables();
+            } catch (err) { alert("Failed to delete document: " + err.message); }
         };
 
         document.getElementById('chart-period').addEventListener('change', () => renderChart(allUsers));
