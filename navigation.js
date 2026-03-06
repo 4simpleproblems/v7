@@ -2107,18 +2107,6 @@ let db;
                 gap: 0.5rem;
                 margin-left: 1rem;
             }
-
-            /* UNIVERSAL LOADER CSS */
-            #universal-loader {
-                pointer-events: none;
-                transition: opacity 0.2s ease;
-            }
-            #universal-loader.active {
-                pointer-events: auto;
-            }
-            #loader-bar {
-                transition: width 1s ease-out;
-            }
         `;
         document.head.appendChild(style);
     };
