@@ -978,6 +978,11 @@
                 return relativePath;
             }
 
+            // Handle local paths explicitly requested
+            if (relativePath.startsWith('local:')) {
+                return relativePath.substring(6);
+            }
+
             // Logic: 
             // If path starts with ../ -> Go to WORKER_ROOT + path (stripping ../)
             // If path starts with ../GAMES/ -> It will effectively be WORKER_ROOT/GAMES/ (which matches GAMES_BASE_URL)
@@ -1000,7 +1005,7 @@
             { id: "other-simcity", name: "Sim City", imgSrc: "./images/simcity2000.png", description: "The original city-building classics. Design, build, and manage the city of your dreams in either the original Sim City or the detailed Sim City 2000.", category: "Others", versions: [ { name: "Sim City", url: "../SIM-CITY/index.html", favoriteId: "other-simcity_1" }, { name: "Sim City 2000", url: "../SIM-CITY-2/index.html", favoriteId: "other-simcity_2000" } ] },
             { id: "other-doom", name: "DOOM", imgSrc: "./images/doom.png", description: "The legendary first-person shooter that pioneered the genre, focusing on blasting through hordes of demons in a timeless, adrenaline-fueled classic.", category: "Others", url: "../DOOM/index.html" },
             { id: "other-sm64", name: "Super Mario 64", imgSrc: "./images/sm64.png", description: "The iconic 3D platformer that revolutionized gaming. Run, jump, and triple-jump your way through vast worlds to collect stars and save the princess.", category: "Others", url: "../GAMES/sm64/index.html" },
-            { id: "other-be-clicker", name: "Big E Clicker", imgSrc: "./images/be_clicker.png", description: "The ultimate clicker experience featuring Big E. Click your way to glory!", category: "Others", url: "../GAMES/others/be_clicker.html", privileged: true }
+            { id: "other-be-clicker", name: "Big E Clicker", imgSrc: "./images/be_clicker.png", description: "The ultimate clicker experience featuring Big E. Click your way to glory!", category: "Others", url: "local:../GAMES/others/be_clicker.html", privileged: true }
         ];
 
         // --- Card Creation ---
