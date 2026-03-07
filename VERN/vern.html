@@ -396,17 +396,6 @@
         // --- Configuration ---
         // Immediate Initialization
         (async () => {
-            if ("serviceWorker" in navigator) {
-                try {
-                    await navigator.serviceWorker.register(__uv$config.stockSW, {
-                        scope: __uv$config.prefix
-                    });
-                    console.log("SW Registered Fast");
-                } catch (e) {
-                    console.error("SW Register Failed", e);
-                }
-            }
-
             if (window.__4sp_bare_mux_connecting) return;
             window.__4sp_bare_mux_connecting = true;
 
@@ -417,10 +406,22 @@
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
+                console.log("BareMux Transport Set");
             } catch (e) {
                 console.error("BareMux Connection Error:", e);
             } finally {
                 window.__4sp_bare_mux_connecting = false;
+            }
+
+            if ("serviceWorker" in navigator) {
+                try {
+                    await navigator.serviceWorker.register(__uv$config.stockSW, {
+                        scope: __uv$config.prefix
+                    });
+                    console.log("SW Registered after BareMux");
+                } catch (e) {
+                    console.error("SW Register Failed", e);
+                }
             }
         })();
 

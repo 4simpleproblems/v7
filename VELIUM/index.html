@@ -71,6 +71,7 @@
         };
 
         (async () => {
+            await window.checkBare();
             if ("serviceWorker" in navigator) {
                 try {
                     await navigator.serviceWorker.register("/VELIUM/uv/sw.js", {
@@ -78,8 +79,33 @@
                     });
                 } catch (e) { console.error("VERN Proxy Error", e); }
             }
-            await window.checkBare();
         })();
+
+        function syncThemes() {
+            try {
+                if (window.parent && window.parent.document && window.parent.document.documentElement) {
+                    const parentRoot = window.parent.document.documentElement;
+                    const childRoot = document.documentElement;
+                    
+                    const vars = [
+                        'bg-primary', 'bg-secondary', 'text-primary', 'text-secondary',
+                        'accent-primary', 'accent-secondary', 'border-primary', 'border-secondary',
+                        'button-bg', 'button-text'
+                    ];
+                    
+                    vars.forEach(v => {
+                        const val = parentRoot.style.getPropertyValue('--' + v);
+                        if (val) childRoot.style.setProperty('--' + v, val);
+                    });
+                }
+            } catch (e) {}
+        }
+        
+        syncThemes();
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'theme-changed') syncThemes();
+        });
+        setInterval(syncThemes, 2000); // Periodic fallback sync
     </script>
 
     <script>

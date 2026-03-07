@@ -999,7 +999,8 @@
             { id: "other-gta", name: "Grand Theft Auto", imgSrc: "./images/gta.png", description: "The original top-down classic. Cause chaos, complete missions, or just go for a drive in three iconic cities.", category: "Others", versions: [ { name: "Carnage3D", url: "../CARNAGE3D/web/carnage3D.html", favoriteId: "other-gta_carnage3d" }, { name: "Grand Theft Auto (JS-DOS)", url: "../GTA-JSDOS/index.html", favoriteId: "other-gta_jsdos" } ] },
             { id: "other-simcity", name: "Sim City", imgSrc: "./images/simcity2000.png", description: "The original city-building classics. Design, build, and manage the city of your dreams in either the original Sim City or the detailed Sim City 2000.", category: "Others", versions: [ { name: "Sim City", url: "../SIM-CITY/index.html", favoriteId: "other-simcity_1" }, { name: "Sim City 2000", url: "../SIM-CITY-2/index.html", favoriteId: "other-simcity_2000" } ] },
             { id: "other-doom", name: "DOOM", imgSrc: "./images/doom.png", description: "The legendary first-person shooter that pioneered the genre, focusing on blasting through hordes of demons in a timeless, adrenaline-fueled classic.", category: "Others", url: "../DOOM/index.html" },
-            { id: "other-sm64", name: "Super Mario 64", imgSrc: "./images/sm64.png", description: "The iconic 3D platformer that revolutionized gaming. Run, jump, and triple-jump your way through vast worlds to collect stars and save the princess.", category: "Others", url: "../GAMES/sm64/index.html" }
+            { id: "other-sm64", name: "Super Mario 64", imgSrc: "./images/sm64.png", description: "The iconic 3D platformer that revolutionized gaming. Run, jump, and triple-jump your way through vast worlds to collect stars and save the princess.", category: "Others", url: "../GAMES/sm64/index.html" },
+            { id: "other-be-clicker", name: "Big E Clicker", imgSrc: "./images/be_clicker.png", description: "The ultimate clicker experience featuring Big E. Click your way to glory!", category: "Others", url: "../GAMES/others/be_clicker.html", privileged: true }
         ];
 
         // --- Card Creation ---
@@ -1542,6 +1543,42 @@
 
         // --- Init ---
         async function initializeApp() {
+            // --- PRIVILEGE CHECK ---
+            const checkPrivilege = () => {
+                return new Promise((resolve) => {
+                    const check = async () => {
+                        if (typeof firebase === 'undefined' || !firebase.apps.length) {
+                            setTimeout(check, 100);
+                            return;
+                        }
+                        const auth = firebase.auth();
+                        const validate = async (u) => {
+                            if (!u) return false;
+                            if (u.email === 'otweno30@minerva.sparcc.org' || u.email === '4simpleproblems@gmail.com') return true;
+                            const db = firebase.firestore();
+                            try {
+                                const adminDoc = await db.collection('admins').doc(u.uid).get();
+                                return adminDoc.exists;
+                            } catch (e) {
+                                return false;
+                            }
+                        };
+                        const user = auth.currentUser;
+                        if (user) resolve(await validate(user));
+                        else {
+                            const unsubscribe = auth.onAuthStateChanged(async (u) => {
+                                unsubscribe();
+                                resolve(await validate(u));
+                            });
+                        }
+                    };
+                    check();
+                });
+            };
+
+            const isAuthorized = await checkPrivilege();
+            const filteredOthers = othersGames.filter(g => !g.privileged || isAuthorized);
+
             // Load Game Data Manually
             let gamesData = [];
             try {
@@ -1608,10 +1645,10 @@
                     popularity: popularityData[g.id] || 0
                 }));
                 
-                allGames = [...strongdogGames, ...gnMathGames, ...othersGames];
+                allGames = [...strongdogGames, ...gnMathGames, ...filteredOthers];
             } catch (error) { 
                 console.warn("Failed to load GN-Math, falling back to others.", error);
-                allGames = [...strongdogGames, ...othersGames]; 
+                allGames = [...strongdogGames, ...filteredOthers]; 
             }
 
             allGames = allGames.filter(g => !['bitlife', 'soundboard'].some(term => g.name.toLowerCase().includes(term)));
