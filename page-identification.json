@@ -5,6 +5,12 @@
         "url": "../logged-in/dashboard.html",
         "aliases": ["/logged-in/dashboard"]
     },
+    "leaderboard": {
+        "name": "Leaderboard",
+        "icon": "fa-solid fa-trophy",
+        "url": "../logged-in/leaderboard.html",
+        "aliases": ["/logged-in/leaderboard"]
+    },
     "soundboard": {
         "name": "Soundboard",
         "icon": "fa-solid fa-volume-up", 

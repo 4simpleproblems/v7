@@ -1001,11 +1001,12 @@
         // We keep the original relative paths here so the resolver logic above can handle them dynamically
         const othersGames = [
             { id: "other-eaglercraft", name: "Eaglercraft", imgSrc: "./images/eaglercraft.png", description: "The classic survival and building game with authentic block-based physics and multiplayer support, accessible directly in the browser.", category: "Others", versions: [ { name: "Release 1.12.2", url: "../EAGLERCRAFT/eaglercraft-1.12.2.html", favoriteId: "other-eaglercraft_1.12.2" }, { name: "Release 1.12.2 WASM", url: "../EAGLERCRAFT/eaglercraft-1.12.2-wasm.html", favoriteId: "other-eaglercraft_wasm", wasm: true } ] },
+            { id: "other-balatro", name: "Balatro", imgSrc: "../GAMES/others/balatro.png", description: "Balatro is a poker-themed deck-building roguelike video game.", category: "Others", url: "https://drive.google.com/uc?export=download&id=1EiwjvWTq3M9_Q1CPyd1g1zNZITzRa9mA", isDownload: true },
             { id: "other-gta", name: "Grand Theft Auto", imgSrc: "./images/gta.png", description: "The original top-down classic. Cause chaos, complete missions, or just go for a drive in three iconic cities.", category: "Others", versions: [ { name: "Carnage3D", url: "../CARNAGE3D/web/carnage3D.html", favoriteId: "other-gta_carnage3d" }, { name: "Grand Theft Auto (JS-DOS)", url: "../GTA-JSDOS/index.html", favoriteId: "other-gta_jsdos" } ] },
             { id: "other-simcity", name: "Sim City", imgSrc: "./images/simcity2000.png", description: "The original city-building classics. Design, build, and manage the city of your dreams in either the original Sim City or the detailed Sim City 2000.", category: "Others", versions: [ { name: "Sim City", url: "../SIM-CITY/index.html", favoriteId: "other-simcity_1" }, { name: "Sim City 2000", url: "../SIM-CITY-2/index.html", favoriteId: "other-simcity_2000" } ] },
             { id: "other-doom", name: "DOOM", imgSrc: "./images/doom.png", description: "The legendary first-person shooter that pioneered the genre, focusing on blasting through hordes of demons in a timeless, adrenaline-fueled classic.", category: "Others", url: "../DOOM/index.html" },
             { id: "other-sm64", name: "Super Mario 64", imgSrc: "./images/sm64.png", description: "The iconic 3D platformer that revolutionized gaming. Run, jump, and triple-jump your way through vast worlds to collect stars and save the princess.", category: "Others", url: "../GAMES/sm64/index.html" },
-            { id: "other-be-clicker", name: "Big E Clicker", imgSrc: "./images/be_clicker.png", description: "The ultimate clicker experience featuring Big E. Click your way to glory!", category: "Others", url: "local:../GAMES/others/be_clicker.html", privileged: true }
+            { id: "other-be-clicker", name: "Big E Clicker", imgSrc: "./images/be_clicker.png", description: "The ultimate clicker experience featuring Big E. Click your way to glory!", category: "Others", url: "https://drive.google.com/uc?export=download&id=1n7u_jT99S7QJzP4E_r6TzVz6W-W0fLwZ", isDownload: true, privileged: true }
         ];
 
         // --- Card Creation ---
@@ -1018,7 +1019,7 @@
             card.dataset.gameId = game.id;
 
             // Resolve Image URL
-            const resolvedImgSrc = resolveGameUrl(game.imgSrc);
+            const resolvedImgSrc = game.id === 'other-balatro' ? game.imgSrc : resolveGameUrl(game.imgSrc);
 
             let gameButtonsHtml = '';
             let favoriteButtonHtml = '';
@@ -1037,8 +1038,12 @@
                 }
                 favoriteButtonHtml = `<div class="relative"><button class="btn-card-action fav-action version-favorite-btn ${isAnyFavorite ? 'favorited' : ''}" title="Favorite a version"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button><div class="eagler-dropdown">${game.versions.map(v => `<a href="#" class="eagler-dropdown-link favorite-link" data-favorite-id="${v.favoriteId}">${v.name}</a>`).join('')}</div></div>`;
             } else {
-                const gUrl = resolveGameUrl(game.url);
-                gameButtonsHtml = `<button class="btn-card-action play-action" data-url="${gUrl}" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`;
+                if (game.isDownload) {
+                    gameButtonsHtml = `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download transition-colors"></i></a>`;
+                } else {
+                    const gUrl = resolveGameUrl(game.url);
+                    gameButtonsHtml = `<button class="btn-card-action play-action" data-url="${gUrl}" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`;
+                }
                 favoriteButtonHtml = `<button class="btn-card-action fav-action ${isAnyFavorite ? 'favorited' : ''}" title="${isAnyFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>`;
             }
 
@@ -1060,12 +1065,23 @@
             `;
             
             if (!game.versions) { 
-                card.querySelector('.group').addEventListener('click', () => {
-                     const gUrl = resolveGameUrl(game.url);
-                     openZone({...game, url: gUrl}); 
-                }); 
+                if (game.isDownload) {
+                    card.querySelector('.group').addEventListener('click', (e) => { e.preventDefault(); window.open(game.url, '_blank'); });
+                } else {
+                    card.querySelector('.group').addEventListener('click', () => {
+                         const gUrl = resolveGameUrl(game.url);
+                         openZone({...game, url: gUrl}); 
+                    }); 
+                }
             }
-            card.querySelectorAll('.play-action').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); openZone({ ...game, name: btn.dataset.versionName ? `${game.name} - ${btn.dataset.versionName}` : game.name, url: btn.dataset.url }); }));
+            card.querySelectorAll('.play-action, .download-action').forEach(btn => btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (btn.classList.contains('download-action')) {
+                    window.open(btn.href, '_blank');
+                } else {
+                    openZone({ ...game, name: btn.dataset.versionName ? `${game.name} - ${btn.dataset.versionName}` : game.name, url: btn.dataset.url });
+                }
+            }));
             
             const versionBtn = card.querySelector('.version-btn');
             if (versionBtn) { versionBtn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.eagler-dropdown.show').forEach(d => d.classList.remove('show')); versionBtn.nextElementSibling.classList.toggle('show'); }); }
@@ -1089,7 +1105,9 @@
             
             // Resolve Image Src
             let imgSrc = game.imgSrc;
-            if (isStrongdog) {
+            if (game.id === 'other-balatro' && forceSmallCard) {
+                imgSrc = "../GAMES/others/balatro-3-2.png";
+            } else if (isStrongdog) {
                  imgSrc = getAdjustedUrls(game.imgSrc, game.page).adjustedImgSrc;
             } else if (game.category === 'Others' || game.category === 'Gameboy Games') {
                  imgSrc = resolveGameUrl(game.imgSrc);
@@ -1105,7 +1123,7 @@
                     <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover"></div>
                     <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--bg-page)] rounded-xl px-3 py-1.5 text-[var(--text-main)] truncate text-sm font-semibold shadow-lg border border-[var(--border-main)]" title="${game.name}">${game.name}</h3>
                     <div class="absolute bottom-2 right-2 bg-[var(--bg-page)] rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg border border-[var(--border-main)]">
-                        <button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>
+                        ${game.isDownload ? `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download transition-colors"></i></a>` : `<button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`}
                         <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>
                     </div>
                 </div>
@@ -1113,20 +1131,11 @@
             
             const handlePlay = async (e) => {
                 e.stopPropagation();
-                if (isStrongdog) {
-                    const baseURL = sd_getBaseURLForPage(game.page);
-                    let adjustedHref = baseURL.endsWith("/") ? baseURL + game.href.replace(/^\.\//, "") : baseURL + "/" + game.href.replace(/^\.\//, "");
-                    const embedPath = await sd_getEmbedPath(adjustedHref, game.href, game.page);
-                    openZone({ name: game.name, url: embedPath, category: game.category, id: game.id });
-                } else {
-                    // For GN-Math, url is absolute (handled in init). For Others/Gameboy, we might need to resolve
-                    let gUrl = game.url;
-                    if (game.category === 'Others' || game.category === 'Gameboy Games') {
-                        gUrl = resolveGameUrl(game.url);
-                    }
-                    openZone({ ...game, url: gUrl });
+                if (game.isDownload) {
+                    window.open(game.url, '_blank');
+                    return;
                 }
-            };
+                if (isStrongdog) {
 
             card.querySelector('.group').addEventListener('click', handlePlay);
             card.querySelector('.play-action').addEventListener('click', handlePlay);
@@ -1469,9 +1478,7 @@
                     </div>
                     <div class="flex items-center flex-shrink-0">
                         <div class="bg-[var(--bg-page)] rounded-2xl p-1.5 flex items-center gap-1.5 border border-[var(--border-main)] shadow-lg">
-                            <button class="btn-card-action play-action" title="Play Game">
-                                <i class="fa-solid fa-play transition-colors"></i>
-                            </button>
+                            ${game.isDownload ? `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download transition-colors"></i></a>` : `<button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`}
                             <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}">
                                 <i class="fa-solid fa-star fa-solid-star transition-colors"></i>
                                 <i class="fa-regular fa-star fa-regular-star transition-colors"></i>
@@ -1488,6 +1495,10 @@
 
                 linkEl.addEventListener('click', async (e) => {
                     e.preventDefault();
+                    if (game.isDownload) {
+                        window.open(game.url, '_blank');
+                        return;
+                    }
                     if (isStrongdog) {
                         const baseURL = sd_getBaseURLForPage(game.page);
                         let adjustedHref = baseURL.endsWith("/") ? baseURL + game.href.replace(/^\.\//, "") : baseURL + "/" + game.href.replace(/^\.\//, "");

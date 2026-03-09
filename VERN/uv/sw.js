@@ -4,7 +4,7 @@ importScripts('uv.config.js');
 importScripts(__uv$config.sw || 'uv.sw.js');
 
 const uv = new UVServiceWorker();
-uv.bareClient = new BareMux.BareClient();
+uv.bareClient = new BareMux.BareClient("/VERN/baremux/worker.js");
 
 let config = {
     blocklist: new Set(),
