@@ -142,12 +142,12 @@
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             border-radius: 28px;
-            padding: 1.5rem;
+            padding: 2.5rem 3.5rem;
             display: flex;
             flex-direction: row; /* Horizontal layout */
             align-items: center;
             justify-content: space-between;
-            gap: 2rem;
+            gap: 3rem;
             transition: all 0.3s ease;
             position: relative;
         }
@@ -226,25 +226,25 @@
 
         <!-- LEADERBOARD WIDGET -->
         <div id="leaderboard-widget" class="dashboard-card greyed-out">
-            <div class="flex flex-col justify-center border-r border-white/5 pr-8 h-full">
+            <div class="flex flex-col justify-center border-r border-white/5 pr-10 h-full">
                 <div class="label-tiny">Your Status</div>
-                <div id="leaderboard-rank" class="val-big" style="color: var(--accent-primary);">#--</div>
-                <div class="text-[10px] opacity-60 mt-1 uppercase tracking-widest font-bold" style="color: var(--text-muted);">Global Rank</div>
+                <div id="leaderboard-rank" class="text-6xl font-bold mt-1" style="color: var(--accent-primary);">#--</div>
+                <div class="text-[12px] opacity-60 mt-1 uppercase tracking-widest font-bold" style="color: var(--text-muted);">Global Rank</div>
             </div>
 
-            <div class="flex-grow flex items-center gap-6 px-4">
-                <div id="champion-avatar-widget" class="w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0" style="background: var(--button-bg); border: 1px solid var(--border-color);">
-                    <i class="fas fa-crown" style="color: var(--accent-primary);"></i>
+            <div class="flex-grow flex items-center gap-10 px-6">
+                <div id="champion-avatar-widget" class="w-24 h-24 rounded-[32px] flex items-center justify-center overflow-hidden flex-shrink-0" style="background: var(--button-bg); border: 1px solid var(--border-color);">
+                    <i class="fas fa-crown text-3xl" style="color: var(--accent-primary);"></i>
                 </div>
                 <div class="min-w-0">
                     <div class="label-tiny">Global Champion</div>
-                    <div id="champion-name-widget" class="text-xl font-medium truncate" style="color: var(--text-primary);">Loading...</div>
-                    <div id="champion-time-widget" class="text-[10px] font-mono mt-0.5" style="color: var(--text-secondary); opacity: 0.7;">0h 0m total</div>
+                    <div id="champion-name-widget" class="text-4xl font-semibold truncate mt-1" style="color: var(--text-primary);">Loading...</div>
+                    <div id="champion-time-widget" class="text-sm font-mono mt-1" style="color: var(--text-secondary); opacity: 0.7;">0h 0m total</div>
                 </div>
             </div>
             
             <div class="flex flex-col gap-2">
-                <a href="leaderboard.html" class="inline-flex items-center justify-center py-2.5 px-6 border rounded-2xl text-xs font-medium transition group" style="background: var(--button-bg); border-color: var(--border-primary); color: var(--accent-primary);">
+                <a href="leaderboard.html" class="inline-flex items-center justify-center py-4 px-8 border rounded-2xl text-sm font-medium transition group" style="background: var(--button-bg); border-color: var(--border-primary); color: var(--accent-primary);">
                     Rankings <i class="fas fa-trophy ml-2 group-hover:scale-110 transition-transform"></i>
                 </a>
             </div>
