@@ -1136,6 +1136,18 @@
                     return;
                 }
                 if (isStrongdog) {
+                    const baseURL = sd_getBaseURLForPage(game.page);
+                    let adjustedHref = baseURL.endsWith("/") ? baseURL + game.href.replace(/^\.\//, "") : baseURL + "/" + game.href.replace(/^\.\//, "");
+                    const embedPath = await sd_getEmbedPath(adjustedHref, game.href, game.page);
+                    openZone({ name: game.name, url: embedPath, category: game.category, id: game.id });
+                } else {
+                    let gUrl = game.url;
+                    if (game.category === 'Others' || game.category === 'Gameboy Games') {
+                        gUrl = resolveGameUrl(gUrl);
+                    }
+                    openZone({ ...game, url: gUrl });
+                }
+            };
 
             card.querySelector('.group').addEventListener('click', handlePlay);
             card.querySelector('.play-action').addEventListener('click', handlePlay);
