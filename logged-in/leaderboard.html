@@ -33,115 +33,156 @@
             color: var(--text-main);
             font-weight: 300;
             min-height: 100vh;
-            padding: 2.5rem;
+            padding: 4rem 2.5rem;
         }
 
         .leaderboard-container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
         .section-card {
             background: var(--bg-container);
-            border: 1px solid var(--border-main);
+            border: 1px solid var(--border-faint);
             border-radius: 28px;
-            padding: 2rem;
+            padding: 2.5rem 3.5rem;
             margin-bottom: 2rem;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .label-tiny { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); opacity: 0.5; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
-        .section-title { font-size: 2rem; font-weight: 200; letter-spacing: -0.02em; margin-bottom: 1.5rem; color: var(--text-main); }
+        .label-tiny { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); opacity: 0.5; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
+        .section-title { font-size: 2.5rem; font-weight: 200; letter-spacing: -0.02em; margin-bottom: 2rem; color: var(--text-main); }
+
+        /* champion-widget style match */
+        .champion-widget {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 3rem;
+        }
 
         .leader-item {
             display: flex;
             align-items: center;
-            gap: 1.5rem;
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-faint);
-            transition: all 0.2s;
+            gap: 2.5rem;
+            padding: 1.5rem 2.5rem;
+            background: rgba(255,255,255,0.01);
+            border: 1px solid var(--border-faint);
+            border-radius: 24px;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
         }
-        .leader-item:hover { background: var(--border-faint); }
-        .leader-item:last-child { border-bottom: none; }
+        .leader-item:hover { 
+            background: var(--bg-secondary);
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
 
-        .rank-num { font-size: 1.25rem; font-weight: 500; width: 40px; color: var(--text-muted); opacity: 0.4; }
-        .rank-1 { color: #fbbf24; font-size: 2rem; opacity: 1; }
-        .rank-2 { color: #cbd5e1; font-size: 1.5rem; opacity: 1; }
-        .rank-3 { color: #d97706; font-size: 1.25rem; opacity: 1; }
+        .rank-num { font-size: 1.5rem; font-weight: 600; width: 60px; color: var(--text-muted); opacity: 0.3; }
+        .rank-1-text { color: var(--accent-color); font-size: 3.5rem; opacity: 1; font-weight: 800; }
+        .rank-1 { color: #fbbf24; opacity: 1; }
+        .rank-2 { color: #cbd5e1; opacity: 1; }
+        .rank-3 { color: #d97706; opacity: 1; }
 
         .user-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
             background: var(--bg-page);
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             flex-shrink: 0;
-            border: 1px solid var(--border-main);
+            border: 1px solid var(--border-faint);
         }
 
         .follow-btn {
-            padding: 0.5rem 1rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            border-radius: 18px;
+            font-size: 0.8rem;
+            font-weight: 600;
             transition: all 0.2s;
-            border: 1px solid var(--accent-color);
+            border: 1px solid var(--border-faint);
             color: var(--accent-color);
-            background: transparent;
+            background: var(--btn-bg);
         }
         .follow-btn:hover {
-            background: var(--btn-bg);
+            border-color: var(--accent-color);
+            transform: scale(1.05);
         }
         .follow-btn.following {
             background: var(--accent-color);
             color: white;
+            border-color: var(--accent-color);
         }
 
         .page-stat-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
         }
         .page-stat-item {
-            background: var(--border-faint);
-            border: 1px solid var(--border-main);
-            border-radius: 20px;
-            padding: 1.25rem;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-faint);
+            border-radius: 24px;
+            padding: 1.75rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: all 0.2s;
+        }
+        .page-stat-item:hover {
+            border-color: var(--accent-color);
+            background: var(--bg-secondary);
         }
 
         .highlight-card {
-            background: linear-gradient(135deg, var(--accent-glow) 0%, var(--bg-page) 100%);
+            background: var(--bg-container);
             border-color: var(--accent-color);
-            text-align: center;
-            padding: 3rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
         }
     </style>
 </head>
 
 <body>
     <div class="leaderboard-container">
-        <header class="mb-12">
-            <h1 class="text-5xl font-light tracking-tighter mb-2 text-[var(--text-main)]">V6 Leaderboard</h1>
-            <p class="text-[var(--text-muted)] opacity-60 text-lg font-light">The global rankings of 4SP's most active users.</p>
+        <header class="mb-16">
+            <h1 class="text-6xl font-light tracking-tighter mb-4 text-[var(--text-main)]">Global Rankings</h1>
+            <p class="text-[var(--text-muted)] opacity-60 text-xl font-light">The definitive hierarchy of Project Niobium activity.</p>
         </header>
 
-        <!-- TOP 1 SECTION -->
-        <div id="top-user-section" class="section-card highlight-card">
-            <div class="label-tiny">Global Champion</div>
-            <div id="champion-avatar" class="user-avatar w-24 h-24 mx-auto mb-4 border-2 border-indigo-500/50">
-                <i class="fas fa-user text-3xl text-gray-700"></i>
+        <!-- CHAMPION SECTION (Matches Dashboard Widget) -->
+        <div id="top-user-section" class="section-card highlight-card champion-widget">
+            <div class="flex flex-col justify-center border-r border-white/5 pr-12 h-full">
+                <div class="label-tiny">Champion Status</div>
+                <div class="rank-1-text">#1</div>
+                <div class="text-[12px] opacity-60 mt-1 uppercase tracking-widest font-bold" style="color: var(--text-muted);">Global Rank</div>
             </div>
-            <h2 id="champion-name" class="text-4xl font-light mb-1">---</h2>
-            <p id="champion-time" class="text-indigo-400 font-mono">0h 0m total experience</p>
+
+            <div class="flex-grow flex items-center gap-12 px-8">
+                <div id="champion-avatar" class="w-24 h-24 rounded-[32px] flex items-center justify-center overflow-hidden flex-shrink-0" style="background: var(--button-bg); border: 1px solid var(--border-faint);">
+                    <i class="fas fa-crown text-3xl" style="color: var(--accent-color);"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="label-tiny">Global Champion</div>
+                    <div id="champion-name" class="text-5xl font-semibold truncate mt-1" style="color: var(--text-primary);">---</div>
+                    <div id="champion-time" class="text-base font-mono mt-1 opacity-70" style="color: var(--text-secondary);">0h 0m total</div>
+                </div>
+            </div>
+            
+            <div class="flex flex-col gap-2">
+                <div class="px-8 py-4 bg-white/5 rounded-3xl border border-white/5 text-center">
+                    <div class="label-tiny">Activity Score</div>
+                    <div class="text-2xl font-bold text-white">Legendary</div>
+                </div>
+            </div>
         </div>
 
         <!-- TOP PAGES -->
-        <div class="section-card">
+        <div class="mb-16">
             <div class="label-tiny">System Pulse</div>
             <h2 class="section-title text-[var(--text-main)]">Most Used Pages</h2>
             <div id="top-pages-list" class="page-stat-grid">
@@ -150,7 +191,7 @@
         </div>
 
         <!-- GLOBAL RANKINGS -->
-        <div class="section-card">
+        <div>
             <div class="label-tiny">Active Roster</div>
             <h2 class="section-title text-[var(--text-main)]">Top 50 Users</h2>
             <div id="rankings-list">
@@ -284,7 +325,7 @@
             document.getElementById('champion-name').textContent = data.displayName || data.username || "Anonymous";
             const hours = Math.floor((data.totalV6Time || 0) / 3600);
             const minutes = Math.floor(((data.totalV6Time || 0) % 3600) / 60);
-            document.getElementById('champion-time').textContent = `${hours}h ${minutes}m total experience`;
+            document.getElementById('champion-time').textContent = `${hours}h ${minutes}m total`;
             renderAvatar(data, 'champion-avatar');
         }
 
