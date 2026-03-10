@@ -1,3 +1,4 @@
+importScripts('/VELIUM/baremux/index.js');
 importScripts('/VELIUM/uv/uv.bundle.js');
 
 // Unified Proxy Configuration
@@ -52,6 +53,17 @@ const configs = {
 // Import the base SW logic
 importScripts(configs.velium.sw);
 
+// Correctly initialize BareMux for UV v3 / BareMux v2
+const connection = new BareMux.WorkerConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
+const bareClient = new BareMux.BareClient(connection);
+
+// Message listener for SharedWorker port synchronization
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
+        connection.port = event.data.port;
+    }
+});
+
 const instances = {};
 for (const key in configs) {
     instances[key] = new UVServiceWorker({
@@ -59,6 +71,8 @@ for (const key in configs) {
         encodeUrl: Ultraviolet.codec.xor.encode,
         decodeUrl: Ultraviolet.codec.xor.decode
     });
+    // Set the shared bareClient for all instances
+    instances[key].bareClient = bareClient;
 }
 
 self.addEventListener('install', (event) => {

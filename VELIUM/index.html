@@ -61,7 +61,7 @@
                             { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                         ]);
                     }
-                    return;
+                    return connection;
                 } catch (e) {
                     console.error(`BareMux/libcurl Setup Attempt ${i + 1} failed:`, e);
                     if (i === retries - 1) {
@@ -73,15 +73,23 @@
                     await new Promise(r => setTimeout(r, 500));
                 }
             }
+            return connection;
         };
 
         (async () => {
-            await window.checkBare();
+            const connection = await window.checkBare();
             if ("serviceWorker" in navigator) {
                 try {
-                    await navigator.serviceWorker.register("/VELIUM/uv/sw.js", {
+                    const registration = await navigator.serviceWorker.register("/VELIUM/uv/sw.js", {
                         scope: "/VELIUM/uv/service/"
                     });
+                    
+                    // Sync the port with the SW
+                    const workerPort = await connection.getInnerPort();
+                    registration.active?.postMessage({
+                        type: 'baremuxinit',
+                        port: workerPort
+                    }, [workerPort]);
                 } catch (e) { console.error("VERN Proxy Error", e); }
             }
         })();

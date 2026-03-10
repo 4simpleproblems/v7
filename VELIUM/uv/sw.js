@@ -4,7 +4,17 @@ importScripts('uv.config.js');
 importScripts(__uv$config.sw || 'uv.sw.js');
 
 const uv = new UVServiceWorker();
-uv.bareClient = new BareMux.BareClient("/VELIUM/baremux/worker.js");
+
+// Correctly initialize BareMux for UV v3 / BareMux v2
+const connection = new BareMux.WorkerConnection("/VELIUM/baremux/worker.js");
+uv.bareClient = new BareMux.BareClient(connection);
+
+// Message listener for SharedWorker port synchronization
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
+        connection.port = event.data.port;
+    }
+});
 
 let config = {
     blocklist: new Set(),
@@ -29,7 +39,9 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener("message", (event) => {
-    config = event.data;
+    if (event.data && event.data.type !== 'baremuxinit') {
+        config = event.data;
+    }
 });
 
 self.addEventListener("activate", () => {
