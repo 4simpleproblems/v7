@@ -112,7 +112,17 @@ self.addEventListener('fetch', (event) => {
     }
     
     // Fallback to normal fetch for non-proxy requests
-    event.respondWith(fetch(event.request));
+    event.respondWith(
+        (async () => {
+            try {
+                return await fetch(event.request);
+            } catch (err) {
+                // Return a generic error response instead of letting the promise reject
+                console.warn(`SW: Fallback fetch failed for ${url}`, err);
+                return new Response(null, { status: 404, statusText: 'Not Found' });
+            }
+        })()
+    );
 });
 
 // Made with ❤️ from 4SP

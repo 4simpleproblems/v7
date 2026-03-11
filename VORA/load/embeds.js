@@ -360,6 +360,7 @@ let paginationState = {
 };
 
 let isLoading = false;
+let isSearchActive = false;
 
 window.addEventListener('scroll', () => {
     if (isLoading || window.location.hash) return;
