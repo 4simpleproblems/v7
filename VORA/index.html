@@ -70,18 +70,34 @@
             let connection;
             if ("serviceWorker" in navigator) {
                 try {
-                    await navigator.serviceWorker.register("/sw.js", {
+                    const registration = await navigator.serviceWorker.register("/sw.js", {
                         scope: "/"
                     });
                     
-                    connection = await window.checkBare();
+                    // Wait for the Service Worker to be active
+                    await navigator.serviceWorker.ready;
                     
-                    // Wait for SW to be ready
-                    const sw = await navigator.serviceWorker.ready;
+                    connection = await window.checkBare();
                     
                     // Sync the port with the SW
                     const workerPort = await connection.getInnerPort();
-                    sw.active?.postMessage({
+                    
+                    // Ensure sw.active is available
+                    let activeSW = registration.active || navigator.serviceWorker.controller;
+                    if (!activeSW) {
+                        await new Promise(r => {
+                            const handler = () => {
+                                if (registration.active) {
+                                    navigator.serviceWorker.removeEventListener('controllerchange', handler);
+                                    r();
+                                }
+                            };
+                            navigator.serviceWorker.addEventListener('controllerchange', handler);
+                        });
+                        activeSW = registration.active;
+                    }
+
+                    activeSW?.postMessage({
                         type: 'baremuxinit',
                         port: workerPort
                     }, [workerPort]);
@@ -95,8 +111,8 @@
                 connection = await window.checkBare();
             }
 
-            // Small delay to ensure SW is actually handling fetches
-            await new Promise(r => setTimeout(r, 800));
+            // Small delay to ensure SW is actually handling fetches and connection is warmed up
+            await new Promise(r => setTimeout(r, 1500));
             
             // Now load the content
             if (typeof window.switchView === 'function') {

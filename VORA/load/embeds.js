@@ -320,13 +320,29 @@ async function renderTmdb(res, endpoint) {
             grid = document.getElementById('videoGrid');
         }
         if (!grid || !data.results || window.location.hash) return;
-        if (data.page === 1) grid.innerHTML = '';
-        const itemsToShow = (isIndexPage() && !isSearchActive) ? data.results.slice(0, 11) : data.results;
+        
+        // Only clear grid for the first page
+        if (data.page === 1) {
+            grid.innerHTML = '';
+        } else {
+            // Remove 'View All' card if it exists to append more items
+            const viewAll = grid.querySelector('.view-all-card');
+            if (viewAll) viewAll.remove();
+        }
+
+        const itemsToShow = (isIndexPage() && !isSearchActive && data.page === 1) ? data.results.slice(0, 11) : data.results;
         itemsToShow.forEach(item => {
             const card = createMediaCard(item);
             if (card) grid.appendChild(card);
         });
-        if (isIndexPage() && !isSearchActive) grid.appendChild(createViewAllCard(endpoint.includes('movie') ? 'movies.html' : 'series.html'));
+
+        // Add 'View All' card ONLY on page 1 of index
+        if (isIndexPage() && !isSearchActive && data.page === 1) {
+            const viewAll = createViewAllCard(endpoint.includes('movie') ? 'movies.html' : 'series.html');
+            viewAll.classList.add('view-all-card');
+            grid.appendChild(viewAll);
+        }
+
         isLoading = false;
         if (data.page >= data.total_pages) hasMore = false;
     } catch (e) {
@@ -336,29 +352,89 @@ async function renderTmdb(res, endpoint) {
 }
 
 // Pagination Logic
-let currentPage = 1, currentEndpoint = '', isLoading = false, hasMore = true, isSearchActive = false;
+// Track separate pages for movies and series on the index page
+let paginationState = {
+    movie: { page: 1, hasMore: true, endpoint: 'trending/movie/week' },
+    tv: { page: 1, hasMore: true, endpoint: 'trending/tv/week' },
+    current: { page: 1, hasMore: true, endpoint: '' } // For non-index views
+};
+
+let isLoading = false;
+
 window.addEventListener('scroll', () => {
-    if (isLoading || !hasMore || window.location.hash || (isIndexPage() && !isSearchActive)) return;
+    if (isLoading || window.location.hash) return;
+    
     const scrollHeight = document.documentElement.scrollHeight;
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const clientHeight = window.innerHeight;
-    if (scrollTop + clientHeight >= scrollHeight - 1000) {
-        isLoading = true;
-        currentPage++;
-        window.themoviedb(currentEndpoint.split('?')[0], { params: { page: currentPage, language: getTmdbLanguage() } });
+    
+    if (scrollTop + clientHeight >= scrollHeight - 1200) {
+        if (isIndexPage() && !isSearchActive) {
+            // On index page, load more for BOTH if they have more
+            if (paginationState.movie.hasMore) {
+                isLoading = true;
+                paginationState.movie.page++;
+                window.themoviedb(paginationState.movie.endpoint, { params: { page: paginationState.movie.page, language: getTmdbLanguage() } });
+            }
+            if (paginationState.tv.hasMore) {
+                isLoading = true;
+                paginationState.tv.page++;
+                window.themoviedb(paginationState.tv.endpoint, { params: { page: paginationState.tv.page, language: getTmdbLanguage() } });
+            }
+        } else {
+            if (paginationState.current.hasMore) {
+                isLoading = true;
+                paginationState.current.page++;
+                window.themoviedb(paginationState.current.endpoint.split('?')[0], { params: { page: paginationState.current.page, language: getTmdbLanguage() } });
+            }
+        }
     }
 });
 
 const originalThemoviedb = themoviedb;
-window.themoviedb = async function(a, e) {
-    if (e?.params?.page === 1 || !e?.params?.page) {
-        currentEndpoint = a;
-        currentPage = 1;
-        hasMore = true;
+window.themoviedb = async function(a, e, retries = 5) {
+    const isPage1 = e?.params?.page === 1 || !e?.params?.page;
+    
+    // Update pagination state
+    if (isIndexPage() && !isSearchActive) {
+        const type = a.includes('movie') ? 'movie' : 'tv';
+        if (isPage1) {
+            paginationState[type].page = 1;
+            paginationState[type].hasMore = true;
+            paginationState[type].endpoint = a;
+        }
+    } else {
+        if (isPage1) {
+            paginationState.current.page = 1;
+            paginationState.current.hasMore = true;
+            paginationState.current.endpoint = a;
+        }
     }
-    const res = await originalThemoviedb(a, e);
-    if (res && res.clone) renderTmdb(res.clone(), a);
-    return res;
+
+    let lastError;
+    for (let i = 0; i < retries; i++) {
+        try {
+            // Ensure connection is stable before fetching
+            if (window.checkBare) await window.checkBare();
+            
+            const res = await originalThemoviedb(a, e);
+            if (res && res.ok) {
+                if (res.clone) renderTmdb(res.clone(), a);
+                return res;
+            }
+            lastError = new Error(`Status ${res?.status}`);
+        } catch (err) {
+            lastError = err;
+        }
+        
+        // Wait before retry
+        await new Promise(r => setTimeout(r, 500 * (i + 1)));
+        console.warn(`Vora: Retrying TMDB fetch (${i + 1}/${retries}) for ${a}`);
+    }
+
+    console.error(`Vora: Failed to fetch TMDB after ${retries} attempts:`, lastError);
+    isLoading = false;
+    return null;
 };
 
 async function fetchSeason(id, seasonNum) {
