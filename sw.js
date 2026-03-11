@@ -53,28 +53,29 @@ const configs = {
 // Import the base SW logic
 importScripts(configs.velium.sw);
 
-// Correctly initialize BareMux for UV v3 / BareMux v2
-// Use the VORA/VERN_SYSTEM worker as the primary one for the root SW
-const connection = new BareMux.WorkerConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
+// Use a consistent SharedWorker across the app to avoid transport conflicts
+const workerPath = location.origin + "/VORA/VERN_SYSTEM/baremux/worker.js";
+const connection = new BareMux.WorkerConnection(workerPath);
 const bareClient = new BareMux.BareClient(connection);
 
 // Message listener for SharedWorker port synchronization
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
         connection.port = event.data.port;
-        console.log("Root SW: BareMux Port Synced");
+        console.log("Root SW: BareMux Port Synced via " + workerPath);
     }
 });
 
 const instances = {};
 for (const key in configs) {
-    instances[key] = new UVServiceWorker({
+    const inst = new UVServiceWorker({
         ...configs[key],
         encodeUrl: Ultraviolet.codec.xor.encode,
         decodeUrl: Ultraviolet.codec.xor.decode
     });
-    // Set the shared bareClient for all instances
-    instances[key].bareClient = bareClient;
+    // Crucial: Override the internal bareClient that Ultraviolet might be using
+    inst.bareClient = bareClient;
+    instances[key] = inst;
 }
 
 self.addEventListener('install', (event) => {
@@ -95,6 +96,9 @@ self.addEventListener('fetch', (event) => {
             return;
         }
     }
+    
+    // Fallback to normal fetch for non-proxy requests
+    event.respondWith(fetch(event.request));
 });
 
 // Made with ❤️ from 4SP

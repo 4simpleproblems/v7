@@ -3,16 +3,17 @@ importScripts('uv.bundle.js');
 importScripts('uv.config.js');
 importScripts(__uv$config.sw || 'uv.sw.js');
 
+// Consistent SharedWorker worker path
+const workerPath = location.origin + "/VELIUM/baremux/worker.js";
+const connection = new BareMux.WorkerConnection(workerPath);
 const uv = new UVServiceWorker();
-
-// Correctly initialize BareMux for UV v3 / BareMux v2
-const connection = new BareMux.WorkerConnection("/VELIUM/baremux/worker.js");
 uv.bareClient = new BareMux.BareClient(connection);
 
 // Message listener for SharedWorker port synchronization
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
         connection.port = event.data.port;
+        console.log("VELIUM SW: BareMux Port Synced via " + workerPath);
     }
 });
 

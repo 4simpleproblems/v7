@@ -404,8 +404,9 @@
             if (window.__4sp_bare_mux_connecting) return;
             window.__4sp_bare_mux_connecting = true;
 
+            const workerPath = window.location.origin + "/VERN/baremux/worker.js";
+            const connection = new BareMux.BareMuxConnection(workerPath);
             try {
-                const connection = new BareMux.BareMuxConnection("/VERN/baremux/worker.js");
                 const wispUrl = "wss://wisp.mercurywork.shop/";
                 await connection.setTransport("/VERN/libcurl/index.mjs", [
                     { websocket: wispUrl },

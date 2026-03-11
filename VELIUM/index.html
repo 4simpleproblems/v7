@@ -44,7 +44,8 @@
         import * as libcurl from "/VELIUM/libcurl/index.mjs";
         
         window.checkBare = async (retries = 3) => {
-            const connection = new BareMux.BareMuxConnection("/VELIUM/baremux/worker.js");
+            const workerPath = window.location.origin + "/VELIUM/baremux/worker.js";
+            const connection = new BareMux.BareMuxConnection(workerPath);
             const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VELIUM/libcurl/index.mjs";
             
