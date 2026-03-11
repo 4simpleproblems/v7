@@ -1,5 +1,5 @@
-importScripts('/VELIUM/baremux/index.js');
 importScripts('/VELIUM/uv/uv.bundle.js');
+importScripts('/VELIUM/baremux/index.js');
 
 // Unified Proxy Configuration
 const configs = {
@@ -14,7 +14,7 @@ const configs = {
     },
     vora: {
         prefix: '/VORA/VERN_SYSTEM/uv/service/',
-        bare: '/bare/',
+        bare: '/api/bare/',
         bundle: '/VORA/VERN_SYSTEM/uv/uv.bundle.js',
         config: '/VORA/VERN_SYSTEM/uv/uv.config.js',
         sw: '/VORA/VERN_SYSTEM/uv/uv.sw.js',
@@ -95,6 +95,20 @@ self.addEventListener('fetch', (event) => {
             event.respondWith(instances[key].fetch(event));
             return;
         }
+    }
+
+    // Auto-proxy certain domains even if prefix is missing
+    const autoProxyDomains = [
+        'api.themoviedb.org',
+        'image.tmdb.org',
+        'embed-testing-v7.vercel.app',
+        'sub.wyzie.ru'
+    ];
+
+    if (autoProxyDomains.some(domain => url.includes(domain)) || url.includes('hvtrs8%2F-')) {
+        // Default to vora instance for auto-proxying
+        event.respondWith(instances.vora.fetch(event));
+        return;
     }
     
     // Fallback to normal fetch for non-proxy requests

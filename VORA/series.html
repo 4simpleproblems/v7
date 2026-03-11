@@ -22,42 +22,69 @@
     <script type="module">
         import * as libcurl from "/VORA/VERN_SYSTEM/libcurl/index.mjs";
         
-        window.checkBare = async () => {
-            const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
+        window.checkBare = async (retries = 3) => {
+            const workerPath = window.location.origin + "/VORA/VERN_SYSTEM/baremux/worker.js";
+            const connection = new BareMux.BareMuxConnection(workerPath);
             const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
             
-            try {
-                // Ensure WASM is loaded for libcurl
-                if (libcurl && libcurl.load_wasm) {
-                    await libcurl.load_wasm();
-                }
+            for (let i = 0; i < retries; i++) {
+                try {
+                    // Ensure WASM is loaded for libcurl
+                    if (libcurl && libcurl.load_wasm) {
+                        await libcurl.load_wasm();
+                    }
 
-                const transport = await connection.getTransport();
-                if (!transport || transport.path !== transportPath) {
-                    await connection.setTransport(transportPath, [
-                        { websocket: wispUrl },
-                        { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                    ]);
+                    const transport = await connection.getTransport();
+                    if (!transport || transport.path !== transportPath) {
+                        await connection.setTransport(transportPath, [
+                            { websocket: wispUrl },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                        ]);
+                    }
+                    return connection;
+                } catch (e) {
+                    console.error(`BareMux/libcurl Setup Attempt ${i + 1} failed:`, e);
+                    if (i === retries - 1) {
+                        await connection.setTransport(transportPath, [
+                            { websocket: wispUrl },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                        ]);
+                    }
+                    await new Promise(r => setTimeout(r, 500));
                 }
-            } catch (e) {
-                console.error("BareMux/libcurl Setup Error:", e);
-                await connection.setTransport(transportPath, [
-                    { websocket: wispUrl },
-                    { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                ]);
             }
+            return connection;
         };
 
         (async () => {
+            let connection;
             if ("serviceWorker" in navigator) {
                 try {
                     await navigator.serviceWorker.register("/sw.js", {
                         scope: "/"
                     });
-                } catch (e) { console.error("VERN Proxy Error", e); }
+                    
+                    connection = await window.checkBare();
+                    
+                    // Wait for SW to be ready
+                    const sw = await navigator.serviceWorker.ready;
+                    
+                    // Sync the port with the SW
+                    const workerPort = await connection.getInnerPort();
+                    sw.active?.postMessage({
+                        type: 'baremuxinit',
+                        port: workerPort
+                    }, [workerPort]);
+
+                    console.log("Vora Series: SW and BareMux Synced");
+                } catch (e) { 
+                    console.error("VERN Proxy Error", e); 
+                    connection = await window.checkBare();
+                }
+            } else {
+                connection = await window.checkBare();
             }
-            await window.checkBare();
         })();
     </script>
     <meta charset="UTF-8">
@@ -299,3 +326,4 @@
     </div>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->
