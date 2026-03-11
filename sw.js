@@ -54,6 +54,7 @@ const configs = {
 importScripts(configs.velium.sw);
 
 // Correctly initialize BareMux for UV v3 / BareMux v2
+// Use the VORA/VERN_SYSTEM worker as the primary one for the root SW
 const connection = new BareMux.WorkerConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
 const bareClient = new BareMux.BareClient(connection);
 
@@ -61,6 +62,7 @@ const bareClient = new BareMux.BareClient(connection);
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
         connection.port = event.data.port;
+        console.log("Root SW: BareMux Port Synced");
     }
 });
 

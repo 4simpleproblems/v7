@@ -80,13 +80,16 @@
             const connection = await window.checkBare();
             if ("serviceWorker" in navigator) {
                 try {
-                    const registration = await navigator.serviceWorker.register("/VELIUM/uv/sw.js", {
+                    await navigator.serviceWorker.register("/VELIUM/uv/sw.js", {
                         scope: "/VELIUM/uv/service/"
                     });
                     
+                    // Wait for the Service Worker to be fully ready
+                    const sw = await navigator.serviceWorker.ready;
+
                     // Sync the port with the SW
                     const workerPort = await connection.getInnerPort();
-                    registration.active?.postMessage({
+                    sw.active?.postMessage({
                         type: 'baremuxinit',
                         port: workerPort
                     }, [workerPort]);

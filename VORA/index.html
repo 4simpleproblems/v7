@@ -57,26 +57,53 @@
         };
 
         (async () => {
+            const updateStatus = (msg) => {
+                const moviesGrid = document.getElementById('moviesGrid');
+                const seriesGrid = document.getElementById('seriesGrid');
+                if (moviesGrid) moviesGrid.innerHTML = `<div class="text-center py-10 col-span-full text-gray-500">${msg}</div>`;
+                if (seriesGrid) seriesGrid.innerHTML = `<div class="text-center py-10 col-span-full text-gray-500">${msg}</div>`;
+            };
+
+            updateStatus('<i class="fas fa-spinner fa-spin mr-2"></i> Initializing Secure Connection...');
+
             let connection;
             if ("serviceWorker" in navigator) {
                 try {
-                    const registration = await navigator.serviceWorker.register("/sw.js", {
+                    await navigator.serviceWorker.register("/sw.js", {
                         scope: "/"
                     });
+                    
                     connection = await window.checkBare();
+                    
+                    // Wait for SW to be ready
+                    const sw = await navigator.serviceWorker.ready;
                     
                     // Sync the port with the SW
                     const workerPort = await connection.getInnerPort();
-                    registration.active?.postMessage({
+                    sw.active?.postMessage({
                         type: 'baremuxinit',
                         port: workerPort
                     }, [workerPort]);
+
+                    console.log("Vora: SW and BareMux Synced");
                 } catch (e) { 
                     console.error("VERN Proxy Error", e); 
                     connection = await window.checkBare();
                 }
             } else {
                 connection = await window.checkBare();
+            }
+
+            // Small delay to ensure SW is actually handling fetches
+            await new Promise(r => setTimeout(r, 800));
+            
+            // Now load the content
+            if (typeof window.switchView === 'function') {
+                window.switchView('index');
+            } else {
+                // Fallback if embeds.js not loaded or switchView not ready
+                window.themoviedb(`trending/movie/week?language=${getTmdbLanguage()}&page=1`);
+                window.themoviedb(`trending/tv/week?language=${getTmdbLanguage()}&page=1`);
             }
         })();
     </script>
@@ -270,15 +297,15 @@
         </div>
         
         <div class="flex-grow">
-            <a href="index.html" class="nav-link active">
+            <a href="#" onclick="switchView('index')" class="nav-link active">
                 <i class="fas fa-house"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="movies.html" class="nav-link">
+            <a href="#" onclick="switchView('movies')" class="nav-link">
                 <i class="fas fa-film"></i>
                 <span>Movies</span>
             </a>
-            <a href="series.html" class="nav-link">
+            <a href="#" onclick="switchView('series')" class="nav-link">
                 <i class="fas fa-tv"></i>
                 <span>Series</span>
             </a>
@@ -315,7 +342,7 @@
                 <hr class="border-brand-border my-12">
             </section>
 
-            <section class="mb-12">
+            <section id="movies-section" class="mb-12">
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-ticket text-purple-500"></i>
@@ -327,7 +354,7 @@
                 </div>
             </section>
 
-            <section class="mb-12">
+            <section id="series-section" class="mb-12">
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-tv text-purple-500"></i>

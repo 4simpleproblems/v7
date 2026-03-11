@@ -420,14 +420,17 @@
 
             if ("serviceWorker" in navigator) {
                 try {
-                    const registration = await navigator.serviceWorker.register(__uv$config.stockSW, {
+                    await navigator.serviceWorker.register(__uv$config.stockSW, {
                         scope: __uv$config.prefix
                     });
                     console.log("SW Registered after BareMux");
 
+                    // Wait for the Service Worker to be fully ready/active
+                    const sw = await navigator.serviceWorker.ready;
+
                     // Sync the port with the SW
                     const workerPort = await connection.getInnerPort();
-                    registration.active?.postMessage({
+                    sw.active?.postMessage({
                         type: 'baremuxinit',
                         port: workerPort
                     }, [workerPort]);
