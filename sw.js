@@ -107,7 +107,20 @@ self.addEventListener('fetch', (event) => {
 
     if (autoProxyDomains.some(domain => url.includes(domain)) || url.includes('hvtrs8%2F-')) {
         // Default to vora instance for auto-proxying
-        event.respondWith(instances.vora.fetch(event));
+        // If it's already an encoded URL (hvtrs...) but missing the prefix
+        if (url.includes('hvtrs8%2F-') && !url.includes(configs.vora.prefix)) {
+            const encodedPart = url.split('hvtrs8%2F-')[1];
+            const fullProxyUrl = location.origin + configs.vora.prefix + 'hvtrs8%2F-' + encodedPart;
+            event.respondWith(instances.vora.fetch(new Request(fullProxyUrl, event.request)));
+        } else if (!url.includes(configs.vora.prefix)) {
+            // Encode the plain URL
+            const encoded = Ultraviolet.codec.xor.encode(url);
+            const fullProxyUrl = location.origin + configs.vora.prefix + encoded;
+            event.respondWith(instances.vora.fetch(new Request(fullProxyUrl, event.request)));
+        } else {
+            // It already has the prefix, just fetch
+            event.respondWith(instances.vora.fetch(event));
+        }
         return;
     }
     
