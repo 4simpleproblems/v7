@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-    <script src="/injector.js"></script>
     <!-- VERN_SYSTEM Proxy -->
     <script src="/VORA/VERN_SYSTEM/uv/uv.bundle.js"></script>
     <script>
@@ -15,113 +14,41 @@
             bundle: basePath + "uv.bundle.js",
             config: basePath + "uv.config.js",
             sw: basePath + "uv.sw.js",
-            stockSW: "/sw.js",
+            stockSW: "/VORA/VERN_SYSTEM/sw.js",
         };
     </script>
     <script src="/VORA/VERN_SYSTEM/baremux/index.js"></script>
-    <script type="module">
-        import * as libcurl from "/VORA/VERN_SYSTEM/libcurl/index.mjs";
-        
-        window.checkBare = async (retries = 3) => {
-            const workerPath = window.location.origin + "/VORA/VERN_SYSTEM/baremux/worker.js";
-            const connection = new BareMux.BareMuxConnection(workerPath);
+    <script>
+        window.checkBare = async () => {
+            const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
             const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
             
-            for (let i = 0; i < retries; i++) {
-                try {
-                    // Ensure WASM is loaded for libcurl
-                    if (libcurl && libcurl.load_wasm) {
-                        await libcurl.load_wasm();
-                    }
-
-                    const transport = await connection.getTransport();
-                    if (!transport || transport.path !== transportPath) {
-                        await connection.setTransport(transportPath, [
-                            { websocket: wispUrl },
-                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                        ]);
-                    }
-                    return connection;
-                } catch (e) {
-                    console.error(`BareMux/libcurl Setup Attempt ${i + 1} failed:`, e);
-                    if (i === retries - 1) {
-                        await connection.setTransport(transportPath, [
-                            { websocket: wispUrl },
-                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                        ]);
-                    }
-                    await new Promise(r => setTimeout(r, 500));
+            try {
+                const transport = await connection.getTransport();
+                if (!transport || transport.path !== transportPath) {
+                    await connection.setTransport(transportPath, [
+                        { websocket: wispUrl },
+                        { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                    ]);
                 }
+            } catch (e) {
+                await connection.setTransport(transportPath, [
+                    { websocket: wispUrl },
+                    { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                ]);
             }
-            return connection;
         };
 
         (async () => {
-            const updateStatus = (msg) => {
-                const moviesGrid = document.getElementById('moviesGrid');
-                const seriesGrid = document.getElementById('seriesGrid');
-                if (moviesGrid) moviesGrid.innerHTML = `<div class="text-center py-10 col-span-full text-gray-500">${msg}</div>`;
-                if (seriesGrid) seriesGrid.innerHTML = `<div class="text-center py-10 col-span-full text-gray-500">${msg}</div>`;
-            };
-
-            updateStatus('<i class="fas fa-spinner fa-spin mr-2"></i> Initializing Secure Connection...');
-
-            let connection;
             if ("serviceWorker" in navigator) {
                 try {
-                    const registration = await navigator.serviceWorker.register("/sw.js", {
-                        scope: "/"
+                    await navigator.serviceWorker.register("/VORA/VERN_SYSTEM/sw.js", {
+                        scope: "/VORA/VERN_SYSTEM/"
                     });
-                    
-                    // Wait for the Service Worker to be active
-                    await navigator.serviceWorker.ready;
-                    
-                    connection = await window.checkBare();
-                    
-                    // Sync the port with the SW
-                    const workerPort = await connection.getInnerPort();
-                    
-                    // Ensure sw.active is available
-                    let activeSW = registration.active || navigator.serviceWorker.controller;
-                    if (!activeSW) {
-                        await new Promise(r => {
-                            const handler = () => {
-                                if (registration.active) {
-                                    navigator.serviceWorker.removeEventListener('controllerchange', handler);
-                                    r();
-                                }
-                            };
-                            navigator.serviceWorker.addEventListener('controllerchange', handler);
-                        });
-                        activeSW = registration.active;
-                    }
-
-                    activeSW?.postMessage({
-                        type: 'baremuxinit',
-                        port: workerPort
-                    }, [workerPort]);
-
-                    console.log("Vora: SW and BareMux Synced");
-                } catch (e) { 
-                    console.error("VERN Proxy Error", e); 
-                    connection = await window.checkBare();
-                }
-            } else {
-                connection = await window.checkBare();
+                } catch (e) { console.error("VERN Proxy Error", e); }
             }
-
-            // Small delay to ensure SW is actually handling fetches and connection is warmed up
-            await new Promise(r => setTimeout(r, 1500));
-            
-            // Now load the content
-            if (typeof window.switchView === 'function') {
-                window.switchView('index');
-            } else {
-                // Fallback if embeds.js not loaded or switchView not ready
-                window.themoviedb(`trending/movie/week?language=${getTmdbLanguage()}&page=1`);
-                window.themoviedb(`trending/tv/week?language=${getTmdbLanguage()}&page=1`);
-            }
+            await window.checkBare();
         })();
     </script>
     <meta charset="UTF-8">
@@ -235,7 +162,7 @@
         }
 
         .video-item {
-            background-color: rgba(79, 70, 229, 0.05);
+            background-color: #000000;
             border: 1px solid #333;
             border-radius: 1.25rem;
             overflow: hidden;
@@ -244,7 +171,6 @@
 
         .video-item:hover {
             border-color: #4f46e5;
-            background-color: rgba(79, 70, 229, 0.1);
             transform: translateY(-4px);
             box-shadow: 0 10px 30px rgba(79, 70, 229, 0.15);
         }
@@ -280,8 +206,10 @@
         }
 
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { display: none; }
-        * { -ms-overflow-style: none; scrollbar-width: none; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000000; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
 
         .search-input {
             background: #000000;
@@ -305,6 +233,8 @@
     <script src="./cachedFetch.js"></script>
     <script src="./utils.js"></script>
     <script src="./load/embeds.js"></script>
+    <script src="../navigation.js"></script>
+    <script src="/injector.js"></script>
 </head>
 <body class="bg-deep-black">
     <nav class="sidebar">
@@ -314,15 +244,15 @@
         </div>
         
         <div class="flex-grow">
-            <a href="#" onclick="switchView('index')" class="nav-link active">
+            <a href="index.html" class="nav-link active">
                 <i class="fas fa-house"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="#" onclick="switchView('movies')" class="nav-link">
+            <a href="movies.html" class="nav-link">
                 <i class="fas fa-film"></i>
                 <span>Movies</span>
             </a>
-            <a href="#" onclick="switchView('series')" class="nav-link">
+            <a href="series.html" class="nav-link">
                 <i class="fas fa-tv"></i>
                 <span>Series</span>
             </a>
@@ -359,7 +289,7 @@
                 <hr class="border-brand-border my-12">
             </section>
 
-            <section id="movies-section" class="mb-12">
+            <section class="mb-12">
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-ticket text-purple-500"></i>
@@ -371,7 +301,7 @@
                 </div>
             </section>
 
-            <section id="series-section" class="mb-12">
+            <section class="mb-12">
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-tv text-purple-500"></i>
@@ -403,4 +333,3 @@
     </div>
 </body>
 </html>
-<!-- Made with ❤️ from 4SP -->

@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VERN</title>
     
-    <script>
-        // Hint for Bare-Mux to find the worker
-        localStorage.setItem('bare-mux-path', '/VERN/baremux/worker.js');
-    </script>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
@@ -18,37 +13,31 @@
     <!-- Aggressive Preloading -->
     <link rel="preload" href="/VERN/uv/uv.bundle.js" as="script">
     <link rel="preload" href="/VERN/baremux/index.js" as="script">
-    <link rel="preload" href="/VERN/baremux/worker.js" as="script">
-    <link rel="preload" href="/VERN/uv/sw.js" as="script">
+    <link rel="preload" href="/VERN/baremux/worker.js" as="worker">
+    <link rel="preload" href="/VERN/uv/sw.js" as="worker">
 
     <!-- Sync Loading for Critical Proxy Scripts -->
     <script src="uv/uv.bundle.js"></script>
-    <script src="baremux/index.js"></script>
     <!-- Inline Config for Speed -->
     <script>
         const basePath = "/VERN/uv/";
         self.__uv$config = {
             prefix: basePath + "service/",
-            encodeUrl: (url) => {
-                if (typeof Ultraviolet === 'undefined') return url;
-                return Ultraviolet.codec.xor.encode(url);
-            },
-            decodeUrl: (url) => {
-                if (typeof Ultraviolet === 'undefined') return url;
-                return Ultraviolet.codec.xor.decode(url);
-            },
+            encodeUrl: Ultraviolet.codec.xor.encode,
+            decodeUrl: Ultraviolet.codec.xor.decode,
             handler: basePath + "uv.handler.js",
             client: basePath + "uv.client.js",
             bundle: basePath + "uv.bundle.js",
             config: basePath + "uv.config.js",
             sw: basePath + "uv.sw.js",
-            stockSW: "/VERN/uv/sw.js",
+            stockSW: basePath + "sw.js",
         };
     </script>
+    <script src="baremux/index.js"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <script>
         tailwind.config = {
@@ -401,43 +390,28 @@
         // --- Configuration ---
         // Immediate Initialization
         (async () => {
-            if (window.__4sp_bare_mux_connecting) return;
-            window.__4sp_bare_mux_connecting = true;
-
-            const workerPath = window.location.origin + "/VERN/baremux/worker.js";
-            const connection = new BareMux.BareMuxConnection(workerPath);
-            try {
-                const wispUrl = "wss://wisp.mercurywork.shop/";
-                await connection.setTransport("/VERN/libcurl/index.mjs", [
-                    { websocket: wispUrl },
-                    { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                ]);
-                console.log("BareMux Transport Set");
-            } catch (e) {
-                console.error("BareMux Connection Error:", e);
-            } finally {
-                window.__4sp_bare_mux_connecting = false;
-            }
-
             if ("serviceWorker" in navigator) {
+                // Register SW immediately, don't wait for window load
                 try {
                     await navigator.serviceWorker.register(__uv$config.stockSW, {
                         scope: __uv$config.prefix
                     });
-                    console.log("SW Registered after BareMux");
-
-                    // Wait for the Service Worker to be fully ready/active
-                    const sw = await navigator.serviceWorker.ready;
-
-                    // Sync the port with the SW
-                    const workerPort = await connection.getInnerPort();
-                    sw.active?.postMessage({
-                        type: 'baremuxinit',
-                        port: workerPort
-                    }, [workerPort]);
+                    console.log("SW Registered Fast");
                 } catch (e) {
                     console.error("SW Register Failed", e);
                 }
+            }
+
+            // Init BareMux
+            try {
+                const connection = new BareMux.BareMuxConnection("/VERN/baremux/worker.js");
+                const wispUrl = "wss://wisp.mercurywork.shop/";
+                connection.setTransport("/VERN/libcurl/index.mjs", [
+                    { websocket: wispUrl },
+                    { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                ]);
+            } catch (e) {
+                console.error("BareMux Init Failed", e);
             }
         })();
 
@@ -457,6 +431,7 @@
             
             if (viewMode === 'tabs') {
                 viewMode = 'pins';
+                // Switch to Pins
                 tabsBar.classList.add("opacity-0", "pointer-events-none", "translate-y-[-10px]");
                 pinsBar.classList.remove("opacity-0", "pointer-events-none", "translate-y-[-10px]");
                 icon.classList.remove("fa-layer-group");
@@ -464,6 +439,7 @@
                 renderPinsInBar();
             } else {
                 viewMode = 'tabs';
+                // Switch to Tabs
                 pinsBar.classList.add("opacity-0", "pointer-events-none", "translate-y-[-10px]");
                 tabsBar.classList.remove("opacity-0", "pointer-events-none", "translate-y-[-10px]");
                 icon.classList.remove("fa-thumbtack");
@@ -482,11 +458,12 @@
             }
         }
         
+        // Listen for resize to update scroll button visibility
         window.addEventListener('resize', checkScroll);
 
         function scrollRight() {
             const container = viewMode === 'tabs' ? document.getElementById("tabs-bar") : document.getElementById("pins-bar");
-            const shift = (42 + 8) * 5; 
+            const shift = (42 + 8) * 5; // 5 tabs (width + gap)
             container.scrollBy({ left: shift, behavior: 'smooth' });
         }
 
@@ -535,7 +512,9 @@
                 el.title = p.title;
                 el.innerHTML = `<img src="${p.icon}" onerror="this.src='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/svgs/solid/globe.svg'">
                                 <span>${p.title}</span>`;
-                el.onclick = (e) => { nav(p.url); };
+                el.onclick = (e) => {
+                     nav(p.url);
+                };
                 el.oncontextmenu = async (e) => {
                     e.preventDefault();
                     if(await Modal.confirm("Remove this pin?")) removePin(p.url);
@@ -549,10 +528,16 @@
         window.fetchSuggestions = async (query) => {
             if (!query) return [];
             try {
+                // Google's autocomplete API (client=chrome returns simple JSON)
                 const url = `https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(query)}`;
+                
+                // Use your existing UV proxy to bypass CORS
                 const proxyUrl = (window.__uv$config) ? __uv$config.prefix + __uv$config.encodeUrl(url) : url;
+                
                 const res = await fetch(proxyUrl);
                 const data = await res.json();
+                
+                // Google's format: [query, [suggestion1, suggestion2, ...], ...]
                 return data[1] || [];
             } catch (e) { 
                 console.error("Suggestion error:", e);
@@ -569,6 +554,7 @@
 
         function getHomepageHTML() {
             const pins = getPins();
+            // Note: Avoiding nested backticks by using string concat for inner JS
             const pinsHtml = pins.map(p => `
                 <div class="pin-card" oncontextmenu="event.preventDefault(); window.parent.removePinPrompt('${p.url}')" onclick="window.parent.nav('${p.url}')">
                     <img src="${p.icon}" onerror="this.src='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/svgs/solid/globe.svg'">
@@ -596,6 +582,7 @@
                 body { background: var(--bg-page); color: var(--text-main); font-family: 'Geist', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; position: relative; }
                 .container { width: 100%; max-width: 600px; padding: 20px; display: flex; flex-direction: column; gap: 30px; z-index: 10; align-items: center; }
                 
+                /* Logo / Branding - Centered above search */
                 .brand-center { 
                     display: flex; align-items: center; justify-content: center; gap: 15px; 
                     margin-bottom: 10px;
@@ -671,9 +658,11 @@
                         clearTimeout(debounce);
                         
                         debounce = setTimeout(async () => {
+                            // This calls the updated function from the parent window
                             const sugs = await window.parent.fetchSuggestions(val);
                             
                             if (sugs && sugs.length) {
+                                // Map the array strings into clickable divs
                                 list.innerHTML = sugs.map(s => '<div>' + s + '</div>').join('');
                                 list.style.display = 'block';
                                 
@@ -687,7 +676,7 @@
                             } else { 
                                 list.style.display = 'none'; 
                             }
-                        }, 150);
+                        }, 150); // Reduced delay for snappier feel
                     });
 
                     document.body.addEventListener('click', (e) => { 
@@ -700,6 +689,8 @@
         }
 
         // --- Core Functions ---
+
+        // Exposed functions for Homepage
         window.addPinPrompt = async () => {
             const url = await Modal.prompt("Add Pin", "Enter URL to pin");
             if(url) {
@@ -724,13 +715,17 @@
             tabEl.className = "tab";
             tabEl.dataset.tabId = nTab.id;
             tabEl.title = "New Tab";
+            // Show title next to icon
             tabEl.innerHTML = `
                 <i class="fas fa-compass tab-icon" id="def-fav-${nTab.id}" style="display:none"></i>
                 <img id="fav-${nTab.id}" src="/images/logo.png" style="display:block">
                 <span class="tab-title">New Tab</span>
             `;
             
-            tabEl.addEventListener("click", (e) => { switchTab(nTab.id); });
+            // Interaction: Left click to switch, Right click to close
+            tabEl.addEventListener("click", (e) => { 
+                switchTab(nTab.id); 
+            });
             tabEl.addEventListener("contextmenu", (e) => {
                 e.preventDefault();
                 closeTab(nTab.id);
@@ -805,6 +800,7 @@
                      img.src = '/images/logo.png';
                      img.style.display = 'block';
                      icon.style.display = 'none';
+                     
                      tabEl.title = "New Tab";
                      tabEl.querySelector('.tab-title').textContent = "New Tab";
                 }
@@ -835,11 +831,13 @@
                         tabEl.title = title;
                         tabEl.querySelector('.tab-title').textContent = title;
                     }
+                    
                     const loc = frame.contentWindow.location.href;
                     if (loc && loc.includes(__uv$config.prefix)) {
                         cTab.url = loc;
                         updateUrlBar(loc);
                     }
+
                     const win = frame.contentWindow;
                     win.open = (u, t) => { window.newTab(u); return null; };
                     win.document.body.addEventListener('click', (e) => {
@@ -877,17 +875,23 @@
         function fullscreen() { 
              const frame = document.querySelector(`.viewframe[data-frame-id="${aTab}"]`);
              if (frame) {
-                 if (frame.requestFullscreen) frame.requestFullscreen();
-                 else if (frame.webkitRequestFullscreen) frame.webkitRequestFullscreen();
-                 else if (frame.msRequestFullscreen) frame.msRequestFullscreen();
+                 if (frame.requestFullscreen) {
+                     frame.requestFullscreen();
+                 } else if (frame.webkitRequestFullscreen) { /* Safari */
+                     frame.webkitRequestFullscreen();
+                 } else if (frame.msRequestFullscreen) { /* IE11 */
+                     frame.msRequestFullscreen();
+                 }
              }
         }
-    </script>
+
+    </script>    <!-- DB and Script -->
     <script src="db.js" defer></script>
     <script src="script.js" defer></script>
 
     <div id="notification-container"></div>
     <script>
+    // --- Sound & Notification Logic ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     let isMuted = false;
 
@@ -911,7 +915,10 @@
         setTimeout(() => { toast.classList.remove('show'); setTimeout(() => { if (toast.parentElement) toast.remove(); }, 300); }, 3000);
     };
     
-    window.alert = function(message) { window.showNotification(message, 'fa-solid fa-bell', 'info'); };
+    // Override alert to use notification
+    window.alert = function(message) {
+        window.showNotification(message, 'fa-solid fa-bell', 'info');
+    };
     </script>
     <script>
         addPin("Xbox Cloud Gaming", "https://www.xbox.com/en-US/play", "https://www.google.com/s2/favicons?domain=xbox.com&sz=128");
@@ -921,4 +928,3 @@
     </script>
 </body>
 </html>
-<!-- Made with ❤️ from 4SP -->

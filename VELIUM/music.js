@@ -27,6 +27,10 @@ function getDownloadUrl(item) {
                 url = b.link || b.url;
             } else {
                 url = `https://argon.global.ssl.fastly.net/api/download?track_url=${encodeURIComponent(p)}`; 
+                
+                if (p.includes('soundcloud.com') || p.includes('sndcdn.com')) {
+                    url = 'https://corsproxy.io/?' + encodeURIComponent(url);
+                }
             }
         } 
     }
@@ -35,56 +39,30 @@ function getDownloadUrl(item) {
 
     if (!url) return '';
 
+    if (url.includes('soundcloud.com') || url.includes('sndcdn.com')) {
+        if (!url.includes('corsproxy.io')) {
+            url = 'https://corsproxy.io/?' + encodeURIComponent(url);
+        }
+        return url;
+    }
+
     return getProxyUrl(url);
 }
 
 // --- Proxy Helper ---
-function getProxyUrl(url, size = null) {
+function getProxyUrl(url) {
     if (!url) return url;
     if (typeof url !== 'string') return url;
     if (url.startsWith('data:')) return url;
     if (url.startsWith('//')) url = 'https:' + url;
-    
-    // Optimization for Saavn images if size is requested
-    if (size && url.includes('saavncdn.com')) {
-        url = url.replace(/_([0-9]+x[0-9]+|500)\.jpg/i, `_${size}.jpg`);
+
+    if (window.__uv$config && window.__uv$config.prefix && window.__uv$config.encodeUrl) {
+        return window.__uv$config.prefix + window.__uv$config.encodeUrl(url);
     }
-
-    // Check if it's already proxied
-    const prefix = "/VELIUM/uv/service/";
-    if (url.includes(prefix)) return url;
-
-    let encoded = null;
-
-    // 1. Try direct encoding if Ultraviolet is fully ready
     if (window.Ultraviolet && window.Ultraviolet.codec && window.Ultraviolet.codec.xor) {
-        try {
-            encoded = window.Ultraviolet.codec.xor.encode(url);
-        } catch (e) {
-            console.error("Direct UV encoding failed", e);
-        }
+         return "/VELIUM/uv/service/" + window.Ultraviolet.codec.xor.encode(url);
     }
     
-    // 2. Fallback to config wrapper
-    if (!encoded && window.__uv$config && window.__uv$config.encodeUrl) {
-        try {
-            const result = window.__uv$config.encodeUrl(url);
-            if (result !== url) {
-                encoded = result;
-            }
-        } catch (e) {
-            console.error("Config encoding failed", e);
-        }
-    }
-
-    // 3. Final assembly
-    if (encoded) {
-        if (encoded.startsWith('http')) return encoded; // Already a full URL
-        const cleanEncoded = encoded.startsWith(prefix) ? encoded.slice(prefix.length) : encoded;
-        return window.location.origin + prefix + cleanEncoded;
-    }
-    
-    // If we failed to encode, return the original URL
     return url;
 }
 

@@ -3,126 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4SP - VELIUM V2</title>
+    <title>4SP - VELIUM</title>
     
-    <script>
-        // Hint for Bare-Mux to find the worker
-        localStorage.setItem('bare-mux-path', '/VELIUM/baremux/worker.js');
-    </script>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- VERN_SYSTEM Proxy Scripts (Local) -->
-    <script src="/VELIUM/baremux/index.js"></script>
+    <link rel="preload" href="/VELIUM/uv/uv.bundle.js" as="script">
+    <link rel="preload" href="/VELIUM/baremux/index.js" as="script">
+    <link rel="preload" href="/VELIUM/baremux/worker.js" as="worker">
+    <link rel="preload" href="/VELIUM/uv/sw.js" as="worker">
+
     <script src="/VELIUM/uv/uv.bundle.js"></script>
     <script>
         const basePath = "/VELIUM/uv/";
         self.__uv$config = {
             prefix: basePath + "service/",
-            bare: "/bare/",
-            encodeUrl: (url) => {
-                if (typeof Ultraviolet === 'undefined') return url;
-                return Ultraviolet.codec.xor.encode(url);
-            },
-            decodeUrl: (url) => {
-                if (typeof Ultraviolet === 'undefined') return url;
-                return Ultraviolet.codec.xor.decode(url);
-            },
+            encodeUrl: Ultraviolet.codec.xor.encode,
+            decodeUrl: Ultraviolet.codec.xor.decode,
             handler: basePath + "uv.handler.js",
             client: basePath + "uv.client.js",
             bundle: basePath + "uv.bundle.js",
             config: basePath + "uv.config.js",
             sw: basePath + "uv.sw.js",
-            stockSW: "/VELIUM/uv/sw.js",
+            stockSW: basePath + "sw.js",
         };
     </script>
-    <script type="module">
-        import * as libcurl from "/VELIUM/libcurl/index.mjs";
-        
-        window.checkBare = async (retries = 3) => {
-            const workerPath = window.location.origin + "/VELIUM/baremux/worker.js";
-            const connection = new BareMux.BareMuxConnection(workerPath);
-            const wispUrl = "wss://wisp.mercurywork.shop/";
-            const transportPath = "/VELIUM/libcurl/index.mjs";
-            
-            for (let i = 0; i < retries; i++) {
-                try {
-                    if (libcurl && libcurl.load_wasm) {
-                        await libcurl.load_wasm();
-                    }
-
-                    const transport = await connection.getTransport();
-                    if (!transport || transport.path !== transportPath) {
-                        await connection.setTransport(transportPath, [
-                            { websocket: wispUrl },
-                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                        ]);
-                    }
-                    return connection;
-                } catch (e) {
-                    console.error(`BareMux/libcurl Setup Attempt ${i + 1} failed:`, e);
-                    if (i === retries - 1) {
-                        await connection.setTransport(transportPath, [
-                            { websocket: wispUrl },
-                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                        ]);
-                    }
-                    await new Promise(r => setTimeout(r, 500));
-                }
-            }
-            return connection;
-        };
-
+    <script src="/VELIUM/baremux/index.js"></script>
+    <script>
+        // Immediate Initialization of VERN_SYSTEM Proxy
         (async () => {
-            const connection = await window.checkBare();
             if ("serviceWorker" in navigator) {
                 try {
-                    await navigator.serviceWorker.register("/VELIUM/uv/sw.js", {
-                        scope: "/VELIUM/uv/service/"
+                    // Register Root SW
+                    const reg = await navigator.serviceWorker.register("/VELIUM/sw.js", {
+                        scope: "/VELIUM/"
                     });
-                    
-                    // Wait for the Service Worker to be fully ready
-                    const sw = await navigator.serviceWorker.ready;
+                    console.log("VERN_SYSTEM SW Registered");
 
-                    // Sync the port with the SW
-                    const workerPort = await connection.getInnerPort();
-                    sw.active?.postMessage({
-                        type: 'baremuxinit',
-                        port: workerPort
-                    }, [workerPort]);
-                } catch (e) { console.error("VERN Proxy Error", e); }
+                    // Reload if controller changes (SW activated)
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (!navigator.serviceWorker.controller) return;
+                        console.log("SW Activated, reloading...");
+                        window.location.reload();
+                    });
+
+                } catch (e) {
+                    console.error("SW Register Failed", e);
+                }
+            }
+            try {
+                const connection = new BareMux.BareMuxConnection("/VELIUM/baremux/worker.js");
+                const wispUrl = "wss://wisp.mercurywork.shop/";
+                connection.setTransport("/VELIUM/libcurl/index.mjs", [
+                    { websocket: wispUrl },
+                    { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                ]);
+                console.log("BareMux Initialized");
+            } catch (e) {
+                console.error("BareMux Init Failed", e);
             }
         })();
-
-        function syncThemes() {
-            try {
-                if (window.parent && window.parent.document && window.parent.document.documentElement) {
-                    const parentRoot = window.parent.document.documentElement;
-                    const childRoot = document.documentElement;
-                    
-                    const vars = [
-                        'bg-primary', 'bg-secondary', 'text-primary', 'text-secondary',
-                        'accent-primary', 'accent-secondary', 'border-primary', 'border-secondary',
-                        'button-bg', 'button-text'
-                    ];
-                    
-                    vars.forEach(v => {
-                        const val = parentRoot.style.getPropertyValue('--' + v);
-                        if (val) childRoot.style.setProperty('--' + v, val);
-                    });
-                }
-            } catch (e) {}
-        }
-        
-        syncThemes();
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'theme-changed') syncThemes();
-        });
-        setInterval(syncThemes, 2000); // Periodic fallback sync
     </script>
 
     <script>
@@ -447,8 +391,7 @@
             padding: 0;
             border-radius: 22px; /* 24 - 2 */
             border: 1px solid var(--border-main);
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
             align-items: stretch;
             width: 90%;
             max-width: 600px;
@@ -820,4 +763,3 @@
     <!-- Made with ❤️ from 4SP -->
 </body>
 </html>
-<!-- Made with ❤️ from 4SP -->
