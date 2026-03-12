@@ -56,12 +56,23 @@
                 }
             }
             try {
-                const connection = new BareMux.BareMuxConnection("/VELIUM/baremux/worker.js");
+                const workerPath = "/VELIUM/baremux/worker.js";
+                const connection = new BareMux.BareMuxConnection(workerPath);
                 const wispUrl = "wss://wisp.mercurywork.shop/";
                 connection.setTransport("/VELIUM/libcurl/index.mjs", [
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
+                
+                // Sync with Root SW if it exists
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'baremuxinit',
+                        path: workerPath,
+                        port: connection.port
+                    }, [connection.port]);
+                }
+
                 console.log("BareMux Initialized");
             } catch (e) {
                 console.error("BareMux Init Failed", e);

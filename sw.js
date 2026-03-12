@@ -10,7 +10,8 @@ const configs = {
         config: '/VELIUM/uv/uv.config.js',
         sw: '/VELIUM/uv/uv.sw.js',
         handler: '/VELIUM/uv/uv.handler.js',
-        client: '/VELIUM/uv/uv.client.js'
+        client: '/VELIUM/uv/uv.client.js',
+        worker: '/VELIUM/baremux/worker.js'
     },
     vora: {
         prefix: '/VORA/VERN_SYSTEM/uv/service/',
@@ -19,7 +20,8 @@ const configs = {
         config: '/VORA/VERN_SYSTEM/uv/uv.config.js',
         sw: '/VORA/VERN_SYSTEM/uv/uv.sw.js',
         handler: '/VORA/VERN_SYSTEM/uv/uv.handler.js',
-        client: '/VORA/VERN_SYSTEM/uv/uv.client.js'
+        client: '/VORA/VERN_SYSTEM/uv/uv.client.js',
+        worker: '/VORA/VERN_SYSTEM/baremux/worker.js'
     },
     vern: {
         prefix: '/VERN/uv/service/',
@@ -28,7 +30,8 @@ const configs = {
         config: '/VERN/uv/uv.config.js',
         sw: '/VERN/uv/uv.sw.js',
         handler: '/VERN/uv/uv.handler.js',
-        client: '/VERN/uv/uv.client.js'
+        client: '/VERN/uv/uv.client.js',
+        worker: '/VERN/baremux/worker.js'
     },
     vana: {
         prefix: '/logged-in/uv/service/',
@@ -37,7 +40,8 @@ const configs = {
         config: '/logged-in/uv/uv.config.js',
         sw: '/logged-in/uv/uv.sw.js',
         handler: '/logged-in/uv/uv.handler.js',
-        client: '/logged-in/uv/uv.client.js'
+        client: '/logged-in/uv/uv.client.js',
+        worker: '/logged-in/baremux/worker.js'
     },
     games: {
         prefix: '/GAMES/uv/service/',
@@ -46,23 +50,49 @@ const configs = {
         config: '/GAMES/uv/uv.config.js',
         sw: '/GAMES/uv/uv.sw.js',
         handler: '/GAMES/uv/uv.handler.js',
-        client: '/GAMES/uv/uv.client.js'
+        client: '/GAMES/uv/uv.client.js',
+        worker: '/GAMES/baremux/worker.js'
     }
 };
 
-// Import the base SW logic
+// Import the base SW logic (Ultraviolet)
 importScripts(configs.velium.sw);
 
-// Use a consistent SharedWorker across the app to avoid transport conflicts
-const workerPath = location.origin + "/VORA/VERN_SYSTEM/baremux/worker.js";
-const connection = new BareMux.WorkerConnection(workerPath);
-const bareClient = new BareMux.BareClient(connection);
+const connections = {};
+const clients = {};
+
+function getClient(key) {
+    if (clients[key]) return clients[key];
+    const workerPath = configs[key].worker;
+    const connection = new BareMux.WorkerConnection(workerPath);
+    const client = new BareMux.BareClient(connection);
+    connections[key] = connection;
+    clients[key] = client;
+    return client;
+}
+
+// Initialize all clients
+for (const key in configs) {
+    getClient(key);
+}
 
 // Message listener for SharedWorker port synchronization
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
-        connection.port = event.data.port;
-        console.log("Root SW: BareMux Port Synced via " + workerPath);
+        // Find which worker this port belongs to based on some hint or just try to match
+        // For simplicity in this structure, we might need a hint from the sender
+        // But if each page sends its worker path, we can match it.
+        const path = event.data.path;
+        for (const key in configs) {
+            if (path && path.includes(configs[key].worker)) {
+                connections[key].port = event.data.port;
+                console.log(`Root SW: BareMux Port Synced for ${key} via ${configs[key].worker}`);
+                return;
+            }
+        }
+        // Fallback: if no path, sync to the one matching the current "active" context if known, 
+        // or just sync to the most likely one (vora is what the user said works)
+        if (connections['vora']) connections['vora'].port = event.data.port;
     }
 });
 
@@ -73,8 +103,8 @@ for (const key in configs) {
         encodeUrl: Ultraviolet.codec.xor.encode,
         decodeUrl: Ultraviolet.codec.xor.decode
     });
-    // Crucial: Override the internal bareClient that Ultraviolet might be using
-    inst.bareClient = bareClient;
+    // Dynamic client selection based on request
+    inst.bareClient = getClient(key);
     instances[key] = inst;
 }
 
@@ -107,18 +137,15 @@ self.addEventListener('fetch', (event) => {
 
     if (autoProxyDomains.some(domain => url.includes(domain)) || url.includes('hvtrs8%2F-')) {
         // Default to vora instance for auto-proxying
-        // If it's already an encoded URL (hvtrs...) but missing the prefix
         if (url.includes('hvtrs8%2F-') && !url.includes(configs.vora.prefix)) {
             const encodedPart = url.split('hvtrs8%2F-')[1];
             const fullProxyUrl = location.origin + configs.vora.prefix + 'hvtrs8%2F-' + encodedPart;
             event.respondWith(instances.vora.fetch({ ...event, request: new Request(fullProxyUrl, event.request) }));
         } else if (!url.includes(configs.vora.prefix)) {
-            // Encode the plain URL
             const encoded = Ultraviolet.codec.xor.encode(url);
             const fullProxyUrl = location.origin + configs.vora.prefix + encoded;
             event.respondWith(instances.vora.fetch({ ...event, request: new Request(fullProxyUrl, event.request) }));
         } else {
-            // It already has the prefix, just fetch
             event.respondWith(instances.vora.fetch(event));
         }
         return;
@@ -130,7 +157,6 @@ self.addEventListener('fetch', (event) => {
             try {
                 return await fetch(event.request);
             } catch (err) {
-                // Return a generic error response instead of letting the promise reject
                 console.warn(`SW: Fallback fetch failed for ${url}`, err);
                 return new Response(null, { status: 404, statusText: 'Not Found' });
             }

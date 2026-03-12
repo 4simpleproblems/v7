@@ -404,12 +404,22 @@
 
             // Init BareMux
             try {
-                const connection = new BareMux.BareMuxConnection("/VERN/baremux/worker.js");
+                const workerPath = "/VERN/baremux/worker.js";
+                const connection = new BareMux.BareMuxConnection(workerPath);
                 const wispUrl = "wss://wisp.mercurywork.shop/";
                 connection.setTransport("/VERN/libcurl/index.mjs", [
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
+
+                // Sync with Root SW if it exists
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'baremuxinit',
+                        path: workerPath,
+                        port: connection.port
+                    }, [connection.port]);
+                }
             } catch (e) {
                 console.error("BareMux Init Failed", e);
             }

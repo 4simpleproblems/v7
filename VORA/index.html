@@ -20,7 +20,8 @@
     <script src="/VORA/VERN_SYSTEM/baremux/index.js"></script>
     <script>
         window.checkBare = async () => {
-            const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
+            const workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+            const connection = new BareMux.BareMuxConnection(workerPath);
             const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
             
@@ -31,6 +32,15 @@
                         { websocket: wispUrl },
                         { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                     ]);
+                }
+
+                // Sync with Root SW if it exists
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'baremuxinit',
+                        path: workerPath,
+                        port: connection.port
+                    }, [connection.port]);
                 }
             } catch (e) {
                 await connection.setTransport(transportPath, [
