@@ -342,17 +342,11 @@ function setupEventListeners() {
         });
     }
 
-    // Infinite Scroll for Search using IntersectionObserver
-    const loader = document.getElementById('searchLoader');
-    if (loader) {
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && !searchState.loading && searchState.hasMoreTracks && searchState.query) {
-                console.log("Infinite Scroll: Loading more results for " + searchState.query);
-                handleSearch(searchState.query, true);
-            }
-        }, { threshold: 0.1 });
-        observer.observe(loader);
-    }
+    // Pagination for Search
+    const nextBtn = document.getElementById('nextPageBtn');
+    const prevBtn = document.getElementById('prevPageBtn');
+    if (nextBtn) nextBtn.addEventListener('click', searchNextPage);
+    if (prevBtn) prevBtn.addEventListener('click', searchPrevPage);
 
     // Player Controls
     document.getElementById('playPauseButton').addEventListener('click', togglePlayPause);
@@ -583,22 +577,27 @@ async function loadPopularTracks() {
 
 let searchState = { query: '', tracksOffset: 0, loading: false, hasMoreTracks: true, limit: 24 };
 
-async function handleSearch(query, append = false) {
+async function handleSearch(query, append = false, forcedOffset = null) {
     const resultsDiv = document.getElementById('searchResults');
     const categoriesDiv = document.getElementById('browseCategories');
     const tracksGrid = document.getElementById('searchGrid');
     const loader = document.getElementById('searchLoader');
+    const pagination = document.getElementById('searchPagination');
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
 
     if (!query || query.trim() === '') {
         if (resultsDiv) resultsDiv.classList.add('hidden');
         if (categoriesDiv) categoriesDiv.classList.remove('hidden');
         if (loader) loader.classList.add('hidden');
+        if (pagination) pagination.classList.add('hidden');
         searchState.query = '';
         return;
     }
 
     if (!append || query !== searchState.query) {
-        searchState = { query: query, tracksOffset: 0, loading: false, hasMoreTracks: true, limit: 24 };
+        const startAt = (forcedOffset !== null) ? forcedOffset : 0;
+        searchState = { query: query, tracksOffset: startAt, loading: false, hasMoreTracks: true, limit: 24 };
         if (tracksGrid) tracksGrid.innerHTML = '';
         if (loader) loader.classList.add('hidden');
     }
@@ -606,7 +605,7 @@ async function handleSearch(query, append = false) {
     if (searchState.loading || !searchState.hasMoreTracks) return;
     searchState.loading = true;
     
-    // Show loader for infinite scroll
+    // Show loader for infinite scroll/paging
     if (append && loader) loader.classList.remove('hidden');
 
     if (resultsDiv) resultsDiv.classList.remove('hidden');
@@ -636,6 +635,24 @@ async function handleSearch(query, append = false) {
         searchState.tracksOffset += newTracks.length;
         searchState.hasMoreTracks = newTracks.length === searchState.limit && newTracks.length > 0;
 
+        // Update Pagination UI
+        if (pagination) {
+            pagination.classList.remove('hidden');
+            const currentPage = Math.ceil(searchState.tracksOffset / searchState.limit);
+            const pageIndicator = document.getElementById('pageIndicator');
+            if (pageIndicator) pageIndicator.textContent = `Page ${currentPage}`;
+            
+            if (prevBtn) {
+                if (searchState.tracksOffset <= searchState.limit) prevBtn.classList.add('invisible');
+                else prevBtn.classList.remove('invisible');
+            }
+
+            if (nextBtn) {
+                if (!searchState.hasMoreTracks) nextBtn.classList.add('invisible');
+                else nextBtn.classList.remove('invisible');
+            }
+        }
+
     } catch (e) {
         console.error('Search failed', e);
         if (!append && tracksGrid) tracksGrid.innerHTML = '<div class="col-span-full py-20 text-center text-red-500">Failed to load search results.</div>';
@@ -643,6 +660,19 @@ async function handleSearch(query, append = false) {
         searchState.loading = false;
         if (loader) loader.classList.add('hidden');
     }
+}
+
+async function searchNextPage() {
+    if (searchState.loading || !searchState.hasMoreTracks) return;
+    handleSearch(searchState.query, false, searchState.tracksOffset);
+    document.querySelector('.main-view')?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function searchPrevPage() {
+    if (searchState.loading || searchState.tracksOffset <= searchState.limit) return;
+    const target = searchState.tracksOffset - (searchState.limit * 2);
+    handleSearch(searchState.query, false, Math.max(0, target));
+    document.querySelector('.main-view')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // --- Rendering ---
