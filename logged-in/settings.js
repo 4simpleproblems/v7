@@ -177,9 +177,9 @@
         };
 
         const isUsernameTaken = async (username) => {
-            const q = query(collection(db, 'users'), where('username', '==', username));
-            const querySnapshot = await getDocs(q);
-            return !querySnapshot.empty;
+            const docRef = doc(db, 'usernames', username.toLowerCase());
+            const docSnap = await getDoc(docRef);
+            return docSnap.exists();
         };
         
         // --- NEW: IndexedDB Helper Functions ---
@@ -2923,11 +2923,24 @@
                     
                     // --- Update Logic ---
                     const newChangesCount = changesThisMonth + 1;
-                    await updateDoc(userDocRef, {
+                    const batch = writeBatch(db);
+
+                    // 1. Delete old username reservation
+                    const oldUsernameRef = doc(db, 'usernames', userData.username.toLowerCase());
+                    batch.delete(oldUsernameRef);
+
+                    // 2. Create new username reservation
+                    const newUsernameRef = doc(db, 'usernames', newUsername.toLowerCase());
+                    batch.set(newUsernameRef, { uid: userId });
+
+                    // 3. Update User Document
+                    batch.update(userDocRef, {
                         username: newUsername,
                         usernameChangesThisMonth: newChangesCount,
                         lastUsernameChangeMonth: currentMonthNumber 
                     });
+
+                    await batch.commit();
 
                     showMessage(messageElement, `Username successfully changed to ${newUsername}!`, 'success');
                     
@@ -3192,6 +3205,9 @@
 const performAccountDeletion = async (credential) => {
     try {
         const userId = auth.currentUser.uid;
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        const username = userDoc.exists() ? userDoc.data().username : null;
+
         // Assuming showLoading() is defined elsewhere in your file
         showLoading("Permanently deleting your account and all associated data...");
 
@@ -3211,7 +3227,12 @@ const performAccountDeletion = async (credential) => {
         // C. Messenger Profile
         batch.delete(doc(db, 'messenger_profiles', userId));
 
-        // D. Daily Photos
+        // D. Username Reservation
+        if (username) {
+            batch.delete(doc(db, 'usernames', username.toLowerCase()));
+        }
+
+        // E. Daily Photos
         const photoCollections = ['dailyPhotos', 'daily_photos']; // Handle both variants
         for (const colName of photoCollections) {
             const q = query(collection(db, colName), where('creatorUid', '==', userId));

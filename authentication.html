@@ -398,13 +398,23 @@
         const createUserDocument = async (user, authMethod, username) => {
             const isVerified = authMethod !== 'email' || !!user.emailVerified;
             try {
-                await setDoc(getUserDocRef(user.uid), {
+                const batch = writeBatch(db);
+                
+                // 1. Create User Document
+                const userRef = getUserDocRef(user.uid);
+                batch.set(userRef, {
                     email: user.email, 
                     authMethod: authMethod, 
                     createdAt: serverTimestamp(),
                     username: username, 
                     emailVerified: isVerified
                 });
+
+                // 2. Reserve Username
+                const usernameRef = doc(db, "usernames", username.toLowerCase());
+                batch.set(usernameRef, { uid: user.uid });
+
+                await batch.commit();
                 return true;
             } catch (error) { 
                 console.error("Error creating user document:", error); 
@@ -442,9 +452,9 @@
         };
 
         const isUsernameTaken = async (username) => {
-            const q = query(collection(db, 'users'), where('username', '==', username));
-            const querySnapshot = await getDocs(q);
-            return !querySnapshot.empty;
+            const docRef = doc(db, 'usernames', username.toLowerCase());
+            const docSnap = await getDoc(docRef);
+            return docSnap.exists();
         };
 
         const validateEmail = (email) => {

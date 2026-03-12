@@ -6,13 +6,6 @@ service cloud.firestore {
     // I. Helper Functions
     // ----------------------------------------------------------------------------------
     
-    match /access_codes/{code} {
-      allow read: if true;
-      allow create: if isAuthenticated() && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if (!isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimed']));
-      allow delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
-    }
-
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -28,7 +21,7 @@ service cloud.firestore {
               get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['admin', 'superadmin'])
       );
     }
-    
+
     // ----------------------------------------------------------------------------------
     // II. User Profiles Collection (`users`)
     // ----------------------------------------------------------------------------------
@@ -36,16 +29,19 @@ service cloud.firestore {
       allow read: if true; 
       allow list: if isAuthenticated(); 
       
-      // UPDATED: Admins can now create users (for Mass Add), or users can create their own.
       allow create: if isAdminOrSuperAdmin() || (
                       isOwner(userId)
                       && request.resource.id == request.auth.uid
                       && 'username' in request.resource.data
+                      && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username.lower())).data.uid == request.auth.uid
                     );
       
-      // UPDATED: Admins can update any user; others follow strict field restrictions.
       allow update: if isAdminOrSuperAdmin() || 
-                    isOwner(userId) || 
+                    isOwner(userId) && (
+                      !('username' in request.resource.data) || 
+                      request.resource.data.username == resource.data.username ||
+                      getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username.lower())).data.uid == request.auth.uid
+                    ) || 
                     (isAuthenticated() && 
                      request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                         'pending_requests', 'friends', 'navbarTheme', 'navbarPosition', 'username', 
@@ -60,7 +56,6 @@ service cloud.firestore {
                         'pfpLetterBg', 'letterAvatarColor', 'letterAvatarText'
                      ]));
 
-      // UPDATED: Admins can delete users.
       allow delete: if isAdminOrSuperAdmin() || isOwner(userId);
 
       // Following / Followers subcollections
@@ -75,13 +70,12 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------------------
-    // III. Friend Codes Collection (`friend_codes`)
+    // III. Username Reservations (`usernames`)
     // ----------------------------------------------------------------------------------
-    match /friend_codes/{code} {
+    match /usernames/{username} {
       allow read: if true;
-      allow create: if true;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow update: if false; 
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid || isAdminOrSuperAdmin();
     }
 
     // ----------------------------------------------------------------------------------
@@ -90,11 +84,57 @@ service cloud.firestore {
     match /admins/{userId} {
       allow read: if true;
       allow list: if isAdminOrSuperAdmin(); 
-      allow create, update, delete: if isAdminOrSuperAdmin(); 
+      allow create, update: if isAdminOrSuperAdmin(); 
+      allow delete: if isAdminOrSuperAdmin() || isOwner(userId);
     }
 
     // ----------------------------------------------------------------------------------
-    // V. Daily Photos Collection (`daily_photos`)
+    // V. Messenger Profiles (`messenger_profiles`)
+    // ----------------------------------------------------------------------------------
+    match /messenger_profiles/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) || isAdminOrSuperAdmin();
+    }
+
+    // ----------------------------------------------------------------------------------
+    // VI. Messages (`messages`)
+    // ----------------------------------------------------------------------------------
+    match /messages/{messageId} {
+      allow read: if isAuthenticated() && (resource.data.senderId == request.auth.uid || resource.data.recipientId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.senderId == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource.data.senderId == request.auth.uid || resource.data.recipientId == request.auth.uid) || isAdminOrSuperAdmin();
+    }
+
+    // ----------------------------------------------------------------------------------
+    // VII. Notifications (`notifications`)
+    // ----------------------------------------------------------------------------------
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.recipientId == request.auth.uid || isAdminOrSuperAdmin();
+    }
+
+    // ----------------------------------------------------------------------------------
+    // VIII. Posts & Comments (`posts`, `comments`)
+    // ----------------------------------------------------------------------------------
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.authorId == request.auth.uid || isAdminOrSuperAdmin();
+      allow delete: if isAuthenticated() && resource.data.authorId == request.auth.uid || isAdminOrSuperAdmin();
+    }
+
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.authorId == request.auth.uid || isAdminOrSuperAdmin();
+      allow delete: if isAuthenticated() && resource.data.authorId == request.auth.uid || isAdminOrSuperAdmin();
+    }
+
+    // ----------------------------------------------------------------------------------
+    // IX. Daily Photos Collection (`daily_photos` and `dailyPhotos`)
     // ----------------------------------------------------------------------------------
     match /daily_photos/{photoId} {
       allow read: if true; 
@@ -103,12 +143,9 @@ service cloud.firestore {
         resource.data.creatorUid == request.auth.uid ||
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hearts', 'comments'])
       )) || (!isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hearts', 'comments']));
-      allow delete: if (isAuthenticated() && resource.data.creatorUid == request.auth.uid) || (!isAuthenticated());
+      allow delete: if (isAuthenticated() && resource.data.creatorUid == request.auth.uid) || (!isAuthenticated()) || isAdminOrSuperAdmin();
     }
 
-    // ----------------------------------------------------------------------------------
-    // VI. Legacy / Unused Collections
-    // ----------------------------------------------------------------------------------
     match /dailyPhotos/{photoId} {
       allow create: if isAuthenticated() && (
         (request.resource.data.creatorUid == request.auth.uid) || 
@@ -116,9 +153,19 @@ service cloud.firestore {
       );
       allow update, delete: if isAuthenticated() && (
         (resource.data.creatorUid == request.auth.uid) || 
-        (request.resource.data.userId == request.auth.uid)
-      );
+        (resource.data.userId == request.auth.uid)
+      ) || isAdminOrSuperAdmin();
       allow read: if true; 
+    }
+
+    // ----------------------------------------------------------------------------------
+    // X. Friend Requests (`friend_codes` and `friendRequests`)
+    // ----------------------------------------------------------------------------------
+    match /friend_codes/{code} {
+      allow read: if true;
+      allow create: if true;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid || isAdminOrSuperAdmin();
+      allow update: if false; 
     }
 
     match /friendRequests/{requestId} {
@@ -126,7 +173,7 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && (
         (resource.data.senderId == request.auth.uid) || 
         (resource.data.recipientId == request.auth.uid)
-      );
+      ) || isAdminOrSuperAdmin();
       allow read: if isAuthenticated() && (
         (resource.data.senderId == request.auth.uid) || 
         (resource.data.recipientId == request.auth.uid)
@@ -135,7 +182,7 @@ service cloud.firestore {
     }
     
     // ----------------------------------------------------------------------------------
-    // VII. Banned Users & Bans
+    // XI. Banned Users & Bans
     // ----------------------------------------------------------------------------------
     match /banned_users/{userId} {
       allow read, create, update, delete: if isAdminOrSuperAdmin();
@@ -147,7 +194,7 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------------------
-    // VIII. Global Configuration
+    // XII. Global Configuration
     // ----------------------------------------------------------------------------------
     match /config/{configId} {
       allow read: if true;
@@ -157,7 +204,7 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------------------
-    // IX. Analytics Collection (`analytics` and `analytics_sessions`)
+    // XIII. Analytics Collection (`analytics` and `analytics_sessions`)
     // ----------------------------------------------------------------------------------
     match /analytics/{sessionId} {
       allow read: if isAdminOrSuperAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
@@ -176,7 +223,7 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------------------
-    // X. Reports Collection (`reports`)
+    // XIV. Reports Collection (`reports`)
     // ----------------------------------------------------------------------------------
     match /reports/{reportId} {
       allow create: if isAuthenticated();
@@ -184,7 +231,7 @@ service cloud.firestore {
     }
     
     // ----------------------------------------------------------------------------------
-    // XI. Feedback Collection (`feedback`) - NEW FOR form.html
+    // XV. Feedback Collection (`feedback`)
     // ----------------------------------------------------------------------------------
     match /feedback/{feedbackId} {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
@@ -192,11 +239,18 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------------------
-    // XII. Leaderboard Collection (`leaderboard`)
+    // XVI. Leaderboard Collection (`leaderboard`)
     // ----------------------------------------------------------------------------------
     match /leaderboard/{userId} {
       allow read: if true;
       allow write: if isAdminOrSuperAdmin();
+    }
+
+    match /access_codes/{code} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if (!isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimed']));
+      allow delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid || isAdminOrSuperAdmin();
     }
   }
 }
