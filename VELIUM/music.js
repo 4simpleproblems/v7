@@ -39,10 +39,21 @@ function getDownloadUrl(item) {
 }
 
 // --- Proxy Helper ---
-function getProxyUrl(url) {
+function getProxyUrl(url, size = null) {
     if (!url) return url;
     if (typeof url !== 'string') return url;
     if (url.startsWith('data:')) return url;
+
+    // Optimization for Saavn images
+    if (url.includes('saavncdn.com')) {
+        if (size) {
+            url = url.replace(/_([0-9]+x[0-9]+|150|500)\.jpg/i, `_${size}.jpg`);
+        } else {
+            // Default to a reasonable size for grid if none specified
+            url = url.replace(/_150x150\.jpg/i, `_250x250.jpg`);
+        }
+    }
+
     if (url.startsWith('//')) url = 'https:' + url;
 
     if (window.__uv$config && window.__uv$config.prefix && window.__uv$config.encodeUrl) {
@@ -331,18 +342,16 @@ function setupEventListeners() {
         });
     }
 
-    // Infinite Scroll for Search
-    const mainView = document.querySelector('.main-view');
-    if (mainView) {
-        mainView.addEventListener('scroll', () => {
-            const searchView = document.getElementById('searchView');
-            if (searchView && searchView.classList.contains('active') && !searchState.loading && searchState.hasMoreTracks) {
-                const threshold = 1000; // pixels from bottom
-                if (mainView.scrollHeight - mainView.scrollTop - mainView.clientHeight < threshold) {
-                    handleSearch(searchState.query, true);
-                }
+    // Infinite Scroll for Search using IntersectionObserver
+    const loader = document.getElementById('searchLoader');
+    if (loader) {
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !searchState.loading && searchState.hasMoreTracks && searchState.query) {
+                console.log("Infinite Scroll: Loading more results for " + searchState.query);
+                handleSearch(searchState.query, true);
             }
-        });
+        }, { threshold: 0.1 });
+        observer.observe(loader);
     }
 
     // Player Controls
@@ -591,14 +600,17 @@ async function handleSearch(query, append = false) {
     if (!append || query !== searchState.query) {
         searchState = { query: query, tracksOffset: 0, loading: false, hasMoreTracks: true, limit: 24 };
         if (tracksGrid) tracksGrid.innerHTML = '';
+        if (loader) loader.classList.add('hidden');
     }
     
     if (searchState.loading || !searchState.hasMoreTracks) return;
     searchState.loading = true;
-    if (loader) loader.classList.remove('hidden');
+    
+    // Show loader for infinite scroll
+    if (append && loader) loader.classList.remove('hidden');
 
-    resultsDiv.classList.remove('hidden');
-    categoriesDiv.classList.add('hidden');
+    if (resultsDiv) resultsDiv.classList.remove('hidden');
+    if (categoriesDiv) categoriesDiv.classList.add('hidden');
 
     if (!append && tracksGrid) {
         tracksGrid.innerHTML = '<div class="col-span-full py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i></div>';
@@ -612,7 +624,6 @@ async function handleSearch(query, append = false) {
         if (!append && tracksGrid) tracksGrid.innerHTML = '';
         if (tracksGrid) {
             newTracks.forEach(track => {
-                // Ensure unique tracks when appending
                 const trackUid = getTrackUid(track);
                 const existing = Array.from(tracksGrid.querySelectorAll('.track-card')).some(card => card.dataset.uid === trackUid);
                 if (!existing) {
@@ -623,7 +634,7 @@ async function handleSearch(query, append = false) {
         }
         
         searchState.tracksOffset += newTracks.length;
-        searchState.hasMoreTracks = newTracks.length === searchState.limit;
+        searchState.hasMoreTracks = newTracks.length === searchState.limit && newTracks.length > 0;
 
     } catch (e) {
         console.error('Search failed', e);

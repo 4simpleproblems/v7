@@ -60,6 +60,10 @@ importScripts(configs.velium.sw);
 
 // Shared transport state
 let transportReady = false;
+let transportResolve;
+const transportPromise = new Promise(resolve => {
+    transportResolve = resolve;
+});
 
 // Default worker path
 const workerPath = location.origin + configs.vora.worker;
@@ -71,6 +75,7 @@ self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
         connection.port = event.data.port;
         transportReady = true;
+        if (transportResolve) transportResolve();
         console.log("Root SW: BareMux Port Synced via " + (event.data.path || "unknown"));
     }
 });
@@ -113,14 +118,13 @@ async function handleRequest(event) {
                        autoProxyDomains.some(domain => url.includes(domain)) || 
                        url.includes('hvtrs8%2F-');
 
-    // If we need proxying but transport isn't ready, wait a bit
+    // If we need proxying but transport isn't ready, wait for up to 2 seconds
     if (needsProxy && !transportReady) {
         console.log("Root SW: Waiting for transport for " + url);
-        let checks = 0;
-        while (!transportReady && checks < 50) { // Wait up to 5s
-            await new Promise(r => setTimeout(r, 100));
-            checks++;
-        }
+        await Promise.race([
+            transportPromise,
+            new Promise(r => setTimeout(r, 2000))
+        ]);
     }
 
     // Find the matching instance based on prefix
