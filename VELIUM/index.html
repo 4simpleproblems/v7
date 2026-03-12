@@ -535,15 +535,11 @@
                 </div>
 
                 <div id="searchResults" class="hidden">
-                    <div class="flex gap-4 mb-8 overflow-x-auto pb-2">
-                        <button class="search-tab active px-4 py-2 rounded-full text-sm font-bold bg-[var(--accent-color)] text-white whitespace-nowrap" data-tab="tracks">Tracks</button>
-                    </div>
-
                     <div id="tracksTab" class="search-tab-content active">
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="searchGrid"></div>
                     </div>
-                    <div class="col-span-full text-center mt-8">
-                        <button id="loadMoreBtn" class="btn-niobium hidden">Load More</button>
+                    <div id="searchLoader" class="col-span-full text-center py-8 hidden">
+                        <i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i>
                     </div>
                 </div>
 

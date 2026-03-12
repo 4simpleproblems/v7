@@ -331,10 +331,18 @@ function setupEventListeners() {
         });
     }
 
-    // Load More
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    if (loadMoreBtn) {
-        loadMoreBtn.addEventListener('click', () => handleSearch(searchState.query, true));
+    // Infinite Scroll for Search
+    const mainView = document.querySelector('.main-view');
+    if (mainView) {
+        mainView.addEventListener('scroll', () => {
+            const searchView = document.getElementById('searchView');
+            if (searchView && searchView.classList.contains('active') && !searchState.loading && searchState.hasMoreTracks) {
+                const threshold = 1000; // pixels from bottom
+                if (mainView.scrollHeight - mainView.scrollTop - mainView.clientHeight < threshold) {
+                    handleSearch(searchState.query, true);
+                }
+            }
+        });
     }
 
     // Player Controls
@@ -570,12 +578,12 @@ async function handleSearch(query, append = false) {
     const resultsDiv = document.getElementById('searchResults');
     const categoriesDiv = document.getElementById('browseCategories');
     const tracksGrid = document.getElementById('searchGrid');
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const loader = document.getElementById('searchLoader');
 
     if (!query || query.trim() === '') {
         if (resultsDiv) resultsDiv.classList.add('hidden');
         if (categoriesDiv) categoriesDiv.classList.remove('hidden');
-        if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+        if (loader) loader.classList.add('hidden');
         searchState.query = '';
         return;
     }
@@ -585,9 +593,9 @@ async function handleSearch(query, append = false) {
         if (tracksGrid) tracksGrid.innerHTML = '';
     }
     
-    if (searchState.loading) return;
+    if (searchState.loading || !searchState.hasMoreTracks) return;
     searchState.loading = true;
-    if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+    if (loader) loader.classList.remove('hidden');
 
     resultsDiv.classList.remove('hidden');
     categoriesDiv.classList.add('hidden');
@@ -602,19 +610,27 @@ async function handleSearch(query, append = false) {
 
         const newTracks = data.tracks || [];
         if (!append && tracksGrid) tracksGrid.innerHTML = '';
-        if (tracksGrid) newTracks.forEach(track => renderTrackGrid([track], tracksGrid));
+        if (tracksGrid) {
+            newTracks.forEach(track => {
+                // Ensure unique tracks when appending
+                const trackUid = getTrackUid(track);
+                const existing = Array.from(tracksGrid.querySelectorAll('.track-card')).some(card => card.dataset.uid === trackUid);
+                if (!existing) {
+                    renderTrackGrid([track], tracksGrid);
+                    tracksGrid.lastElementChild.dataset.uid = trackUid;
+                }
+            });
+        }
         
         searchState.tracksOffset += newTracks.length;
         searchState.hasMoreTracks = newTracks.length === searchState.limit;
-
-        if (loadMoreBtn && searchState.hasMoreTracks && newTracks.length > 0) loadMoreBtn.classList.remove('hidden');
-        else if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
 
     } catch (e) {
         console.error('Search failed', e);
         if (!append && tracksGrid) tracksGrid.innerHTML = '<div class="col-span-full py-20 text-center text-red-500">Failed to load search results.</div>';
     } finally {
         searchState.loading = false;
+        if (loader) loader.classList.add('hidden');
     }
 }
 
