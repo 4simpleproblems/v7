@@ -39,13 +39,6 @@ function getDownloadUrl(item) {
 
     if (!url) return '';
 
-    if (url.includes('soundcloud.com') || url.includes('sndcdn.com')) {
-        if (!url.includes('corsproxy.io')) {
-            url = 'https://corsproxy.io/?' + encodeURIComponent(url);
-        }
-        return url;
-    }
-
     return getProxyUrl(url);
 }
 

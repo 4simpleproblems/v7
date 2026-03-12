@@ -330,7 +330,7 @@ async function renderTmdb(res, endpoint) {
             if (viewAll) viewAll.remove();
         }
 
-        const itemsToShow = (isIndexPage() && !isSearchActive && data.page === 1) ? data.results.slice(0, 11) : data.results;
+        const itemsToShow = (isIndexPage() && !isSearchActive && data.page === 1) ? data.results.slice(0, 20) : data.results;
         itemsToShow.forEach(item => {
             const card = createMediaCard(item);
             if (card) grid.appendChild(card);
