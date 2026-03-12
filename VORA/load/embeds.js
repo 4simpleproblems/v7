@@ -336,8 +336,8 @@ async function renderTmdb(res, endpoint) {
             if (card) grid.appendChild(card);
         });
 
-        // Add 'View All' card ONLY on page 1 of index
-        if (isIndexPage() && !isSearchActive && data.page === 1) {
+        // Add 'View All' card ONLY on page 1 of index if we have enough items
+        if (isIndexPage() && !isSearchActive && data.page === 1 && data.results.length > 20) {
             const viewAll = createViewAllCard(endpoint.includes('movie') ? 'movies.html' : 'series.html');
             viewAll.classList.add('view-all-card');
             grid.appendChild(viewAll);

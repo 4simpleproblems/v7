@@ -58,41 +58,19 @@ const configs = {
 // Import the base SW logic (Ultraviolet)
 importScripts(configs.velium.sw);
 
-const connections = {};
-const clients = {};
-
-function getClient(key) {
-    if (clients[key]) return clients[key];
-    const workerPath = configs[key].worker;
-    const connection = new BareMux.WorkerConnection(workerPath);
-    const client = new BareMux.BareClient(connection);
-    connections[key] = connection;
-    clients[key] = client;
-    return client;
-}
-
-// Initialize all clients
-for (const key in configs) {
-    getClient(key);
-}
+// Use a consistent SharedWorker across the app to avoid transport conflicts
+const mainWorkerPath = location.origin + configs.vora.worker;
+const mainConnection = new BareMux.WorkerConnection(mainWorkerPath);
+const mainBareClient = new BareMux.BareClient(mainConnection);
 
 // Message listener for SharedWorker port synchronization
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
-        // Find which worker this port belongs to based on some hint or just try to match
-        // For simplicity in this structure, we might need a hint from the sender
-        // But if each page sends its worker path, we can match it.
         const path = event.data.path;
-        for (const key in configs) {
-            if (path && path.includes(configs[key].worker)) {
-                connections[key].port = event.data.port;
-                console.log(`Root SW: BareMux Port Synced for ${key} via ${configs[key].worker}`);
-                return;
-            }
+        if (path && path.includes(configs.vora.worker)) {
+            mainConnection.port = event.data.port;
+            console.log("Root SW: Main BareMux Port Synced via " + path);
         }
-        // Fallback: if no path, sync to the one matching the current "active" context if known, 
-        // or just sync to the most likely one (vora is what the user said works)
-        if (connections['vora']) connections['vora'].port = event.data.port;
     }
 });
 
@@ -103,8 +81,7 @@ for (const key in configs) {
         encodeUrl: Ultraviolet.codec.xor.encode,
         decodeUrl: Ultraviolet.codec.xor.decode
     });
-    // Dynamic client selection based on request
-    inst.bareClient = getClient(key);
+    inst.bareClient = mainBareClient;
     instances[key] = inst;
 }
 
@@ -116,14 +93,20 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener('fetch', (event) => {
+async function handleRequest(event) {
     const url = event.request.url;
     
     // Find the matching instance based on prefix
     for (const key in configs) {
         if (url.includes(configs[key].prefix)) {
-            event.respondWith(instances[key].fetch(event));
-            return;
+            // Ensure transport is set before fetching
+            try {
+                if (!await mainBareClient.getTransport()) {
+                    // If no transport, we might need to wait or return error
+                    // But for images it might just 404
+                }
+            } catch(e){}
+            return await instances[key].fetch(event);
         }
     }
 
@@ -136,32 +119,29 @@ self.addEventListener('fetch', (event) => {
     ];
 
     if (autoProxyDomains.some(domain => url.includes(domain)) || url.includes('hvtrs8%2F-')) {
-        // Default to vora instance for auto-proxying
         if (url.includes('hvtrs8%2F-') && !url.includes(configs.vora.prefix)) {
             const encodedPart = url.split('hvtrs8%2F-')[1];
             const fullProxyUrl = location.origin + configs.vora.prefix + 'hvtrs8%2F-' + encodedPart;
-            event.respondWith(instances.vora.fetch({ ...event, request: new Request(fullProxyUrl, event.request) }));
+            return await instances.vora.fetch({ ...event, request: new Request(fullProxyUrl, event.request) });
         } else if (!url.includes(configs.vora.prefix)) {
             const encoded = Ultraviolet.codec.xor.encode(url);
             const fullProxyUrl = location.origin + configs.vora.prefix + encoded;
-            event.respondWith(instances.vora.fetch({ ...event, request: new Request(fullProxyUrl, event.request) }));
+            return await instances.vora.fetch({ ...event, request: new Request(fullProxyUrl, event.request) });
         } else {
-            event.respondWith(instances.vora.fetch(event));
+            return await instances.vora.fetch(event);
         }
-        return;
     }
     
-    // Fallback to normal fetch for non-proxy requests
-    event.respondWith(
-        (async () => {
-            try {
-                return await fetch(event.request);
-            } catch (err) {
-                console.warn(`SW: Fallback fetch failed for ${url}`, err);
-                return new Response(null, { status: 404, statusText: 'Not Found' });
-            }
-        })()
-    );
+    try {
+        return await fetch(event.request);
+    } catch (err) {
+        console.warn(`SW: Fallback fetch failed for ${url}`, err);
+        return new Response(null, { status: 404, statusText: 'Not Found' });
+    }
+}
+
+self.addEventListener('fetch', (event) => {
+    event.respondWith(handleRequest(event));
 });
 
 // Made with ❤️ from 4SP

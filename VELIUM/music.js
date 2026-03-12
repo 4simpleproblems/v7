@@ -27,10 +27,6 @@ function getDownloadUrl(item) {
                 url = b.link || b.url;
             } else {
                 url = `https://argon.global.ssl.fastly.net/api/download?track_url=${encodeURIComponent(p)}`; 
-                
-                if (p.includes('soundcloud.com') || p.includes('sndcdn.com')) {
-                    url = 'https://corsproxy.io/?' + encodeURIComponent(url);
-                }
             }
         } 
     }
