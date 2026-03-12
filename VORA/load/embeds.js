@@ -435,6 +435,17 @@ window.themoviedb = async function(a, e, retries = 5) {
 
     console.error(`Vora: Failed to fetch TMDB after ${retries} attempts:`, lastError);
     isLoading = false;
+
+    // If it failed because of proxy/client setup, and we are on page 1, try again later
+    if (isPage1 && !window.location.hash) {
+        console.log("Vora: Scheduling container reload...");
+        setTimeout(() => {
+            if (typeof window.loadVoraContent === 'function') {
+                window.loadVoraContent();
+            }
+        }, 3000);
+    }
+
     return null;
 };
 
@@ -810,18 +821,7 @@ function performSearch() {
     window.themoviedb(endpoint, { params: { query: query, language: 'en-US' } });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadLibrary();
-    renderFavorites();
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
-        const searchIcon = searchInput.previousElementSibling;
-        if (searchIcon && searchIcon.classList.contains('fa-search')) {
-            searchIcon.style.cursor = 'pointer';
-            searchIcon.onclick = performSearch;
-        }
-    }
+window.loadVoraContent = function() {
     if (window.location.hash) {
         loadFromHash();
     } else {
@@ -839,6 +839,22 @@ document.addEventListener('DOMContentLoaded', () => {
             window.themoviedb(`discover/tv`, { params: { sort_by: 'first_air_date.desc', 'first_air_date.lte': new Date().toISOString().split('T')[0], with_original_language: 'en', language: getTmdbLanguage(), page: 1 } });
         }
     }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadLibrary();
+    renderFavorites();
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+        const searchIcon = searchInput.previousElementSibling;
+        if (searchIcon && searchIcon.classList.contains('fa-search')) {
+            searchIcon.style.cursor = 'pointer';
+            searchIcon.onclick = performSearch;
+        }
+    }
+    
+    window.loadVoraContent();
 });
 
 window.addEventListener('hashchange', loadFromHash);

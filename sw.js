@@ -60,7 +60,6 @@ importScripts(configs.velium.sw);
 
 // Shared transport state
 let transportReady = false;
-let transportPromise = null;
 
 // Default worker path
 const workerPath = location.origin + configs.vora.worker;
@@ -99,13 +98,6 @@ self.addEventListener('activate', (event) => {
 async function handleRequest(event) {
     const url = event.request.url;
     
-    // Find the matching instance based on prefix
-    for (const key in configs) {
-        if (url.includes(configs[key].prefix)) {
-            return await instances[key].fetch(event);
-        }
-    }
-
     // Auto-proxy certain domains even if prefix is missing
     const autoProxyDomains = [
         'api.themoviedb.org',
@@ -116,6 +108,27 @@ async function handleRequest(event) {
         'soundcloud.com',
         'sndcdn.com'
     ];
+
+    const needsProxy = Object.values(configs).some(c => url.includes(c.prefix)) || 
+                       autoProxyDomains.some(domain => url.includes(domain)) || 
+                       url.includes('hvtrs8%2F-');
+
+    // If we need proxying but transport isn't ready, wait a bit
+    if (needsProxy && !transportReady) {
+        console.log("Root SW: Waiting for transport for " + url);
+        let checks = 0;
+        while (!transportReady && checks < 25) { // Wait up to 2.5s
+            await new Promise(r => setTimeout(r, 100));
+            checks++;
+        }
+    }
+
+    // Find the matching instance based on prefix
+    for (const key in configs) {
+        if (url.includes(configs[key].prefix)) {
+            return await instances[key].fetch(event);
+        }
+    }
 
     if (autoProxyDomains.some(domain => url.includes(domain)) || url.includes('hvtrs8%2F-')) {
         if (url.includes('hvtrs8%2F-') && !url.includes(configs.vora.prefix)) {
