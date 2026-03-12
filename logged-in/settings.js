@@ -1197,7 +1197,7 @@
                             <div id="pfpCustomSettings" class="hidden mt-2">
                                 <div class="flex items-center gap-4">
                                     <!-- Preview -->
-                                    <div class="w-16 h-16 rounded-[24px] overflow-hidden border border-gray-600 flex-shrink-0 bg-black relative">
+                                    <div class="w-16 h-16 rounded-[24px] overflow-hidden border border-[var(--border-main)] flex-shrink-0 bg-black relative">
                                         <img id="customPfpPreview" src="" class="w-full h-full object-cover" style="display: none;">
                                         <div id="customPfpPlaceholder" class="w-full h-full flex items-center justify-center text-[var(--text-muted)] opacity-40">
                                             <i class="fa-solid fa-user"></i>

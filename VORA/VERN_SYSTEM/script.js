@@ -639,21 +639,37 @@ function proxyUrl(url) {
     return url;
 }
 
-function getImageUrl(item) { 
-    if (item.song && item.song.img) { 
-        let i = item.song.img.big || item.song.img.small; 
-        let url = i.startsWith('/api/') ? API_BASE + i : i;
-        return proxyUrl(url);
-    } 
-    if (item.image) { 
-        let url;
-        if (Array.isArray(item.image)) url = item.image[item.image.length - 1].link; 
-        else if (typeof item.image === 'string') url = item.image; 
-        return proxyUrl(url);
-    } 
-    return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='; 
+function getImageUrl(item) {
+    let url = '';
+    if (item.song && item.song.img) {
+        let i = item.song.img.big || item.song.img.small;
+        url = i.startsWith('/api/') ? API_BASE + i : i;
+    } else if (item.image) {
+        if (Array.isArray(item.image)) url = item.image[item.image.length - 1].link;
+        else if (typeof item.image === 'string') url = item.image;
+    }
+
+    if (!url) return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+    // Optimize Saavn images
+    if (url.includes('saavncdn.com')) {
+        url = url.replace(/_([0-9]+x[0-9]+|150)\.jpg/i, '_500x500.jpg');
+    }
+
+    return proxyUrl(url);
 }
-function formatTime(v) { if (typeof v === 'object' && v !== null) { const s = v.hours * 3600 + v.minutes * 60 + v.seconds; return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`; } const m = Math.floor(v / 60) || 0, s = Math.floor(v % 60) || 0; return `${m}:${s < 10 ? '0' : ''}${s}`; }
+
+// Global error handler for images to show fa-user icon
+window.handleImageError = function(img) {
+    const parent = img.parentElement;
+    if (parent) {
+        img.style.display = 'none';
+        const icon = document.createElement('div');
+        icon.className = 'w-full h-full flex items-center justify-center bg-gray-800 text-gray-500';
+        icon.innerHTML = '<i class="fa-solid fa-user"></i>';
+        parent.appendChild(icon);
+    }
+};function formatTime(v) { if (typeof v === 'object' && v !== null) { const s = v.hours * 3600 + v.minutes * 60 + v.seconds; return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`; } const m = Math.floor(v / 60) || 0, s = Math.floor(v % 60) || 0; return `${m}:${s < 10 ? '0' : ''}${s}`; }
 function formatNumber(n) { if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'; if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K'; return n; }
 async function downloadResource(url, filename) {
     try {

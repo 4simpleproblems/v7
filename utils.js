@@ -49,17 +49,27 @@
                 }
 
                 if (gP) {
+                    // Ensure high quality Google PFPs
                     gP = gP.replace(/lh\d+\.googleusercontent\.com/g, 'lh3.googleusercontent.com');
-                    if (gP.includes('googleusercontent.com') && gP.includes('=')) {
-                        gP = gP.split('=')[0] + '=s500-c';
+                    if (gP.includes('googleusercontent.com')) {
+                        if (gP.includes('=')) {
+                            gP = gP.split('=')[0] + '=s500-c';
+                        } else if (!gP.includes('=s500-c')) {
+                            gP = gP + '=s500-c';
+                        }
                     }
-                    innerHTML = `<img src="${gP}" class="${innerClasses}" referrerpolicy="no-referrer" onerror="this.src='/images/logo.png'">`;
+
+                    // Use fa-user icon as the robust fallback for image errors
+                    const fontSize = px * 0.5;
+                    const fallbackHTML = `<div class="${innerClasses} flex items-center justify-center bg-gray-800 text-gray-500" style="font-size: ${fontSize}px;"><i class="fa-solid fa-user"></i></div>`;
+
+                    innerHTML = `<img src="${gP}" class="${innerClasses}" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML=\`${fallbackHTML}\` ">`;
                 }
-            }
-            
-            if (!innerHTML) {
-                const fontSize = px * 0.5;
-                innerHTML = `<div class="${innerClasses} flex items-center justify-center bg-gray-800 text-gray-500" style="font-size: ${fontSize}px;"><i class="fa-solid fa-user"></i></div>`;
+
+                if (!innerHTML) {
+                    const fontSize = px * 0.5;
+                    innerHTML = `<div class="${innerClasses} flex items-center justify-center bg-gray-800 text-gray-500" style="font-size: ${fontSize}px;"><i class="fa-solid fa-user"></i></div>`;
+                }
             }
 
             const bgClass = userData?.pfpType === 'letter' ? '' : 'bg-gray-800';
