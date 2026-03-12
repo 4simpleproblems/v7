@@ -14,7 +14,7 @@ const configs = {
     },
     vora: {
         prefix: '/VORA/VERN_SYSTEM/uv/service/',
-        bare: '/api/bare/',
+        bare: '/api/bare',
         bundle: '/VORA/VERN_SYSTEM/uv/uv.bundle.js',
         config: '/VORA/VERN_SYSTEM/uv/uv.config.js',
         sw: '/VORA/VERN_SYSTEM/uv/uv.sw.js',
