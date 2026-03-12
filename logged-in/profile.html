@@ -142,6 +142,31 @@
     <div id="dynamic-background"></div>
     <div id="navbar-container"></div>
 
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/90 backdrop-blur-2xl">
+        <div class="relative">
+            <div class="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <i class="fa-solid fa-user text-indigo-500/50"></i>
+            </div>
+        </div>
+        <p class="mt-6 text-[10px] uppercase tracking-[0.2em] text-indigo-500/60 font-bold">Synchronizing Profile</p>
+    </div>
+
+    <!-- Not Found Overlay -->
+    <div id="not-found-overlay" class="hidden fixed inset-0 z-[9998] flex flex-col items-center justify-center p-8 backdrop-blur-3xl bg-black/80 text-center">
+        <div class="w-24 h-24 bg-indigo-900/20 rounded-full flex items-center justify-center mb-6 border border-indigo-900/40 shadow-sm">
+            <i class="fa-solid fa-user-xmark text-4xl text-indigo-500"></i>
+        </div>
+        <h2 class="text-3xl font-light text-white tracking-tight mb-2">Account not found</h2>
+        <p class="text-gray-400 max-w-sm mb-8 leading-relaxed">
+            The profile you are looking for does not exist or has been deleted.
+        </p>
+        <button onclick="window.location.href='/logged-in/dashboard.html'" class="btn-base primary-cta px-10 py-3 font-bold">
+            Return to Dashboard
+        </button>
+    </div>
+
     <!-- Blocked Overlay -->
     <div id="blocked-overlay" class="hidden fixed inset-0 z-[9998] flex flex-col items-center justify-center p-8 backdrop-blur-3xl bg-black/80 text-center">
         <div class="w-24 h-24 bg-red-900/20 rounded-full flex items-center justify-center mb-6 border border-red-900/40 shadow-sm">
@@ -156,7 +181,7 @@
         </button>
     </div>
 
-    <main id="profile-main-content" class="container mx-auto p-8 pt-24 max-w-6xl">
+    <main id="profile-main-content" class="invisible container mx-auto p-8 pt-24 max-w-6xl">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Sidebar / Info -->
             <div class="lg:col-span-1">
@@ -344,77 +369,104 @@
                     requestedUsername = path.split('/@')[1].split('?')[0].split('/')[0];
                 }
 
-                if (requestedUsername) {
-                    const q = query(collection(db, "users"), where("username", "==", requestedUsername));
-                    const snapUsername = await getDocs(q);
-                    if (!snapUsername.empty) {
-                        profileOwnerId = snapUsername.docs[0].id;
-                        currentUsername = requestedUsername;
-                        // Clean up URL if we came from a redirect
-                        if (urlParams.get('path')) {
-                            window.history.replaceState({}, '', `/logged-in/@${requestedUsername}`);
+                try {
+                    if (requestedUsername) {
+                        const q = query(collection(db, "users"), where("username", "==", requestedUsername), limit(1));
+                        const snapUsername = await getDocs(q);
+                        if (!snapUsername.empty) {
+                            profileOwnerId = snapUsername.docs[0].id;
+                            currentUsername = requestedUsername;
+                            // Clean up URL if we came from a redirect
+                            if (urlParams.get('path')) {
+                                window.history.replaceState({}, '', `/logged-in/@${requestedUsername}`);
+                            }
+                        } else {
+                            // Username not found
+                            document.getElementById('loading-overlay').classList.add('hidden');
+                            document.getElementById('not-found-overlay').classList.remove('hidden');
+                            return;
                         }
                     } else {
                         profileOwnerId = user.uid;
-                    }
-                } else {
-                    profileOwnerId = user.uid;
-                    const meSnap = await getDoc(doc(db, "users", user.uid));
-                    if (meSnap.exists() && meSnap.data().username) {
-                        window.history.replaceState({}, '', `/logged-in/@${meSnap.data().username}`);
-                    }
-                }
-                
-                isOwnProfile = profileOwnerId === user.uid;
-
-                if (isOwnProfile) {
-                    selfIndicator.classList.remove('hidden');
-                    editBtnContainer.classList.remove('hidden');
-                } else {
-                    followActions.classList.remove('hidden');
-                    checkFollowStatus();
-                }
-
-                const userDocRef = doc(db, "users", profileOwnerId);
-                
-                onSnapshot(userDocRef, (snap) => {
-                    if (snap.exists()) {
-                        const userData = snap.data();
-                        
-                        if (userData.blockedUsers?.includes(firebaseAuthUser.uid)) {
-                            document.getElementById('blocked-overlay').classList.remove('hidden');
-                            document.getElementById('profile-main-content').classList.add('blur-2xl', 'pointer-events-none');
+                        const meSnap = await getDoc(doc(db, "users", user.uid));
+                        if (meSnap.exists() && meSnap.data().username) {
+                            window.history.replaceState({}, '', `/logged-in/@${meSnap.data().username}`);
+                        } else if (!meSnap.exists()) {
+                            // User document doesn't exist yet
+                            document.getElementById('loading-overlay').classList.add('hidden');
+                            document.getElementById('not-found-overlay').classList.remove('hidden');
                             return;
                         }
-
-                        avatarPreview.innerHTML = getAvatarHTML(userData, "w-full h-full", false, firebaseAuthUser);
-                        displayNameEl.textContent = userData.displayName || "Anonymous";
-                        usernameEl.textContent = `@${userData.username}`;
-                        descriptionEl.textContent = userData.description || "";
-                        
-                        if (userData.isOnline) {
-                            statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[var(--bg-card)] rounded-full status-online";
-                            if (userData.currentActivity) {
-                                activityLabel.classList.remove('hidden');
-                                activityText.textContent = userData.currentActivity;
-                            }
-                        } else {
-                            statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[var(--bg-card)] rounded-full status-offline";
-                            activityLabel.classList.add('hidden');
-                        }
-
-                        if (isOwnProfile) {
-                            editDisplayName.value = userData.displayName || "";
-                            editDescription.value = userData.description || "";
-                        }
                     }
-                });
+                    
+                    isOwnProfile = profileOwnerId === user.uid;
 
-                loadCounts();
-                loadDailyPhotos();
-                setupFollowModalListeners();
-                setupEditProfileListeners();
-                setupOptionsListeners();
+                    if (isOwnProfile) {
+                        selfIndicator.classList.remove('hidden');
+                        editBtnContainer.classList.remove('hidden');
+                    } else {
+                        followActions.classList.remove('hidden');
+                        checkFollowStatus();
+                    }
+
+                    const userDocRef = doc(db, "users", profileOwnerId);
+                    
+                    onSnapshot(userDocRef, (snap) => {
+                        if (snap.exists()) {
+                            const userData = snap.data();
+                            
+                            if (userData.blockedUsers?.includes(firebaseAuthUser.uid)) {
+                                document.getElementById('loading-overlay').classList.add('hidden');
+                                document.getElementById('blocked-overlay').classList.remove('hidden');
+                                document.getElementById('profile-main-content').classList.add('blur-2xl', 'pointer-events-none');
+                                return;
+                            }
+
+                            avatarPreview.innerHTML = getAvatarHTML(userData, "w-full h-full", false, firebaseAuthUser);
+                            displayNameEl.textContent = userData.displayName || "Anonymous";
+                            usernameEl.textContent = `@${userData.username}`;
+                            descriptionEl.textContent = userData.description || "";
+                            
+                            if (userData.isOnline) {
+                                statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[var(--bg-card)] rounded-full status-online";
+                                if (userData.currentActivity) {
+                                    activityLabel.classList.remove('hidden');
+                                    activityText.textContent = userData.currentActivity;
+                                }
+                            } else {
+                                statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[var(--bg-card)] rounded-full status-offline";
+                                activityLabel.classList.add('hidden');
+                            }
+
+                            if (isOwnProfile) {
+                                editDisplayName.value = userData.displayName || "";
+                                editDescription.value = userData.description || "";
+                            }
+
+                            // Show content once we have the basic user data
+                            document.getElementById('loading-overlay').classList.add('hidden');
+                            document.getElementById('profile-main-content').classList.remove('invisible');
+                        } else {
+                            document.getElementById('loading-overlay').classList.add('hidden');
+                            document.getElementById('not-found-overlay').classList.remove('hidden');
+                        }
+                    }, (error) => {
+                        console.error("Profile Snapshot Error:", error);
+                        document.getElementById('loading-overlay').classList.add('hidden');
+                        document.getElementById('not-found-overlay').classList.remove('hidden');
+                    });
+
+                    loadCounts();
+                    loadDailyPhotos();
+                    setupFollowModalListeners();
+                    setupEditProfileListeners();
+                    setupOptionsListeners();
+
+                } catch (e) {
+                    console.error("Profile Load Error:", e);
+                    document.getElementById('loading-overlay').classList.add('hidden');
+                    document.getElementById('not-found-overlay').classList.remove('hidden');
+                }
             } else {
                 window.location.href = '/authentication.html';
             }

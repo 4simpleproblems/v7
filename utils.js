@@ -58,7 +58,8 @@
             }
             
             if (!innerHTML) {
-                innerHTML = `<img src="/images/logo.png" class="${innerClasses}">`;
+                const fontSize = px * 0.5;
+                innerHTML = `<div class="${innerClasses} flex items-center justify-center bg-gray-800 text-gray-500" style="font-size: ${fontSize}px;"><i class="fa-solid fa-user"></i></div>`;
             }
 
             const bgClass = userData?.pfpType === 'letter' ? '' : 'bg-gray-800';

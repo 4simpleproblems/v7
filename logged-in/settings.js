@@ -3205,26 +3205,46 @@ const performAccountDeletion = async (credential) => {
         const userDocRef = doc(db, 'users', userId); 
         batch.delete(userDocRef);
 
-        // B. Query and Queue Deletion for Daily Photos
-        const photosQuery = query(collection(db, 'dailyPhotos'), where('userId', '==', userId));
-        const photosSnapshot = await getDocs(photosQuery);
-        photosSnapshot.forEach(doc => {
-            batch.delete(doc.ref);
-        });
+        // B. Admin Document
+        batch.delete(doc(db, 'admins', userId));
 
-        // C. Query and Queue Deletion for Friend Requests (as sender or recipient)
-        const sentRequestsQuery = query(collection(db, 'friendRequests'), where('senderId', '==', userId));
-        const receivedRequestsQuery = query(collection(db, 'friendRequests'), where('recipientId', '==', userId));
-        
-        const sentSnapshot = await getDocs(sentRequestsQuery);
-        sentSnapshot.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-        
-        const receivedSnapshot = await getDocs(receivedRequestsQuery);
-        receivedSnapshot.forEach(doc => {
-            batch.delete(doc.ref);
-        });
+        // C. Messenger Profile
+        batch.delete(doc(db, 'messenger_profiles', userId));
+
+        // D. Daily Photos
+        const photoCollections = ['dailyPhotos', 'daily_photos']; // Handle both variants
+        for (const colName of photoCollections) {
+            const q = query(collection(db, colName), where('creatorUid', '==', userId));
+            const snap = await getDocs(q);
+            snap.forEach(d => batch.delete(d.ref));
+            
+            // Also check 'userId' field variant
+            const q2 = query(collection(db, colName), where('userId', '==', userId));
+            const snap2 = await getDocs(q2);
+            snap2.forEach(d => batch.delete(d.ref));
+        }
+
+        // E. Messages (as sender or recipient)
+        const msgSent = query(collection(db, 'messages'), where('senderId', '==', userId));
+        const msgReceived = query(collection(db, 'messages'), where('recipientId', '==', userId));
+        (await getDocs(msgSent)).forEach(d => batch.delete(d.ref));
+        (await getDocs(msgReceived)).forEach(d => batch.delete(d.ref));
+
+        // F. Notifications
+        const notifs = query(collection(db, 'notifications'), where('recipientId', '==', userId));
+        (await getDocs(notifs)).forEach(d => batch.delete(d.ref));
+
+        // G. Friend Requests
+        const frSent = query(collection(db, 'friendRequests'), where('senderId', '==', userId));
+        const frReceived = query(collection(db, 'friendRequests'), where('recipientId', '==', userId));
+        (await getDocs(frSent)).forEach(d => batch.delete(d.ref));
+        (await getDocs(frReceived)).forEach(d => batch.delete(d.ref));
+
+        // H. Posts and Comments
+        const posts = query(collection(db, 'posts'), where('authorId', '==', userId));
+        (await getDocs(posts)).forEach(d => batch.delete(d.ref));
+        const comments = query(collection(db, 'comments'), where('authorId', '==', userId));
+        (await getDocs(comments)).forEach(d => batch.delete(d.ref));
         
         // EXECUTE THE BATCH: The permissions check happens here, with a valid token.
         await batch.commit(); 

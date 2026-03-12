@@ -117,7 +117,7 @@ async function handleRequest(event) {
     if (needsProxy && !transportReady) {
         console.log("Root SW: Waiting for transport for " + url);
         let checks = 0;
-        while (!transportReady && checks < 25) { // Wait up to 2.5s
+        while (!transportReady && checks < 50) { // Wait up to 5s
             await new Promise(r => setTimeout(r, 100));
             checks++;
         }
@@ -147,7 +147,7 @@ async function handleRequest(event) {
     try {
         return await fetch(event.request);
     } catch (err) {
-        console.warn(`SW: Fallback fetch failed for ${url}`, err);
+        // console.warn(`SW: Fallback fetch failed for ${url}`, err);
         return new Response(null, { status: 404, statusText: 'Not Found' });
     }
 }
