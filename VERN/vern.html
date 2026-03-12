@@ -415,12 +415,14 @@
                 // Sync with Root SW if it exists
                 const syncPort = () => {
                     if (navigator.serviceWorker.controller && connection.port) {
-                        navigator.serviceWorker.controller.postMessage({
-                            type: 'baremuxinit',
-                            path: workerPath,
-                            port: connection.port
-                        }, [connection.port]);
-                        console.log("BareMux Port Synced with Root SW");
+                        setTimeout(() => {
+                            navigator.serviceWorker.controller.postMessage({
+                                type: 'baremuxinit',
+                                path: workerPath,
+                                port: connection.port
+                            }, [connection.port]);
+                            console.log("BareMux Port Synced with Root SW");
+                        }, 100);
                     }
                 };
 

@@ -1,15 +1,28 @@
-const viraId = new URL(self.location).searchParams.get('v') || 'service';
-
 importScripts('./uv/uv.bundle.js');
 importScripts('./uv/uv.config.js');
+importScripts('../baremux/index.js');
+
+// Shared transport state
+const workerPath = location.origin + "/VORA/VERN_SYSTEM/baremux/worker.js";
+const connection = new BareMux.WorkerConnection(workerPath);
+const bareClient = new BareMux.BareClient(connection);
 
 // Ensure the prefix matches what Ultraviolet expects for asset loading
-// We use the stable 'service/' prefix but the SW itself is 'distinct' due to the 'v' param
 self.__uv$config.prefix = "/VORA/VERN_SYSTEM/uv/service/";
 
 importScripts('./uv/uv.sw.js');
 
 const uv = new UVServiceWorker();
+// Explicitly override bareClient to use our BareMux connection
+uv.bareClient = bareClient;
+
+// Sync port from main thread if needed (though SharedWorker should be shared)
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
+        connection.port = event.data.port;
+        console.log("VIRA SW: BareMux Port Synced");
+    }
+});
 
 self.addEventListener('install', (event) => {
     event.waitUntil(self.skipWaiting());
@@ -22,11 +35,6 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = event.request.url;
     if (url.startsWith(location.origin + self.__uv$config.prefix)) {
-        try {
-            event.respondWith(uv.fetch(event));
-        } catch (e) {
-            console.error("VIRA Proxy Fetch Error:", e);
-            return new Response("Proxy Error", { status: 408 });
-        }
+        event.respondWith(uv.fetch(event));
     }
 });

@@ -58,19 +58,21 @@ const configs = {
 // Import the base SW logic (Ultraviolet)
 importScripts(configs.velium.sw);
 
-// Use a consistent SharedWorker across the app to avoid transport conflicts
-const mainWorkerPath = location.origin + configs.vora.worker;
-const mainConnection = new BareMux.WorkerConnection(mainWorkerPath);
-const mainBareClient = new BareMux.BareClient(mainConnection);
+// Shared transport state
+let transportReady = false;
+let transportPromise = null;
+
+// Default worker path
+const workerPath = location.origin + configs.vora.worker;
+const connection = new BareMux.WorkerConnection(workerPath);
+const bareClient = new BareMux.BareClient(connection);
 
 // Message listener for SharedWorker port synchronization
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
-        const path = event.data.path;
-        if (path && path.includes(configs.vora.worker)) {
-            mainConnection.port = event.data.port;
-            console.log("Root SW: Main BareMux Port Synced via " + path);
-        }
+        connection.port = event.data.port;
+        transportReady = true;
+        console.log("Root SW: BareMux Port Synced via " + (event.data.path || "unknown"));
     }
 });
 
@@ -81,7 +83,8 @@ for (const key in configs) {
         encodeUrl: Ultraviolet.codec.xor.encode,
         decodeUrl: Ultraviolet.codec.xor.decode
     });
-    inst.bareClient = mainBareClient;
+    // Use the shared client
+    inst.bareClient = bareClient;
     instances[key] = inst;
 }
 
@@ -99,13 +102,6 @@ async function handleRequest(event) {
     // Find the matching instance based on prefix
     for (const key in configs) {
         if (url.includes(configs[key].prefix)) {
-            // Ensure transport is set before fetching
-            try {
-                if (!await mainBareClient.getTransport()) {
-                    // If no transport, we might need to wait or return error
-                    // But for images it might just 404
-                }
-            } catch(e){}
             return await instances[key].fetch(event);
         }
     }
@@ -115,7 +111,10 @@ async function handleRequest(event) {
         'api.themoviedb.org',
         'image.tmdb.org',
         'embed-testing-v7.vercel.app',
-        'sub.wyzie.ru'
+        'sub.wyzie.ru',
+        'saavncdn.com',
+        'soundcloud.com',
+        'sndcdn.com'
     ];
 
     if (autoProxyDomains.some(domain => url.includes(domain)) || url.includes('hvtrs8%2F-')) {
