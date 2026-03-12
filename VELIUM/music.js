@@ -590,7 +590,10 @@ async function handleSearch(query, append = false, forcedOffset = null) {
         if (resultsDiv) resultsDiv.classList.add('hidden');
         if (categoriesDiv) categoriesDiv.classList.remove('hidden');
         if (loader) loader.classList.add('hidden');
-        if (pagination) pagination.classList.add('hidden');
+        if (pagination) {
+            pagination.classList.add('hidden');
+            pagination.style.display = 'none';
+        }
         searchState.query = '';
         return;
     }
@@ -638,6 +641,7 @@ async function handleSearch(query, append = false, forcedOffset = null) {
         // Update Pagination UI
         if (pagination) {
             pagination.classList.remove('hidden');
+            pagination.style.display = 'flex';
             const currentPage = Math.ceil(searchState.tracksOffset / searchState.limit);
             const pageIndicator = document.getElementById('pageIndicator');
             if (pageIndicator) pageIndicator.textContent = `Page ${currentPage}`;

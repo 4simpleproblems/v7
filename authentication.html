@@ -308,8 +308,11 @@
        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 // User is signed in.
-                if (!hasRedirected && (window.location.pathname.endsWith('authentication.html') || window.location.pathname === '/')) {
-                    // --- SECURITY FIX START ---
+                const isAtAuthPage = window.location.pathname.endsWith('authentication.html') || 
+                                    window.location.pathname === '/' || 
+                                    window.location.pathname === '/index.html';
+
+                if (!hasRedirected && isAtAuthPage) {
                     // Check if they are verified OR if they are a social login user
                     const isProviderLogin = user.providerData.some(p => 
                         ['google.com', 'github.com', 'twitter.com', 'microsoft.com', 'apple.com'].includes(p.providerId)
@@ -318,13 +321,11 @@
                     const isVerified = user.emailVerified || isProviderLogin;
 
                     if (isVerified) { 
-                        // Simplified redirect - if verified, go to dashboard
                         hasRedirected = true;
                         navigateToDashboard();
                     } else {
                         console.log("User has session but is unverified. Blocking auto-redirect.");
                     }
-                    // --- SECURITY FIX END ---
                 }
             } else {
                 // User is signed out.

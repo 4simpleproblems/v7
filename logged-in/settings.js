@@ -1115,7 +1115,7 @@
                                             
                                             <!-- LEFT: Live Preview -->
                                             <div id="mac-preview-wrapper" class="w-1/2 flex flex-col items-center justify-center bg-[var(--bg-page)] p-8 border-r border-[var(--border-main)] transition-all duration-500 ease-in-out z-10">
-                                                <div class="relative h-64 md:h-80 aspect-square rounded-[56px] overflow-hidden border-4 border-[var(--border-main)] shadow-lg mb-6 transition-all duration-300 hover:border-dashed hover:border-white cursor-pointer flex-shrink-0" id="mac-preview-container" style="aspect-ratio: 1/1;">
+                                                <div class="relative h-64 md:h-80 aspect-square rounded-[56px] overflow-hidden border-4 border-[var(--border-main)] shadow-lg mb-6 transition-all duration-300 hover:border-dashed hover:border-[var(--text-main)] cursor-pointer flex-shrink-0" id="mac-preview-container" style="aspect-ratio: 1/1;">
                                                     <!-- Background (Static) -->
                                                     <div id="mac-preview-bg" class="absolute inset-0 w-full h-full transition-colors duration-300"></div>
                                                     
@@ -1785,7 +1785,7 @@
                     const btn = document.createElement('button');
                     const isSelected = mibiAvatarState.bgColor === color;
                     // Style: Match X button (w-10 h-10, rounded-[16px] i.e. 0.75rem) + flex-shrink-0
-                    btn.className = `w-10 h-10 rounded-[16px] shadow-sm transition-transform hover:scale-110 focus:outline-none border-2 flex-shrink-0 ${isSelected ? 'border-white' : 'border-transparent'} hover:border-dashed hover:border-white`;
+                    btn.className = `w-10 h-10 rounded-[16px] shadow-sm transition-transform hover:scale-110 focus:outline-none border-2 flex-shrink-0 ${isSelected ? 'border-[var(--text-main)]' : 'border-transparent'} hover:border-dashed hover:border-[var(--text-main)]`;
                     btn.style.backgroundColor = color;
                     
                     btn.onclick = () => {
@@ -1798,7 +1798,7 @@
                 // Add custom picker
                 const customWrapper = document.createElement('div');
                 // Match size and roundness + flex-shrink-0
-                customWrapper.className = 'w-10 h-10 rounded-[16px] bg-[#333] flex items-center justify-center cursor-pointer hover:bg-[#444] relative overflow-hidden border-2 border-transparent hover:border-dashed hover:border-white flex-shrink-0';
+                customWrapper.className = 'w-10 h-10 rounded-[16px] bg-[#333] flex items-center justify-center cursor-pointer hover:bg-[#444] relative overflow-hidden border-2 border-transparent hover:border-dashed hover:border-[var(--text-main)] flex-shrink-0';
                 customWrapper.innerHTML = '<i class="fa-solid fa-eye-dropper text-[var(--text-main)] text-sm"></i><input type="color" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">';
                 const input = customWrapper.querySelector('input');
                 input.oninput = (e) => {

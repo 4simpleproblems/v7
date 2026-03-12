@@ -414,6 +414,7 @@
                     onSnapshot(userDocRef, (snap) => {
                         if (snap.exists()) {
                             const userData = snap.data();
+                            userData.uid = profileOwnerId; // Ensure UID is present for getAvatarHTML
                             
                             if (userData.blockedUsers?.includes(firebaseAuthUser.uid)) {
                                 document.getElementById('loading-overlay').classList.add('hidden');
