@@ -599,105 +599,124 @@
 
             unsubModal();
             unsubModal = onSnapshot(doc(db, 'daily_photos', postId), async snap => {
-                if (!snap.exists()) { modal.classList.remove('open'); return; }
-                const data = snap.data();
-                const isHearted = data.hearts?.includes(currentUser.uid);
-                const isOwner = data.creatorUid === currentUser.uid;
+                try {
+                    if (!snap.exists()) { window.closeModal(); return; }
+                    const data = snap.data();
+                    const isHearted = data.hearts?.includes(currentUser.uid);
+                    const isOwner = data.creatorUid === currentUser.uid;
 
-                const authorSnap = await getDoc(doc(db, USERS_COLLECTION, data.creatorUid));
-                const authorData = authorSnap.data() || {};
+                    const authorSnap = await getDoc(doc(db, USERS_COLLECTION, data.creatorUid));
+                    const authorData = authorSnap.exists() ? authorSnap.data() : null;
 
-                container.innerHTML = `
-                    <div id="photo-display-area">
-                        <img src="${data.imageURL || data.imageBase64}" class="photo-modal-img">
-                        <button onclick="window.closeModal()" class="absolute top-6 left-6 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-colors"><i class="fas fa-times"></i></button>
-                    </div>
-                    <div id="photo-info-panel">
-                        <div class="flex items-center gap-4 mb-6">
-                            <a href="/logged-in/@${data.creatorUsername}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity">
-                                ${getAvatarHTML(authorData, "w-12 h-12", false, currentUser)}
-                            </a>
-                            <div class="min-w-0">
-                                <a href="/logged-in/@${data.creatorUsername}" class="text-sm font-bold text-[var(--text-main)] truncate block hover:text-[var(--accent-color)] transition-colors">@${data.creatorUsername}</a>
-                                <p class="text-[10px] opacity-50 font-mono">${new Date(data.createdAt?.toDate()).toLocaleString()}</p>
-                            </div>
+                    container.innerHTML = `
+                        <div id="photo-display-area">
+                            <img src="${data.imageURL || data.imageBase64}" class="photo-modal-img" onerror="this.src='/assets/placeholder-image.png'">
+                            <button onclick="window.closeModal()" class="absolute top-6 left-6 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-colors"><i class="fas fa-times"></i></button>
                         </div>
-
-                        <h3 class="text-lg font-bold mb-4">${data.title}</h3>
-
-                        <div class="flex gap-4 mb-6 pb-6 border-b border-[var(--border-main)]">
-                            <button id="modal-heart-btn" class="flex items-center gap-2 text-sm font-bold ${isHearted ? 'text-red-500' : 'opacity-50 hover:opacity-100'} transition-all">
-                                <i class="fas fa-heart ${isHearted ? '' : 'far'}"></i> ${data.hearts?.length || 0}
-                            </button>
-                            <div class="flex items-center gap-2 text-sm font-bold opacity-50">
-                                <i class="fas fa-comment"></i> ${data.comments?.length || 0}
-                            </div>
-                            <div class="ml-auto flex gap-2">
-                                ${!isOwner ? `<button onclick="window.reportPost('${postId}')" class="text-xs opacity-30 hover:opacity-100 hover:text-red-500 transition-all" title="Report"><i class="fas fa-flag"></i></button>` : ''}
-                                ${!isOwner ? `<button onclick="window.blockUser('${data.creatorUid}', '${data.creatorUsername}')" class="text-xs opacity-30 hover:opacity-100 hover:text-red-500 transition-all" title="Block"><i class="fas fa-ban"></i></button>` : ''}
-                                ${isOwner ? `<button onclick="window.deletePost('${postId}')" class="text-xs opacity-30 hover:opacity-100 hover:text-red-500 transition-all" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
-                            </div>
-                        </div>
-
-                        <div id="comments-section">
-                            ${(data.comments || []).map(c => `
-                                <div class="mb-3 text-xs">
-                                    <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
-                                    <span class="opacity-80">${c.text}</span>
+                        <div id="photo-info-panel">
+                            <div class="flex items-center gap-4 mb-6">
+                                <a href="/logged-in/@${data.creatorUsername}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity">
+                                    ${authorData ? getAvatarHTML(authorData, "w-12 h-12", false, currentUser) : '<div class="w-full h-full bg-gray-800 flex items-center justify-center"><i class="fas fa-user opacity-20"></i></div>'}
+                                </a>
+                                <div class="min-w-0">
+                                    <a href="/logged-in/@${data.creatorUsername}" class="text-sm font-bold text-[var(--text-main)] truncate block hover:text-[var(--accent-color)] transition-colors">@${data.creatorUsername}</a>
+                                    <p class="text-[10px] opacity-50 font-mono">${data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : 'Just now'}</p>
                                 </div>
-                            `).join('') || '<p class="text-center opacity-20 py-10 italic">No comments yet.</p>'}
-                        </div>
+                            </div>
 
-                        <div class="mt-auto pt-4">
-                            <div class="flex gap-2">
-                                <input type="text" id="comment-input" placeholder="Say something..." class="flex-1 bg-black/20 border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)]">
-                                <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-color)] text-white shadow-lg shadow-indigo-500/20"><i class="fas fa-paper-plane text-[10px]"></i></button>
+                            <h3 class="text-lg font-bold mb-4">${data.title || "Untitled Moment"}</h3>
+
+                            <div class="flex gap-4 mb-6 pb-6 border-b border-[var(--border-main)]">
+                                <button id="modal-heart-btn" class="flex items-center gap-2 text-sm font-bold ${isHearted ? 'text-red-500' : 'opacity-50 hover:opacity-100'} transition-all">
+                                    <i class="fas fa-heart ${isHearted ? '' : 'far'}"></i> ${data.hearts?.length || 0}
+                                </button>
+                                <div class="flex items-center gap-2 text-sm font-bold opacity-50">
+                                    <i class="fas fa-comment"></i> ${data.comments?.length || 0}
+                                </div>
+                                <div class="ml-auto flex gap-2">
+                                    ${!isOwner ? `<button onclick="window.reportPost('${postId}')" class="text-xs opacity-30 hover:opacity-100 hover:text-red-500 transition-all" title="Report"><i class="fas fa-flag"></i></button>` : ''}
+                                    ${!isOwner ? `<button onclick="window.blockUser('${data.creatorUid}', '${data.creatorUsername}')" class="text-xs opacity-30 hover:opacity-100 hover:text-red-500 transition-all" title="Block"><i class="fas fa-ban"></i></button>` : ''}
+                                    ${isOwner ? `<button onclick="window.deletePost('${postId}')" class="text-xs opacity-30 hover:opacity-100 hover:text-red-500 transition-all" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+                                </div>
+                            </div>
+
+                            <div id="comments-section">
+                                ${(data.comments || []).map(c => `
+                                    <div class="mb-3 text-xs">
+                                        <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
+                                        <span class="opacity-80">${c.text}</span>
+                                    </div>
+                                `).join('') || '<p class="text-center opacity-20 py-10 italic">No comments yet.</p>'}
+                            </div>
+
+                            <div class="mt-auto pt-4">
+                                <div class="flex gap-2">
+                                    <input type="text" id="comment-input" placeholder="Say something..." class="flex-1 bg-black/20 border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)]">
+                                    <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-color)] text-white shadow-lg shadow-indigo-500/20"><i class="fas fa-paper-plane text-[10px]"></i></button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
 
-                document.getElementById('modal-heart-btn').onclick = async () => {
-                    const newIsHearted = !isHearted;
-                    await updateDoc(doc(db, 'daily_photos', postId), { hearts: newIsHearted ? arrayUnion(currentUser.uid) : arrayRemove(currentUser.uid) });
-                    
-                    if (newIsHearted && !isOwner) {
-                        const meSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
-                        const myUsername = meSnap.data()?.username || "Someone";
-                        await addDoc(collection(db, 'notifications'), {
-                            recipientId: data.creatorUid,
-                            senderId: currentUser.uid,
-                            senderUsername: myUsername,
-                            type: 'like',
-                            postId: postId,
-                            message: `@${myUsername} liked your moment!`,
-                            timestamp: serverTimestamp(),
-                            read: false
-                        });
+                    const heartBtn = document.getElementById('modal-heart-btn');
+                    if (heartBtn) {
+                        heartBtn.onclick = async () => {
+                            const newIsHearted = !isHearted;
+                            await updateDoc(doc(db, 'daily_photos', postId), { hearts: newIsHearted ? arrayUnion(currentUser.uid) : arrayRemove(currentUser.uid) });
+                            
+                            if (newIsHearted && !isOwner) {
+                                const meSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+                                const myUsername = meSnap.data()?.username || "Someone";
+                                await addDoc(collection(db, 'notifications'), {
+                                    recipientId: data.creatorUid,
+                                    senderId: currentUser.uid,
+                                    senderUsername: myUsername,
+                                    type: 'like',
+                                    postId: postId,
+                                    message: `@${myUsername} liked your moment!`,
+                                    timestamp: serverTimestamp(),
+                                    read: false
+                                });
+                            }
+                        };
                     }
-                };
-                document.getElementById('send-comment-btn').onclick = async () => {
-                    const input = document.getElementById('comment-input');
-                    const text = input.value.trim();
-                    if (!text) return;
-                    const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
-                    const myUsername = userSnap.data()?.username || "Someone";
-                    await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: text, timestamp: new Date() }) });
-                    
-                    if (!isOwner) {
-                        await addDoc(collection(db, 'notifications'), {
-                            recipientId: data.creatorUid,
-                            senderId: currentUser.uid,
-                            senderUsername: myUsername,
-                            type: 'comment',
-                            postId: postId,
-                            message: `@${myUsername} commented on your moment!`,
-                            timestamp: serverTimestamp(),
-                            read: false
-                        });
+
+                    const commentBtn = document.getElementById('send-comment-btn');
+                    if (commentBtn) {
+                        commentBtn.onclick = async () => {
+                            const input = document.getElementById('comment-input');
+                            const text = input.value.trim();
+                            if (!text) return;
+                            const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+                            const myUsername = userSnap.data()?.username || "Someone";
+                            await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: text, timestamp: new Date() }) });
+                            
+                            if (!isOwner) {
+                                await addDoc(collection(db, 'notifications'), {
+                                    recipientId: data.creatorUid,
+                                    senderId: currentUser.uid,
+                                    senderUsername: myUsername,
+                                    type: 'comment',
+                                    postId: postId,
+                                    message: `@${myUsername} commented on your moment!`,
+                                    timestamp: serverTimestamp(),
+                                    read: false
+                                });
+                            }
+                            input.value = '';
+                        };
                     }
-                    input.value = '';
-                };
+                } catch (err) {
+                    console.error("Error rendering post modal:", err);
+                    container.innerHTML = `
+                        <div class="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                            <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4 opacity-50"></i>
+                            <h3 class="text-lg font-bold mb-2">Failed to load moment</h3>
+                            <p class="text-sm opacity-50 mb-8">This post might have been deleted or there was a network error.</p>
+                            <button onclick="window.closeModal()" class="btn-toolbar-style px-8 py-3">Close Modal</button>
+                        </div>
+                    `;
+                }
             });
         };
 
@@ -782,6 +801,11 @@
         window.closeModal = () => {
             document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
             unsubModal();
+            // Clear content to prevent "ghost" data on next open
+            setTimeout(() => {
+                const container = document.getElementById('modal-content-container');
+                if (container) container.innerHTML = '';
+            }, 300);
         };
 
         function setupSidebarNav() {
