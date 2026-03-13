@@ -231,7 +231,8 @@
         }
         
         #photo-display-area {
-            flex: 2;
+            flex: 1 1 auto;
+            min-width: 0;
             background-color: #000;
             display: flex; align-items: center; justify-content: center;
             position: relative;
@@ -242,13 +243,13 @@
         }
 
         #photo-info-panel {
-            flex: 1;
-            min-width: 350px;
-            max-width: 400px;
+            flex: 0 0 350px;
             background-color: var(--bg-card);
             border-left: 1px solid var(--border-main);
             display: flex; flex-direction: column;
             padding: 1.5rem;
+            height: 100%;
+            overflow: hidden;
         }
 
         #comments-section {
@@ -398,12 +399,14 @@
         import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, getDoc, setDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, arrayRemove, writeBatch, limit, addDoc, deleteDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
         import { firebaseConfig } from "/firebase-config.js";
         import { getAvatarHTML } from "/utils.js";
 
         if (!getApps().length) initializeApp(firebaseConfig);
         const auth = getAuth();
         const db = getFirestore();
+        const storage = getStorage();
 
         let currentUser = null;
         let followingUids = [];
@@ -520,7 +523,7 @@
                         const postData = postSnap.data();
                         div.innerHTML = `
                             <div class="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0">
-                                <img src="${postData.imageBase64}" class="w-full h-full object-cover">
+                                <img src="${postData.imageURL || postData.imageBase64}" class="w-full h-full object-cover">
                             </div>
                             <div class="flex-grow min-w-0">
                                 <p class="text-xs font-bold truncate">${postData.title}</p>
@@ -571,7 +574,7 @@
                     const el = document.createElement('div');
                     el.className = 'photo-thumbnail';
                     el.innerHTML = `
-                        <img src="${data.imageBase64}" loading="lazy">
+                        <img src="${data.imageURL || data.imageBase64}" loading="lazy">
                         <div class="overlay-grad"></div>
                         <div class="absolute top-3 right-3 flex gap-2">
                             <span class="text-white text-[10px] bg-black/40 px-2 py-1 rounded-full backdrop-blur-md border border-white/10"><i class="fas fa-heart text-red-500 mr-1"></i> ${data.hearts?.length || 0}</span>
@@ -606,7 +609,7 @@
 
                 container.innerHTML = `
                     <div id="photo-display-area">
-                        <img src="${data.imageBase64}" class="photo-modal-img">
+                        <img src="${data.imageURL || data.imageBase64}" class="photo-modal-img">
                         <button onclick="window.closeModal()" class="absolute top-6 left-6 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-colors"><i class="fas fa-times"></i></button>
                     </div>
                     <div id="photo-info-panel">
@@ -675,20 +678,25 @@
                 if (!file) return;
                 modal.classList.remove('open');
                 
-                const reader = new FileReader();
-                reader.onload = async (evt) => {
-                    const title = await CustomUI.prompt("Give your moment a title:", "Daily Moment");
-                    if (title === null) return;
-                    const isPublic = await CustomUI.confirm("Make this moment public?");
+                const title = await CustomUI.prompt("Give your moment a title:", "Daily Moment");
+                if (title === null) return;
+                const isPublic = await CustomUI.confirm("Make this moment public?");
+                
+                try {
+                    await CustomUI.alert("Uploading image, please wait...");
                     
                     const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
                     const username = userSnap.data().username;
+
+                    const storageRef = ref(storage, `daily_photos/${currentUser.uid}/${Date.now()}_${file.name}`);
+                    const snapshot = await uploadBytes(storageRef, file);
+                    const downloadURL = await getDownloadURL(snapshot.ref);
 
                     const postRef = await addDoc(collection(db, 'daily_photos'), {
                         creatorUid: currentUser.uid,
                         creatorUsername: username,
                         createdAt: serverTimestamp(),
-                        imageBase64: evt.target.result,
+                        imageURL: downloadURL,
                         title: title || "Daily Moment",
                         isPublic: isPublic,
                         status: 'active',
@@ -701,8 +709,11 @@
                     while (slots.length <= slotIdx) slots.push(null);
                     slots[slotIdx] = postRef.id;
                     await updateDoc(userRef, { dailySlotsUsed: slots });
-                };
-                reader.readAsDataURL(file);
+                    await CustomUI.alert("Upload complete!");
+                } catch (error) {
+                    console.error("Upload error:", error);
+                    await CustomUI.alert("Failed to upload image. Please try again.");
+                }
             };
         };
 

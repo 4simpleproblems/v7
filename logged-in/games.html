@@ -1618,7 +1618,14 @@
                 allGames = [...strongdogGames, ...filteredOthers]; 
             }
 
-            allGames = allGames.filter(g => !['bitlife', 'soundboard'].some(term => g.name.toLowerCase().includes(term)));
+            try {
+                const blacklistRes = await fetch("https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/blacklisted_games.json");
+                const blacklist = await blacklistRes.json();
+                allGames = allGames.filter(g => !blacklist.some(term => g.name.toLowerCase().includes(term.toLowerCase())));
+            } catch (err) {
+                console.warn("Failed to fetch game blacklist:", err);
+                allGames = allGames.filter(g => !['bitlife', 'soundboard', 'five nights at e'].some(term => g.name.toLowerCase().includes(term)));
+            }
             
             searchableGames = [];
             allGames.forEach(game => {

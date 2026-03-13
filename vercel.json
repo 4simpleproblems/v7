@@ -1,5 +1,36 @@
 {
   "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/firestore.rules",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    },
+    {
+      "source": "/storage.rules",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "src": "/firestore.rules",
+      "status": 404
+    },
+    {
+      "src": "/storage.rules",
+      "status": 404
+    },
+    { "handle": "filesystem" }
+  ],
   "rewrites": [
     {
       "source": "/music-api/:endpoint",
@@ -37,6 +68,5 @@
       "source": "/logged-in/:username",
       "destination": "/logged-in/profile.html?username=:username"
     }
-  ],
-  "headers": []
+  ]
 }
