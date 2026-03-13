@@ -594,6 +594,17 @@
 
                 listEl.appendChild(item);
             });
+
+            // Handle scaling/clipping: If 6 items cause overflow in the container, reduce to 4
+            setTimeout(() => {
+                const container = document.getElementById('quick-access-section');
+                // Check if the content height (including gap/margins) exceeds the container's available height
+                if (container.scrollHeight > container.clientHeight + 5) {
+                    while (listEl.children.length > 4) {
+                        listEl.removeChild(listEl.lastChild);
+                    }
+                }
+            }, 100);
         }
 
         function startClock() {
