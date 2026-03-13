@@ -600,7 +600,7 @@ async function handleSearch(query, append = false, forcedOffset = null) {
 
     if (!append || query !== searchState.query) {
         const startAt = (forcedOffset !== null) ? forcedOffset : 0;
-        searchState = { query: query, tracksOffset: startAt, loading: false, hasMoreTracks: true, limit: 24 };
+        searchState = { query: query, tracksOffset: startAt, loading: false, hasMoreTracks: true, limit: 25 };
         if (tracksGrid) tracksGrid.innerHTML = '';
         if (loader) loader.classList.add('hidden');
     }
@@ -624,7 +624,7 @@ async function handleSearch(query, append = false, forcedOffset = null) {
 
         const newTracks = data.tracks || [];
         if (!append && tracksGrid) tracksGrid.innerHTML = '';
-        if (tracksGrid) {
+        if (tracksGrid && newTracks.length > 0) {
             newTracks.forEach(track => {
                 const trackUid = getTrackUid(track);
                 const existing = Array.from(tracksGrid.querySelectorAll('.track-card')).some(card => card.dataset.uid === trackUid);
@@ -633,6 +633,8 @@ async function handleSearch(query, append = false, forcedOffset = null) {
                     tracksGrid.lastElementChild.dataset.uid = trackUid;
                 }
             });
+        } else if (!append && tracksGrid) {
+            tracksGrid.innerHTML = '<div class="col-span-full py-20 text-center text-gray-500">No tracks found for this query.</div>';
         }
         
         searchState.tracksOffset += newTracks.length;
@@ -640,20 +642,26 @@ async function handleSearch(query, append = false, forcedOffset = null) {
 
         // Update Pagination UI
         if (pagination) {
-            pagination.classList.remove('hidden');
-            pagination.style.display = 'flex';
-            const currentPage = Math.ceil(searchState.tracksOffset / searchState.limit);
-            const pageIndicator = document.getElementById('pageIndicator');
-            if (pageIndicator) pageIndicator.textContent = `Page ${currentPage}`;
-            
-            if (prevBtn) {
-                if (searchState.tracksOffset <= searchState.limit) prevBtn.classList.add('invisible');
-                else prevBtn.classList.remove('invisible');
-            }
+            if (newTracks.length > 0 || searchState.tracksOffset > 0) {
+                pagination.classList.remove('hidden');
+                pagination.style.display = 'flex';
+                
+                const currentPage = Math.ceil(searchState.tracksOffset / searchState.limit) || 1;
+                const pageIndicator = document.getElementById('pageIndicator');
+                if (pageIndicator) pageIndicator.textContent = `Page ${currentPage}`;
+                
+                if (prevBtn) {
+                    if (searchState.tracksOffset <= searchState.limit) prevBtn.style.visibility = 'hidden';
+                    else prevBtn.style.visibility = 'visible';
+                }
 
-            if (nextBtn) {
-                if (!searchState.hasMoreTracks) nextBtn.classList.add('invisible');
-                else nextBtn.classList.remove('invisible');
+                if (nextBtn) {
+                    if (!searchState.hasMoreTracks) nextBtn.style.visibility = 'hidden';
+                    else nextBtn.style.visibility = 'visible';
+                }
+            } else {
+                pagination.classList.add('hidden');
+                pagination.style.display = 'none';
             }
         }
 

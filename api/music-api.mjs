@@ -111,7 +111,7 @@ export default async function handler(req, res) {
             }
         }).catch(() => ({ songs: [], albums: [], artists: [] })),
         // Provider 3: Argon API
-        fetch(`https://argon.global.ssl.fastly.net/api/search?query=${encodeURIComponent(searchQuery)}&limit=20`)
+        fetch(`https://argon.global.ssl.fastly.net/api/search?query=${encodeURIComponent(searchQuery)}&offset=${offset || 0}&limit=${limit || 25}`)
             .then(r => r.ok ? r.json() : { collection: [] })
             .catch(() => ({ collection: [] }))
       ]);
