@@ -210,7 +210,7 @@ window.applyTheme = (theme) => {
             if (!fireworksInstance && typeof Fireworks !== 'undefined') {
                  fireworksInstance = new Fireworks.default(fwContainer, {
                      autoresize: true,
-                     opacity: 0.5,
+                     opacity: 1.0,
                      acceleration: 1.05,
                      friction: 0.97,
                      gravity: 1.5,
@@ -225,7 +225,7 @@ window.applyTheme = (theme) => {
                 });
                 fireworksInstance.start();
             } else if (fireworksInstance) {
-                if (!fireworksInstance.isRunning) fireworksInstance.start();
+                fireworksInstance.start();
             }
         } else if (themeToApply.name === 'Birthday') {
             fwContainer.style.opacity = '1';
@@ -244,9 +244,9 @@ window.applyTheme = (theme) => {
                 if (typeof party !== 'undefined') {
                     party.confetti(fwContainer, {
                         container: fwContainer, // Constrain to navbar
-                        count: party.variation.range(15, 25),
-                        size: party.variation.range(0.3, 0.5),
-                        spread: party.variation.range(30, 50),
+                        count: party.variation.range(10, 15),
+                        size: party.variation.range(0.2, 0.4),
+                        spread: party.variation.range(20, 40),
                     });
                 }
             };
