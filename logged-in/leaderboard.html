@@ -261,7 +261,7 @@
                 }
 
                 const item = document.createElement('div');
-                item.className = 'leader-item';
+                item.className = 'leader-item cursor-pointer';
                 
                 const isFollowing = following.has(uid);
 
@@ -280,6 +280,11 @@
                         </button>
                     ` : '<span class="text-[10px] text-[var(--text-muted)] opacity-60 uppercase tracking-widest font-bold">You</span>'}
                 `;
+
+                item.onclick = (e) => {
+                    if (e.target.closest('.follow-btn')) return;
+                    if (data.username) window.location.href = `/logged-in/@${data.username}`;
+                };
 
                 rankingsEl.appendChild(item);
                 renderAvatar(data, `avatar-${uid}`);
@@ -327,6 +332,12 @@
             const minutes = Math.floor(((data.totalV6Time || 0) % 3600) / 60);
             document.getElementById('champion-time').textContent = `${hours}h ${minutes}m total`;
             renderAvatar(data, 'champion-avatar');
+            
+            const championSection = document.getElementById('top-user-section');
+            championSection.classList.add('cursor-pointer');
+            championSection.onclick = () => {
+                if (data.username) window.location.href = `/logged-in/@${data.username}`;
+            };
         }
 
         function renderAvatar(userData, containerId) {
