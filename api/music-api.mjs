@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   const { pathname } = new URL(req.url, `http://${req.headers.host}`);
   const pathParts = pathname.split('/').filter(Boolean);
   const endpointFromPath = pathParts[pathParts.length - 1];
-  const { q, query, offset, id, endpoint: endpointFromQuery } = req.query;
+  const { q, query, offset, limit, id, endpoint: endpointFromQuery } = req.query;
   const endpoint = (endpointFromQuery || endpointFromPath);
 
   try {
