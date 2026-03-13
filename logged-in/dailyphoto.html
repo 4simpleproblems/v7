@@ -219,6 +219,34 @@
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 10px; }
 
+        /* --- Styled Toggle Switch --- */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border-main);
+            transition: .4s; border-radius: 24px;
+            border: 1px solid var(--border-faint);
+        }
+        .toggle-slider:before {
+            position: absolute; content: "";
+            height: 18px; width: 18px;
+            left: 2px; bottom: 2px;
+            background-color: var(--text-muted);
+            transition: .4s; border-radius: 50%;
+        }
+        input:checked + .toggle-slider { background-color: var(--accent-color); }
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+            background-color: white;
+        }
+
         /* --- LOGO TINTING LOGIC (Mirrors navigation.js) --- */
         .navbar-logo { transition: filter 0.3s ease, transform 0.3s ease; }
     </style>
@@ -306,9 +334,12 @@
                     <label class="text-[10px] font-bold text-[var(--text-muted)] opacity-60 uppercase tracking-widest mb-2 block">Caption</label>
                     <input type="text" id="post-title" class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] text-sm" placeholder="Give it a title...">
                 </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-xs text-[var(--text-muted)]">Public Visibility</span>
-                    <input type="checkbox" id="post-public" class="w-5 h-5" style="accent-color: var(--accent-color);">
+                <div class="flex items-center justify-between bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3">
+                    <span class="text-xs text-[var(--text-muted)] font-medium">Public Visibility</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="post-public">
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
             </div>
 

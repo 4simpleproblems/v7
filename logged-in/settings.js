@@ -872,82 +872,6 @@
                 <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">Privacy & Security</h2>
                 
                 <div class="w-full">
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Panic Key Settings</h3>
-                    <div id="panicKeySection" class="settings-box transition-all duration-300 p-4">
-                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
-                            Configure up to 3 panic keys. Pressing the specified key (without Shift, Ctrl, or Alt) on any page will redirect you to the URL you set.
-                            <br>
-                            <span class="text-yellow-400">Valid keys:</span> a-z, 0-9, and &#96; - = [ ] \\ ; ' , . /
-                        </p>
-                        
-                        <div class="flex items-center gap-4 px-2 mb-2">
-                            <label class="block text-[var(--text-muted)] opacity-60 text-sm font-light" style="width: 4rem; text-align: center;">Key</label>
-                            <label class="block text-[var(--text-muted)] opacity-60 text-sm font-light flex-grow">Redirect URL</label>
-                        </div>
-
-                        <div class="flex items-center gap-4 mb-3">
-                            <input type="text" id="panicKey1" data-key-id="1" class="input-key-style panic-key-input" placeholder="-" maxlength="1">
-                            <input type="url" id="panicUrl1" class="input-text-style" placeholder="e.g., https://google.com">
-                        </div>
-                        
-                        <div class="flex items-center gap-4 mb-3">
-                            <input type="text" id="panicKey2" data-key-id="2" class="input-key-style panic-key-input" placeholder="-" maxlength="1">
-                            <input type="url" id="panicUrl2" class="input-text-style" placeholder="e.g., https://youtube.com/feed/subscriptions">
-                        </div>
-                        
-                        <div class="flex items-center gap-4 mb-3">
-                            <input type="text" id="panicKey3" data-key-id="3" class="input-key-style panic-key-input" placeholder="-" maxlength="1">
-                            <input type="url" id="panicUrl3" class="input-text-style" placeholder="e.g., https://wikipedia.org">
-                        </div>
-                        
-                        <div class="flex justify-between items-center pt-4 border-t border-[var(--border-main)]">
-                            <p id="panicKeyMessage" class="general-message-area text-sm"></p>
-                            <button id="applyPanicKeyBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
-                                <i class="fa-solid fa-check mr-1"></i> Apply Keys
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="panicKeyGlobalMessage" class="general-message-area text-sm"></div>
-                </div>
-
-                <div class="w-full mt-8">
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Activity Presence</h3>
-                    <div id="activityPresenceSection" class="settings-box p-6 space-y-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-emphasis">Appear Offline</p>
-                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">When enabled, your status will always show as offline to other users.</p>
-                            </div>
-                            <input type="checkbox" id="showOfflineToggle" class="w-5 h-5 accent-indigo-500">
-                        </div>
-                        
-                        <div class="flex items-center justify-between border-t border-[var(--border-main)] pt-6">
-                            <div>
-                                <p class="text-emphasis">Game Activity Tracking</p>
-                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">Allow 4SP to show which specific game you are currently playing.</p>
-                            </div>
-                            <input type="checkbox" id="trackGamesToggle" checked class="w-5 h-5 accent-indigo-500">
-                        </div>
-
-                        <div class="flex items-center justify-between border-t border-[var(--border-main)] pt-6">
-                            <div>
-                                <p class="text-emphasis">Leaderboard Participation</p>
-                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">Show your profile and activity on the global leaderboard.</p>
-                            </div>
-                            <input type="checkbox" id="leaderboardToggle" checked class="w-5 h-5 accent-indigo-500">
-                        </div>
-                        
-                        <div class="flex justify-between items-center pt-4 border-t border-[var(--border-main)]">
-                            <p id="activityPresenceMessage" class="general-message-area text-sm"></p>
-                            <button id="saveActivityPresenceBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
-                                <i class="fa-solid fa-check mr-1"></i> Save Status
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="w-full mt-8">
                     <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Tab Disguise (URL Changer)</h3>
                     <div id="urlChangerSection" class="settings-box transition-all duration-300 p-4">
                         <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
@@ -998,6 +922,84 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="w-full mt-8">
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Panic Key Settings</h3>
+                    <div id="panicKeySection" class="settings-box transition-all duration-300 p-4">
+                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
+                            Configure up to 3 panic keys. Pressing the specified key (without Shift, Ctrl, or Alt) on any page will redirect you to the URL you set.
+                            <br>
+                            <span class="text-yellow-400">Valid keys:</span> a-z, 0-9, and &#96; - = [ ] \\ ; ' , . /
+                        </p>
+                        
+                        <div class="flex items-center gap-4 px-2 mb-2">
+                            <label class="block text-[var(--text-muted)] opacity-60 text-sm font-light" style="width: 4rem; text-align: center;">Key</label>
+                            <label class="block text-[var(--text-muted)] opacity-60 text-sm font-light flex-grow">Redirect URL</label>
+                        </div>
+
+                        <div class="flex items-center gap-4 mb-3">
+                            <input type="text" id="panicKey1" data-key-id="1" class="input-key-style panic-key-input" placeholder="-" maxlength="1">
+                            <input type="url" id="panicUrl1" class="input-text-style" placeholder="e.g., https://google.com">
+                        </div>
+                        
+                        <div class="flex items-center gap-4 mb-3">
+                            <input type="text" id="panicKey2" data-key-id="2" class="input-key-style panic-key-input" placeholder="-" maxlength="1">
+                            <input type="url" id="panicUrl2" class="input-text-style" placeholder="e.g., https://youtube.com/feed/subscriptions">
+                        </div>
+                        
+                        <div class="flex items-center gap-4 mb-3">
+                            <input type="text" id="panicKey3" data-key-id="3" class="input-key-style panic-key-input" placeholder="-" maxlength="1">
+                            <input type="url" id="panicUrl3" class="input-text-style" placeholder="e.g., https://wikipedia.org">
+                        </div>
+                        
+                        <div class="flex justify-between items-center pt-4 border-t border-[var(--border-main)]">
+                            <p id="panicKeyMessage" class="general-message-area text-sm"></p>
+                            <button id="applyPanicKeyBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
+                                <i class="fa-solid fa-check mr-1"></i> Apply Keys
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="panicKeyGlobalMessage" class="general-message-area text-sm"></div>
+                </div>
+
+                <div class="w-full mt-8">
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Activity Presence</h3>
+                    <div id="activityPresenceSection" class="settings-box p-6 space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-emphasis">Appear Offline</p>
+                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">When enabled, your status will always show as offline to other users.</p>
+                            </div>
+                            <input type="checkbox" id="showOfflineToggle" class="custom-checkbox w-5 h-5">
+                        </div>
+                        
+                        <div class="flex items-center justify-between border-t border-[var(--border-main)] pt-6">
+                            <div>
+                                <p class="text-emphasis">Game Activity Tracking</p>
+                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">Allow 4SP to show which specific game you are currently playing.</p>
+                            </div>
+                            <input type="checkbox" id="trackGamesToggle" checked class="custom-checkbox w-5 h-5">
+                        </div>
+
+                        <div class="flex items-center justify-between border-t border-[var(--border-main)] pt-6">
+                            <div>
+                                <p class="text-emphasis">Leaderboard Participation</p>
+                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">Show your profile and activity on the global leaderboard.</p>
+                            </div>
+                            <input type="checkbox" id="leaderboardToggle" checked class="custom-checkbox w-5 h-5">
+                        </div>
+                        
+                        <div class="flex justify-between items-center pt-4 border-t border-[var(--border-main)]">
+                            <p id="activityPresenceMessage" class="general-message-area text-sm"></p>
+                            <button id="saveActivityPresenceBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
+                                <i class="fa-solid fa-check mr-1"></i> Save Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
             `;
         }
 

@@ -208,7 +208,7 @@ window.applyTheme = (theme) => {
             fwContainer.style.opacity = '1';
             const fireworksOptions = {
                 autoresize: true,
-                opacity: 1.0,
+                opacity: 0.5, // Reduced from 1.0 for better visibility of navbar
                 acceleration: 1.05,
                 friction: 0.97,
                 gravity: 1.5,
@@ -230,13 +230,12 @@ window.applyTheme = (theme) => {
                     fireworksInstance.start();
                 } else {
                     fireworksInstance.updateOptions(fireworksOptions);
+                    if (!fireworksInstance.isRunning) fireworksInstance.start();
                 }
             }
         } else if (themeToApply.name === 'Birthday') {
             fwContainer.style.opacity = '1';
-            if (fireworksInstance) {
-                fireworksInstance.stop();
-            }
+            if (fireworksInstance) fireworksInstance.stop();
             
             // Clear existing bday interval if any
             if (window._bdayInterval) {
@@ -244,25 +243,26 @@ window.applyTheme = (theme) => {
                 window._bdayInterval = null;
             }
 
-            // Trigger initial party popper effect
             const triggerConfetti = () => {
+                // Only trigger if tab is active to prevent stacking
+                if (document.hidden) return;
+                
                 if (typeof party !== 'undefined') {
                     party.confetti(fwContainer, {
-                        container: fwContainer,
-                        count: party.variation.range(15, 30),
+                        container: fwContainer, // Constrain to navbar
+                        count: party.variation.range(15, 25),
                         size: party.variation.range(0.3, 0.5),
-                        spread: party.variation.range(40, 60),
+                        spread: party.variation.range(30, 50),
                     });
                 }
             };
 
             triggerConfetti();
-            window._bdayInterval = setInterval(triggerConfetti, 3000);
+            // ONE animation every 4 seconds
+            window._bdayInterval = setInterval(triggerConfetti, 4000);
         } else {
             fwContainer.style.opacity = '0';
-            if (fireworksInstance) {
-                fireworksInstance.stop();
-            }
+            if (fireworksInstance) fireworksInstance.stop();
             if (window._bdayInterval) {
                 clearInterval(window._bdayInterval);
                 window._bdayInterval = null;
@@ -1057,8 +1057,15 @@ let db;
             // Determine the single active page key first
             const activePageKey = getCurrentPageKey();
 
+            // Check leaderboard eligibility
+            const canSeeLeaderboard = userData && userData.leaderboardAccepted && !userData.leaderboardOptOut;
+
             const tabsHtml = Object.entries(pages || {})
-                .filter(([, page]) => !(page.adminOnly && !isPrivilegedUser)) 
+                .filter(([key, page]) => {
+                    if (page.adminOnly && !isPrivilegedUser) return false;
+                    if (key === 'leaderboard' && !canSeeLeaderboard) return false;
+                    return true;
+                }) 
                 .map(([key, page]) => { // Get key and page from entry
                     const isActive = (key === activePageKey); // Compare with the single activePageKey
                     const activeClass = isActive ? 'active' : '';
