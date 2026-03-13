@@ -976,20 +976,11 @@
                         
                         <div class="flex items-center justify-between border-t border-[var(--border-main)] pt-6">
                             <div>
-                                <p class="text-emphasis">Game Activity Tracking</p>
-                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">Allow 4SP to show which specific game you are currently playing.</p>
-                            </div>
-                            <input type="checkbox" id="trackGamesToggle" checked class="custom-checkbox w-5 h-5">
-                        </div>
-
-                        <div class="flex items-center justify-between border-t border-[var(--border-main)] pt-6">
-                            <div>
                                 <p class="text-emphasis">Leaderboard Participation</p>
                                 <p class="text-xs font-light text-[var(--text-muted)] opacity-60">Show your profile and activity on the global leaderboard.</p>
                             </div>
                             <input type="checkbox" id="leaderboardToggle" checked class="custom-checkbox w-5 h-5">
-                        </div>
-                        
+                        </div>                        
                         <div class="flex justify-between items-center pt-4 border-t border-[var(--border-main)]">
                             <p id="activityPresenceMessage" class="general-message-area text-sm"></p>
                             <button id="saveActivityPresenceBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
@@ -3658,7 +3649,6 @@ const performAccountDeletion = async (credential) => {
 
             // --- 4. Activity Presence Logic ---
             const showOfflineToggle = document.getElementById('showOfflineToggle');
-            const trackGamesToggle = document.getElementById('trackGamesToggle');
             const leaderboardToggle = document.getElementById('leaderboardToggle');
             const saveActivityPresenceBtn = document.getElementById('saveActivityPresenceBtn');
             const activityPresenceMessage = document.getElementById('activityPresenceMessage');
@@ -3670,7 +3660,6 @@ const performAccountDeletion = async (credential) => {
                     if (snap.exists()) {
                         const userData = snap.data();
                         showOfflineToggle.checked = !!userData.showOffline;
-                        trackGamesToggle.checked = !userData.disableActivityTracking;
                         leaderboardToggle.checked = !userData.leaderboardOptOut;
                     }
                 } catch (e) { console.error("Error loading activity presence:", e); }
@@ -3679,13 +3668,12 @@ const performAccountDeletion = async (credential) => {
                     try {
                         saveActivityPresenceBtn.disabled = true;
                         showMessage(activityPresenceMessage, '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...', 'warning');
-                        
+
                         await updateDoc(userDocRef, {
                             showOffline: showOfflineToggle.checked,
-                            disableActivityTracking: !trackGamesToggle.checked,
                             leaderboardOptOut: !leaderboardToggle.checked
                         });
-                        
+
                         showMessage(activityPresenceMessage, 'Presence settings saved!', 'success');
                     } catch (e) {
                         console.error("Error saving activity presence:", e);
@@ -3694,8 +3682,7 @@ const performAccountDeletion = async (credential) => {
                         saveActivityPresenceBtn.disabled = false;
                     }
                 });
-            }
-        }
+            }        }
         
         
         /**

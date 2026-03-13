@@ -207,8 +207,9 @@ window.applyTheme = (theme) => {
         if (themeToApply.name === 'The New Year') {
             fwContainer.style.opacity = '1';
             // Start fireworks if not already running
-            if (!fireworksInstance && typeof Fireworks !== 'undefined') {
-                 fireworksInstance = new Fireworks.default(fwContainer, {
+            if (!fireworksInstance && (typeof Fireworks !== 'undefined')) {
+                 const FireworksClass = Fireworks.default || Fireworks;
+                 fireworksInstance = new FireworksClass(fwContainer, {
                      autoresize: true,
                      opacity: 1.0,
                      acceleration: 1.05,
@@ -231,28 +232,26 @@ window.applyTheme = (theme) => {
             fwContainer.style.opacity = '1';
             if (fireworksInstance) fireworksInstance.stop();
             
-            // Clear existing bday interval if any
             if (window._bdayInterval) {
                 clearInterval(window._bdayInterval);
                 window._bdayInterval = null;
             }
 
             const triggerConfetti = () => {
-                // Only trigger if tab is active to prevent stacking
                 if (document.hidden) return;
                 
                 if (typeof party !== 'undefined') {
+                    // Trigger from the center of the navbar container
                     party.confetti(fwContainer, {
-                        container: fwContainer, // Constrain to navbar
-                        count: party.variation.range(10, 15),
-                        size: party.variation.range(0.2, 0.4),
-                        spread: party.variation.range(20, 40),
+                        count: party.variation.range(20, 40),
+                        size: party.variation.range(0.6, 0.8),
+                        spread: party.variation.range(40, 60),
+                        speed: party.variation.range(200, 400),
                     });
                 }
             };
 
             triggerConfetti();
-            // ONE animation every 5 seconds for performance
             window._bdayInterval = setInterval(triggerConfetti, 5000);
         } else {
             fwContainer.style.opacity = '0';
@@ -1591,7 +1590,7 @@ let db;
                 height: 100% !important;
                 pointer-events: none !important;
                 z-index: 1 !important; 
-                opacity: 0 !important;
+                opacity: 0;
                 transition: opacity 0.5s ease !important;
                 overflow: hidden !important;
             }

@@ -3,38 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4SP - Dailyphoto</title>
-    <link rel="icon" href="/favicon.ico">
-    <meta name="description" content="Share your daily moments on 4SP.">
+    <title>4SP - DAILYPHOTO</title>
+    <meta name="description" content="Share your day with friends through daily photos.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-
     <script src="/injector.js"></script>
-
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'deep-black': '#000000',
-                        'card-dark': '#0d0d0d',
-                        'accent-indigo': '#4f46e5',
-                        'brand-border': '#1a1a1a',
-                    },
-                    fontFamily: {
-                        sans: ['Geist', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
-
     <style>
         :root {
             --bg-page: var(--bg-primary, #000000);
@@ -52,344 +29,347 @@
         body { 
             font-family: 'Geist', sans-serif; 
             background-color: var(--bg-page); 
-            color: var(--text-muted);
+            color: var(--text-muted); 
             font-weight: 300; 
-            overflow: hidden;
+            overflow: hidden; 
+            height: 100vh;
             padding-top: 64px; /* Space for navbar */
         }
-
-        h1, h2, h3, h4, h5, h6 {
-            font-weight: 200 !important;
+        
+        h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-widest {
+            font-weight: 400 !important; 
             color: var(--text-main);
-            letter-spacing: -0.02em;
         }
 
-        /* --- Global Scrollbar --- */
-        ::-webkit-scrollbar { display: none; }
-        * { -ms-overflow-style: none; scrollbar-width: none; }
+        /* --- THEME BUTTONS --- */
+        .btn-toolbar-style {
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
+            border-radius: 14px; 
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-toolbar-style:hover {
+            border-color: var(--text-main);
+            color: var(--text-main);
+        }
+        
+        .btn-toolbar-style.active, .btn-primary-override {
+            background-color: var(--btn-bg) !important;
+            border: 1px solid var(--accent-color) !important;
+            color: var(--accent-color) !important;
+        }
 
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem; 
+            height: 2.5rem; 
+            border-radius: 14px; 
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-main);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-icon:hover {
+            border-color: var(--text-main);
+            color: var(--text-main);
+        }
+        
+        /* --- LAYOUT --- */
         .app-container {
             display: grid;
             grid-template-areas: "sidebar main";
-            grid-template-columns: 280px 1fr;
+            grid-template-columns: 350px 1fr;
             height: calc(100vh - 64px);
             width: 100%;
             background: var(--bg-page);
         }
 
+        /* --- SIDEBAR --- */
         .sidebar {
             grid-area: sidebar;
-            background: var(--bg-page);
+            background-color: var(--bg-page);
             border-right: 1px solid var(--border-main);
             display: flex;
             flex-direction: column;
-            padding: 32px 0;
-            overflow-y: auto;
+            z-index: 50;
         }
 
-        .main-view {
-            grid-area: main;
-            background: var(--bg-page);
+        .sidebar-scroll-content {
+            padding: 1.5rem;
             overflow-y: auto;
-            position: relative;
-            padding: 32px;
+            flex-grow: 1;
         }
+        .sidebar-scroll-content::-webkit-scrollbar { display: none; }
 
-        .nav-item {
+        .sidebar-bottom-controls {
             display: flex;
-            align-items: center;
-            gap: 16px;
-            padding: 12px 24px;
-            color: var(--text-muted);
-            opacity: 0.6;
-            font-size: 0.9rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            border-radius: 18px; 
-            margin: 0 16px;
-            font-weight: 300;
-        }
-
-        .nav-item:hover, .nav-item.active {
-            color: var(--text-main);
-            opacity: 1;
-            background: var(--border-faint);
-        }
-
-        .nav-item.active {
-            color: var(--accent-color);
-            background: var(--btn-bg);
-            border: 1px solid var(--accent-glow);
-        }
-
-        .photo-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-main);
-            border-radius: 22px; 
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            aspect-ratio: 1/1;
-        }
-
-        .photo-card:hover {
-            border-color: var(--accent-color);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px -20px var(--accent-glow);
-        }
-
-        .photo-card img {
             width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s ease;
-            border-radius: 22px;
+            border-top: 1px solid var(--border-main);
+            background-color: var(--bg-card);
         }
-
-        .photo-card:hover img {
-            transform: scale(1.05);
-        }
-
-        .overlay-grad {
-            position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0) 70%);
-            display: flex; flex-direction: column; justify-content: flex-end;
-            padding: 1.25rem; opacity: 1; transition: opacity 0.3s;
-            pointer-events: none;
-            border-radius: 22px;
-        }
-
-        .search-box {
-            background: var(--bg-card);
-            border: 1px solid var(--border-main);
-            border-radius: 12px;
-            padding: 8px 16px;
+        .sidebar-control-btn {
+            flex: 1; 
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            padding: 1rem 0;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: color 0.2s;
             display: flex;
+            justify-content: center;
             align-items: center;
-            gap: 10px;
-            transition: all 0.3s;
+        }
+        .sidebar-control-btn:hover { color: var(--text-main); }
+        .sidebar-control-btn.active { color: var(--accent-color); }
+
+        /* --- LISTS --- */
+        .compact-list-wrapper {
+             background-color: var(--bg-card);
+             border-radius: 1.25rem; 
+             border: 1px solid var(--border-main); 
+             margin-top: 0.75rem;
+             overflow: hidden;
+        }
+        .compact-list-items {
+            overflow-y: auto;
+            max-height: 350px; 
+            padding: 0.25rem; 
+        }
+        
+        .compact-list-item {
+            border-radius: 14px; 
+            margin-bottom: 2px;
+            padding: 0.5rem; 
+            transition: background-color 0.2s;
+        }
+        .compact-list-item:hover { background-color: var(--border-faint); }
+
+        /* --- FEED PANEL --- */
+        .main-view { 
+            grid-area: main;
+            height: 100%;
+            background-color: var(--bg-page);
+            padding: 2rem; 
+            overflow-y: auto; 
+        }
+        .main-view::-webkit-scrollbar { display: none; }
+        
+        .feed-content-inner {
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding-bottom: 5rem; 
         }
 
-        .search-box:focus-within {
-            border-color: var(--accent-color);
-            background: var(--bg-page);
+        /* --- GRID & PHOTOS --- */
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+            gap: 1.5rem; 
         }
-
-        .modal-overlay {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(12px);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 1000;
-            opacity: 0; pointer-events: none; transition: all 0.3s;
-        }
-        .modal-overlay.open { opacity: 1; pointer-events: auto; }
-
-        .modal-content {
-            background: var(--bg-card);
+        .photo-thumbnail {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1.25rem; 
+            cursor: pointer;
+            aspect-ratio: 1 / 1; 
+            background-color: var(--bg-card);
             border: 1px solid var(--border-main);
-            border-radius: 32px;
-            width: 90%;
-            max-width: 900px;
-            height: 80vh;
-            display: flex;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+        .photo-thumbnail:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-color);
+        }
+        .photo-thumbnail img {
+            width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;
+        }
+        .photo-thumbnail:hover img { transform: scale(1.05); }
+        
+        .overlay-grad {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 50%);
+            pointer-events: none; 
+        }
+        .title-overlay {
+            position: absolute; bottom: 0.75rem; left: 0.75rem; right: 0.75rem;
+            color: white; font-size: 0.85rem; font-weight: 500;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            z-index: 10;
+        }
+        
+        /* --- MODAL STYLES --- */
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(12px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 8000; 
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+        
+        .modal-content {
+            background-color: var(--bg-card); 
+            border: 1px solid var(--border-main);
+            border-radius: 1.25rem; 
+            width: 90%; max-width: 1100px;
+            height: 80vh; 
+            display: flex; overflow: hidden;
+            position: relative;
+        }
+        
+        #photo-display-area {
+            flex: 2;
+            background-color: #000;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
             overflow: hidden;
         }
-
-        .slot-item {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 16px; border-radius: 18px;
-            background: var(--border-faint); border: 1px solid var(--border-faint);
-            margin: 0 16px 8px 16px; transition: all 0.3s;
-        }
-        .slot-item:hover { 
-            background: var(--btn-bg); 
-            border-color: var(--accent-color);
-            transform: translateX(4px);
+        .photo-modal-img {
+            width: 100%; height: 100%; object-fit: contain; 
         }
 
-        .btn-circle {
-            width: 32px; height: 32px; border-radius: 50%;
-            background: var(--border-faint); display: flex; align-items: center; justify-content: center;
-            color: var(--text-muted); transition: all 0.2s;
-        }
-        .btn-circle:hover { background: var(--accent-color); color: white; transform: scale(1.1); }
-
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 10px; }
-
-        /* --- Styled Toggle Switch --- */
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 24px;
-        }
-        .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider {
-            position: absolute; cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--border-main);
-            transition: .4s; border-radius: 24px;
-            border: 1px solid var(--border-faint);
-        }
-        .toggle-slider:before {
-            position: absolute; content: "";
-            height: 18px; width: 18px;
-            left: 2px; bottom: 2px;
-            background-color: var(--text-muted);
-            transition: .4s; border-radius: 50%;
-        }
-        input:checked + .toggle-slider { background-color: var(--accent-color); }
-        input:checked + .toggle-slider:before {
-            transform: translateX(20px);
-            background-color: white;
+        #photo-info-panel {
+            flex: 1;
+            min-width: 350px;
+            max-width: 400px;
+            background-color: var(--bg-card);
+            border-left: 1px solid var(--border-main);
+            display: flex; flex-direction: column;
+            padding: 1.5rem;
         }
 
-        /* --- LOGO TINTING LOGIC (Mirrors navigation.js) --- */
-        .navbar-logo { transition: filter 0.3s ease, transform 0.3s ease; }
+        #comments-section {
+            flex-grow: 1;
+            background-color: rgba(0,0,0,0.2); 
+            border-radius: 1.25rem; 
+            padding: 1rem;
+            margin-bottom: 1rem;
+            overflow-y: auto;
+            border: 1px solid var(--border-main);
+        }
+        #comments-section::-webkit-scrollbar { display: none; }
+
+        /* Custom Tooltip */
+        #custom-tooltip {
+            position: fixed; background-color: #000; border: 1px solid #333; color: #fff;
+            padding: 0.4rem 0.8rem; border-radius: 14px; font-size: 0.75rem;
+            pointer-events: none; z-index: 10000; opacity: 0; transition: opacity 0.15s ease;
+            white-space: nowrap; box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
+    <div id="custom-tooltip"></div>
+
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="px-8 mb-10">
-                <div class="flex items-center gap-3">
-                    <img src="../images/logo.png" class="w-8 h-8 object-contain navbar-logo" id="navbar-logo">
-                    <span class="text-xl font-bold tracking-tighter text-[var(--text-main)] uppercase">Dailyphoto</span>
+            <div class="sidebar-scroll-content">
+                
+                <div class="mb-6 pb-4 border-b border-[var(--border-main)]">
+                    <h2 class="text-lg mb-2">My Code</h2>
+                    <div id="friend-code-display" class="p-3 text-center bg-black/20 border border-[var(--border-main)] rounded-[14px] font-mono text-[var(--accent-color)] tracking-widest select-all cursor-pointer" title="Click to Copy">LOADING</div>
                 </div>
+
+                <div class="mb-6 pb-4 border-b border-[var(--border-main)]">
+                    <h2 class="text-lg mb-2">Add Friend</h2>
+                    <form id="add-friend-form" class="flex gap-2">
+                        <input type="text" id="friend-code-input" placeholder="CODE" maxlength="8" class="flex-grow p-3 bg-black/20 border border-[var(--border-main)] rounded-[14px] outline-none focus:border-[var(--accent-color)] text-center font-mono uppercase text-[var(--text-main)]">
+                        <button type="submit" class="btn-icon" title="Send Request"><i class="fas fa-plus"></i></button>
+                    </form>
+                    <div id="add-friend-message" class="text-xs mt-2 min-h-[16px]"></div>
+                </div>
+
+                <!-- My Posts Section (With Images) -->
+                <div id="daily-posts-section">
+                    <h2 class="text-lg mb-2">My Posts</h2>
+                    <p class="text-xs opacity-50 mb-3">5 slots / day</p>
+                    <div id="daily-posts-container" class="space-y-2">
+                        <!-- Post slots will be rendered here -->
+                    </div>
+                </div>
+
+                <div id="friends-section-wrapper" class="hidden">
+                    <h2 class="text-lg mb-2">Friends</h2>
+                    <div id="friends-list-wrapper" class="compact-list-wrapper">
+                        <div id="friends-list-items" class="compact-list-items"></div>
+                    </div>
+                </div>
+
+                <div id="blocked-section" class="hidden">
+                    <h2 class="text-lg mb-2">Blocked</h2>
+                    <div id="blocked-list-wrapper" class="compact-list-wrapper">
+                        <div id="blocked-list-items" class="compact-list-items"></div>
+                    </div>
+                </div>
+
             </div>
 
-            <nav class="flex-1 overflow-y-auto custom-scroll">
-                <div class="nav-item active" data-mode="following">
-                    <i class="fas fa-user-friends"></i>
-                    <span>Following</span>
-                </div>
-                <div class="nav-item" data-mode="global">
-                    <i class="fas fa-globe"></i>
-                    <span>Global</span>
-                </div>
-                <div class="nav-item" data-mode="me">
-                    <i class="fas fa-user-circle"></i>
-                    <span>My Moments</span>
-                </div>
-
-                <div class="h-px bg-brand-border my-6 mx-8"></div>
-
-                <div class="px-8 mb-4">
-                    <span class="text-[10px] font-bold text-[var(--text-muted)] opacity-60 uppercase tracking-widest">Discover</span>
-                </div>
-                <div class="px-4 mb-6">
-                    <div class="search-box">
-                        <i class="fas fa-search text-[var(--text-muted)] opacity-40 text-xs"></i>
-                        <input type="text" id="user-search" placeholder="Search usernames..." class="bg-transparent border-none outline-none flex-1 text-xs text-[var(--text-main)]">
-                    </div>
-                    <div id="search-results" class="mt-4 space-y-1"></div>
-                </div>
-
-                <div class="h-px bg-[var(--border-main)] my-6 mx-8"></div>
-
-                <div class="px-8 mb-4">
-                    <span class="text-[10px] font-bold text-[var(--text-muted)] opacity-60 uppercase tracking-widest">Your Slots</span>
-                </div>
-                <div id="slots-container">
-                    <!-- Slots -->
-                </div>
-            </nav>
+            <div class="sidebar-bottom-controls">
+                <button id="sidebar-nav-posts" class="sidebar-control-btn active" title="My Posts"><i class="fas fa-images"></i></button>
+                <button id="sidebar-nav-friends" class="sidebar-control-btn" title="Friends"><i class="fas fa-user-friends"></i></button>
+                <button id="sidebar-nav-blocked" class="sidebar-control-btn" title="Blocked Users"><i class="fas fa-user-shield"></i></button>
+            </div>
         </aside>
 
         <!-- Main View -->
-        <main class="main-view custom-scroll">
-            <div class="max-w-6xl mx-auto">
-                <header class="mb-10 flex justify-between items-end">
+        <main class="main-view">
+            <div class="feed-content-inner">
+                <div class="flex justify-between items-center mb-10">
                     <div>
-                        <h1 id="feed-title" class="text-4xl font-bold mb-2 text-[var(--text-main)]">Following</h1>
-                        <p id="feed-desc" class="text-[var(--text-muted)] opacity-60">Moments from people you follow.</p>
+                        <h1 class="text-4xl font-bold mb-2">Dailyphoto</h1>
+                        <p id="feed-desc" class="opacity-60">Moments from people you follow.</p>
                     </div>
-                    <button id="main-upload-btn" class="inline-flex items-center justify-center py-3 px-6 rounded-2xl text-sm font-medium transition-all shadow-lg shadow-indigo-900/20" style="background: var(--btn-bg); border: 1px solid var(--accent-glow); color: var(--accent-color);">
-                        <i class="fas fa-plus mr-2"></i> Post Moment
-                    </button>
-                </header>
-
-                <div id="photo-feed" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                    <!-- Feed items -->
+                    
+                    <div class="flex gap-3">
+                        <div class="inline-flex bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl p-1">
+                            <button id="feed-toggle-friends" class="px-4 py-2 rounded-xl text-sm transition-all active btn-primary-override">Friends</button>
+                            <button id="feed-toggle-public" class="px-4 py-2 rounded-xl text-sm transition-all">Public</button>
+                        </div>
+                    </div>
                 </div>
+                
+                <div id="photo-feed" class="photo-grid"></div>
             </div>
         </main>
     </div>
 
-    <!-- Upload Modal -->
-    <div id="upload-modal" class="modal-overlay">
-        <div class="modal-content max-w-md flex-col p-8 h-auto" style="background: var(--bg-card); border-color: var(--border-main);">
-            <h2 class="text-2xl font-bold mb-6 text-[var(--text-main)]">Share a Moment</h2>
-            <div id="upload-preview" class="aspect-square rounded-3xl bg-black border border-[var(--border-faint)] mb-6 overflow-hidden flex items-center justify-center cursor-pointer hover:border-[var(--accent-color)] transition-colors">
-                <i class="fas fa-cloud-upload-alt text-4xl text-[var(--text-muted)] opacity-20"></i>
-            </div>
-            <input type="file" id="file-input" class="hidden" accept="image/*">
-            
-            <div class="space-y-4 mb-8">
-                <div>
-                    <label class="text-[10px] font-bold text-[var(--text-muted)] opacity-60 uppercase tracking-widest mb-2 block">Caption</label>
-                    <input type="text" id="post-title" class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] text-sm" placeholder="Give it a title...">
-                </div>
-                <div class="flex items-center justify-between bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3">
-                    <span class="text-xs text-[var(--text-muted)] font-medium">Public Visibility</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="post-public">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="flex gap-3">
-                <button onclick="window.closeModal('upload-modal')" class="flex-1 py-3 rounded-xl font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">Cancel</button>
-                <button id="confirm-upload-btn" class="flex-1 py-3 text-white rounded-xl font-bold shadow-lg transition-all" style="background: var(--accent-color); shadow: 0 10px 20px var(--accent-glow);">Post Moment</button>
-            </div>
-        </div>
+    <!-- Modals -->
+    <div id="photo-modal" class="modal-backdrop">
+        <div id="modal-content-container" class="modal-content"></div>
     </div>
 
-    <!-- View Modal -->
-    <div id="view-modal" class="modal-overlay">
-        <div class="modal-content" style="background: var(--bg-card); border-color: var(--border-main);">
-            <div class="flex-1 bg-black flex items-center justify-center relative overflow-hidden">
-                <img id="modal-img" class="w-full h-full object-contain">
-                <button onclick="window.closeModal('view-modal')" class="absolute top-6 left-6 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-colors">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="w-80 border-l border-[var(--border-main)] flex flex-col p-8">
-                <div class="flex items-center gap-4 mb-8">
-                    <div id="modal-author-avatar" class="w-12 h-12 rounded-2xl overflow-hidden bg-[var(--bg-page)]"></div>
-                    <div class="min-w-0">
-                        <p id="modal-author-name" class="text-sm font-bold text-[var(--text-main)] truncate"></p>
-                        <p id="modal-post-date" class="text-[10px] text-[var(--text-muted)] opacity-60 font-mono"></p>
-                    </div>
-                </div>
-                
-                <h3 id="modal-post-title" class="text-lg font-medium text-[var(--text-main)] mb-6"></h3>
-
-                <div id="modal-comments" class="flex-1 overflow-y-auto custom-scroll space-y-4 mb-6">
-                    <!-- Comments -->
-                </div>
-
-                <div class="mt-auto">
-                    <div class="flex gap-2">
-                        <input type="text" id="comment-input" placeholder="Add a comment..." class="flex-1 bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)] text-[var(--text-main)]">
-                        <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center text-white hover:opacity-90 transition-colors" style="background: var(--accent-color);">
-                            <i class="fas fa-paper-plane text-xs"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <div id="upload-menu-modal" class="modal-backdrop">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8">
+            <h3 class="text-2xl font-bold mb-6">Post Photo</h3>
+            <input type="file" id="upload-file-input" class="hidden" accept="image/*">
+            <label for="upload-file-input" class="bg-black/40 border-2 border-dashed border-[var(--border-main)] rounded-[22px] p-12 text-center cursor-pointer hover:border-[var(--accent-color)] transition-all block mb-6">
+                <i class="fas fa-cloud-upload-alt text-5xl mb-4 opacity-20"></i>
+                <span class="block font-medium opacity-60">Select Image</span>
+            </label>
+            <button id="upload-menu-close-btn" class="btn-toolbar-style w-full py-3">Cancel</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, writeBatch, limit, addDoc, deleteDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc, setDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, arrayRemove, writeBatch, limit, addDoc, deleteDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from "/firebase-config.js";
         import { getAvatarHTML } from "/utils.js";
 
@@ -398,333 +378,427 @@
         const db = getFirestore();
 
         let currentUser = null;
-        let activeSlot = 0;
-        let pendingImgData = null;
-        let feedMode = 'following';
-        let userDailySlots = [];
-        let cachedFollowingUids = [];
+        let currentFriends = [];
+        let blockedUsers = [];
+        let feedMode = 'friends';
+        let unsubPosts = () => {};
+        let unsubModal = () => {};
+
+        const DAILY_COLLECTION = collection(db, 'daily_photos');
+        const USERS_COLLECTION = 'users';
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                // Pre-cache following list for friend-only visibility checks
-                const followingSnap = await getDocs(collection(db, 'users', currentUser.uid, 'following'));
-                cachedFollowingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
-                initUI();
+                initApp();
             } else {
-                window.location.href = '/authentication.html';
+                await signInAnonymously(auth);
             }
         });
 
-        function initUI() {
-            loadSlots();
-            setupSearch();
-            setupFeed();
-            setupNav();
-            setupMainUpload();
+        async function initApp() {
+            setupSidebarNav();
+            setupFeedToggles();
+            listenToUser();
+            handleFriendCodeLogic();
         }
 
-        function loadSlots() {
-            const container = document.getElementById('slots-container');
-            onSnapshot(doc(db, 'users', currentUser.uid), snap => {
+        function listenToUser() {
+            onSnapshot(doc(db, USERS_COLLECTION, currentUser.uid), async snap => {
                 const data = snap.data() || {};
-                userDailySlots = data.dailySlotsUsed || [];
-                container.innerHTML = '';
+                currentFriends = data.friends || [];
+                blockedUsers = data.blocked_users || [];
+                renderMyPosts(data.dailySlotsUsed || []);
+                setupFeed();
+                if (!document.getElementById('friends-section-wrapper').classList.contains('hidden')) renderFriendsList();
+                if (!document.getElementById('blocked-section').classList.contains('hidden')) renderBlockedList();
+            });
+        }
 
-                for (let i = 0; i < 5; i++) {
-                    const postId = userDailySlots[i];
-                    const div = document.createElement('div');
-                    div.className = 'slot-item';
+        async function renderMyPosts(usedSlots) {
+            const container = document.getElementById('daily-posts-container');
+            container.innerHTML = '';
 
-                    if (postId && postId !== 'DELETED') {
+            for (let i = 0; i < 5; i++) {
+                const postId = usedSlots[i];
+                const div = document.createElement('div');
+                div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl overflow-hidden flex items-center p-2 gap-3 transition-all hover:border-[var(--accent-color)]';
+                
+                if (postId && postId !== 'DELETED') {
+                    const postSnap = await getDoc(doc(db, 'daily_photos', postId));
+                    if (postSnap.exists()) {
+                        const postData = postSnap.data();
                         div.innerHTML = `
-                            <span class="text-xs text-[var(--text-muted)] opacity-60 font-medium">Moment ${i+1}</span>
-                            <div class="flex gap-1">
-                                <button onclick="window.viewPost('${postId}')" class="btn-circle" title="View"><i class="fas fa-eye text-[10px]"></i></button>
-                                <button onclick="window.deletePost('${postId}', ${i})" class="btn-circle text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-[10px]"></i></button>
+                            <div class="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0">
+                                <img src="${postData.imageBase64}" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-grow min-w-0">
+                                <p class="text-xs font-bold truncate">${postData.title}</p>
+                                <p class="text-[10px] opacity-50">${new Date(postData.createdAt?.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
+                            </div>
+                            <div class="flex gap-1 pr-1">
+                                <button onclick="window.viewPost('${postId}')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5" title="View"><i class="fas fa-eye text-xs"></i></button>
+                                <button onclick="window.deletePost('${postId}', ${i})" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-xs"></i></button>
                             </div>
                         `;
                     } else {
-                        div.innerHTML = `
-                            <span class="text-xs text-[var(--text-muted)] opacity-40 italic">Empty Slot</span>
-                            <button onclick="window.openUploadModal(${i})" class="btn-circle" title="Post"><i class="fas fa-plus text-[10px]"></i></button>
-                        `;
+                        div.innerHTML = `<span class="text-xs opacity-30 p-3 italic">Post missing...</span><button onclick="window.fixSlot(${i})" class="text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-lg ml-auto mr-2">Fix</button>`;
                     }
-                    container.appendChild(div);
+                } else {
+                    div.innerHTML = `
+                        <div class="w-12 h-12 rounded-xl border border-dashed border-[var(--border-main)] flex items-center justify-center shrink-0 opacity-20"><i class="fas fa-plus text-xs"></i></div>
+                        <span class="text-xs opacity-30 italic">Empty Slot ${i+1}</span>
+                        <button onclick="window.openUpload(${i})" class="btn-icon w-8 h-8 rounded-lg ml-auto mr-1" title="Post Moment"><i class="fas fa-plus text-xs"></i></button>
+                    `;
                 }
+                container.appendChild(div);
+            }
+        }
+
+        function setupFeed() {
+            unsubPosts();
+            const grid = document.getElementById('photo-feed');
+            grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin opacity-20 text-3xl"></i></div>';
+
+            const today = new Date(); today.setHours(0,0,0,0);
+            let q;
+
+            if (feedMode === 'public') {
+                q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('isPublic', '==', true), where('createdAt', '>=', today), orderBy('createdAt', 'desc'), limit(50));
+            } else {
+                const uids = [currentUser.uid, ...currentFriends].filter(id => !blockedUsers.includes(id)).slice(0, 10);
+                if (uids.length === 0) { grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Follow friends to see their moments.</p>'; return; }
+                q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', uids), where('createdAt', '>=', today), orderBy('createdAt', 'desc'));
+            }
+
+            unsubPosts = onSnapshot(q, snap => {
+                grid.innerHTML = '';
+                if (snap.empty) { grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">No moments yet today.</p>'; return; }
+                
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (blockedUsers.includes(data.creatorUid)) return;
+                    const el = document.createElement('div');
+                    el.className = 'photo-thumbnail';
+                    el.innerHTML = `
+                        <img src="${data.imageBase64}" loading="lazy">
+                        <div class="overlay-grad"></div>
+                        <div class="absolute top-3 right-3 flex gap-2">
+                            <span class="text-white text-[10px] bg-black/40 px-2 py-1 rounded-full backdrop-blur-md border border-white/10"><i class="fas fa-heart text-red-500 mr-1"></i> ${data.hearts?.length || 0}</span>
+                            <span class="text-white text-[10px] bg-black/40 px-2 py-1 rounded-full backdrop-blur-md border border-white/10"><i class="fas fa-comment text-indigo-400 mr-1"></i> ${data.comments?.length || 0}</span>
+                        </div>
+                        <div class="title-overlay">
+                            <p class="font-bold text-white">@${data.creatorUsername}</p>
+                            <p class="text-[10px] opacity-80 truncate">${data.title}</p>
+                        </div>
+                    `;
+                    el.onclick = () => window.viewPost(docSnap.id);
+                    grid.appendChild(el);
+                });
             });
         }
 
-        function setupMainUpload() {
-            document.getElementById('main-upload-btn').onclick = () => {
-                let emptyIdx = userDailySlots.findIndex(s => !s || s === 'DELETED');
-                if (emptyIdx === -1 && userDailySlots.length < 5) emptyIdx = userDailySlots.length;
+        window.viewPost = (postId) => {
+            const modal = document.getElementById('photo-modal');
+            const container = document.getElementById('modal-content-container');
+            modal.classList.add('open');
+            container.innerHTML = '<div class="w-full h-full flex items-center justify-center"><i class="fas fa-spinner fa-spin text-2xl"></i></div>';
+
+            unsubModal();
+            unsubModal = onSnapshot(doc(db, 'daily_photos', postId), async snap => {
+                if (!snap.exists()) { modal.classList.remove('open'); return; }
+                const data = snap.data();
+                const isHearted = data.hearts?.includes(currentUser.uid);
+                const isOwner = data.creatorUid === currentUser.uid;
+
+                const authorSnap = await getDoc(doc(db, USERS_COLLECTION, data.creatorUid));
+                const authorData = authorSnap.data() || {};
+
+                container.innerHTML = `
+                    <div id="photo-display-area">
+                        <img src="${data.imageBase64}" class="photo-modal-img">
+                        <button onclick="window.closeModal()" class="absolute top-6 left-6 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-colors"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="photo-info-panel">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20">${getAvatarHTML(authorData, "w-12 h-12", false, currentUser)}</div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-[var(--text-main)] truncate">@${data.creatorUsername}</p>
+                                <p class="text-[10px] opacity-50 font-mono">${new Date(data.createdAt?.toDate()).toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        <h3 class="text-lg font-bold mb-4">${data.title}</h3>
+
+                        <div class="flex gap-4 mb-6 pb-6 border-b border-[var(--border-main)]">
+                            <button id="modal-heart-btn" class="flex items-center gap-2 text-sm font-bold ${isHearted ? 'text-red-500' : 'opacity-50 hover:opacity-100'} transition-all">
+                                <i class="fas fa-heart ${isHearted ? '' : 'far'}"></i> ${data.hearts?.length || 0}
+                            </button>
+                            <div class="flex items-center gap-2 text-sm font-bold opacity-50">
+                                <i class="fas fa-comment"></i> ${data.comments?.length || 0}
+                            </div>
+                            <div class="ml-auto flex gap-2">
+                                ${!isOwner ? `<button onclick="window.reportPost('${postId}')" class="text-xs opacity-30 hover:opacity-100 hover:text-red-500 transition-all" title="Report"><i class="fas fa-flag"></i></button>` : ''}
+                                ${!isOwner ? `<button onclick="window.blockUser('${data.creatorUid}', '${data.creatorUsername}')" class="text-xs opacity-30 hover:opacity-100 hover:text-red-500 transition-all" title="Block"><i class="fas fa-ban"></i></button>` : ''}
+                                ${isOwner ? `<button onclick="window.deletePost('${postId}')" class="text-xs opacity-30 hover:opacity-100 hover:text-red-500 transition-all" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+                            </div>
+                        </div>
+
+                        <div id="comments-section">
+                            ${(data.comments || []).map(c => `
+                                <div class="mb-3 text-xs">
+                                    <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
+                                    <span class="opacity-80">${c.text}</span>
+                                </div>
+                            `).join('') || '<p class="text-center opacity-20 py-10 italic">No comments yet.</p>'}
+                        </div>
+
+                        <div class="mt-auto pt-4">
+                            <div class="flex gap-2">
+                                <input type="text" id="comment-input" placeholder="Say something..." class="flex-1 bg-black/20 border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)]">
+                                <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-color)] text-white shadow-lg shadow-indigo-500/20"><i class="fas fa-paper-plane text-[10px]"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('modal-heart-btn').onclick = () => updateDoc(doc(db, 'daily_photos', postId), { hearts: isHearted ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid) });
+                document.getElementById('send-comment-btn').onclick = async () => {
+                    const input = document.getElementById('comment-input');
+                    const text = input.value.trim();
+                    if (!text) return;
+                    const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+                    await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: userSnap.data().username, text: text, timestamp: new Date() }) });
+                    input.value = '';
+                };
+            });
+        };
+
+        window.openUpload = (slotIdx) => {
+            const modal = document.getElementById('upload-menu-modal');
+            const fileInput = document.getElementById('upload-file-input');
+            modal.classList.add('open');
+            fileInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                modal.classList.remove('open');
                 
-                if (emptyIdx === -1 || emptyIdx >= 5) {
-                    alert("All your daily slots are full. Delete a moment to share a new one!");
-                    return;
-                }
-                window.openUploadModal(emptyIdx);
+                const reader = new FileReader();
+                reader.onload = async (evt) => {
+                    const title = prompt("Give your moment a title:", "Daily Moment");
+                    if (title === null) return;
+                    const isPublic = confirm("Make this moment public?");
+                    
+                    const postRef = await addDoc(collection(db, 'daily_photos'), {
+                        creatorUid: currentUser.uid,
+                        creatorUsername: (await getDoc(doc(db, USERS_COLLECTION, currentUser.uid))).data().username,
+                        createdAt: serverTimestamp(),
+                        imageBase64: evt.target.result,
+                        title: title || "Daily Moment",
+                        isPublic: isPublic,
+                        status: 'active',
+                        hearts: [],
+                        comments: []
+                    });
+
+                    const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+                    const userSnap = await getDoc(userRef);
+                    const slots = userSnap.data().dailySlotsUsed || [];
+                    while (slots.length <= slotIdx) slots.push(null);
+                    slots[slotIdx] = postRef.id;
+                    await updateDoc(userRef, { dailySlotsUsed: slots });
+                };
+                reader.readAsDataURL(file);
             };
-        }
-
-        window.openUploadModal = (idx) => {
-            activeSlot = idx;
-            document.getElementById('upload-modal').classList.add('open');
-        };
-
-        document.getElementById('upload-preview').onclick = () => document.getElementById('file-input').click();
-
-        document.getElementById('file-input').onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                pendingImgData = evt.target.result;
-                document.getElementById('upload-preview').innerHTML = `<img src="${pendingImgData}" class="w-full h-full object-cover">`;
-            };
-            reader.readAsDataURL(file);
-        };
-
-        document.getElementById('confirm-upload-btn').onclick = async () => {
-            const title = document.getElementById('post-title').value.trim();
-            const isPublic = document.getElementById('post-public').checked;
-            if (!pendingImgData) return alert("Select an image first!");
-
-            const btn = document.getElementById('confirm-upload-btn');
-            btn.disabled = true;
-            btn.textContent = 'Sharing...';
-
-            try {
-                const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
-                const postRef = await addDoc(collection(db, 'daily_photos'), {
-                    creatorUid: currentUser.uid,
-                    creatorUsername: userSnap.data().username,
-                    createdAt: serverTimestamp(),
-                    imageBase64: pendingImgData,
-                    title: title || "Daily Moment",
-                    isPublic: isPublic,
-                    status: 'active',
-                    hearts: [],
-                    comments: []
-                });
-
-                let slots = [...userDailySlots];
-                while (slots.length <= activeSlot) slots.push(null);
-                slots[activeSlot] = postRef.id;
-                await updateDoc(doc(db, 'users', currentUser.uid), { dailySlotsUsed: slots });
-
-                window.closeModal('upload-modal');
-                document.getElementById('post-title').value = '';
-                document.getElementById('upload-preview').innerHTML = '<i class="fas fa-cloud-upload-alt text-4xl text-gray-800"></i>';
-                pendingImgData = null;
-            } catch(e) { console.error(e); }
-            btn.disabled = false;
-            btn.textContent = 'Post Moment';
         };
 
         window.deletePost = async (postId, idx) => {
-            if (!confirm("Remove this moment?")) return;
-            const userRef = doc(db, 'users', currentUser.uid);
+            if (!confirm("Delete this moment?")) return;
+            const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
             const userSnap = await getDoc(userRef);
             const slots = [...(userSnap.data().dailySlotsUsed || [])];
-            slots[idx] = 'DELETED';
+            const slotIdx = idx !== undefined ? idx : slots.indexOf(postId);
+            if (slotIdx > -1) slots[slotIdx] = 'DELETED';
             await deleteDoc(doc(db, 'daily_photos', postId));
+            await updateDoc(userRef, { dailySlotsUsed: slots });
+            if (idx === undefined) window.closeModal();
+        };
+
+        window.blockUser = async (uid, username) => {
+            if (confirm(`Block @${username}? You won't see their posts anymore.`)) {
+                await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { 
+                    blocked_users: arrayUnion(uid),
+                    friends: arrayRemove(uid)
+                });
+                await updateDoc(doc(db, USERS_COLLECTION, uid), { friends: arrayRemove(currentUser.uid) });
+                window.closeModal();
+            }
+        };
+
+        window.reportPost = async (postId) => {
+            if (confirm("Report this post for inappropriate content?")) {
+                await addDoc(collection(db, 'reports'), { postId, reportedBy: currentUser.uid, timestamp: serverTimestamp(), type: 'daily_photo' });
+                alert("Thank you. Our moderators will review this post.");
+            }
+        };
+
+        window.closeModal = () => {
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
+            unsubModal();
+        };
+
+        function setupSidebarNav() {
+            const btns = { posts: 'sidebar-nav-posts', friends: 'sidebar-nav-friends', blocked: 'sidebar-nav-blocked' };
+            const sections = { posts: 'daily-posts-section', friends: 'friends-section-wrapper', blocked: 'blocked-section' };
+            
+            Object.keys(btns).forEach(key => {
+                document.getElementById(btns[key]).onclick = () => {
+                    Object.values(btns).forEach(b => document.getElementById(b).classList.remove('active'));
+                    Object.values(sections).forEach(s => document.getElementById(s).classList.add('hidden'));
+                    document.getElementById(btns[key]).classList.add('active');
+                    document.getElementById(sections[key]).classList.remove('hidden');
+                    if (key === 'friends') renderFriendsList();
+                    if (key === 'blocked') renderBlockedList();
+                };
+            });
+        }
+
+        function setupFeedToggles() {
+            document.getElementById('feed-toggle-friends').onclick = () => {
+                feedMode = 'friends';
+                document.getElementById('feed-toggle-friends').classList.add('active', 'btn-primary-override');
+                document.getElementById('feed-toggle-public').classList.remove('active', 'btn-primary-override');
+                document.getElementById('feed-desc').textContent = 'Moments from people you follow.';
+                setupFeed();
+            };
+            document.getElementById('feed-toggle-public').onclick = () => {
+                if (!localStorage.getItem('daily_public_warning')) {
+                    if (confirm("Notice: The public feed may contain inappropriate content. Report violations immediately. Continue?")) {
+                        localStorage.setItem('daily_public_warning', 'true');
+                    } else return;
+                }
+                feedMode = 'public';
+                document.getElementById('feed-toggle-public').classList.add('active', 'btn-primary-override');
+                document.getElementById('feed-toggle-friends').classList.remove('active', 'btn-primary-override');
+                document.getElementById('feed-desc').textContent = 'Discover shared moments from across the network.';
+                setupFeed();
+            };
+        }
+
+        async function handleFriendCodeLogic() {
+            const codeQ = query(collection(db, 'friend_codes'), where('userId', '==', currentUser.uid), limit(1));
+            const codeSnap = await getDocs(codeQ);
+            let code = codeSnap.empty ? null : codeSnap.docs[0].id;
+            if (!code) {
+                code = Math.random().toString(36).substring(2, 10).toUpperCase();
+                await setDoc(doc(db, 'friend_codes', code), { userId: currentUser.uid, createdAt: serverTimestamp() });
+            }
+            document.getElementById('friend-code-display').textContent = code;
+            document.getElementById('friend-code-display').onclick = () => {
+                navigator.clipboard.writeText(code);
+                alert("Code copied to clipboard!");
+            };
+        }
+
+        document.getElementById('add-friend-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('friend-code-input').value.trim().toUpperCase();
+            const msg = document.getElementById('add-friend-message');
+            if (!code) return;
+            
+            const codeDoc = await getDoc(doc(db, 'friend_codes', code));
+            if (!codeDoc.exists()) { msg.textContent = "Invalid code."; return; }
+            const targetUid = codeDoc.data().userId;
+            if (targetUid === currentUser.uid) { msg.textContent = "You can't add yourself."; return; }
+            
+            await updateDoc(doc(db, USERS_COLLECTION, targetUid), { pending_requests: arrayUnion(currentUser.uid) });
+            msg.textContent = "Request sent!";
+            document.getElementById('friend-code-input').value = '';
+        };
+
+        async function renderFriendsList() {
+            const list = document.getElementById('friends-list-items');
+            list.innerHTML = '<div class="p-4 text-center opacity-20"><i class="fas fa-spinner fa-spin"></i></div>';
+            
+            const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+            const pending = userSnap.data().pending_requests || [];
+            
+            list.innerHTML = '';
+            
+            if (pending.length > 0) {
+                const header = document.createElement('div');
+                header.className = 'p-2 text-[10px] font-bold opacity-40 uppercase tracking-widest border-b border-[var(--border-main)] mb-2';
+                header.textContent = 'Requests';
+                list.appendChild(header);
+                for (const uid of pending) {
+                    const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
+                    const div = document.createElement('div');
+                    div.className = 'compact-list-item flex justify-between items-center bg-[var(--accent-color)]/5 border border-[var(--accent-color)]/20 mb-1';
+                    div.innerHTML = `<span class="text-xs font-bold">@${snap.data().username}</span><div class="flex gap-1"><button onclick="window.handleRequest('${uid}', 'accept')" class="w-6 h-6 rounded-lg bg-green-500/20 text-green-500 flex items-center justify-center"><i class="fas fa-check text-[10px]"></i></button><button onclick="window.handleRequest('${uid}', 'deny')" class="w-6 h-6 rounded-lg bg-red-500/20 text-red-500 flex items-center justify-center"><i class="fas fa-times text-[10px]"></i></button></div>`;
+                    list.appendChild(div);
+                }
+            }
+
+            if (currentFriends.length > 0) {
+                const header = document.createElement('div');
+                header.className = 'p-2 text-[10px] font-bold opacity-40 uppercase tracking-widest border-b border-[var(--border-main)] my-2';
+                header.textContent = 'Friends';
+                list.appendChild(header);
+                for (const uid of currentFriends) {
+                    const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
+                    const div = document.createElement('div');
+                    div.className = 'compact-list-item flex justify-between items-center';
+                    div.innerHTML = `<span class="text-xs">@${snap.data().username}</span><button onclick="window.removeFriend('${uid}')" class="text-red-500/30 hover:text-red-500 transition-all"><i class="fas fa-minus-circle text-xs"></i></button>`;
+                    list.appendChild(div);
+                }
+            }
+            if (pending.length === 0 && currentFriends.length === 0) list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No friends yet.</p>';
+        }
+
+        async function renderBlockedList() {
+            const list = document.getElementById('blocked-list-items');
+            list.innerHTML = '';
+            if (blockedUsers.length === 0) { list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No users blocked.</p>'; return; }
+            for (const uid of blockedUsers) {
+                const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
+                const div = document.createElement('div');
+                div.className = 'compact-list-item flex justify-between items-center';
+                div.innerHTML = `<span class="text-xs opacity-50">@${snap.data()?.username || 'Unknown'}</span><button onclick="window.unblock('${uid}')" class="text-[var(--accent-color)] text-[10px] border border-[var(--accent-color)]/20 px-2 py-1 rounded-lg hover:bg-[var(--accent-color)]/10">Unblock</button>`;
+                list.appendChild(div);
+            }
+        }
+
+        window.handleRequest = async (uid, action) => {
+            const batch = writeBatch(db);
+            batch.update(doc(db, USERS_COLLECTION, currentUser.uid), { pending_requests: arrayRemove(uid) });
+            if (action === 'accept') {
+                batch.update(doc(db, USERS_COLLECTION, currentUser.uid), { friends: arrayUnion(uid) });
+                batch.update(doc(db, USERS_COLLECTION, uid), { friends: arrayUnion(currentUser.uid) });
+            }
+            await batch.commit();
+        };
+
+        window.removeFriend = async (uid) => {
+            if (confirm("Unfriend this user?")) {
+                const batch = writeBatch(db);
+                batch.update(doc(db, USERS_COLLECTION, currentUser.uid), { friends: arrayRemove(uid) });
+                batch.update(doc(db, USERS_COLLECTION, uid), { friends: arrayRemove(currentUser.uid) });
+                await batch.commit();
+            }
+        };
+
+        window.unblock = async (uid) => {
+            await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { blocked_users: arrayRemove(uid) });
+        };
+
+        window.fixSlot = async (idx) => {
+            const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+            const slots = (await getDoc(userRef)).data().dailySlotsUsed || [];
+            slots[idx] = null;
             await updateDoc(userRef, { dailySlotsUsed: slots });
         };
 
-        function setupSearch() {
-            const input = document.getElementById('user-search');
-            const results = document.getElementById('search-results');
-            input.oninput = async (e) => {
-                const term = e.target.value.trim().toLowerCase();
-                if (term.length < 2) return results.innerHTML = '';
-                
-                const q = query(
-                    collection(db, "users"),
-                    where('username', '>=', term),
-                    where('username', '<=', term + '\uf8ff'),
-                    limit(5)
-                );
-                const snap = await getDocs(q);
-                
-                results.innerHTML = '';
-                snap.forEach(docSnap => {
-                    if (docSnap.id === currentUser.uid) return;
-                    const d = docSnap.data();
-                    const div = document.createElement('div');
-                    div.className = 'nav-item !mx-0 !px-4 !py-2 hover:!bg-white/5';
-                    div.innerHTML = `
-                        <div class="w-6 h-6 rounded-lg overflow-hidden">${getAvatarHTML(d, "w-6 h-6", false, currentUser)}</div>
-                        <span class="text-[11px] text-[var(--text-muted)] opacity-60">@${d.username}</span>
-                    `;
-                    div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
-                    results.appendChild(div);
-                });
-            };
-        }
-
-        let feedUnsub = () => {};
-        function setupFeed() {
-            feedUnsub();
-            const grid = document.getElementById('photo-feed');
-            grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin text-indigo-500/20 text-2xl"></i></div>';
-
-            const today = new Date(); today.setHours(0,0,0,0);
-            
-            if (feedMode === 'global') {
-                const q = query(
-                    collection(db, 'daily_photos'),
-                    where('status', '==', 'active'),
-                    where('createdAt', '>=', today),
-                    where('isPublic', '==', true),
-                    orderBy('createdAt', 'desc'),
-                    limit(50)
-                );
-                feedUnsub = onSnapshot(q, renderFeedGrid);
-            } else if (feedMode === 'me') {
-                const q = query(
-                    collection(db, 'daily_photos'),
-                    where('creatorUid', '==', currentUser.uid),
-                    where('status', '==', 'active'),
-                    orderBy('createdAt', 'desc')
-                );
-                feedUnsub = onSnapshot(q, renderFeedGrid);
-            } else {
-                // Following Feed - Check friendship status for each photo or filter creator list
-                const uids = [currentUser.uid, ...cachedFollowingUids].slice(0, 10);
-                if (uids.length <= 1 && uids[0] === currentUser.uid) {
-                    grid.innerHTML = '<p class="text-gray-700 col-span-full text-center py-20 text-sm">Follow users to see their moments here.</p>';
-                    return;
-                }
-                const q = query(
-                    collection(db, 'daily_photos'),
-                    where('status', '==', 'active'),
-                    where('createdAt', '>=', today),
-                    where('creatorUid', 'in', uids),
-                    orderBy('createdAt', 'desc')
-                );
-                feedUnsub = onSnapshot(q, async (snap) => {
-                    // Logic for friend-only visibility:
-                    // If isPublic is false, we must both be follow each other.
-                    const visibleDocs = [];
-                    for(const d of snap.docs) {
-                        const data = d.data();
-                        if (data.creatorUid === currentUser.uid || data.isPublic) {
-                            visibleDocs.push(d);
-                        } else {
-                            // Private photo - check if creator follows us back
-                            const followingMeSnap = await getDoc(doc(db, 'users', data.creatorUid, 'following', currentUser.uid));
-                            if (followingMeSnap.exists()) {
-                                visibleDocs.push(d);
-                            }
-                        }
-                    }
-                    renderVisibleFeed(visibleDocs);
-                });
-            }
-        }
-
-        function renderVisibleFeed(docs) {
-            const grid = document.getElementById('photo-feed');
-            grid.innerHTML = '';
-            if (docs.length === 0) {
-                grid.innerHTML = '<p class="text-gray-800 col-span-full text-center py-20 text-sm italic">No moments shared today yet.</p>';
-                return;
-            }
-            docs.forEach(docSnap => {
-                const data = docSnap.data();
-                const div = document.createElement('div');
-                div.className = 'photo-card';
-                div.innerHTML = `
-                    <img src="${data.imageBase64}" loading="lazy">
-                    <div class="overlay-grad">
-                        <p class="text-xs font-bold text-white">@${data.creatorUsername}</p>
-                        <p class="text-[10px] text-gray-300 truncate">${data.title}</p>
-                    </div>
-                `;
-                div.onclick = () => window.viewPost(docSnap.id);
-                grid.appendChild(div);
-            });
-        }
-
-        function renderFeedGrid(snap) {
-            renderVisibleFeed(snap.docs);
-        }
-
-        function setupNav() {
-            document.querySelectorAll('.nav-item[data-mode]').forEach(btn => {
-                btn.onclick = () => {
-                    if (btn.classList.contains('active')) return;
-                    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    feedMode = btn.dataset.mode;
-                    
-                    const titles = { following: 'Following', global: 'Global', me: 'My Moments' };
-                    const descs = { 
-                        following: 'Moments from people you follow.', 
-                        global: 'Discover shared moments from across the network.', 
-                        me: 'Your archive of moments shared today.' 
-                    };
-                    
-                    document.getElementById('feed-title').textContent = titles[feedMode];
-                    document.getElementById('feed-desc').textContent = descs[feedMode];
-                    setupFeed();
-                };
-            });
-        }
-
-        window.viewPost = async (postId) => {
-            const postRef = doc(db, 'daily_photos', postId);
-            const snap = await getDoc(postRef);
-            if (!snap.exists()) return;
-            const data = snap.data();
-            
-            document.getElementById('modal-img').src = data.imageBase64;
-            document.getElementById('modal-post-title').textContent = data.title;
-            document.getElementById('modal-author-name').textContent = `@${data.creatorUsername}`;
-            document.getElementById('modal-post-date').textContent = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Just now";
-            
-            const authorSnap = await getDoc(doc(db, 'users', data.creatorUid));
-            document.getElementById('modal-author-avatar').innerHTML = getAvatarHTML(authorSnap.data(), "w-12 h-12", false, currentUser);
-            
-            renderComments(data.comments || []);
-            document.getElementById('view-modal').classList.add('open');
-
-            document.getElementById('send-comment-btn').onclick = async () => {
-                const input = document.getElementById('comment-input');
-                const text = input.value.trim();
-                if (!text) return;
-                
-                const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
-                const comment = {
-                    uid: currentUser.uid,
-                    username: userSnap.data().username,
-                    text: text,
-                    timestamp: new Date()
-                };
-                
-                await updateDoc(postRef, {
-                    comments: arrayUnion(comment)
-                });
-                input.value = '';
-                const updatedSnap = await getDoc(postRef);
-                renderComments(updatedSnap.data().comments);
-            };
-        };
-
-        function renderComments(comments) {
-            const container = document.getElementById('modal-comments');
-            container.innerHTML = comments.map(c => `
-                <div class="text-[11px] leading-relaxed">
-                    <span class="font-bold text-indigo-400 mr-1">@${c.username}</span>
-                    <span class="text-gray-400">${c.text}</span>
-                </div>
-            `).join('') || '<p class="text-[10px] text-gray-700 italic">No comments yet.</p>';
-            container.scrollTop = container.scrollHeight;
-        }
-
-        window.closeModal = (id) => document.getElementById(id).classList.remove('open');
+        document.getElementById('upload-menu-close-btn').onclick = () => window.closeModal();
     </script>
 </body>
 </html>
