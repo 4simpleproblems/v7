@@ -282,17 +282,12 @@
             <div class="sidebar-scroll-content">
                 
                 <div class="mb-6 pb-4 border-b border-[var(--border-main)]">
-                    <h2 class="text-lg mb-2">My Code</h2>
-                    <div id="friend-code-display" class="p-3 text-center bg-black/20 border border-[var(--border-main)] rounded-[14px] font-mono text-[var(--accent-color)] tracking-widest select-all cursor-pointer" title="Click to Copy">LOADING</div>
-                </div>
-
-                <div class="mb-6 pb-4 border-b border-[var(--border-main)]">
-                    <h2 class="text-lg mb-2">Add Friend</h2>
-                    <form id="add-friend-form" class="flex gap-2">
-                        <input type="text" id="friend-code-input" placeholder="CODE" maxlength="8" class="flex-grow p-3 bg-black/20 border border-[var(--border-main)] rounded-[14px] outline-none focus:border-[var(--accent-color)] text-center font-mono uppercase text-[var(--text-main)]">
-                        <button type="submit" class="btn-icon" title="Send Request"><i class="fas fa-plus"></i></button>
-                    </form>
-                    <div id="add-friend-message" class="text-xs mt-2 min-h-[16px]"></div>
+                    <h2 class="text-lg mb-2">Find Users</h2>
+                    <div class="relative">
+                        <input type="text" id="user-search-input" placeholder="Search by username..." class="w-full p-3 pl-10 bg-black/20 border border-[var(--border-main)] rounded-[14px] outline-none focus:border-[var(--accent-color)] text-[var(--text-main)]">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 opacity-30"></i>
+                    </div>
+                    <div id="search-results" class="mt-2 space-y-1"></div>
                 </div>
 
                 <!-- My Posts Section (With Images) -->
@@ -305,7 +300,8 @@
                 </div>
 
                 <div id="friends-section-wrapper" class="hidden">
-                    <h2 class="text-lg mb-2">Friends</h2>
+                    <h2 class="text-lg mb-2">Mutual Following</h2>
+                    <p class="text-[10px] opacity-40 mb-3">Users you follow and who follow you back.</p>
                     <div id="friends-list-wrapper" class="compact-list-wrapper">
                         <div id="friends-list-items" class="compact-list-items"></div>
                     </div>
@@ -322,7 +318,7 @@
 
             <div class="sidebar-bottom-controls">
                 <button id="sidebar-nav-posts" class="sidebar-control-btn active" title="My Posts"><i class="fas fa-images"></i></button>
-                <button id="sidebar-nav-friends" class="sidebar-control-btn" title="Friends"><i class="fas fa-user-friends"></i></button>
+                <button id="sidebar-nav-friends" class="sidebar-control-btn" title="Mutuals"><i class="fas fa-user-friends"></i></button>
                 <button id="sidebar-nav-blocked" class="sidebar-control-btn" title="Blocked Users"><i class="fas fa-user-shield"></i></button>
             </div>
         </aside>
@@ -333,12 +329,12 @@
                 <div class="flex justify-between items-center mb-10">
                     <div>
                         <h1 class="text-4xl font-bold mb-2">Dailyphoto</h1>
-                        <p id="feed-desc" class="opacity-60">Moments from people you follow.</p>
+                        <p id="feed-desc" class="opacity-60">Moments from mutual friends.</p>
                     </div>
                     
                     <div class="flex gap-3">
                         <div class="inline-flex bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl p-1">
-                            <button id="feed-toggle-friends" class="px-4 py-2 rounded-xl text-sm transition-all active btn-primary-override">Friends</button>
+                            <button id="feed-toggle-friends" class="px-4 py-2 rounded-xl text-sm transition-all active btn-primary-override">Mutuals</button>
                             <button id="feed-toggle-public" class="px-4 py-2 rounded-xl text-sm transition-all">Public</button>
                         </div>
                     </div>
@@ -378,7 +374,9 @@
         const db = getFirestore();
 
         let currentUser = null;
-        let currentFriends = [];
+        let followingUids = [];
+        let followerUids = [];
+        let mutualUids = [];
         let blockedUsers = [];
         let feedMode = 'friends';
         let unsubPosts = () => {};
@@ -400,17 +398,26 @@
             setupSidebarNav();
             setupFeedToggles();
             listenToUser();
-            handleFriendCodeLogic();
+            setupUserSearch();
         }
 
         function listenToUser() {
             onSnapshot(doc(db, USERS_COLLECTION, currentUser.uid), async snap => {
                 const data = snap.data() || {};
-                currentFriends = data.friends || [];
                 blockedUsers = data.blocked_users || [];
+                
+                // Fetch following and followers to determine mutuals
+                const followingSnap = await getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'following'));
+                followingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
+                
+                const followersSnap = await getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'followers'));
+                followerUids = followersSnap.docs.map(d => d.id).filter(id => id !== '.init');
+                
+                mutualUids = followingUids.filter(id => followerUids.includes(id));
+
                 renderMyPosts(data.dailySlotsUsed || []);
                 setupFeed();
-                if (!document.getElementById('friends-section-wrapper').classList.contains('hidden')) renderFriendsList();
+                if (!document.getElementById('friends-section-wrapper').classList.contains('hidden')) renderMutualsList();
                 if (!document.getElementById('blocked-section').classList.contains('hidden')) renderBlockedList();
             });
         }
@@ -466,8 +473,8 @@
             if (feedMode === 'public') {
                 q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('isPublic', '==', true), where('createdAt', '>=', today), orderBy('createdAt', 'desc'), limit(50));
             } else {
-                const uids = [currentUser.uid, ...currentFriends].filter(id => !blockedUsers.includes(id)).slice(0, 10);
-                if (uids.length === 0) { grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Follow friends to see their moments.</p>'; return; }
+                const uids = [currentUser.uid, ...mutualUids].filter(id => !blockedUsers.includes(id)).slice(0, 10);
+                if (uids.length === 0) { grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Follow mutual friends to see their moments.</p>'; return; }
                 q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', uids), where('createdAt', '>=', today), orderBy('createdAt', 'desc'));
             }
 
@@ -521,9 +528,11 @@
                     </div>
                     <div id="photo-info-panel">
                         <div class="flex items-center gap-4 mb-6">
-                            <div class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20">${getAvatarHTML(authorData, "w-12 h-12", false, currentUser)}</div>
+                            <a href="/logged-in/@${data.creatorUsername}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity">
+                                ${getAvatarHTML(authorData, "w-12 h-12", false, currentUser)}
+                            </a>
                             <div class="min-w-0">
-                                <p class="text-sm font-bold text-[var(--text-main)] truncate">@${data.creatorUsername}</p>
+                                <a href="/logged-in/@${data.creatorUsername}" class="text-sm font-bold text-[var(--text-main)] truncate block hover:text-[var(--accent-color)] transition-colors">@${data.creatorUsername}</a>
                                 <p class="text-[10px] opacity-50 font-mono">${new Date(data.createdAt?.toDate()).toLocaleString()}</p>
                             </div>
                         </div>
@@ -589,9 +598,12 @@
                     if (title === null) return;
                     const isPublic = confirm("Make this moment public?");
                     
+                    const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+                    const username = userSnap.data().username;
+
                     const postRef = await addDoc(collection(db, 'daily_photos'), {
                         creatorUid: currentUser.uid,
-                        creatorUsername: (await getDoc(doc(db, USERS_COLLECTION, currentUser.uid))).data().username,
+                        creatorUsername: username,
                         createdAt: serverTimestamp(),
                         imageBase64: evt.target.result,
                         title: title || "Daily Moment",
@@ -602,7 +614,6 @@
                     });
 
                     const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
-                    const userSnap = await getDoc(userRef);
                     const slots = userSnap.data().dailySlotsUsed || [];
                     while (slots.length <= slotIdx) slots.push(null);
                     slots[slotIdx] = postRef.id;
@@ -657,7 +668,7 @@
                     Object.values(sections).forEach(s => document.getElementById(s).classList.add('hidden'));
                     document.getElementById(btns[key]).classList.add('active');
                     document.getElementById(sections[key]).classList.remove('hidden');
-                    if (key === 'friends') renderFriendsList();
+                    if (key === 'friends') renderMutualsList();
                     if (key === 'blocked') renderBlockedList();
                 };
             });
@@ -668,7 +679,7 @@
                 feedMode = 'friends';
                 document.getElementById('feed-toggle-friends').classList.add('active', 'btn-primary-override');
                 document.getElementById('feed-toggle-public').classList.remove('active', 'btn-primary-override');
-                document.getElementById('feed-desc').textContent = 'Moments from people you follow.';
+                document.getElementById('feed-desc').textContent = 'Moments from mutual friends.';
                 setupFeed();
             };
             document.getElementById('feed-toggle-public').onclick = () => {
@@ -685,74 +696,55 @@
             };
         }
 
-        async function handleFriendCodeLogic() {
-            const codeQ = query(collection(db, 'friend_codes'), where('userId', '==', currentUser.uid), limit(1));
-            const codeSnap = await getDocs(codeQ);
-            let code = codeSnap.empty ? null : codeSnap.docs[0].id;
-            if (!code) {
-                code = Math.random().toString(36).substring(2, 10).toUpperCase();
-                await setDoc(doc(db, 'friend_codes', code), { userId: currentUser.uid, createdAt: serverTimestamp() });
-            }
-            document.getElementById('friend-code-display').textContent = code;
-            document.getElementById('friend-code-display').onclick = () => {
-                navigator.clipboard.writeText(code);
-                alert("Code copied to clipboard!");
+        function setupUserSearch() {
+            const input = document.getElementById('user-search-input');
+            const results = document.getElementById('search-results');
+            
+            input.oninput = async (e) => {
+                const term = e.target.value.trim().toLowerCase();
+                if (term.length < 2) { results.innerHTML = ''; return; }
+                
+                const q = query(collection(db, USERS_COLLECTION), where('username', '>=', term), where('username', '<=', term + '\uf8ff'), limit(5));
+                const snap = await getDocs(q);
+                
+                results.innerHTML = '';
+                snap.forEach(docSnap => {
+                    if (docSnap.id === currentUser.uid) return;
+                    const d = docSnap.data();
+                    const div = document.createElement('div');
+                    div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-xl p-2 flex items-center gap-3 cursor-pointer hover:border-[var(--accent-color)] transition-all';
+                    div.innerHTML = `
+                        <div class="w-8 h-8 rounded-lg overflow-hidden shrink-0">${getAvatarHTML(d, "w-8 h-8", false, currentUser)}</div>
+                        <span class="text-xs font-bold truncate">@${d.username}</span>
+                    `;
+                    div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
+                    results.appendChild(div);
+                });
             };
         }
 
-        document.getElementById('add-friend-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const code = document.getElementById('friend-code-input').value.trim().toUpperCase();
-            const msg = document.getElementById('add-friend-message');
-            if (!code) return;
-            
-            const codeDoc = await getDoc(doc(db, 'friend_codes', code));
-            if (!codeDoc.exists()) { msg.textContent = "Invalid code."; return; }
-            const targetUid = codeDoc.data().userId;
-            if (targetUid === currentUser.uid) { msg.textContent = "You can't add yourself."; return; }
-            
-            await updateDoc(doc(db, USERS_COLLECTION, targetUid), { pending_requests: arrayUnion(currentUser.uid) });
-            msg.textContent = "Request sent!";
-            document.getElementById('friend-code-input').value = '';
-        };
-
-        async function renderFriendsList() {
+        async function renderMutualsList() {
             const list = document.getElementById('friends-list-items');
             list.innerHTML = '<div class="p-4 text-center opacity-20"><i class="fas fa-spinner fa-spin"></i></div>';
             
-            const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
-            const pending = userSnap.data().pending_requests || [];
-            
             list.innerHTML = '';
-            
-            if (pending.length > 0) {
-                const header = document.createElement('div');
-                header.className = 'p-2 text-[10px] font-bold opacity-40 uppercase tracking-widest border-b border-[var(--border-main)] mb-2';
-                header.textContent = 'Requests';
-                list.appendChild(header);
-                for (const uid of pending) {
-                    const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
-                    const div = document.createElement('div');
-                    div.className = 'compact-list-item flex justify-between items-center bg-[var(--accent-color)]/5 border border-[var(--accent-color)]/20 mb-1';
-                    div.innerHTML = `<span class="text-xs font-bold">@${snap.data().username}</span><div class="flex gap-1"><button onclick="window.handleRequest('${uid}', 'accept')" class="w-6 h-6 rounded-lg bg-green-500/20 text-green-500 flex items-center justify-center"><i class="fas fa-check text-[10px]"></i></button><button onclick="window.handleRequest('${uid}', 'deny')" class="w-6 h-6 rounded-lg bg-red-500/20 text-red-500 flex items-center justify-center"><i class="fas fa-times text-[10px]"></i></button></div>`;
-                    list.appendChild(div);
-                }
+            if (mutualUids.length === 0) {
+                list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No mutual friends yet.</p>';
+                return;
             }
 
-            if (currentFriends.length > 0) {
-                const header = document.createElement('div');
-                header.className = 'p-2 text-[10px] font-bold opacity-40 uppercase tracking-widest border-b border-[var(--border-main)] my-2';
-                header.textContent = 'Friends';
-                list.appendChild(header);
-                for (const uid of currentFriends) {
-                    const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
-                    const div = document.createElement('div');
-                    div.className = 'compact-list-item flex justify-between items-center';
-                    div.innerHTML = `<span class="text-xs">@${snap.data().username}</span><button onclick="window.removeFriend('${uid}')" class="text-red-500/30 hover:text-red-500 transition-all"><i class="fas fa-minus-circle text-xs"></i></button>`;
-                    list.appendChild(div);
-                }
+            for (const uid of mutualUids) {
+                const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
+                const d = snap.data() || {};
+                const div = document.createElement('div');
+                div.className = 'compact-list-item flex items-center gap-3 cursor-pointer hover:bg-white/5';
+                div.innerHTML = `
+                    <div class="w-6 h-6 rounded-lg overflow-hidden shrink-0">${getAvatarHTML(d, "w-6 h-6", false, currentUser)}</div>
+                    <span class="text-xs truncate">@${d.username}</span>
+                `;
+                div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
+                list.appendChild(div);
             }
-            if (pending.length === 0 && currentFriends.length === 0) list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No friends yet.</p>';
         }
 
         async function renderBlockedList() {
@@ -768,32 +760,14 @@
             }
         }
 
-        window.handleRequest = async (uid, action) => {
-            const batch = writeBatch(db);
-            batch.update(doc(db, USERS_COLLECTION, currentUser.uid), { pending_requests: arrayRemove(uid) });
-            if (action === 'accept') {
-                batch.update(doc(db, USERS_COLLECTION, currentUser.uid), { friends: arrayUnion(uid) });
-                batch.update(doc(db, USERS_COLLECTION, uid), { friends: arrayUnion(currentUser.uid) });
-            }
-            await batch.commit();
-        };
-
-        window.removeFriend = async (uid) => {
-            if (confirm("Unfriend this user?")) {
-                const batch = writeBatch(db);
-                batch.update(doc(db, USERS_COLLECTION, currentUser.uid), { friends: arrayRemove(uid) });
-                batch.update(doc(db, USERS_COLLECTION, uid), { friends: arrayRemove(currentUser.uid) });
-                await batch.commit();
-            }
-        };
-
         window.unblock = async (uid) => {
             await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { blocked_users: arrayRemove(uid) });
         };
 
         window.fixSlot = async (idx) => {
             const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
-            const slots = (await getDoc(userRef)).data().dailySlotsUsed || [];
+            const userSnap = await getDoc(userRef);
+            const slots = userSnap.data().dailySlotsUsed || [];
             slots[idx] = null;
             await updateDoc(userRef, { dailySlotsUsed: slots });
         };
