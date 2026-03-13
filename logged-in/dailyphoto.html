@@ -362,6 +362,38 @@
         </div>
     </div>
 
+    <!-- Custom UI Modals -->
+    <div id="custom-alert-modal" class="modal-backdrop">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8 text-center">
+            <h3 id="custom-alert-title" class="text-xl font-bold mb-4">Alert</h3>
+            <p id="custom-alert-message" class="opacity-60 mb-8 text-sm"></p>
+            <button id="custom-alert-btn" class="btn-toolbar-style btn-primary-override w-full py-3">OK</button>
+        </div>
+    </div>
+
+    <div id="custom-confirm-modal" class="modal-backdrop">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8 text-center">
+            <h3 id="custom-confirm-title" class="text-xl font-bold mb-4">Confirm</h3>
+            <p id="custom-confirm-message" class="opacity-60 mb-8 text-sm"></p>
+            <div class="flex gap-3">
+                <button id="custom-confirm-cancel" class="btn-toolbar-style flex-1 py-3">Cancel</button>
+                <button id="custom-confirm-ok" class="btn-toolbar-style btn-primary-override flex-1 py-3">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-prompt-modal" class="modal-backdrop">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8">
+            <h3 id="custom-prompt-title" class="text-xl font-bold mb-4">Input</h3>
+            <p id="custom-prompt-message" class="opacity-60 mb-4 text-sm"></p>
+            <input type="text" id="custom-prompt-input" class="w-full p-3 bg-black/20 border border-[var(--border-main)] rounded-[14px] outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] mb-6">
+            <div class="flex gap-3">
+                <button id="custom-prompt-cancel" class="btn-toolbar-style flex-1 py-3">Cancel</button>
+                <button id="custom-prompt-ok" class="btn-toolbar-style btn-primary-override flex-1 py-3">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -384,6 +416,57 @@
 
         const DAILY_COLLECTION = collection(db, 'daily_photos');
         const USERS_COLLECTION = 'users';
+
+        // --- Custom UI Helpers ---
+        const CustomUI = {
+            alert: (message, title = "Notice") => {
+                return new Promise(resolve => {
+                    const modal = document.getElementById('custom-alert-modal');
+                    document.getElementById('custom-alert-title').textContent = title;
+                    document.getElementById('custom-alert-message').textContent = message;
+                    modal.classList.add('open');
+                    document.getElementById('custom-alert-btn').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve();
+                    };
+                });
+            },
+            confirm: (message, title = "Confirm") => {
+                return new Promise(resolve => {
+                    const modal = document.getElementById('custom-confirm-modal');
+                    document.getElementById('custom-confirm-title').textContent = title;
+                    document.getElementById('custom-confirm-message').textContent = message;
+                    modal.classList.add('open');
+                    document.getElementById('custom-confirm-ok').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve(true);
+                    };
+                    document.getElementById('custom-confirm-cancel').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve(false);
+                    };
+                });
+            },
+            prompt: (message, defaultValue = "", title = "Input") => {
+                return new Promise(resolve => {
+                    const modal = document.getElementById('custom-prompt-modal');
+                    const input = document.getElementById('custom-prompt-input');
+                    document.getElementById('custom-prompt-title').textContent = title;
+                    document.getElementById('custom-prompt-message').textContent = message;
+                    input.value = defaultValue;
+                    modal.classList.add('open');
+                    setTimeout(() => input.focus(), 100);
+                    document.getElementById('custom-prompt-ok').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve(input.value);
+                    };
+                    document.getElementById('custom-prompt-cancel').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve(null);
+                    };
+                });
+            }
+        };
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -594,9 +677,9 @@
                 
                 const reader = new FileReader();
                 reader.onload = async (evt) => {
-                    const title = prompt("Give your moment a title:", "Daily Moment");
+                    const title = await CustomUI.prompt("Give your moment a title:", "Daily Moment");
                     if (title === null) return;
-                    const isPublic = confirm("Make this moment public?");
+                    const isPublic = await CustomUI.confirm("Make this moment public?");
                     
                     const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
                     const username = userSnap.data().username;
@@ -624,7 +707,7 @@
         };
 
         window.deletePost = async (postId, idx) => {
-            if (!confirm("Delete this moment?")) return;
+            if (!(await CustomUI.confirm("Delete this moment?"))) return;
             const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
             const userSnap = await getDoc(userRef);
             const slots = [...(userSnap.data().dailySlotsUsed || [])];
@@ -636,7 +719,7 @@
         };
 
         window.blockUser = async (uid, username) => {
-            if (confirm(`Block @${username}? You won't see their posts anymore.`)) {
+            if (await CustomUI.confirm(`Block @${username}? You won't see their posts anymore.`)) {
                 await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { 
                     blocked_users: arrayUnion(uid),
                     friends: arrayRemove(uid)
@@ -647,9 +730,9 @@
         };
 
         window.reportPost = async (postId) => {
-            if (confirm("Report this post for inappropriate content?")) {
+            if (await CustomUI.confirm("Report this post for inappropriate content?")) {
                 await addDoc(collection(db, 'reports'), { postId, reportedBy: currentUser.uid, timestamp: serverTimestamp(), type: 'daily_photo' });
-                alert("Thank you. Our moderators will review this post.");
+                await CustomUI.alert("Thank you. Our moderators will review this post.");
             }
         };
 
@@ -682,9 +765,9 @@
                 document.getElementById('feed-desc').textContent = 'Moments from mutual friends.';
                 setupFeed();
             };
-            document.getElementById('feed-toggle-public').onclick = () => {
+            document.getElementById('feed-toggle-public').onclick = async () => {
                 if (!localStorage.getItem('daily_public_warning')) {
-                    if (confirm("Notice: The public feed may contain inappropriate content. Report violations immediately. Continue?")) {
+                    if (await CustomUI.confirm("Notice: The public feed may contain inappropriate content. Report violations immediately. Continue?")) {
                         localStorage.setItem('daily_public_warning', 'true');
                     } else return;
                 }
