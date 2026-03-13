@@ -2922,7 +2922,7 @@
 
                     // 2. Create new username reservation
                     const newUsernameRef = doc(db, 'usernames', newUsername.toLowerCase());
-                    batch.set(newUsernameRef, { uid: userId });
+                    batch.set(newUsernameRef, { uid: currentUser.uid });
 
                     // 3. Update User Document
                     batch.update(userDocRef, {
