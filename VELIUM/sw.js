@@ -2,9 +2,13 @@ importScripts('uv/uv.bundle.js');
 importScripts('uv/uv.config.js');
 importScripts('baremux/index.js');
 
-// Shared transport state
-const workerPath = location.origin + "/VELIUM/baremux/worker.js";
-const connection = new BareMux.WorkerConnection(workerPath);
+// Shared transport state - Use a promise to avoid the auto-retry loop in BareMux 2.x
+let resolvePort;
+const portPromise = new Promise(resolve => {
+    resolvePort = resolve;
+});
+
+const connection = new BareMux.WorkerConnection(portPromise);
 const bareClient = new BareMux.BareClient(connection);
 
 importScripts(__uv$config.sw || 'uv/uv.sw.js');
@@ -15,7 +19,7 @@ uv.bareClient = bareClient;
 // Sync port from main thread
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
-        connection.port = event.data.port;
+        resolvePort(event.data.port);
         console.log("VELIUM SW: BareMux Port Synced");
     }
 });
