@@ -103,7 +103,7 @@
                 },
                 'twitter.com': { // NEW: X (Twitter) Provider
                     name: 'X (Twitter)',
-                    icon: '../images/x.png',
+                    icon: light ? '../images/x.png' : '../images/x-white.png',
                     instance: () => new OAuthProvider('twitter.com')
                 },
                 'password': { 

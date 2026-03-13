@@ -36,6 +36,20 @@
 
             if (pT === 'custom' && userData?.customPfp) {
                 innerHTML = `<img src="${userData.customPfp}" class="${innerClasses}">`;
+            } else if (pT === 'mibi') {
+                const eyes = userData?.mibiEyes;
+                const mouths = userData?.mibiMouth;
+                const hats = userData?.mibiHat;
+                const bg = userData?.mibiBg || '#1a1a1a';
+                
+                innerHTML = `
+                    <div class="${innerClasses}" style="background: ${bg}; position: relative;">
+                        <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
+                        ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                        ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                        ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                    </div>
+                `;
             } else if (pT === 'letter') {
                 const bg = userData?.pfpLetterBg || '#4f46e5';
                 const letter = (userData?.letterAvatarText || dN).charAt(0).toUpperCase();
@@ -44,6 +58,7 @@
                 innerHTML = `<div class="${innerClasses} flex items-center justify-center font-normal" style="background:${bg}; color: ${tC}; font-size: ${fontSize}px; line-height: 1;">${letter}</div>`;
             } else {
                 let gP = userData?.photoURL;
+                // Fallback to authUser photo if viewing own profile and userData is partial
                 if (!gP && authUser && (userData?.uid === authUser.uid || userData?.id === authUser.uid)) {
                     gP = authUser.photoURL;
                 }
@@ -59,7 +74,7 @@
                         }
                     }
 
-                    // Use fa-user icon as the robust fallback for image errors
+                    // Robust fallback for image errors
                     const fontSize = px * 0.5;
                     const fallbackHTML = `<div class="${innerClasses} flex items-center justify-center bg-gray-800 text-gray-500" style="font-size: ${fontSize}px;"><i class="fa-solid fa-user"></i></div>`;
 
@@ -72,7 +87,7 @@
                 }
             }
 
-            const bgClass = userData?.pfpType === 'letter' ? '' : 'bg-gray-800';
+            const bgClass = (pT === 'letter' || pT === 'mibi') ? '' : 'bg-gray-800';
             const outerContainerClasses = `${sizeClass} aspect-square ${roundedClass} shrink-0 flex items-center justify-center ${bgClass} border border-white/5`;
             const finalOuterContainerClasses = clipOuterContainer ? `${outerContainerClasses} overflow-hidden` : outerContainerClasses;
 
