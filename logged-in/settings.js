@@ -1000,8 +1000,6 @@
                 </div>
             `;
         }
-            `;
-        }
 
         
         /**
@@ -4129,12 +4127,6 @@ const performAccountDeletion = async (credential) => {
                 
                 if (!themes || themes.length === 0) {
                      throw new Error('themes.json is empty or invalid');
-                }
-
-                // Filter out Birthday theme if not unlocked
-                const hasBirthdaySet = !!localStorage.getItem('user_birthday');
-                if (!hasBirthdaySet) {
-                    themes = themes.filter(t => t.name !== 'Birthday');
                 }
 
                 // --- NEW: Sorting Logic ---

@@ -41,13 +41,22 @@
                     eyes: userData.mibiEyes,
                     mouths: userData.mibiMouth,
                     hats: userData.mibiHat,
-                    bgColor: userData.mibiBg
+                    bgColor: userData.mibiBg,
+                    rotation: userData.mibiRotation || 0,
+                    size: userData.mibiSize || 100,
+                    offsetX: userData.mibiOffsetX || 0,
+                    offsetY: userData.mibiOffsetY || 0
                 };
+                
                 const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = config;
+                const scale = (size || 100) / 100;
+                const rot = rotation || 0;
+                const x = offsetX || 0;
+                const y = offsetY || 0;
                 
                 innerHTML = `
                     <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'};">
-                         <div class="absolute inset-0 w-full h-full" style="transform: translate(${offsetX || 0}%, ${offsetY || 0}%) rotate(${rotation || 0}deg) scale(${(size || 100) / 100}); transform-origin: center;">
+                         <div class="absolute inset-0 w-full h-full" style="transform: translate(${x}%, ${y}%) rotate(${rot}deg) scale(${scale}); transform-origin: center;">
                              <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
                              ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
                              ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
@@ -56,7 +65,7 @@
                     </div>
                 `;
             } else if (pT === 'letter') {
-                const bg = userData?.pfpLetterBg || '#4f46e5';
+                const bg = userData?.pfpLetterBg || userData?.letterAvatarColor || '#4f46e5';
                 const letter = (userData?.letterAvatarText || dN).charAt(0).toUpperCase();
                 const fontSize = px * 0.35;
                 const tC = getLetterAvatarTextColor(bg);
@@ -92,7 +101,7 @@
                 }
             }
 
-            const bgClass = (pT === 'letter' || pT === 'mibi') ? '' : 'bg-gray-800';
+            const bgClass = (innerHTML.includes('<img') || pT === 'letter' || pT === 'mibi') ? '' : 'bg-gray-800';
             const outerContainerClasses = `${sizeClass} aspect-square ${roundedClass} shrink-0 flex items-center justify-center ${bgClass} border border-white/5`;
             const finalOuterContainerClasses = clipOuterContainer ? `${outerContainerClasses} overflow-hidden` : outerContainerClasses;
 

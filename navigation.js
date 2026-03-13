@@ -206,32 +206,26 @@ window.applyTheme = (theme) => {
     if (fwContainer) {
         if (themeToApply.name === 'The New Year') {
             fwContainer.style.opacity = '1';
-            const fireworksOptions = {
-                autoresize: true,
-                opacity: 0.5, // Reduced from 1.0 for better visibility of navbar
-                acceleration: 1.05,
-                friction: 0.97,
-                gravity: 1.5,
-                particles: 50,
-                traceLength: 3,
-                traceSpeed: 10,
-                explosion: 5,
-                intensity: 5,
-                flickering: 50,
-                lineStyle: 'round',
-                hue: { min: 0, max: 360 },
-                delay: { min: 30, max: 60 },
-                rocketsPoint: { min: 50, max: 50 }
-            };
-
-            if (typeof Fireworks !== 'undefined') {
-                if (!fireworksInstance) {
-                    fireworksInstance = new Fireworks.default(fwContainer, fireworksOptions);
-                    fireworksInstance.start();
-                } else {
-                    fireworksInstance.updateOptions(fireworksOptions);
-                    if (!fireworksInstance.isRunning) fireworksInstance.start();
-                }
+            // Start fireworks if not already running
+            if (!fireworksInstance && typeof Fireworks !== 'undefined') {
+                 fireworksInstance = new Fireworks.default(fwContainer, {
+                     autoresize: true,
+                     opacity: 0.5,
+                     acceleration: 1.05,
+                     friction: 0.97,
+                     gravity: 1.5,
+                     particles: 50,
+                     traceLength: 3,
+                     traceSpeed: 10,
+                     explosion: 5,
+                     intensity: 5,
+                     flickering: 50,
+                     lineStyle: 'round',
+                     rocketsPoint: { min: 50, max: 50 }
+                });
+                fireworksInstance.start();
+            } else if (fireworksInstance) {
+                if (!fireworksInstance.isRunning) fireworksInstance.start();
             }
         } else if (themeToApply.name === 'Birthday') {
             fwContainer.style.opacity = '1';
@@ -258,8 +252,8 @@ window.applyTheme = (theme) => {
             };
 
             triggerConfetti();
-            // ONE animation every 4 seconds
-            window._bdayInterval = setInterval(triggerConfetti, 4000);
+            // ONE animation every 5 seconds for performance
+            window._bdayInterval = setInterval(triggerConfetti, 5000);
         } else {
             fwContainer.style.opacity = '0';
             if (fireworksInstance) fireworksInstance.stop();
