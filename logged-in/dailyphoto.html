@@ -657,13 +657,45 @@
                     </div>
                 `;
 
-                document.getElementById('modal-heart-btn').onclick = () => updateDoc(doc(db, 'daily_photos', postId), { hearts: isHearted ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid) });
+                document.getElementById('modal-heart-btn').onclick = async () => {
+                    const newIsHearted = !isHearted;
+                    await updateDoc(doc(db, 'daily_photos', postId), { hearts: newIsHearted ? arrayUnion(currentUser.uid) : arrayRemove(currentUser.uid) });
+                    
+                    if (newIsHearted && !isOwner) {
+                        const meSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+                        const myUsername = meSnap.data()?.username || "Someone";
+                        await addDoc(collection(db, 'notifications'), {
+                            recipientId: data.creatorUid,
+                            senderId: currentUser.uid,
+                            senderUsername: myUsername,
+                            type: 'like',
+                            postId: postId,
+                            message: `@${myUsername} liked your moment!`,
+                            timestamp: serverTimestamp(),
+                            read: false
+                        });
+                    }
+                };
                 document.getElementById('send-comment-btn').onclick = async () => {
                     const input = document.getElementById('comment-input');
                     const text = input.value.trim();
                     if (!text) return;
                     const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
-                    await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: userSnap.data().username, text: text, timestamp: new Date() }) });
+                    const myUsername = userSnap.data()?.username || "Someone";
+                    await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: text, timestamp: new Date() }) });
+                    
+                    if (!isOwner) {
+                        await addDoc(collection(db, 'notifications'), {
+                            recipientId: data.creatorUid,
+                            senderId: currentUser.uid,
+                            senderUsername: myUsername,
+                            type: 'comment',
+                            postId: postId,
+                            message: `@${myUsername} commented on your moment!`,
+                            timestamp: serverTimestamp(),
+                            read: false
+                        });
+                    }
                     input.value = '';
                 };
             });

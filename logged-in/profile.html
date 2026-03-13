@@ -354,17 +354,19 @@
         let profileOwnerId = null; 
         let isOwnProfile = false;
         let isFollowing = false;
+        let isFollowedBy = false;
+        let isMutual = false;
         let currentUsername = "";
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 firebaseAuthUser = user;
-                
+
                 // Extract username from URL path: /logged-in/@username or query param path
                 const urlParams = new URLSearchParams(window.location.search);
                 let path = urlParams.get('path') || window.location.pathname;
                 let requestedUsername = null;
-                
+
                 if (path.includes('/@')) {
                     requestedUsername = path.split('/@')[1].split('?')[0].split('/')[0];
                 }
@@ -398,7 +400,7 @@
                             return;
                         }
                     }
-                    
+
                     isOwnProfile = profileOwnerId === user.uid;
 
                     if (isOwnProfile) {
@@ -410,12 +412,28 @@
                     }
 
                     const userDocRef = doc(db, "users", profileOwnerId);
-                    
+
+                    let userDocData = null;
+                    const updateStatusUI = () => {
+                        if (!userDocData) return;
+                        if (userDocData.isOnline && (isOwnProfile || isMutual)) {
+                            statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[var(--bg-card)] rounded-full status-online";
+                            if (userDocData.currentActivity) {
+                                activityLabel.classList.remove('hidden');
+                                activityText.textContent = userDocData.currentActivity;
+                            }
+                        } else {
+                            statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[var(--bg-card)] rounded-full status-offline";
+                            activityLabel.classList.add('hidden');
+                        }
+                    };
+
                     onSnapshot(userDocRef, (snap) => {
                         if (snap.exists()) {
                             const userData = snap.data();
+                            userDocData = userData;
                             userData.uid = profileOwnerId; // Ensure UID is present for getAvatarHTML
-                            
+
                             if (userData.blockedUsers?.includes(firebaseAuthUser.uid)) {
                                 document.getElementById('loading-overlay').classList.add('hidden');
                                 document.getElementById('blocked-overlay').classList.remove('hidden');
@@ -427,17 +445,8 @@
                             displayNameEl.textContent = userData.displayName || "Anonymous";
                             usernameEl.textContent = `@${userData.username}`;
                             descriptionEl.textContent = userData.description || "";
-                            
-                            if (userData.isOnline) {
-                                statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[var(--bg-card)] rounded-full status-online";
-                                if (userData.currentActivity) {
-                                    activityLabel.classList.remove('hidden');
-                                    activityText.textContent = userData.currentActivity;
-                                }
-                            } else {
-                                statusIndicator.className = "absolute bottom-1 right-1 w-6 h-6 border-4 border-[var(--bg-card)] rounded-full status-offline";
-                                activityLabel.classList.add('hidden');
-                            }
+
+                            updateStatusUI();
 
                             if (isOwnProfile) {
                                 editDisplayName.value = userData.displayName || "";
@@ -457,6 +466,7 @@
                         document.getElementById('not-found-overlay').classList.remove('hidden');
                     });
 
+                    window.updateStatusUI = updateStatusUI;
                     loadCounts();
                     loadDailyPhotos();
                     setupFollowModalListeners();
@@ -541,8 +551,15 @@
         function checkFollowStatus() {
             onSnapshot(doc(db, 'users', profileOwnerId, 'followers', firebaseAuthUser.uid), snap => {
                 isFollowing = snap.exists();
+                isMutual = isFollowing && isFollowedBy;
                 followBtn.textContent = isFollowing ? 'Following' : 'Follow';
                 followBtn.classList.toggle('primary-cta', !isFollowing);
+                if (window.updateStatusUI) window.updateStatusUI();
+            });
+            onSnapshot(doc(db, 'users', firebaseAuthUser.uid, 'followers', profileOwnerId), snap => {
+                isFollowedBy = snap.exists();
+                isMutual = isFollowing && isFollowedBy;
+                if (window.updateStatusUI) window.updateStatusUI();
             });
         }
 
@@ -563,6 +580,19 @@
                 batch.set(theirFollowersRef, { followedAt: new Date() });
                 batch.update(meRef, { followingCount: increment(1) });
                 batch.update(ownerRef, { followerCount: increment(1) });
+
+                // Add Notification
+                const meSnap = await getDoc(meRef);
+                const myUsername = meSnap.data()?.username || "Someone";
+                await addDoc(collection(db, 'notifications'), {
+                    recipientId: profileOwnerId,
+                    senderId: firebaseAuthUser.uid,
+                    senderUsername: myUsername,
+                    type: 'follow',
+                    message: `@${myUsername} followed you!`,
+                    timestamp: serverTimestamp(),
+                    read: false
+                });
             }
             await batch.commit();
         };
@@ -582,11 +612,11 @@
                 where('status', '==', 'active'),
                 limit(6)
             );
-            
+
             const snap = await getDocs(q);
-            
+
             dailyphotoContainer.innerHTML = '';
-            
+
             const visiblePhotos = snap.docs.filter(doc => {
                 const data = doc.data();
                 if (isOwnProfile) return true;
@@ -612,10 +642,15 @@
 
         function setupFollowModalListeners() {
             btnShowFollowers.onclick = () => openFollowListModal('followers');
-            btnShowFollowing.onclick = () => openFollowListModal('following');
+            btnShowFollowing.onclick = () => {
+                if (!isOwnProfile && !isMutual) {
+                    alert("You can only view mutual following lists.");
+                    return;
+                }
+                openFollowListModal('following');
+            };
             closeFollowModalBtn.onclick = () => closeModal(followListModal);
         }
-
         async function openFollowListModal(type) {
             followModalTitle.textContent = type === 'followers' ? 'Followers' : 'Following';
             followListContainer.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-indigo-500"></i></div>';

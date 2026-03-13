@@ -2100,6 +2100,39 @@ let db;
                 // Check if hardcoded privileged email
                 isPrivilegedUser = user.email === PRIVILEGED_EMAIL;
 
+                // Notifications Listener
+                db.collection('notifications')
+                    .where('recipientId', '==', user.uid)
+                    .orderBy('timestamp', 'desc')
+                    .limit(20)
+                    .onSnapshot(snap => {
+                        snap.docChanges().forEach(change => {
+                            if (change.type === 'added') {
+                                const data = change.doc.data();
+                                const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
+                                
+                                // Avoid showing old notifications as popups on initial load
+                                const isNew = (new Date() - timestamp) < 10000; 
+
+                                // Add to history
+                                const alreadyInHistory = notificationHistory.find(n => n.id === change.doc.id);
+                                if (!alreadyInHistory) {
+                                    notificationHistory.unshift({
+                                        message: data.message,
+                                        timestamp: timestamp,
+                                        id: change.doc.id
+                                    });
+                                    if (notificationHistory.length > 20) notificationHistory.pop();
+                                    updateNotificationMenu();
+                                    
+                                    if (isNew) {
+                                        window.showNotification(data.message, true);
+                                    }
+                                }
+                            }
+                        });
+                    }, err => console.warn("Notifications listener error:", err));
+
                 // Set up real-time listener for user data
                 db.collection('users').doc(user.uid).onSnapshot(async (doc) => {
                     userData = doc.exists ? doc.data() : null;
@@ -2195,17 +2228,19 @@ let db;
     const activeNotifs = new Map(); // message -> { element, count, timeout }
     const notificationHistory = [];
 
-    window.showNotification = function(message) {
+    window.showNotification = function(message, skipHistory = false) {
         if (!message) return;
         
-        // Add to history
-        notificationHistory.unshift({
-            message: message,
-            timestamp: new Date(),
-            id: Date.now()
-        });
-        if (notificationHistory.length > 20) notificationHistory.pop();
-        updateNotificationMenu();
+        if (!skipHistory) {
+            // Add to history if it's a local/manual notification (like alert override)
+            notificationHistory.unshift({
+                message: message,
+                timestamp: new Date(),
+                id: 'local-' + Date.now()
+            });
+            if (notificationHistory.length > 20) notificationHistory.pop();
+            updateNotificationMenu();
+        }
 
         const container = document.getElementById('viro-notif-container');
         if (!container) return;
