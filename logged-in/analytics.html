@@ -692,6 +692,41 @@
         </div>
     </div>
 
+    <div id="delete-user-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-start mb-6 border-b border-[#333] pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-red-900/20 flex items-center justify-center text-red-500">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </div>
+                    <h3 class="text-xl text-white font-light">Delete Account</h3>
+                </div>
+                <button id="close-delete-modal" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark fa-lg"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div class="bg-red-900/10 border border-red-900/30 rounded-[14px] p-4 mb-4">
+                    <p class="text-red-400 text-sm font-medium mb-1">DANGER: PERMANENT ACTION</p>
+                    <p class="text-red-400/70 text-xs">This will delete the Firestore document AND the Firebase Auth account. This cannot be undone.</p>
+                </div>
+
+                <p class="text-gray-300 text-sm">To confirm, please type the username of the user below:</p>
+                
+                <div class="bg-[#111] p-4 rounded-[14px] border border-[#333] text-center select-all cursor-pointer group" title="Click to select all">
+                    <span id="delete-username-target" class="text-white font-mono font-bold text-lg group-hover:text-blue-400 transition-colors">...</span>
+                </div>
+
+                <input type="text" id="delete-confirm-input" class="w-full bg-[#111] text-white border border-[#333] rounded-[14px] p-3 text-center text-lg font-mono focus:outline-none focus:border-red-500" placeholder="Type username here...">
+
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#333]">
+                    <button id="cancel-delete" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+                    <button id="confirm-delete-btn" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-[14px] text-sm transition font-bold shadow-lg shadow-red-900/20 w-full sm:w-auto">
+                        Permanently Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -755,6 +790,7 @@
         let osChartInstance = null;
         let userToBan = null;
         let userToTag = null;
+        let userToDelete = null;
         
         let unsubscribeUsers = null;
         let unsubscribeBans = null;
@@ -2033,21 +2069,8 @@
                     } catch (err) { alert("Action failed: " + err.message); }
                 }
             } else if (action === 'delete-user') {
-                const username = btn.dataset.username;
-                const confirmPrompt = prompt(`WARNING: This will permanently delete the user's Firestore document AND their Firebase Auth account.\n\nType the user's UID to confirm deletion:\n${uid}`);
-                
-                if (confirmPrompt === uid) {
-                    try {
-                        const deleteAuthUser = httpsCallable(functions, 'deleteAuthUser');
-                        await deleteAuthUser({ uid: uid }); // Call Cloud Function to delete Auth
-                        await deleteDoc(doc(db, 'users', uid)); // Delete Firestore Doc
-                        alert(`Successfully deleted user ${username} (${uid})`);
-                    } catch (err) {
-                        alert("Deletion failed: " + err.message);
-                    }
-                } else if (confirmPrompt !== null) {
-                    alert("UID mismatch. Deletion cancelled.");
-                }
+                userToDelete = { uid, username: btn.dataset.username };
+                openDeleteModal();
             } else if (action === 'view-details') {
                 showUserDetails(uid);
             } else if (action === 'set-tag') {
@@ -2122,6 +2145,29 @@
         const closeTagModal = () => {
             document.getElementById('tag-modal').classList.remove('open');
             userToTag = null;
+        };
+
+        const openDeleteModal = () => {
+            const targetEl = document.getElementById('delete-username-target');
+            targetEl.textContent = userToDelete.username;
+            document.getElementById('delete-confirm-input').value = '';
+            document.getElementById('delete-user-modal').classList.add('open');
+            
+            // Auto-select text on click
+            targetEl.onclick = () => {
+                const range = document.createRange();
+                range.selectNodeContents(targetEl);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            };
+
+            setTimeout(() => document.getElementById('delete-confirm-input').focus(), 100);
+        };
+
+        const closeDeleteModal = () => {
+            document.getElementById('delete-user-modal').classList.remove('open');
+            userToDelete = null;
         };
 
         document.getElementById('close-tag-modal').addEventListener('click', closeTagModal);
@@ -2445,6 +2491,36 @@
 
         document.getElementById('chart-period').addEventListener('change', () => renderChart(allUsers));
         document.getElementById('chart-datatype').addEventListener('change', () => renderChart(allUsers));
+
+        document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+            if (!userToDelete) return;
+            
+            const typedUsername = document.getElementById('delete-confirm-input').value.trim();
+            if (typedUsername !== userToDelete.username) {
+                alert("Username does not match. Please type the exact username to confirm.");
+                return;
+            }
+
+            const btn = document.getElementById('confirm-delete-btn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Deleting...`;
+
+            try {
+                const deleteAuthUser = httpsCallable(functions, 'deleteAuthUser');
+                await deleteAuthUser({ uid: userToDelete.uid });
+                await deleteDoc(doc(db, 'users', userToDelete.uid));
+                
+                alert(`Successfully deleted user ${userToDelete.username}`);
+                closeDeleteModal();
+            } catch (err) {
+                alert("Deletion failed: " + err.message);
+                btn.disabled = false;
+                btn.innerHTML = `Permanently Delete`;
+            }
+        });
+
+        document.getElementById('close-delete-modal').addEventListener('click', closeDeleteModal);
+        document.getElementById('cancel-delete').addEventListener('click', closeDeleteModal);
 
         init();
     </script>
