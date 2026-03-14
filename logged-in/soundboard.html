@@ -576,6 +576,8 @@
             toasterTimeout = setTimeout(() => statusToaster.classList.remove('visible'), 2000);
         }
 
+        const soundBlacklist = ['ear ringing', 'smoke detector'];
+
         async function loadSoundsLocal() {
             try {
                 const response = await fetch('https://cdn.jsdelivr.net/npm/4sp-sounds@latest/soundboard_names.json');
@@ -586,6 +588,7 @@
                 if (data.NormalSounds) {
                     data.NormalSounds.forEach(f => {
                         const name = f.replace('.mp3', '').replace(/_/g, ' ');
+                        if (soundBlacklist.some(term => name.toLowerCase().includes(term.toLowerCase()))) return;
                         const path = `https://cdn.jsdelivr.net/npm/4sp-sounds@latest/sounds/${f}`;
                         createSoundButton(name, normalSoundsContainer, path);
                     });
@@ -594,6 +597,7 @@
                 if (data.ExplicitSounds) {
                     data.ExplicitSounds.forEach(f => {
                         const name = f.replace('.mp3', '').replace(/_/g, ' ');
+                        if (soundBlacklist.some(term => name.toLowerCase().includes(term.toLowerCase()))) return;
                         const path = `https://cdn.jsdelivr.net/npm/4sp-sounds@latest/sounds/${f}`;
                         createSoundButton(name, explicitSoundsContainer, path);
                     });
@@ -612,6 +616,7 @@
             
             if (thirdPartySounds && Array.isArray(thirdPartySounds)) {
                 thirdPartySounds.forEach(sound => {
+                    if (soundBlacklist.some(term => sound.name.toLowerCase().includes(term.toLowerCase()))) return;
                     const fullAudioUrl = baseUrl + sound.mp3;
                     createSoundButton(sound.name, thirdPartySoundsContainer, fullAudioUrl);
                 });

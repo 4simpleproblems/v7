@@ -2103,9 +2103,15 @@ let db;
                 // Notifications Listener
                 db.collection('notifications')
                     .where('recipientId', '==', user.uid)
-                    .orderBy('timestamp', 'desc')
-                    .limit(20)
+                    .limit(50)
                     .onSnapshot(snap => {
+                        let newDocs = snap.docChanges()
+                            .filter(change => change.type === 'added')
+                            .map(change => ({ id: change.doc.id, ...change.doc.data() }));
+                        
+                        // Sort by timestamp desc client-side if needed, 
+                        // but here we just process them as they come.
+                        
                         snap.docChanges().forEach(change => {
                             if (change.type === 'added') {
                                 const data = change.doc.data();
@@ -2122,6 +2128,10 @@ let db;
                                         timestamp: timestamp,
                                         id: change.doc.id
                                     });
+                                    
+                                    // Keep history sorted
+                                    notificationHistory.sort((a, b) => b.timestamp - a.timestamp);
+                                    
                                     if (notificationHistory.length > 20) notificationHistory.pop();
                                     updateNotificationMenu();
                                     

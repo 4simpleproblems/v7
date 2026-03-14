@@ -33,7 +33,7 @@
         (async () => {
             if ("serviceWorker" in navigator) {
                 try {
-                    await navigator.serviceWorker.register("/logged-in/sw.js", {
+                    await navigator.serviceWorker.register("/sw.js", {
                         scope: "/logged-in/"
                     });
                     console.log("VERN SW Registered");
