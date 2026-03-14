@@ -27,7 +27,8 @@
             serverTimestamp,
             deleteDoc, // NEW FIREBASE IMPORT
             setDoc,
-            writeBatch
+            writeBatch,
+            deleteField
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { 
             getStorage, 
