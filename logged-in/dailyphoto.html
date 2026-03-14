@@ -197,6 +197,29 @@
         }
         .photo-thumbnail:hover img { transform: scale(1.05); }
         
+        .photo-thumbnail.is-mutual {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+        .mutual-badge {
+            position: absolute;
+            top: 0.75rem;
+            left: 0.75rem;
+            background: var(--accent-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
         .overlay-grad {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 50%);
@@ -822,7 +845,7 @@
             }
         }
 
-        function setupFeed() {
+        async function setupFeed() {
             unsubPosts();
             const grid = document.getElementById('photo-feed');
             const toggleSchool = document.getElementById('feed-toggle-school');
@@ -831,71 +854,99 @@
             grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin opacity-20 text-3xl"></i></div>';
 
             const today = new Date(); today.setHours(0,0,0,0);
-            let q;
+            
+            // --- Hybrid Feed Logic ---
+            try {
+                let primaryQuery;
+                const isNoSchool = !userData.schoolId || userData.schoolSkipped;
 
-            // --- No School Logic ---
-            if (!userData.schoolId || userData.schoolSkipped) {
-                // Update toggle text for no-school mode
-                toggleSchool.textContent = 'Mutuals';
-                toggleDistrict.textContent = 'Public';
-                
-                if (feedMode === 'district' || feedMode === 'public') {
-                    // Show all public posts from users who also don't have a school
-                    q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', null), where('createdAt', '>=', today), limit(50));
+                if (isNoSchool) {
+                    toggleSchool.textContent = 'Mutuals';
+                    toggleDistrict.textContent = 'Public';
+                    if (feedMode === 'district' || feedMode === 'public') {
+                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', null), where('createdAt', '>=', today), limit(50));
+                    } else {
+                        const uids = [currentUser.uid, ...mutualUids].slice(0, 10);
+                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', uids), where('createdAt', '>=', today));
+                    }
                 } else {
-                    // Show posts from mutual friends who also don't have a school (or just mutuals)
-                    const uids = [currentUser.uid, ...mutualUids].slice(0, 10);
-                    q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', uids), where('createdAt', '>=', today));
+                    toggleSchool.textContent = 'School';
+                    toggleDistrict.textContent = 'District';
+                    if (feedMode === 'district') {
+                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('districtId', '==', userData.districtId), where('createdAt', '>=', today), limit(50));
+                    } else {
+                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', userData.schoolId), where('createdAt', '>=', today), limit(50));
+                    }
                 }
-            } else {
-                // School system active
-                toggleSchool.textContent = 'School';
-                toggleDistrict.textContent = 'District';
 
-                if (feedMode === 'district') {
-                    q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('districtId', '==', userData.districtId), where('createdAt', '>=', today), limit(50));
-                } else {
-                    q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', userData.schoolId), where('createdAt', '>=', today), limit(50));
+                // If in school/district mode, also fetch mutuals to inject them
+                let friendDocs = [];
+                if (!isNoSchool && mutualUids.length > 0) {
+                    const friendQ = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', mutualUids.slice(0, 10)), where('createdAt', '>=', today));
+                    const friendSnap = await getDocs(friendQ);
+                    friendDocs = friendSnap.docs;
                 }
+
+                unsubPosts = onSnapshot(primaryQuery, snap => {
+                    grid.innerHTML = '';
+                    const modeLabel = isNoSchool ? (feedMode === 'district' ? 'the network' : 'your mutuals') : (feedMode === 'district' ? 'your district' : 'your school');
+                    
+                    // Merge and Deduplicate
+                    const combinedMap = new Map();
+                    snap.docs.forEach(d => combinedMap.set(d.id, d));
+                    friendDocs.forEach(d => combinedMap.set(d.id, d));
+                    
+                    const allDocs = Array.from(combinedMap.values());
+
+                    if (allDocs.length === 0) {
+                        grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today from ${modeLabel}.</p>`;
+                        return;
+                    }
+                    
+                    // Sort: Mutuals first, then by time
+                    const sortedDocs = allDocs.sort((a, b) => {
+                        const isAMutual = mutualUids.includes(a.data().creatorUid);
+                        const isBMutual = mutualUids.includes(b.data().creatorUid);
+                        
+                        if (isAMutual && !isBMutual) return -1;
+                        if (!isAMutual && isBMutual) return 1;
+                        
+                        const timeA = a.data().createdAt?.toMillis() || 0;
+                        const timeB = b.data().createdAt?.toMillis() || 0;
+                        return timeB - timeA;
+                    });
+
+                    sortedDocs.forEach(docSnap => {
+                        const data = docSnap.data();
+                        if (blockedUsers.includes(data.creatorUid)) return;
+                        
+                        const isMutual = mutualUids.includes(data.creatorUid);
+                        const el = document.createElement('div');
+                        el.className = `photo-thumbnail ${isMutual ? 'is-mutual' : ''}`;
+                        el.innerHTML = `
+                            ${isMutual ? `<div class="mutual-badge"><i class="fas fa-heart"></i> Mutual</div>` : ''}
+                            <img src="${data.imageURL || data.imageBase64}" loading="lazy">
+                            <div class="overlay-grad"></div>
+                            <div class="absolute top-3 right-3 flex gap-2">
+                                <span class="text-white text-[10px] bg-black/40 px-2 py-1 rounded-full backdrop-blur-md border border-white/10"><i class="fas fa-heart text-red-500 mr-1"></i> ${data.hearts?.length || 0}</span>
+                                <span class="text-white text-[10px] bg-black/40 px-2 py-1 rounded-full backdrop-blur-md border border-white/10"><i class="fas fa-comment text-indigo-400 mr-1"></i> ${data.comments?.length || 0}</span>
+                            </div>
+                            <div class="title-overlay">
+                                <p class="font-bold text-white">@${data.creatorUsername}</p>
+                                <p class="text-[10px] opacity-80 truncate">${data.title}</p>
+                            </div>
+                        `;
+                        el.onclick = () => window.viewPost(docSnap.id);
+                        grid.appendChild(el);
+                    });
+                }, err => {
+                    console.error("Feed snapshot error:", err);
+                    grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Error loading feed. (Check Console)</p>';
+                });
+
+            } catch (e) {
+                console.error("Setup feed error:", e);
             }
-
-            unsubPosts = onSnapshot(q, snap => {
-                grid.innerHTML = '';
-                const modeLabel = (!userData.schoolId || userData.schoolSkipped) ? (feedMode === 'district' ? 'the network' : 'your mutuals') : (feedMode === 'district' ? 'your district' : 'your school');
-                
-                if (snap.empty) { grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today from ${modeLabel}.</p>`; return; }
-                
-                // Sort client-side to avoid index errors
-                const sortedDocs = [...snap.docs].sort((a, b) => {
-                    const timeA = a.data().createdAt?.toMillis() || 0;
-                    const timeB = b.data().createdAt?.toMillis() || 0;
-                    return timeB - timeA;
-                });
-
-                sortedDocs.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if (blockedUsers.includes(data.creatorUid)) return;
-                    const el = document.createElement('div');
-                    el.className = 'photo-thumbnail';
-                    el.innerHTML = `
-                        <img src="${data.imageURL || data.imageBase64}" loading="lazy">
-                        <div class="overlay-grad"></div>
-                        <div class="absolute top-3 right-3 flex gap-2">
-                            <span class="text-white text-[10px] bg-black/40 px-2 py-1 rounded-full backdrop-blur-md border border-white/10"><i class="fas fa-heart text-red-500 mr-1"></i> ${data.hearts?.length || 0}</span>
-                            <span class="text-white text-[10px] bg-black/40 px-2 py-1 rounded-full backdrop-blur-md border border-white/10"><i class="fas fa-comment text-indigo-400 mr-1"></i> ${data.comments?.length || 0}</span>
-                        </div>
-                        <div class="title-overlay">
-                            <p class="font-bold text-white">@${data.creatorUsername}</p>
-                            <p class="text-[10px] opacity-80 truncate">${data.title}</p>
-                        </div>
-                    `;
-                    el.onclick = () => window.viewPost(docSnap.id);
-                    grid.appendChild(el);
-                });
-            }, err => {
-                console.error("Feed snapshot error:", err);
-                grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Error loading feed. (Check Console)</p>';
-            });
         }
 
         window.viewPost = (postId) => {
