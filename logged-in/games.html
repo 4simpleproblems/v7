@@ -89,8 +89,8 @@
             padding-bottom: 100px;
         }
         
-        h1, h2, h3, .font-bold, .font-semibold, strong {
-            font-weight: 400 !important;
+        h1, h2, h3, .font-medium, .font-semibold, strong {
+            font-weight: 300 !important;
         }
 
         /* --- Toolbar Button Style (Global) --- */
@@ -599,7 +599,7 @@
             <i class="fa-solid fa-users mr-2"></i>Credits
         </button>
 
-        <div id="favoritesSection">            <h2 id="favoritesHeader" class="text-center text-3xl font-bold mt-12 mb-6 text-[var(--text-main)]" style="display: none;">
+        <div id="favoritesSection">            <h2 id="favoritesHeader" class="text-center text-3xl font-medium mt-12 mb-6 text-[var(--text-main)]" style="display: none;">
                 <strong>Favorites</strong>
             </h2>
             <div class="games-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-4" id="favoritesGameList" style="display: none;"></div>
@@ -634,7 +634,7 @@
             <div class="pl-4 pr-2 text-[var(--text-muted)] opacity-60">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </div>
-            <input type="text" id="searchInput" placeholder="Search for games…" autocomplete="off" class="w-full py-3 pr-4 bg-transparent placeholder-[var(--text-muted)] opacity-80 focus:outline-none focus:ring-0 text-base font-black" />
+            <input type="text" id="searchInput" placeholder="Search for games…" autocomplete="off" class="w-full py-3 pr-4 bg-transparent placeholder-[var(--text-muted)] opacity-80 focus:outline-none focus:ring-0 text-base font-medium" />
         </div>
     </div>
     
@@ -1030,7 +1030,7 @@
                     <div class="image-overlay absolute inset-0 transition-colors duration-200"></div>
                     <div class="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between rounded-2xl">
                         <div class="flex items-start justify-between w-full">
-                            <h3 class="text-4xl font-black ${smartTextClass} truncate drop-shadow-lg" style="max-width: 80%;" title="${game.name}">${game.name}</h3>
+                            <h3 class="text-4xl font-medium ${smartTextClass} truncate drop-shadow-lg" style="max-width: 80%;" title="${game.name}">${game.name}</h3>
                             <div class="flex items-center gap-1.5 bg-[var(--accent-glow)] backdrop-blur-md rounded-2xl p-1.5 border border-[var(--accent-color)] shadow-lg">
                                 ${gameButtonsHtml}
                                 ${favoriteButtonHtml}
@@ -1101,7 +1101,7 @@
             card.innerHTML = `
                 <div class="relative w-full cursor-pointer group">
                     <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover"></div>
-                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--accent-glow)] backdrop-blur-md rounded-xl px-3 py-1.5 ${smartTextClass} truncate text-sm font-black shadow-lg border border-[var(--accent-color)]" title="${game.name}">${game.name}</h3>
+                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--accent-glow)] backdrop-blur-md rounded-xl px-3 py-1.5 ${smartTextClass} truncate text-sm font-medium shadow-lg border border-[var(--accent-color)]" title="${game.name}">${game.name}</h3>
                     <div class="absolute bottom-2 right-2 bg-[var(--accent-glow)] backdrop-blur-md rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg border border-[var(--accent-color)]">
                         ${game.isDownload ? `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download transition-colors"></i></a>` : `<button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`}
                         <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>
@@ -1466,7 +1466,7 @@
                     <div class="flex items-center truncate min-w-0">
                         <img src="${imgSrc}" alt="${game.name}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
                         <div class="flex flex-col ml-3 truncate min-w-0">
-                            <span class="font-black truncate ${smartTextClass}" title="${game.name}">${game.name}</span>
+                            <span class="font-medium truncate ${smartTextClass}" title="${game.name}">${game.name}</span>
                             <span class="category-badge w-fit ${catColor}">${catLabel}</span>
                         </div>
                     </div>
@@ -1695,7 +1695,7 @@
             if (urlCat) currentCategoryIndex = Math.max(0, categories.findIndex(c => c.replace(/\s+/g, '-').toLowerCase() === urlCat.toLowerCase()));
 
             categorySlider.style.width = `${categories.length * 100}%`;
-            categorySlider.innerHTML = categories.map(cat => `<div class="w-64 flex-shrink-0"><h2 class="text-3xl font-bold ${categoryColors[cat] || 'text-[var(--text-main)]'}"><strong>${cat}</strong></h2></div>`).join('');
+            categorySlider.innerHTML = categories.map(cat => `<div class="w-64 flex-shrink-0"><h2 class="text-3xl font-medium ${categoryColors[cat] || 'text-[var(--text-main)]'}"><strong>${cat}</strong></h2></div>`).join('');
 
             switchCategory(currentCategoryIndex);
             
