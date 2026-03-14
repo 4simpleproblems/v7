@@ -263,6 +263,49 @@
         }
         #comments-section::-webkit-scrollbar { display: none; }
 
+        /* --- SCROLL FADE EFFECTS --- */
+        .scroll-container-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+        .scroll-fade-top, .scroll-fade-bottom {
+            position: absolute;
+            left: 0; right: 0; height: 40px;
+            pointer-events: none;
+            z-index: 10;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+        .scroll-fade-top {
+            top: 0;
+            background: linear-gradient(to bottom, var(--bg-card), transparent);
+        }
+        .scroll-fade-bottom {
+            bottom: 0;
+            background: linear-gradient(to top, var(--bg-card), transparent);
+        }
+        .scroll-fade-active { opacity: 1; }
+
+        .custom-scroll {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .custom-scroll::-webkit-scrollbar { display: none; }
+
+        .list-item-themed {
+            background-color: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-main);
+            border-radius: 1rem;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .list-item-themed:hover {
+            background-color: var(--btn-bg);
+            border-color: var(--accent-color);
+            transform: translateX(4px);
+        }
+
         /* Custom Tooltip */
         #custom-tooltip {
             position: fixed; background-color: #000; border: 1px solid #333; color: #fff;
@@ -368,21 +411,31 @@
                     <input type="text" id="state-search-input" placeholder="Search by name or abbreviation (e.g. Ohio or OH)..." class="w-full p-4 pl-12 bg-black/40 border border-[var(--border-main)] rounded-2xl outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] transition-all">
                     <i class="fas fa-map-marker-alt absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-lg"></i>
                 </div>
-                <div id="state-results" class="space-y-2 max-h-48 overflow-y-auto mb-6 custom-scroll"></div>
+                <div class="scroll-container-wrapper">
+                    <div id="state-fade-top" class="scroll-fade-top"></div>
+                    <div id="state-results" class="space-y-2 max-h-48 overflow-y-auto mb-6 custom-scroll"></div>
+                    <div id="state-fade-bottom" class="scroll-fade-bottom"></div>
+                </div>
             </div>
 
             <div id="school-step" class="hidden">
                 <label class="text-xs font-bold opacity-40 uppercase mb-2 block">2. Find Your School</label>
                 <div class="relative mb-4">
-                    <input type="text" id="school-search-input" placeholder="Search by school, district, or tag..." class="w-full p-4 pl-12 bg-black/40 border border-[var(--border-main)] rounded-2xl outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] transition-all">
+                    <input type="text" id="school-search-input" placeholder="Search by school, district, or county..." class="w-full p-4 pl-12 bg-black/40 border border-[var(--border-main)] rounded-2xl outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] transition-all">
                     <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-lg"></i>
                 </div>
-                <div id="school-results" class="space-y-2 max-h-60 overflow-y-auto mb-6 custom-scroll"></div>
-                <button id="back-to-states" class="text-xs font-bold text-indigo-500 hover:text-indigo-400 transition-colors flex items-center gap-2"><i class="fas fa-arrow-left"></i> Change State</button>
+                <div class="scroll-container-wrapper">
+                    <div id="school-fade-top" class="scroll-fade-top"></div>
+                    <div id="school-results" class="space-y-2 max-h-60 overflow-y-auto mb-6 custom-scroll"></div>
+                    <div id="school-fade-bottom" class="scroll-fade-bottom"></div>
+                </div>
+                <button id="back-to-states" class="btn-toolbar-style w-full py-3 mt-4 text-xs font-bold flex items-center justify-center gap-2">
+                    <i class="fas fa-arrow-left"></i> Change State
+                </button>
             </div>
 
             <div class="mt-8 pt-6 border-t border-[var(--border-main)] flex gap-3">
-                <button id="skip-school-btn" class="px-6 py-3 rounded-xl text-sm font-bold opacity-40 hover:opacity-100 transition-all">Skip (Not in US)</button>
+                <button id="skip-school-btn" class="btn-toolbar-style w-full py-3 opacity-60 hover:opacity-100 transition-all font-bold">Skip (Not in US)</button>
             </div>
         </div>
     </div>
@@ -582,12 +635,16 @@
                 if (!term) { stateResults.innerHTML = ''; return; }
                 const filtered = allStates.filter(s => s.name.toLowerCase().includes(term) || s.abbr.toLowerCase().includes(term));
                 stateResults.innerHTML = filtered.map(s => `
-                    <div class="p-4 bg-black/20 border border-[var(--border-main)] rounded-xl cursor-pointer hover:border-indigo-500 transition-all flex justify-between items-center group" onclick="window.selectState('${s.abbr}')">
+                    <div class="list-item-themed flex justify-between items-center group" onclick="window.selectState('${s.abbr}')">
                         <span class="font-bold">${s.name}</span>
                         <span class="text-xs opacity-40 group-hover:opacity-100 transition-opacity">${s.abbr}</span>
                     </div>
                 `).join('');
+                updateScrollFades(stateResults, 'state-fade-top', 'state-fade-bottom');
             };
+
+            stateResults.onscroll = () => updateScrollFades(stateResults, 'state-fade-top', 'state-fade-bottom');
+            schoolResults.onscroll = () => updateScrollFades(schoolResults, 'school-fade-top', 'school-fade-bottom');
 
             window.selectState = async (abbr) => {
                 selectedState = allStates.find(s => s.abbr === abbr);
@@ -611,17 +668,15 @@
 
             function renderSchools(term) {
                 const search = term.toLowerCase();
-                // Filter by name, district, or any other field (tags)
+                // Filter by name or district - EXCLUDING level (elementary/middle/etc)
                 const filtered = currentStateSchools.filter(s => {
                     if (!search) return true;
                     return s.name.toLowerCase().includes(search) || 
-                           (s.district && s.district.toLowerCase().includes(search)) ||
-                           (s.level && s.level.toLowerCase().includes(search)) ||
-                           (s.locale && s.locale.toLowerCase().includes(search));
+                           (s.district && s.district.toLowerCase().includes(search));
                 }).slice(0, 100);
 
                 schoolResults.innerHTML = filtered.map(s => `
-                    <div class="p-4 bg-black/20 border border-[var(--border-main)] rounded-xl cursor-pointer hover:border-indigo-500 transition-all" onclick="window.selectSchool('${s.name}', '${s.district}')">
+                    <div class="list-item-themed" onclick="window.selectSchool('${s.name}', '${s.district}')">
                         <div class="font-bold text-sm mb-1">${s.name}</div>
                         <div class="flex gap-3 text-[10px] opacity-40 uppercase tracking-widest font-bold">
                             <span>${s.district || 'Independent'}</span>
@@ -634,6 +689,20 @@
                 if (filtered.length === 0) {
                     schoolResults.innerHTML = '<p class="text-center py-8 opacity-30 italic text-sm">No schools found matching your search.</p>';
                 }
+                updateScrollFades(schoolResults, 'school-fade-top', 'school-fade-bottom');
+            }
+
+            function updateScrollFades(el, topId, bottomId) {
+                const topFade = document.getElementById(topId);
+                const bottomFade = document.getElementById(bottomId);
+                if (!el || !topFade || !bottomFade) return;
+
+                const isAtTop = el.scrollTop <= 5;
+                const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 5;
+                const hasScroll = el.scrollHeight > el.clientHeight;
+
+                topFade.classList.toggle('scroll-fade-active', hasScroll && !isAtTop);
+                bottomFade.classList.toggle('scroll-fade-active', hasScroll && !isAtBottom);
             }
 
             window.selectSchool = async (schoolName, districtName) => {
