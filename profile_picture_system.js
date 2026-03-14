@@ -115,3 +115,4 @@ export function getAvatarHTML(userData, sizeClass = "w-10 h-10", forceCSS = fals
         </div>
     `;
 }
+// Made with ❤️ from 4SP
