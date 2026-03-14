@@ -241,8 +241,6 @@
             border: 1px solid var(--accent-color);
             text-align: left;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            mask-image: linear-gradient(to right, black 80%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
         }
         
         /* --- MODAL STYLES --- */
@@ -290,7 +288,7 @@
 
         #comments-section {
             flex-grow: 1;
-            background-color: rgba(0,0,0,0.2); 
+            background-color: rgba(255,255,255,0.05); 
             border-radius: 1.25rem; 
             padding: 1rem;
             margin-bottom: 1rem;
@@ -1022,7 +1020,7 @@
                                 </div>
                             </div>
 
-                            <div id="comments-section" class="bg-white/10 border border-white/10">
+                            <div id="comments-section">
                                 ${(data.comments || []).map(c => `
                                     <div class="mb-3 text-xs">
                                         <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
