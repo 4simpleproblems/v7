@@ -257,53 +257,61 @@
         .modal-content {
             background-color: var(--bg-card); 
             border: 1px solid var(--border-main);
-            border-radius: 1.5rem; 
-            width: 95%; 
-            max-width: 1200px;
-            height: 90vh;
+            border-radius: 1.25rem; 
+            padding: 0;
+            width: 1200px;
+            max-width: 95%; 
+            height: auto;
+            max-height: 90vh;
+            aspect-ratio: 16 / 9;
             display: flex; 
-            flex-direction: column; 
+            flex-direction: row; 
             overflow: hidden;
             position: relative;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        @media (min-width: 1024px) {
-            .modal-content { flex-direction: row; }
+        @media (max-width: 1024px) {
+            .modal-content {
+                flex-direction: column;
+                aspect-ratio: auto;
+                height: 90vh;
+            }
         }
         
         #photo-display-area {
-            flex: 1;
+            flex: 2;
             background-color: #000;
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
             overflow: hidden;
-            min-width: 0;
-        }        
+            cursor: pointer;
+        }
+        
         .photo-modal-img {
             width: 100%; height: 100%; object-fit: contain; 
         }
 
         #photo-info-panel {
+            flex: 1;
+            min-width: 350px;
+            max-width: 400px;
             background-color: var(--bg-card);
+            border-left: 1px solid var(--border-main);
             display: flex; 
             flex-direction: column;
             padding: 1.5rem;
-            width: 100%; 
+            position: relative;
             min-height: 0;
-            border-top: 1px solid var(--border-main);
         }
 
-        @media (min-width: 1024px) {
+        @media (max-width: 1024px) {
             #photo-info-panel {
-                width: 400px;
-                flex: 0 0 400px;
-                min-width: 400px;
-                max-width: 400px;
-                height: 100%;
-                border-top: none;
-                border-left: 1px solid var(--border-main);
+                max-width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--border-main);
             }
         }
 
