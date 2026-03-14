@@ -231,7 +231,7 @@
         .title-overlay {
             position: absolute; bottom: 0.75rem; left: 0.75rem; right: 0.75rem;
             color: white; font-size: 0.8rem; font-weight: 400;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; overflow: hidden;
             z-index: 10;
             background: var(--accent-glow);
             backdrop-filter: blur(12px);
@@ -241,6 +241,8 @@
             border: 1px solid var(--accent-color);
             text-align: left;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            mask-image: linear-gradient(to right, black 80%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
         }
         
         /* --- MODAL STYLES --- */
