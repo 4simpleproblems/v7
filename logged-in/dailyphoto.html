@@ -230,9 +230,19 @@
         }
         .title-overlay {
             position: absolute; bottom: 0.75rem; left: 0.75rem; right: 0.75rem;
-            color: white; font-size: 0.85rem; font-weight: 500;
+            color: white; font-size: 0.75rem; font-weight: 900;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             z-index: 10;
+            background: var(--accent-glow);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 0.5rem 0.75rem;
+            border-radius: 12px;
+            border: 1px solid var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
         
         /* --- MODAL STYLES --- */
@@ -931,16 +941,15 @@
                             <img src="${data.imageURL || data.imageBase64}" loading="lazy">
                             <div class="overlay-grad"></div>
                             <div class="absolute top-3 right-3 flex gap-2">
-                                <span class="text-[var(--text-main)] text-[10px] bg-[var(--bg-card)] px-2.5 py-1.5 rounded-full border border-[var(--border-main)] flex items-center gap-1.5 font-bold shadow-2xl">
+                                <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
                                     <i class="fas fa-heart text-red-500"></i> ${data.hearts?.length || 0}
                                 </span>
-                                <span class="text-[var(--text-main)] text-[10px] bg-[var(--bg-card)] px-2.5 py-1.5 rounded-full border border-[var(--border-main)] flex items-center gap-1.5 font-bold shadow-2xl">
+                                <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
                                     <i class="fas fa-comment text-indigo-400"></i> ${data.comments?.length || 0}
                                 </span>
                             </div>
                             <div class="title-overlay">
-                                <p class="font-bold text-white">@${data.creatorUsername}</p>
-                                <p class="text-[10px] opacity-80 truncate">${data.title}</p>
+                                ${data.title}
                             </div>
                         `;
                         el.onclick = () => window.viewPost(docSnap.id);
@@ -1005,7 +1014,7 @@
                                 </div>
                             </div>
 
-                            <div id="comments-section" class="bg-white/5 border border-white/5">
+                            <div id="comments-section" class="bg-white/10 border border-white/10">
                                 ${(data.comments || []).map(c => `
                                     <div class="mb-3 text-xs">
                                         <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
@@ -1016,7 +1025,7 @@
 
                             <div class="mt-auto pt-4">
                                 <div class="flex gap-2">
-                                    <input type="text" id="comment-input" placeholder="Say something..." class="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)] focus:bg-white/10 transition-all text-white">
+                                    <input type="text" id="comment-input" placeholder="Say something..." class="flex-1 bg-white/10 border border-white/20 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)] focus:bg-white/20 transition-all text-white placeholder-white/40">
                                     <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-color)] text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all"><i class="fas fa-paper-plane text-[10px]"></i></button>
                                 </div>
                             </div>

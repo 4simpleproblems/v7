@@ -150,8 +150,10 @@
         
         /* Card Hover Effects */
         .zone-item {
-            background-color: var(--bg-card) !important;
-            border: 1px solid var(--border-main) !important;
+            background-color: var(--accent-glow) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--accent-color) !important;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             will-change: transform;
             border-radius: 20px;
@@ -159,14 +161,15 @@
         .zone-item:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 30px var(--accent-secondary) !important;
-            border-color: var(--accent-color) !important;
-            background-color: var(--bg-secondary) !important;
+            filter: brightness(1.1);
             z-index: 20;
         }
         
         .other-zone-item {
-            background-color: var(--bg-card) !important;
-            border: 1px solid var(--border-main) !important;
+            background-color: var(--accent-glow) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--accent-color) !important;
             min-height: 250px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative; 
@@ -176,8 +179,7 @@
         .other-zone-item:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 30px var(--accent-secondary) !important;
-            border-color: var(--accent-color) !important;
-            background-color: var(--bg-secondary) !important;
+            filter: brightness(1.1);
             z-index: 20; 
         }
         .other-zone-item .image-overlay {
@@ -208,8 +210,11 @@
         /* Search Bar & Results */
         #bottom-fixed-bar {
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
-            background-color: var(--bg-card);
-            border-color: var(--border-main);
+            background-color: var(--accent-glow);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--accent-color);
+            border-radius: 24px;
         }
         #bottom-fixed-bar:focus-within {
             transform: translateY(-5px);
@@ -993,7 +998,7 @@
                     <div class="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between rounded-2xl">
                         <div class="flex items-start justify-between w-full">
                             <h3 class="text-4xl font-bold text-[var(--text-main)] truncate drop-shadow-lg" style="max-width: 80%;" title="${game.name}">${game.name}</h3>
-                            <div class="flex items-center gap-1.5 bg-[var(--bg-page)] rounded-2xl p-1.5 border border-[var(--border-main)] shadow-lg">
+                            <div class="flex items-center gap-1.5 bg-[var(--accent-glow)] backdrop-blur-md rounded-2xl p-1.5 border border-[var(--accent-color)] shadow-lg">
                                 ${gameButtonsHtml}
                                 ${favoriteButtonHtml}
                             </div>
@@ -1060,8 +1065,8 @@
             card.innerHTML = `
                 <div class="relative w-full cursor-pointer group">
                     <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover"></div>
-                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--bg-page)] rounded-xl px-3 py-1.5 text-[var(--text-main)] truncate text-sm font-semibold shadow-lg border border-[var(--border-main)]" title="${game.name}">${game.name}</h3>
-                    <div class="absolute bottom-2 right-2 bg-[var(--bg-page)] rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg border border-[var(--border-main)]">
+                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--accent-glow)] backdrop-blur-md rounded-xl px-3 py-1.5 text-[var(--text-main)] truncate text-sm font-semibold shadow-lg border border-[var(--accent-color)]" title="${game.name}">${game.name}</h3>
+                    <div class="absolute bottom-2 right-2 bg-[var(--accent-glow)] backdrop-blur-md rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg border border-[var(--accent-color)]">
                         ${game.isDownload ? `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download transition-colors"></i></a>` : `<button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`}
                         <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>
                     </div>
@@ -1428,7 +1433,7 @@
                         </div>
                     </div>
                     <div class="flex items-center flex-shrink-0">
-                        <div class="bg-[var(--bg-page)] rounded-2xl p-1.5 flex items-center gap-1.5 border border-[var(--border-main)] shadow-lg">
+                        <div class="bg-[var(--accent-glow)] backdrop-blur-md rounded-2xl p-1.5 flex items-center gap-1.5 border border-[var(--accent-color)] shadow-lg">
                             ${game.isDownload ? `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download transition-colors"></i></a>` : `<button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`}
                             <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}">
                                 <i class="fa-solid fa-star fa-solid-star transition-colors"></i>
