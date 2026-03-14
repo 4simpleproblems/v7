@@ -20,7 +20,7 @@
     <script type="module">
         import * as libcurl from "/VORA/VERN_SYSTEM/libcurl/index.mjs";
 
-        window.checkBare = async (retries = 3) => {
+        window.checkBare = async (retries = 5) => {
             if (window.__4sp_bare_mux_connecting) return;
             window.__4sp_bare_mux_connecting = true;
 
@@ -30,30 +30,25 @@
 
             for (let i = 0; i < retries; i++) {
                 try {
-                    // Ensure WASM is loaded for libcurl
+                    // Pre-load libcurl for speed
                     if (libcurl && libcurl.load_wasm) {
-                        await libcurl.load_wasm();
+                        libcurl.load_wasm().catch(() => {});
                     }
 
                     const transport = await connection.getTransport();
                     if (!transport || transport.path !== transportPath) {
                         await connection.setTransport(transportPath, [
                             { websocket: wispUrl },
-                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" },
+                            { websocket: "wss://flow-works.me/wisp/" }
                         ]);
                     }
-                    console.log("Vora: BareMux Transport Set");
+                    console.log("Vora: BareMux Transport Active");
                     window.__4sp_bare_mux_connecting = false;
-                    return; // Success
+                    return; 
                 } catch (e) {
-                    console.error(`Vora: BareMux Setup Attempt ${i + 1} failed:`, e);
-                    if (i === retries - 1) {
-                        // Last attempt failed, try one last forceful set
-                        try {
-                            await connection.setTransport(transportPath, [{ websocket: wispUrl }]);
-                        } catch (err) {}
-                    }
-                    await new Promise(r => setTimeout(r, 500));
+                    if (i === retries - 1) console.error("Vora: BareMux connection exhausted", e);
+                    await new Promise(r => setTimeout(r, 200)); // Faster retries
                 }
             }
             window.__4sp_bare_mux_connecting = false;

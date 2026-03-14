@@ -572,7 +572,7 @@ function renderPlayerUI(type, id, item) {
     playerView.innerHTML = `
         <div class="flex flex-col gap-6">
             <div id="video-container" class="relative w-full aspect-video bg-black rounded-[16px] overflow-hidden shadow-2xl border border-brand-border">
-                <iframe id="main-player" src="${embedUrl}" class="w-full h-full border-none" allowfullscreen></iframe>
+                <iframe id="main-player" src="${embedUrl}" class="w-full h-full border-none" allowfullscreen loading="eager"></iframe>
             </div>
 
             <div class="flex flex-col md:flex-row gap-4">
