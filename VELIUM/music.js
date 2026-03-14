@@ -501,35 +501,7 @@ function updateFullscreenUI() {
     fsRepeat.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat"></i><span class="absolute text-[8px] font-bold mt-1 ml-1">1</span>' : '<i class="fas fa-repeat"></i>';
     const fsPlayBtn = document.getElementById('fsPlayPause');
     if (fsPlayBtn) fsPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-xl"></i>' : '<i class="fas fa-play text-xl"></i>';
-
-    // Apply inverse scaling to counteract browser zoom
-    updateInverseScale();
 }
-
-function updateInverseScale() {
-    const fs = document.getElementById('fullscreenPlayer');
-    const wrapper = document.getElementById('fsScaleWrapper');
-    if (!fs || fs.classList.contains('hidden') || !wrapper) return;
-
-    // window.devicePixelRatio increases with browser zoom
-    // We scale by 1 / dPR to keep consistent physical size
-    const dpr = window.devicePixelRatio || 1;
-    const inverseScale = 1 / dpr;
-    
-    // Also consider the screen dimensions to ensure it doesn't shrink too much on high-res screens
-    // Actually, usually dPR 1.0 at 100% zoom is standard.
-    // We want to scale relative to 100% zoom.
-    
-    wrapper.style.transform = `scale(${inverseScale})`;
-    
-    // Ensure the wrapper stays centered
-    wrapper.style.width = `${100 * dpr}%`;
-    wrapper.style.height = `${100 * dpr}%`;
-    wrapper.style.marginLeft = `${(1 - dpr) * 50}%`;
-    wrapper.style.marginTop = `${(1 - dpr) * 50}%`;
-}
-
-window.addEventListener('resize', updateInverseScale);
 
 function updateFullscreenTint(imageUrl) {
     const fs = document.getElementById('fullscreenPlayer');

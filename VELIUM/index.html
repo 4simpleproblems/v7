@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="/injector.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- VERN_SYSTEM Proxy Scripts (Local) -->
@@ -675,47 +676,47 @@
         <div class="absolute inset-0 backdrop-blur-[120px] z-[-1]"></div>
 
         <!-- Scaling Wrapper -->
-        <div id="fsScaleWrapper" class="flex flex-col h-full w-full transition-transform duration-300 origin-center">
-            <div class="flex justify-between items-center mb-4 relative z-10">
-                <button onclick="toggleFullscreenPlayer()" class="text-2xl hover:scale-110 transition-transform" style="color: var(--tint-color)">
+        <div id="fsScaleWrapper" class="flex flex-col h-full w-full transition-transform duration-300 origin-center relative">
+            <div class="absolute top-0 left-0 p-4 lg:p-8 z-20">
+                <button onclick="toggleFullscreenPlayer()" class="text-3xl lg:text-4xl hover:scale-110 transition-transform" style="color: var(--tint-color)">
                     <i class="fas fa-chevron-down"></i>
                 </button>
-                <div></div>
-                <div class="w-8"></div>
             </div>
 
-            <div class="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto w-full relative z-10">
+            <div class="flex-1 flex flex-col items-center justify-center max-w-7xl mx-auto w-full relative z-10 px-4">
                 <!-- Centered Content: Artwork & Controls -->
-                <div class="flex flex-col items-center max-w-md lg:max-w-xl w-full">
-                    <div class="w-full aspect-square mb-4 lg:mb-6 rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+                <div class="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 w-full">
+                    <div class="w-full max-w-[400px] lg:max-w-[550px] aspect-square rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex-shrink-0">
                         <img id="fsArtwork" src="" class="w-full h-full object-cover">
                     </div>
                     
-                    <div class="w-full mb-4 lg:mb-6 text-center">
-                        <h1 id="fsTrackName" class="text-3xl lg:text-5xl font-black tracking-tighter mb-1 truncate" style="color: var(--tint-color)">Not Playing</h1>
-                        <p id="fsArtistName" class="text-lg lg:text-xl font-medium truncate opacity-70" style="color: var(--tint-color)">Select a track</p>
-                    </div>
-
-                    <!-- Fullscreen Controls -->
-                    <div class="w-full flex flex-col items-center gap-4 lg:gap-6">
-                        <div class="w-full flex flex-col gap-1.5">
-                            <div class="progress-bar w-full h-1.5 lg:h-2 rounded-full overflow-hidden cursor-pointer" id="fsProgressTrack" style="background: var(--progress-bg)">
-                                <div class="progress-bar-fill h-full transition-all duration-150" id="fsProgressBarFill" style="background: var(--tint-color)"></div>
-                            </div>
-                            <div class="flex justify-between text-[10px] lg:text-xs font-bold opacity-50" style="color: var(--tint-color)">
-                                <span id="fsCurrentTime">0:00</span>
-                                <span id="fsDuration">0:00</span>
-                            </div>
+                    <div class="flex flex-col w-full max-w-2xl">
+                        <div class="w-full mb-8 lg:mb-12 text-center lg:text-left">
+                            <h1 id="fsTrackName" class="text-4xl lg:text-7xl font-black tracking-tighter mb-2 lg:mb-4" style="color: var(--tint-color)">Not Playing</h1>
+                            <p id="fsArtistName" class="text-xl lg:text-3xl font-medium opacity-70" style="color: var(--tint-color)">Select a track</p>
                         </div>
 
-                        <div class="flex items-center gap-8 lg:gap-12">
-                            <button class="player-btn text-lg lg:text-xl opacity-70 hover:opacity-100 transition-all" id="fsShuffle" style="color: var(--tint-color)"><i class="fas fa-shuffle"></i></button>
-                            <button class="player-btn text-xl lg:text-2xl hover:scale-110 transition-all" id="fsPrev" style="color: var(--tint-color)"><i class="fas fa-step-backward"></i></button>
-                            <button class="w-14 h-14 lg:w-16 lg:h-16 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg" id="fsPlayPause">
-                                <i class="fas fa-play text-lg lg:text-xl"></i>
-                            </button>
-                            <button class="player-btn text-xl lg:text-2xl hover:scale-110 transition-all" id="fsNext" style="color: var(--tint-color)"><i class="fas fa-step-forward"></i></button>
-                            <button class="player-btn text-lg lg:text-xl opacity-70 hover:opacity-100 transition-all" id="fsRepeat" style="color: var(--tint-color)"><i class="fas fa-repeat"></i></button>
+                        <!-- Fullscreen Controls -->
+                        <div class="w-full flex flex-col items-center lg:items-start gap-8 lg:gap-12">
+                            <div class="w-full flex flex-col gap-3">
+                                <div class="progress-bar w-full h-2 lg:h-3 rounded-full overflow-hidden cursor-pointer" id="fsProgressTrack" style="background: var(--progress-bg)">
+                                    <div class="progress-bar-fill h-full transition-all duration-150" id="fsProgressBarFill" style="background: var(--tint-color)"></div>
+                                </div>
+                                <div class="flex justify-between text-sm lg:text-base font-bold opacity-50" style="color: var(--tint-color)">
+                                    <span id="fsCurrentTime">0:00</span>
+                                    <span id="fsDuration">0:00</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-center lg:justify-start gap-10 lg:gap-16 w-full">
+                                <button class="player-btn text-2xl lg:text-3xl opacity-70 hover:opacity-100 transition-all" id="fsShuffle" style="color: var(--tint-color)"><i class="fas fa-shuffle"></i></button>
+                                <button class="player-btn text-3xl lg:text-5xl hover:scale-110 transition-all" id="fsPrev" style="color: var(--tint-color)"><i class="fas fa-step-backward"></i></button>
+                                <button class="w-20 h-20 lg:w-28 lg:h-28 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-xl" id="fsPlayPause">
+                                    <i class="fas fa-play text-2xl lg:text-4xl ml-1"></i>
+                                </button>
+                                <button class="player-btn text-3xl lg:text-5xl hover:scale-110 transition-all" id="fsNext" style="color: var(--tint-color)"><i class="fas fa-step-forward"></i></button>
+                                <button class="player-btn text-2xl lg:text-3xl opacity-70 hover:opacity-100 transition-all" id="fsRepeat" style="color: var(--tint-color)"><i class="fas fa-repeat"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -795,3 +796,4 @@
     <!-- Made with ❤️ from 4SP -->
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->
