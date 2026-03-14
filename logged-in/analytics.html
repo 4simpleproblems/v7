@@ -2516,7 +2516,16 @@
                     })
                 });
 
-                const result = await response.json();
+                let result;
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    result = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.error("Non-JSON response:", text);
+                    throw new Error(response.status === 404 ? 'Cloud function not found (404)' : 'Server returned non-JSON response');
+                }
+
                 if (!response.ok) throw new Error(result.error || 'Cloud function failed');
 
                 alert(`Successfully deleted user ${userToDelete.username}`);

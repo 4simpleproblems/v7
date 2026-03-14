@@ -126,89 +126,85 @@ exports.reportContent = onRequest({ cors: true }, async (req, res) => {
     }
 });
 
-exports.deleteUser = onRequest(async (req, res) => {
-    return cors(req, res, async () => {
-        try {
-            if (req.method !== 'POST') {
-                res.status(405).send('Method Not Allowed');
-                return;
-            }
-
-            const { uid, adminUid } = req.body;
-            if (!uid || !adminUid) {
-                res.status(400).json({ error: "Missing required parameters" });
-                return;
-            }
-
-            const adminDoc = await admin.firestore().collection('admins').doc(adminUid).get();
-            const isOwner = adminUid === 'TscUv6Y3hWNAw87Y2X694z0k1I3';
-            
-            if (!adminDoc.exists && !isOwner) {
-                res.status(403).json({ error: "Unauthorized" });
-                return;
-            }
-
-            try {
-                await admin.auth().deleteUser(uid);
-            } catch (authError) {
-                if (authError.code !== 'auth/user-not-found') throw authError;
-            }
-
-            const collections = ['users', 'admins', 'bans'];
-            await Promise.all(collections.map(col => 
-                admin.firestore().collection(col).doc(uid).delete()
-            ));
-
-            res.status(200).json({ success: true, message: `User ${uid} deleted successfully.` });
-        } catch (error) {
-            logger.error("Delete User Error", error);
-            res.status(500).json({ error: error.message });
+exports.deleteUser = onRequest({ cors: true }, async (req, res) => {
+    try {
+        if (req.method !== 'POST') {
+            res.status(405).send('Method Not Allowed');
+            return;
         }
-    });
+
+        const { uid, adminUid } = req.body;
+        if (!uid || !adminUid) {
+            res.status(400).json({ error: "Missing required parameters" });
+            return;
+        }
+
+        const adminDoc = await admin.firestore().collection('admins').doc(adminUid).get();
+        const isOwner = adminUid === 'TscUv6Y3hWNAw87Y2X694z0k1I3';
+        
+        if (!adminDoc.exists && !isOwner) {
+            res.status(403).json({ error: "Unauthorized" });
+            return;
+        }
+
+        try {
+            await admin.auth().deleteUser(uid);
+        } catch (authError) {
+            if (authError.code !== 'auth/user-not-found') throw authError;
+        }
+
+        const collections = ['users', 'admins', 'bans'];
+        await Promise.all(collections.map(col => 
+            admin.firestore().collection(col).doc(uid).delete()
+        ));
+
+        res.status(200).json({ success: true, message: `User ${uid} deleted successfully.` });
+    } catch (error) {
+        logger.error("Delete User Error", error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-exports.listAuthUsers = onRequest(async (req, res) => {
-    return cors(req, res, async () => {
-        try {
-            if (req.method !== 'POST') {
-                res.status(405).send('Method Not Allowed');
-                return;
-            }
-
-            const { adminUid } = req.body;
-            if (!adminUid) {
-                res.status(400).json({ error: "Missing adminUid" });
-                return;
-            }
-
-            const adminDoc = await admin.firestore().collection('admins').doc(adminUid).get();
-            const isOwner = adminUid === 'TscUv6Y3hWNAw87Y2X694z0k1I3';
-
-            if (!adminDoc.exists && !isOwner) {
-                res.status(403).json({ error: "Unauthorized" });
-                return;
-            }
-
-            const users = [];
-            let nextPageToken;
-            do {
-                const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
-                listUsersResult.users.forEach((u) => {
-                    users.push({
-                        uid: u.uid,
-                        email: u.email,
-                        displayName: u.displayName,
-                        providerId: u.providerData[0]?.providerId || 'unknown',
-                        createdAt: u.metadata.creationTime
-                    });
-                });
-                nextPageToken = listUsersResult.pageToken;
-            } while (nextPageToken);
-
-            res.status(200).json({ success: true, users });
-        } catch (error) {
-            logger.error("List Auth Users Error", error);
-            res.status(500).json({ error: error.message });
+exports.listAuthUsers = onRequest({ cors: true }, async (req, res) => {
+    try {
+        if (req.method !== 'POST') {
+            res.status(405).send('Method Not Allowed');
+            return;
         }
-    });
+
+        const { adminUid } = req.body;
+        if (!adminUid) {
+            res.status(400).json({ error: "Missing adminUid" });
+            return;
+        }
+
+        const adminDoc = await admin.firestore().collection('admins').doc(adminUid).get();
+        const isOwner = adminUid === 'TscUv6Y3hWNAw87Y2X694z0k1I3';
+
+        if (!adminDoc.exists && !isOwner) {
+            res.status(403).json({ error: "Unauthorized" });
+            return;
+        }
+
+        const users = [];
+        let nextPageToken;
+        do {
+            const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
+            listUsersResult.users.forEach((u) => {
+                users.push({
+                    uid: u.uid,
+                    email: u.email,
+                    displayName: u.displayName,
+                    providerId: u.providerData[0]?.providerId || 'unknown',
+                    createdAt: u.metadata.creationTime
+                });
+            });
+            nextPageToken = listUsersResult.pageToken;
+        } while (nextPageToken);
+
+        res.status(200).json({ success: true, users });
+    } catch (error) {
+        logger.error("List Auth Users Error", error);
+        res.status(500).json({ error: error.message });
+    }
 });
