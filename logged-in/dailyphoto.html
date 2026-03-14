@@ -230,19 +230,19 @@
         }
         .title-overlay {
             position: absolute; bottom: 0.75rem; left: 0.75rem; right: 0.75rem;
-            color: white; font-size: 0.75rem; font-weight: 900;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            color: white; font-size: 0.8rem; font-weight: 400;
+            white-space: nowrap; overflow: hidden;
             z-index: 10;
             background: var(--accent-glow);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            padding: 0.5rem 0.75rem;
+            padding: 0.5rem 1rem;
             border-radius: 12px;
             border: 1px solid var(--accent-color);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            text-align: center;
+            text-align: left;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            mask-image: linear-gradient(to right, black 70%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, black 70%, transparent 100%);
         }
         
         /* --- MODAL STYLES --- */
@@ -742,7 +742,8 @@
                 const filtered = currentStateSchools.filter(s => {
                     if (!search) return true;
                     return s.name.toLowerCase().includes(search) || 
-                           (s.district && s.district.toLowerCase().includes(search));
+                           (s.district && s.district.toLowerCase().includes(search)) ||
+                           (s.county && s.county.toLowerCase().includes(search));
                 }).slice(0, 100);
 
                 schoolResults.innerHTML = filtered.map(s => `

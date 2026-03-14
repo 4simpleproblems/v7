@@ -79,7 +79,6 @@
             'privacy': { title: 'Privacy & Security', icon: 'fa-shield-halved' },
             'personalization': { title: 'Personalization', icon: 'fa-palette' },
             'data': { title: 'Data Management', icon: 'fa-database' },
-            'management': { title: 'Management', icon: 'fa-users-gear' },
             'about': { title: 'About 4SP', icon: 'fa-circle-info' },
         };
         
@@ -966,33 +965,69 @@
 
                 <div class="w-full mt-8">
                     <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">School & District</h3>
-                    <div id="schoolSettingsSection" class="settings-box transition-all duration-300 p-6">
-                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-6">
-                            Customize your local experience. You can change your school or district up to 2 times per month.
-                        </p>
-                        
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between p-4 bg-black/20 rounded-[18px] border border-[var(--border-main)]">
-                                <div>
-                                    <p class="text-xs font-bold text-[var(--accent-color)] uppercase tracking-widest mb-1">Current School</p>
-                                    <p id="current-school-display" class="text-white font-medium">None</p>
+                    <div id="schoolSettingsSection" class="settings-box transition-all duration-300 p-6 relative">
+                        <!-- Current View -->
+                        <div id="school-current-view">
+                            <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-6">
+                                Customize your local experience. You can change your school or district up to 2 times per month.
+                            </p>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-4 bg-black/20 rounded-[18px] border border-[var(--border-main)]">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-xs font-bold text-[var(--accent-color)] uppercase tracking-widest mb-1">Current School</p>
+                                        <p id="current-school-display" class="text-white font-medium truncate">None</p>
+                                    </div>
+                                    <div class="text-right min-w-0 flex-1">
+                                        <p class="text-xs font-bold text-[var(--accent-color)] uppercase tracking-widest mb-1">District</p>
+                                        <p id="current-district-display" class="text-white font-medium truncate">None</p>
+                                    </div>
                                 </div>
-                                <div class="text-right">
-                                    <p class="text-xs font-bold text-[var(--accent-color)] uppercase tracking-widest mb-1">District</p>
-                                    <p id="current-district-display" class="text-white font-medium">None</p>
+
+                                <div class="flex gap-3">
+                                    <button id="changeSchoolBtn" class="btn-toolbar-style btn-primary-override flex-1 py-3">
+                                        <i class="fa-solid fa-school mr-2"></i> Change School
+                                    </button>
+                                    <button id="removeSchoolBtn" class="btn-toolbar-style flex-1 py-3 text-red-500 border-red-500/20 hover:bg-red-500/10">
+                                        <i class="fa-solid fa-trash-can mr-2"></i> Remove
+                                    </button>
+                                </div>
+                                
+                                <p id="schoolChangesRemaining" class="text-[10px] text-center opacity-40 font-bold uppercase tracking-tighter">Changes remaining this month: 2</p>
+                            </div>
+                        </div>
+
+                        <!-- Selector View (Initially Hidden) -->
+                        <div id="school-selector-view" class="hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="text-sm font-bold uppercase tracking-widest text-[var(--accent-color)]">Select Your School</h4>
+                                <button id="cancelSchoolChange" class="text-xs font-bold opacity-50 hover:opacity-100 transition-opacity">Cancel</button>
+                            </div>
+
+                            <div id="settings-state-step">
+                                <div class="relative mb-4">
+                                    <input type="text" id="settings-state-search" placeholder="Search State (e.g. Ohio)..." class="w-full p-3 pl-10 bg-black/40 border border-[var(--border-main)] rounded-xl outline-none focus:border-[var(--accent-color)] text-white text-sm">
+                                    <i class="fas fa-map-marker-alt absolute left-3 top-1/2 -translate-y-1/2 opacity-30 text-sm"></i>
+                                </div>
+                                <div class="relative overflow-hidden">
+                                    <div id="settings-state-fade-top" class="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[#0d0d0d] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                                    <div id="settings-state-results" class="space-y-1 max-h-48 overflow-y-auto custom-scroll"></div>
+                                    <div id="settings-state-fade-bottom" class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0d0d0d] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
                                 </div>
                             </div>
 
-                            <div class="flex gap-3">
-                                <button id="changeSchoolBtn" class="btn-toolbar-style btn-primary-override flex-1 py-3">
-                                    <i class="fa-solid fa-school mr-2"></i> Change School
-                                </button>
-                                <button id="removeSchoolBtn" class="btn-toolbar-style flex-1 py-3 text-red-500 border-red-500/20 hover:bg-red-500/10">
-                                    <i class="fa-solid fa-trash-can mr-2"></i> Remove School
-                                </button>
+                            <div id="settings-school-step" class="hidden">
+                                <div class="relative mb-4">
+                                    <input type="text" id="settings-school-search" placeholder="Search School or District..." class="w-full p-3 pl-10 bg-black/40 border border-[var(--border-main)] rounded-xl outline-none focus:border-[var(--accent-color)] text-white text-sm">
+                                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 opacity-30 text-sm"></i>
+                                </div>
+                                <div class="relative overflow-hidden">
+                                    <div id="settings-school-fade-top" class="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[#0d0d0d] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                                    <div id="settings-school-results" class="space-y-1 max-h-60 overflow-y-auto custom-scroll"></div>
+                                    <div id="settings-school-fade-bottom" class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0d0d0d] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                                </div>
+                                <button id="settings-back-to-states" class="mt-3 text-[10px] font-bold uppercase text-indigo-500 hover:text-indigo-400 flex items-center gap-2"><i class="fas fa-arrow-left"></i> Change State</button>
                             </div>
-                            
-                            <p id="schoolChangesRemaining" class="text-[10px] text-center opacity-40 font-bold uppercase tracking-tighter">Changes remaining this month: 2</p>
                         </div>
 
                         <p id="schoolMessage" class="general-message-area text-sm mt-4"></p>
@@ -3690,6 +3725,17 @@ const performAccountDeletion = async (credential) => {
             const removeSchoolBtn = document.getElementById('removeSchoolBtn');
             const schoolRemaining = document.getElementById('schoolChangesRemaining');
             const schoolMessage = document.getElementById('schoolMessage');
+            
+            const currentView = document.getElementById('school-current-view');
+            const selectorView = document.getElementById('school-selector-view');
+            const cancelChangeBtn = document.getElementById('cancelSchoolChange');
+            const stateSearch = document.getElementById('settings-state-search');
+            const stateResults = document.getElementById('settings-state-results');
+            const schoolSearch = document.getElementById('settings-school-search');
+            const schoolResults = document.getElementById('settings-school-results');
+            const backToStatesBtn = document.getElementById('settings-back-to-states');
+            const stateStep = document.getElementById('settings-state-step');
+            const schoolStep = document.getElementById('settings-school-step');
 
             if (currentUser) {
                 const userDocRef = getUserDocRef(currentUser.uid);
@@ -3708,14 +3754,122 @@ const performAccountDeletion = async (credential) => {
                 districtDisplay.textContent = userData?.districtId || 'None';
                 schoolRemaining.textContent = `Changes remaining this month: ${Math.max(0, 2 - schoolChangesThisMonth)}`;
 
-                changeSchoolBtn.addEventListener('click', () => {
+                let allStates = [];
+                let currentStateSchools = [];
+                let selectedState = null;
+
+                const fetchStates = async () => {
+                    try {
+                        const res = await fetch('/schools/states.json');
+                        allStates = await res.json();
+                    } catch (err) { console.error("Failed to load states:", err); }
+                };
+
+                const toggleView = (showSelector) => {
+                    currentView.classList.toggle('hidden', showSelector);
+                    selectorView.classList.toggle('hidden', !showSelector);
+                    schoolMessage.textContent = '';
+                };
+
+                changeSchoolBtn.addEventListener('click', async () => {
                     if (schoolChangesThisMonth >= 2 && currentUser.email !== '4simpleproblems@gmail.com') {
                         showMessage(schoolMessage, 'You have reached the monthly limit for school changes.', 'error');
                         return;
                     }
-                    // Redirect to dailyphoto with a param to force school selection
-                    window.location.href = '/logged-in/dailyphoto.html?changeSchool=true';
+                    if (allStates.length === 0) await fetchStates();
+                    toggleView(true);
                 });
+
+                cancelChangeBtn.addEventListener('click', () => toggleView(false));
+
+                stateSearch.oninput = () => {
+                    const term = stateSearch.value.trim().toLowerCase();
+                    if (!term) { stateResults.innerHTML = ''; return; }
+                    const filtered = allStates.filter(s => s.name.toLowerCase().includes(term) || s.abbr.toLowerCase().includes(term));
+                    stateResults.innerHTML = filtered.map(s => `
+                        <div class="p-3 bg-white/5 border border-white/5 rounded-xl cursor-pointer hover:border-indigo-500 transition-all flex justify-between items-center group" onclick="window.settingsSelectState('${s.abbr}')">
+                            <span class="text-sm font-bold text-white">${s.name}</span>
+                            <span class="text-[10px] opacity-40 group-hover:opacity-100 transition-opacity font-mono">${s.abbr}</span>
+                        </div>
+                    `).join('');
+                    updateSettingsScrollFades(stateResults, 'settings-state-fade-top', 'settings-state-fade-bottom');
+                };
+
+                stateResults.onscroll = () => updateSettingsScrollFades(stateResults, 'settings-state-fade-top', 'settings-state-fade-bottom');
+                schoolResults.onscroll = () => updateSettingsScrollFades(schoolResults, 'settings-school-fade-top', 'settings-school-fade-bottom');
+
+                function updateSettingsScrollFades(el, topId, bottomId) {
+                    const topFade = document.getElementById(topId);
+                    const bottomFade = document.getElementById(bottomId);
+                    if (!el || !topFade || !bottomFade) return;
+
+                    const isAtTop = el.scrollTop <= 5;
+                    const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 5;
+                    const hasScroll = el.scrollHeight > el.clientHeight;
+
+                    topFade.style.opacity = (hasScroll && !isAtTop) ? '1' : '0';
+                    bottomFade.style.opacity = (hasScroll && !isAtBottom) ? '1' : '0';
+                }
+
+                window.settingsSelectState = async (abbr) => {
+                    selectedState = allStates.find(s => s.abbr === abbr);
+                    stateResults.innerHTML = '<div class="p-4 text-center"><i class="fas fa-spinner fa-spin opacity-20 text-indigo-500"></i></div>';
+                    try {
+                        const res = await fetch(`/schools/${abbr.trim()}.json`);
+                        currentStateSchools = await res.json();
+                        currentStateSchools.sort((a, b) => a.name.localeCompare(b.name));
+                        stateStep.classList.add('hidden');
+                        schoolStep.classList.remove('hidden');
+                        renderSchools('');
+                    } catch (err) { 
+                        showMessage(schoolMessage, 'Failed to load schools.', 'error');
+                    }
+                };
+
+                schoolSearch.oninput = () => renderSchools(schoolSearch.value.trim());
+
+                function renderSchools(term) {
+                    const search = term.toLowerCase();
+                    const filtered = currentStateSchools.filter(s => {
+                        if (!search) return true;
+                        return s.name.toLowerCase().includes(search) || 
+                               (s.district && s.district.toLowerCase().includes(search)) ||
+                               (s.county && s.county.toLowerCase().includes(search));
+                    }).slice(0, 50);
+
+                    schoolResults.innerHTML = filtered.map(s => `
+                        <div class="p-3 bg-white/5 border border-white/5 rounded-xl cursor-pointer hover:border-indigo-500 transition-all" onclick="window.settingsConfirmSchool('${s.name.replace(/'/g, "\\'")}', '${(s.district || "").replace(/'/g, "\\'")}')">
+                            <div class="font-bold text-xs text-white mb-1 truncate">${s.name}</div>
+                            <div class="text-[9px] opacity-40 uppercase tracking-widest font-black truncate">${s.district || 'Independent'}</div>
+                        </div>
+                    `).join('');
+                    updateSettingsScrollFades(schoolResults, 'settings-school-fade-top', 'settings-school-fade-bottom');
+                }
+
+                window.settingsConfirmSchool = async (schoolName, districtName) => {
+                    if (confirm(`Confirm change to: ${schoolName}?`)) {
+                        try {
+                            await updateDoc(userDocRef, {
+                                schoolId: schoolName,
+                                schoolName: schoolName,
+                                districtId: districtName || schoolName,
+                                state: selectedState.name,
+                                stateAbbr: selectedState.abbr,
+                                schoolSkipped: false,
+                                schoolChangesThisMonth: schoolChangesThisMonth + 1,
+                                lastSchoolChangeMonth: currentMonth
+                            });
+                            location.reload();
+                        } catch (e) {
+                            showMessage(schoolMessage, 'Failed to update school.', 'error');
+                        }
+                    }
+                };
+
+                backToStatesBtn.onclick = () => {
+                    schoolStep.classList.add('hidden');
+                    stateStep.classList.remove('hidden');
+                };
 
                 removeSchoolBtn.addEventListener('click', async () => {
                     if (schoolChangesThisMonth >= 2 && currentUser.email !== '4simpleproblems@gmail.com') {
@@ -4412,11 +4566,6 @@ const performAccountDeletion = async (credential) => {
                 // --- NEW: Load Data Management Tab ---
                 mainView.innerHTML = getDataManagementContent(); // Render HTML
                 await loadDataTab(); // Load data and add listeners
-            }
-            else if (tabId === 'management') {
-                // --- NEW: Load Management Tab ---
-                mainView.innerHTML = getManagementContent();
-                await loadManagementTab();
             }
             else if (tabId === 'about') {
                 mainView.innerHTML = getAboutContent();

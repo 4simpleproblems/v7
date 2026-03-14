@@ -124,8 +124,10 @@
             justify-content: center;
             width: 2.25rem;
             height: 2.25rem;
-            border-radius: 14px; /* MATCHES auth-btn */
-            background-color: var(--bg-page) !important;
+            border-radius: 14px;
+            background-color: var(--accent-glow) !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid var(--border-main) !important;
             color: var(--accent-color) !important;
             cursor: pointer;
@@ -133,8 +135,8 @@
             font-size: 1rem;
         }
         .btn-card-action:hover {
-            background-color: var(--accent-glow) !important;
-            color: var(--text-main) !important;
+            background-color: var(--accent-color) !important;
+            color: white !important;
             border-color: var(--accent-color) !important;
             transform: scale(1.1);
         }
@@ -143,10 +145,11 @@
         .btn-card-action.fav-action .fa-solid-star { display: none; }
         .btn-card-action.fav-action .fa-regular-star { display: inline-block; }
         
-        .btn-card-action.fav-action.favorited .fa-solid-star { display: inline-block; color: var(--accent-color) !important; }
+        .btn-card-action.fav-action.favorited .fa-solid-star { display: inline-block; color: white !important; }
         .btn-card-action.fav-action.favorited .fa-regular-star { display: none; }
+        .btn-card-action.fav-action.favorited { background-color: var(--accent-color) !important; border-color: var(--accent-color) !important; }
         
-        .btn-card-action.fav-action:not(.favorited):hover .fa-regular-star { color: var(--accent-color) !important; }
+        .btn-card-action.fav-action:not(.favorited):hover .fa-regular-star { color: white !important; }
         
         /* Card Hover Effects */
         .zone-item {
@@ -160,7 +163,7 @@
         }
         .zone-item:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px var(--accent-secondary) !important;
+            box-shadow: 0 10px 30px var(--accent-glow) !important;
             filter: brightness(1.1);
             z-index: 20;
         }
@@ -178,7 +181,7 @@
         }
         .other-zone-item:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px var(--accent-secondary) !important;
+            box-shadow: 0 10px 30px var(--accent-glow) !important;
             filter: brightness(1.1);
             z-index: 20; 
         }
@@ -233,13 +236,22 @@
             display: flex;
             cursor: pointer;
             transition: all 0.2s;
-            color: var(--text-muted);
-            text-decoration: none;
             padding: 10px 15px;
+            border-radius: 1rem;
+            margin: 4px;
         }
         .search-item:hover { 
             background-color: var(--accent-glow); 
             padding-left: 20px;
+        }
+
+        .smart-text {
+            color: var(--text-main);
+            transition: color 0.3s;
+        }
+        
+        .smart-text-inverse {
+            color: var(--bg-page);
         }
 
         .category-badge {
@@ -622,7 +634,7 @@
             <div class="pl-4 pr-2 text-[var(--text-muted)] opacity-60">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </div>
-            <input type="text" id="searchInput" placeholder="Search for games…" autocomplete="off" class="w-full py-3 pr-4 bg-transparent text-[var(--text-main)] placeholder-[var(--text-muted)] opacity-80 focus:outline-none focus:ring-0 text-base" />
+            <input type="text" id="searchInput" placeholder="Search for games…" autocomplete="off" class="w-full py-3 pr-4 bg-transparent placeholder-[var(--text-muted)] opacity-80 focus:outline-none focus:ring-0 text-base font-black" />
         </div>
     </div>
     
@@ -653,8 +665,27 @@
 
 
     <script>
-        // --- Configuration & Globals ---
-        
+        // --- Smart Contrast Helper ---
+        function getContrastYIQ(hexcolor){
+            if (!hexcolor || hexcolor.length < 4) return 'light';
+            hexcolor = hexcolor.replace("#", "");
+            if (hexcolor.length === 3) {
+                hexcolor = hexcolor.split("").map(c => c + c).join("");
+            }
+            const r = parseInt(hexcolor.substr(0,2),16);
+            const g = parseInt(hexcolor.substr(2,2),16);
+            const b = parseInt(hexcolor.substr(4,2),16);
+            const yiq = ((r*299)+(g*587)+(b*114))/1000;
+            return (yiq >= 128) ? 'dark' : 'light';
+        }
+
+        function getSmartTextColor() {
+            const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
+            const contrast = getContrastYIQ(accentHex);
+            return contrast === 'dark' ? 'smart-text-inverse' : 'smart-text';
+        }
+
+        // Configuration & Globals
         const zonesurls = [
             "https://cdn.jsdelivr.net/%67%68/%67%6e%2d%6d%61%74%68/%61%73%73%65%74%73@%6d%61%69%6e/%7a%6f%6e%65%73%2e%6a%73%6f%6e",
             "https://cdn.jsdelivr.net/gh/gn-math/assets@latest/zones.json",
@@ -959,7 +990,7 @@
             const favorites = getFavorites().map(String);
             const isAnyFavorite = game.versions ? favorites.some(favId => game.versions.some(v => String(v.favoriteId) === favId)) : favorites.includes(String(game.id));
             const card = document.createElement("div");
-            card.className = 'other-zone-item bg-card-dark rounded-2xl border border-brand-border col-span-full shadow-lg'; 
+            card.className = 'other-zone-item rounded-2xl border border-brand-border col-span-full shadow-lg'; 
             card.dataset.gameId = game.id;
 
             // Resolve Image URL
@@ -991,19 +1022,21 @@
                 favoriteButtonHtml = `<button class="btn-card-action fav-action ${isAnyFavorite ? 'favorited' : ''}" title="${isAnyFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>`;
             }
 
+            const smartTextClass = getSmartTextColor();
+
             card.innerHTML = `
                 <div class="relative w-full h-full cursor-pointer group" style="min-height: 250px;">
                     <img data-src="${resolvedImgSrc}" alt="${game.name}" loading="lazy" decoding="async" class="w-full h-full object-cover absolute inset-0 rounded-2xl">
                     <div class="image-overlay absolute inset-0 transition-colors duration-200"></div>
                     <div class="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between rounded-2xl">
                         <div class="flex items-start justify-between w-full">
-                            <h3 class="text-4xl font-bold text-[var(--text-main)] truncate drop-shadow-lg" style="max-width: 80%;" title="${game.name}">${game.name}</h3>
+                            <h3 class="text-4xl font-black ${smartTextClass} truncate drop-shadow-lg" style="max-width: 80%;" title="${game.name}">${game.name}</h3>
                             <div class="flex items-center gap-1.5 bg-[var(--accent-glow)] backdrop-blur-md rounded-2xl p-1.5 border border-[var(--accent-color)] shadow-lg">
                                 ${gameButtonsHtml}
                                 ${favoriteButtonHtml}
                             </div>
                         </div>
-                        <p class="text-lg text-[var(--text-main)] font-medium drop-shadow-lg" style="max-width: 50%;">${game.description}</p>
+                        <p class="text-lg text-white font-medium drop-shadow-lg" style="max-width: 50%; opacity: 0.9;">${game.description}</p>
                     </div>
                 </div>
             `;
@@ -1060,12 +1093,15 @@
             const isFavorite = getFavorites().map(String).includes(String(game.id));
 
             const card = document.createElement("div");
-            card.className = 'zone-item bg-card-dark rounded-2xl border border-brand-border overflow-hidden';
+            card.className = 'zone-item rounded-2xl border border-brand-border overflow-hidden';
             card.dataset.gameId = game.id;
+
+            const smartTextClass = getSmartTextColor();
+
             card.innerHTML = `
                 <div class="relative w-full cursor-pointer group">
                     <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover"></div>
-                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--accent-glow)] backdrop-blur-md rounded-xl px-3 py-1.5 text-[var(--text-main)] truncate text-sm font-semibold shadow-lg border border-[var(--accent-color)]" title="${game.name}">${game.name}</h3>
+                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--accent-glow)] backdrop-blur-md rounded-xl px-3 py-1.5 ${smartTextClass} truncate text-sm font-black shadow-lg border border-[var(--accent-color)]" title="${game.name}">${game.name}</h3>
                     <div class="absolute bottom-2 right-2 bg-[var(--accent-glow)] backdrop-blur-md rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg border border-[var(--accent-color)]">
                         ${game.isDownload ? `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download transition-colors"></i></a>` : `<button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`}
                         <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>
@@ -1424,11 +1460,13 @@
                 const catLabel = game.category === 'StrongdogXP' ? 'StrongdogXP' : (game.category === 'GN-Math' ? 'GN-Math' : 'Others');
                 const catColor = game.category === 'StrongdogXP' ? 'text-strongdog-orange' : (game.category === 'GN-Math' ? 'text-gn-math' : 'text-gray-400');
 
+                const smartTextClass = getSmartTextColor();
+                
                 linkEl.innerHTML = `
                     <div class="flex items-center truncate min-w-0">
                         <img src="${imgSrc}" alt="${game.name}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
                         <div class="flex flex-col ml-3 truncate min-w-0">
-                            <span class="font-medium truncate text-[var(--text-main)]" title="${game.name}">${game.name}</span>
+                            <span class="font-black truncate ${smartTextClass}" title="${game.name}">${game.name}</span>
                             <span class="category-badge w-fit ${catColor}">${catLabel}</span>
                         </div>
                     </div>
@@ -1660,6 +1698,11 @@
             categorySlider.innerHTML = categories.map(cat => `<div class="w-64 flex-shrink-0"><h2 class="text-3xl font-bold ${categoryColors[cat] || 'text-[var(--text-main)]'}"><strong>${cat}</strong></h2></div>`).join('');
 
             switchCategory(currentCategoryIndex);
+            
+            // Sync search input with smart text
+            const smartTextClass = getSmartTextColor();
+            searchInput.classList.add(smartTextClass);
+            
             renderFavorites();
             
             searchInput.placeholder = `Search all games...`;
