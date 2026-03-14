@@ -74,8 +74,8 @@
     "velium": {
         "name": "Velium",
         "icon": "fa-solid fa-music",
-        "url": "../logged-in/velium.html",
-        "aliases": ["/logged-in/velium"]
+        "url": "../VELIUM/index.html",
+        "aliases": ["/VELIUM/", "/VELIUM/index.html", "/VELIUM"]
     },
 
     "securly-tester": {

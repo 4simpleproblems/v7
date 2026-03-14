@@ -83,6 +83,8 @@ let player = null;
 let progressInterval = null;
 let volume = parseInt(localStorage.getItem('velium_v2_volume')) || 70;
 let preloadedNextTrack = null;
+let preloadedPrevTrack = null;
+let currentSearchResults = [];
 
 const popularArtists = [
     'The Weeknd', 'Drake', 'Post Malone', 'Dua Lipa', 'Ed Sheeran', 
@@ -121,9 +123,10 @@ function getTrackUid(track) {
     return `f-${title}-${artist}`.replace(/[^a-z0-9]/g, '');
 }
 
-async function preloadNextTrack() {
+async function preloadTracks() {
     if (playlist.length === 0) return;
-    
+
+    // Next Track
     let nextIndex = -1;
     if (isShuffle) {
         if (shuffledCurrentIndex < shuffledIndices.length - 1) nextIndex = shuffledIndices[shuffledCurrentIndex + 1];
@@ -133,43 +136,68 @@ async function preloadNextTrack() {
         else if (repeatMode === 'all') nextIndex = 0;
     }
 
-    if (nextIndex === -1 || nextIndex === currentIndex) return;
-    
-    const nextTrack = playlist[nextIndex];
-    if (!nextTrack) return;
+    // Previous Track
+    let prevIndex = -1;
+    if (isShuffle) {
+        if (shuffledCurrentIndex > 0) prevIndex = shuffledIndices[shuffledCurrentIndex - 1];
+        else if (repeatMode === 'all') prevIndex = shuffledIndices[shuffledIndices.length - 1];
+    } else {
+        if (currentIndex > 0) prevIndex = currentIndex - 1;
+        else if (repeatMode === 'all') prevIndex = playlist.length - 1;
+    }
 
-    // Don't preload if already cached for this index
-    if (preloadedNextTrack && preloadedNextTrack.index === nextIndex) return;
+    const tasks = [];
+    if (nextIndex !== -1 && nextIndex !== currentIndex) {
+        tasks.push(preloadSingleTrack(nextIndex, 'next'));
+    }
+    if (prevIndex !== -1 && prevIndex !== currentIndex && prevIndex !== nextIndex) {
+        tasks.push(preloadSingleTrack(prevIndex, 'prev'));
+    }
+    await Promise.all(tasks);
+}
+
+async function preloadSingleTrack(index, type) {
+    const track = playlist[index];
+    if (!track) return;
+
+    const cache = type === 'next' ? preloadedNextTrack : preloadedPrevTrack;
+    if (cache && cache.index === index) return;
 
     try {
-        if (nextTrack.youtube_id || nextTrack.videoId) {
-            preloadedNextTrack = { index: nextIndex, source: 'youtube', videoId: nextTrack.youtube_id || nextTrack.videoId };
+        if (track.youtube_id || track.videoId) {
+            const data = { index, source: 'youtube', videoId: track.youtube_id || track.videoId };
+            if (type === 'next') preloadedNextTrack = data; else preloadedPrevTrack = data;
             return;
         }
 
-        const directUrl = getDownloadUrl(nextTrack);
+        const directUrl = getDownloadUrl(track);
         if (directUrl) {
-            preloadedNextTrack = { index: nextIndex, source: 'audio', url: directUrl };
-            let preloadAudio = document.getElementById('preloadAudio');
+            const data = { index, source: 'audio', url: directUrl };
+            if (type === 'next') preloadedNextTrack = data; else preloadedPrevTrack = data;
+            
+            let preloadElId = type === 'next' ? 'preloadAudioNext' : 'preloadAudioPrev';
+            let preloadAudio = document.getElementById(preloadElId);
             if (!preloadAudio) {
                 preloadAudio = document.createElement('audio');
-                preloadAudio.id = 'preloadAudio';
+                preloadAudio.id = preloadElId;
+                preloadAudio.preload = 'auto';
                 preloadAudio.style.display = 'none';
                 document.body.appendChild(preloadAudio);
             }
             preloadAudio.src = directUrl;
             preloadAudio.load();
         } else {
-            const query = `${nextTrack.title} ${nextTrack.artist_name} official audio`;
+            const query = `${track.title} ${track.artist_name} official audio`;
             const response = await fetch(`${API_BASE_URL}/youtube-search?q=${encodeURIComponent(query)}`);
             const data = await response.json();
             if (data.videoId) {
-                nextTrack.youtube_id = data.videoId;
+                track.youtube_id = data.videoId;
                 saveLibraryData();
-                preloadedNextTrack = { index: nextIndex, source: 'youtube', videoId: data.videoId };
+                const cacheData = { index, source: 'youtube', videoId: data.videoId };
+                if (type === 'next') preloadedNextTrack = cacheData; else preloadedPrevTrack = cacheData;
             }
         }
-    } catch (e) { console.warn('Preload failed', e); }
+    } catch (e) { console.warn(`Preload ${type} failed`, e); }
 }
 
 window.toggleLikeTrack = async function(track, btnEl) {
@@ -500,7 +528,7 @@ function updateFullscreenUI() {
     fsRepeat.classList.toggle('active', repeatMode !== 'off');
     fsRepeat.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat keep-white"></i><span class="absolute text-[8px] font-bold mt-1 ml-1 keep-white">1</span>' : '<i class="fas fa-repeat keep-white"></i>';
     const fsPlayBtn = document.getElementById('fsPlayPause');
-    if (fsPlayBtn) fsPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-4xl lg:text-6xl keep-white"></i>' : '<i class="fas fa-play text-4xl lg:text-6xl ml-1 keep-white"></i>';
+    if (fsPlayBtn) fsPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-4xl lg:text-6xl text-black"></i>' : '<i class="fas fa-play text-4xl lg:text-6xl ml-1 text-black"></i>';
 }
 
 function updateFullscreenTint(imageUrl) {
@@ -601,6 +629,7 @@ async function handleSearch(query, append = false, forcedOffset = null) {
     if (!append || query !== searchState.query) {
         const startAt = (forcedOffset !== null) ? forcedOffset : 0;
         searchState = { query: query, tracksOffset: startAt, loading: false, hasMoreTracks: true, limit: 25 };
+        currentSearchResults = [];
         if (tracksGrid) tracksGrid.innerHTML = '';
         if (loader) loader.classList.add('hidden');
     }
@@ -623,6 +652,7 @@ async function handleSearch(query, append = false, forcedOffset = null) {
         const data = await response.json();
 
         const newTracks = data.tracks || [];
+        currentSearchResults.push(...newTracks);
         if (!append && tracksGrid) tracksGrid.innerHTML = '';
         if (tracksGrid && newTracks.length > 0) {
             newTracks.forEach(track => {
@@ -721,10 +751,21 @@ function renderTrackGrid(tracks, container) {
         `;
         
         card.addEventListener('click', () => {
-            playlist = tracks; 
-            originalPlaylist = [...tracks];
-            preloadedNextTrack = null; // Clear old preload
-            playTrack(index);
+            if (container.id === 'searchGrid') {
+                playlist = [...currentSearchResults];
+                originalPlaylist = [...currentSearchResults];
+                // Find index in search results
+                const trackUid = getTrackUid(track);
+                const searchIndex = playlist.findIndex(t => getTrackUid(t) === trackUid);
+                currentIndex = (searchIndex > -1) ? searchIndex : index;
+            } else {
+                playlist = tracks; 
+                originalPlaylist = [...tracks];
+                currentIndex = index;
+            }
+            preloadedNextTrack = null; 
+            preloadedPrevTrack = null;
+            playTrack(currentIndex);
         });
         container.appendChild(card);
     });
@@ -857,28 +898,30 @@ async function playTrack(index) {
     document.getElementById('durationLabel').textContent = '0:00';
 
     // 1. Check Preload Cache
-    if (preloadedNextTrack && preloadedNextTrack.index === index) {
-        if (preloadedNextTrack.source === 'audio') {
-            loadAudioPlayer(preloadedNextTrack.url);
-        } else {
-            loadYouTubePlayer(preloadedNextTrack.videoId);
-        }
+    let preloaded = null;
+    if (preloadedNextTrack && preloadedNextTrack.index === index) preloaded = preloadedNextTrack;
+    else if (preloadedPrevTrack && preloadedPrevTrack.index === index) preloaded = preloadedPrevTrack;
+
+    if (preloaded) {
+        if (preloaded.source === 'audio') loadAudioPlayer(preloaded.url);
+        else loadYouTubePlayer(preloaded.videoId);
         preloadedNextTrack = null;
-        preloadNextTrack(); // Preload the one AFTER this
+        preloadedPrevTrack = null;
+        preloadTracks(); 
         return;
     }
 
     // 2. Check currentTrack for cached ID
     if (currentTrack.youtube_id || currentTrack.videoId) {
         loadYouTubePlayer(currentTrack.youtube_id || currentTrack.videoId);
-        preloadNextTrack();
+        preloadTracks();
         return;
     }
 
     const directUrl = getDownloadUrl(currentTrack);
     if (directUrl) { 
         loadAudioPlayer(directUrl); 
-        preloadNextTrack();
+        preloadTracks();
         return; 
     }
 
@@ -890,7 +933,7 @@ async function playTrack(index) {
             currentTrack.youtube_id = data.videoId; // Cache it
             saveLibraryData(); // Persist if it's in a playlist
             loadYouTubePlayer(data.videoId);
-            preloadNextTrack();
+            preloadTracks();
         }
     } catch (e) { console.error('Failed to get video ID', e); }
 }
@@ -982,7 +1025,7 @@ function updatePlayPauseUI() {
         const btn = document.getElementById(id);
         if (btn) {
             if (id === 'fsPlayPause') {
-                btn.innerHTML = isPlaying ? '<i class="fas fa-pause text-4xl lg:text-6xl keep-white"></i>' : '<i class="fas fa-play text-4xl lg:text-6xl ml-1 keep-white"></i>';
+                btn.innerHTML = isPlaying ? '<i class="fas fa-pause text-4xl lg:text-6xl text-black"></i>' : '<i class="fas fa-play text-4xl lg:text-6xl ml-1 text-black"></i>';
             } else {
                 btn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
             }
@@ -1427,3 +1470,4 @@ function startProgressUpdate() {
 }
 function stopProgressUpdate() { clearInterval(progressInterval); }
 function updateVolumeUI() { const bar = document.getElementById('volumeBarFill'); if (bar) bar.style.width = volume + '%'; const slider = document.getElementById('volumeSlider'); if (slider) slider.value = volume; }
+// Made with ❤️ from 4SP
