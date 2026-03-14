@@ -29,7 +29,9 @@
     ];
 
     // Conditionally load navigation based on flag
-    if (window.__4sp_nav_mini) {
+    if (window.__4sp_nav_none) {
+        console.log("Navbar loading skipped due to __4sp_nav_none flag.");
+    } else if (window.__4sp_nav_mini) {
         scriptsToLoad.push({ url: '/navigation-mini.js' });
     } else {
         scriptsToLoad.push({ url: '/navigation.js' });

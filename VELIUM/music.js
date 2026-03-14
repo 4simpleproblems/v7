@@ -498,9 +498,9 @@ function updateFullscreenUI() {
     document.getElementById('fsShuffle').classList.toggle('active', isShuffle);
     const fsRepeat = document.getElementById('fsRepeat');
     fsRepeat.classList.toggle('active', repeatMode !== 'off');
-    fsRepeat.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat"></i><span class="absolute text-[8px] font-bold mt-1 ml-1">1</span>' : '<i class="fas fa-repeat"></i>';
+    fsRepeat.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat keep-white"></i><span class="absolute text-[8px] font-bold mt-1 ml-1 keep-white">1</span>' : '<i class="fas fa-repeat keep-white"></i>';
     const fsPlayBtn = document.getElementById('fsPlayPause');
-    if (fsPlayBtn) fsPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-xl"></i>' : '<i class="fas fa-play text-xl"></i>';
+    if (fsPlayBtn) fsPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-4xl lg:text-6xl keep-white"></i>' : '<i class="fas fa-play text-4xl lg:text-6xl ml-1 keep-white"></i>';
 }
 
 function updateFullscreenTint(imageUrl) {
@@ -980,7 +980,13 @@ function updatePlayPauseUI() {
     const btns = ['playPauseButton', 'fsPlayPause', 'miniPlayPause'];
     btns.forEach(id => {
         const btn = document.getElementById(id);
-        if (btn) btn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+        if (btn) {
+            if (id === 'fsPlayPause') {
+                btn.innerHTML = isPlaying ? '<i class="fas fa-pause text-4xl lg:text-6xl keep-white"></i>' : '<i class="fas fa-play text-4xl lg:text-6xl ml-1 keep-white"></i>';
+            } else {
+                btn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+            }
+        }
     });
 }
 
