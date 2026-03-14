@@ -2506,13 +2506,26 @@
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Deleting...`;
 
             try {
-                const deleteAuthUser = httpsCallable(functions, 'deleteAuthUser');
-                await deleteAuthUser({ uid: userToDelete.uid });
-                await deleteDoc(doc(db, 'users', userToDelete.uid));
-                
+                // Call the backend function to delete from Auth
+                const response = await fetch('https://us-central1-project-zirconium.cloudfunctions.net/deleteUser', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        uid: userToDelete.uid,
+                        adminUid: auth.currentUser.uid 
+                    })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Cloud function failed');
+
                 alert(`Successfully deleted user ${userToDelete.username}`);
                 closeDeleteModal();
+                // Optionally refresh the table
+                allUsers = allUsers.filter(u => u.uid !== userToDelete.uid);
+                renderTable(getFilteredUsers());
             } catch (err) {
+                console.error("Deletion error:", err);
                 alert("Deletion failed: " + err.message);
                 btn.disabled = false;
                 btn.innerHTML = `Permanently Delete`;
