@@ -314,7 +314,7 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, writeBatch, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from "/firebase-config.js";
-        import { getAvatarHTML } from "/utils.js";
+        import { getAvatarHTML } from "/profile_picture_system.js";
 
         if (!getApps().length) initializeApp(firebaseConfig);
         const auth = getAuth();
@@ -449,8 +449,11 @@
                             updateStatusUI();
 
                             if (isOwnProfile) {
-                                editDisplayName.value = userData.displayName || "";
-                                editDescription.value = userData.description || "";
+                                // Only update input values if the modal is hidden to avoid overwriting while typing
+                                if (editModal.classList.contains('hidden')) {
+                                    editDisplayName.value = userData.displayName || "";
+                                    editDescription.value = userData.description || "";
+                                }
                             }
 
                             // Show content once we have the basic user data
@@ -499,14 +502,29 @@
         };
 
         function setupEditProfileListeners() {
-            openEditBtn.onclick = () => openModal(editModal);
+            openEditBtn.onclick = () => {
+                // Ensure latest data is in inputs when opening
+                if (userDocData) {
+                    editDisplayName.value = userDocData.displayName || "";
+                    editDescription.value = userDocData.description || "";
+                }
+                openModal(editModal);
+            };
             closeEditBtn.onclick = () => closeModal(editModal);
             saveProfileBtn.onclick = async () => {
                 saveProfileBtn.disabled = true;
+                const newDisplayName = editDisplayName.value.trim();
+                const newDescription = editDescription.value.trim();
+                
                 await updateDoc(doc(db, 'users', firebaseAuthUser.uid), {
-                    displayName: editDisplayName.value.trim(),
-                    description: editDescription.value.trim()
+                    displayName: newDisplayName,
+                    description: newDescription
                 });
+                
+                // Manually update local cache/UI elements to be responsive
+                displayNameEl.textContent = newDisplayName || "Anonymous";
+                descriptionEl.textContent = newDescription || "";
+                
                 saveProfileBtn.disabled = false;
                 closeModal(editModal);
             };
