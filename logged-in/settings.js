@@ -964,6 +964,41 @@
                 </div>
 
                 <div class="w-full mt-8">
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">School & District</h3>
+                    <div id="schoolSettingsSection" class="settings-box transition-all duration-300 p-6">
+                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-6">
+                            Customize your local experience. You can change your school or district up to 2 times per month.
+                        </p>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-black/20 rounded-[18px] border border-[var(--border-main)]">
+                                <div>
+                                    <p class="text-xs font-bold text-[var(--accent-color)] uppercase tracking-widest mb-1">Current School</p>
+                                    <p id="current-school-display" class="text-white font-medium">None</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs font-bold text-[var(--accent-color)] uppercase tracking-widest mb-1">District</p>
+                                    <p id="current-district-display" class="text-white font-medium">None</p>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <button id="changeSchoolBtn" class="btn-toolbar-style btn-primary-override flex-1 py-3">
+                                    <i class="fa-solid fa-school mr-2"></i> Change School
+                                </button>
+                                <button id="removeSchoolBtn" class="btn-toolbar-style flex-1 py-3 text-red-500 border-red-500/20 hover:bg-red-500/10">
+                                    <i class="fa-solid fa-trash-can mr-2"></i> Remove School
+                                </button>
+                            </div>
+                            
+                            <p id="schoolChangesRemaining" class="text-[10px] text-center opacity-40 font-bold uppercase tracking-tighter">Changes remaining this month: 2</p>
+                        </div>
+
+                        <p id="schoolMessage" class="general-message-area text-sm mt-4"></p>
+                    </div>
+                </div>
+
+                <div class="w-full mt-8">
                     <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Activity Presence</h3>
                     <div id="activityPresenceSection" class="settings-box p-6 space-y-6">
                         <div class="flex items-center justify-between">
@@ -3646,6 +3681,66 @@ const performAccountDeletion = async (credential) => {
                     showMessage(urlChangerMessage, 'An error occurred while saving.', 'error');
                 }
             });
+
+            // --- School & District Logic ---
+            const schoolDisplay = document.getElementById('current-school-display');
+            const districtDisplay = document.getElementById('current-district-display');
+            const changeSchoolBtn = document.getElementById('changeSchoolBtn');
+            const removeSchoolBtn = document.getElementById('removeSchoolBtn');
+            const schoolRemaining = document.getElementById('schoolChangesRemaining');
+            const schoolMessage = document.getElementById('schoolMessage');
+
+            if (currentUser) {
+                const userDocRef = getUserDocRef(currentUser.uid);
+                const snap = await getDoc(userDocRef);
+                const userData = snap.data();
+
+                const currentMonth = new Date().getMonth() + 1;
+                let schoolChangesThisMonth = userData?.schoolChangesThisMonth || 0;
+                const lastSchoolChangeMonth = userData?.lastSchoolChangeMonth || 0;
+
+                if (currentMonth !== lastSchoolChangeMonth) {
+                    schoolChangesThisMonth = 0;
+                }
+
+                schoolDisplay.textContent = userData?.schoolName || 'None';
+                districtDisplay.textContent = userData?.districtId || 'None';
+                schoolRemaining.textContent = `Changes remaining this month: ${Math.max(0, 2 - schoolChangesThisMonth)}`;
+
+                changeSchoolBtn.addEventListener('click', () => {
+                    if (schoolChangesThisMonth >= 2 && currentUser.email !== '4simpleproblems@gmail.com') {
+                        showMessage(schoolMessage, 'You have reached the monthly limit for school changes.', 'error');
+                        return;
+                    }
+                    // Redirect to dailyphoto with a param to force school selection
+                    window.location.href = '/logged-in/dailyphoto.html?changeSchool=true';
+                });
+
+                removeSchoolBtn.addEventListener('click', async () => {
+                    if (schoolChangesThisMonth >= 2 && currentUser.email !== '4simpleproblems@gmail.com') {
+                        showMessage(schoolMessage, 'You have reached the monthly limit for school changes.', 'error');
+                        return;
+                    }
+
+                    if (confirm('Are you sure you want to remove your school and district affiliation?')) {
+                        try {
+                            await updateDoc(userDocRef, {
+                                schoolId: deleteField(),
+                                schoolName: deleteField(),
+                                districtId: deleteField(),
+                                state: deleteField(),
+                                stateAbbr: deleteField(),
+                                schoolSkipped: true,
+                                schoolChangesThisMonth: schoolChangesThisMonth + 1,
+                                lastSchoolChangeMonth: currentMonth
+                            });
+                            location.reload();
+                        } catch (e) {
+                            showMessage(schoolMessage, 'Failed to remove school.', 'error');
+                        }
+                    }
+                });
+            }
 
             // --- 4. Activity Presence Logic ---
             const showOfflineToggle = document.getElementById('showOfflineToggle');

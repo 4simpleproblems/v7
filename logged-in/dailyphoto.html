@@ -325,10 +325,15 @@
         <aside class="sidebar">
             <div class="sidebar-scroll-content">
                 
+                <div id="school-indicator-sidebar" class="mb-4 hidden">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-1">Your School</p>
+                    <p id="sidebar-school-name" class="text-sm font-bold truncate" style="color: var(--accent-color)"></p>
+                </div>
+
                 <div class="mb-6 pb-4 border-b border-[var(--border-main)]">
                     <h2 class="text-lg mb-2">Find Users</h2>
                     <div class="relative">
-                        <input type="text" id="user-search-input" placeholder="Search by username..." class="w-full p-3 pl-10 bg-black/20 border border-[var(--border-main)] rounded-[14px] outline-none focus:border-[var(--accent-color)] text-[var(--text-main)]">
+                        <input type="text" id="user-search-input" placeholder="Search by username..." class="w-full p-3 pl-10 bg-white/5 border border-white/10 rounded-[14px] outline-none focus:border-[var(--accent-color)] focus:bg-white/10 text-[var(--text-main)] transition-all">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 opacity-30"></i>
                     </div>
                     <div id="search-results" class="mt-2 space-y-1"></div>
@@ -480,6 +485,9 @@
     <div id="custom-prompt-modal" class="modal-backdrop">
         <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8">
             <h3 id="custom-prompt-title" class="text-xl font-bold mb-4">Input</h3>
+            <div id="custom-prompt-preview-container" class="hidden mb-6 aspect-video rounded-xl overflow-hidden bg-black/40 border border-[var(--border-main)]">
+                <img id="custom-prompt-preview-img" src="" class="w-full h-full object-contain">
+            </div>
             <p id="custom-prompt-message" class="opacity-60 mb-4 text-sm"></p>
             <input type="text" id="custom-prompt-input" class="w-full p-3 bg-black/20 border border-[var(--border-main)] rounded-[14px] outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] mb-6">
             <div class="flex gap-3">
@@ -550,13 +558,24 @@
                     };
                 });
             },
-            prompt: (message, defaultValue = "", title = "Input") => {
+            prompt: (message, defaultValue = "", title = "Input", previewSrc = null) => {
                 return new Promise(resolve => {
                     const modal = document.getElementById('custom-prompt-modal');
                     const input = document.getElementById('custom-prompt-input');
+                    const previewContainer = document.getElementById('custom-prompt-preview-container');
+                    const previewImg = document.getElementById('custom-prompt-preview-img');
+                    
                     document.getElementById('custom-prompt-title').textContent = title;
                     document.getElementById('custom-prompt-message').textContent = message;
                     input.value = defaultValue;
+                    
+                    if (previewSrc) {
+                        previewImg.src = previewSrc;
+                        previewContainer.classList.remove('hidden');
+                    } else {
+                        previewContainer.classList.add('hidden');
+                    }
+
                     modal.classList.add('open');
                     setTimeout(() => input.focus(), 100);
                     document.getElementById('custom-prompt-ok').onclick = () => {
@@ -593,9 +612,24 @@
                 userData = snap.data() || {};
                 blockedUsers = userData.blocked_users || [];
                 
-                // Check if school is set
-                if (!userData.schoolId && !userData.schoolSkipped) {
+                // Show school in sidebar
+                const schoolIndicator = document.getElementById('school-indicator-sidebar');
+                const sidebarSchoolName = document.getElementById('sidebar-school-name');
+                if (userData.schoolName) {
+                    sidebarSchoolName.textContent = userData.schoolName;
+                    schoolIndicator.classList.remove('hidden');
+                } else {
+                    schoolIndicator.classList.add('hidden');
+                }
+
+                // Check if school is set or forced change
+                const urlParams = new URLSearchParams(window.location.search);
+                const forceChange = urlParams.get('changeSchool') === 'true';
+
+                if ((!userData.schoolId && !userData.schoolSkipped) || forceChange) {
                     document.getElementById('announcement-modal').classList.add('open');
+                    // Remove param from URL
+                    if (forceChange) window.history.replaceState({}, '', window.location.pathname);
                 }
 
                 // Fetch following and followers to determine mutuals
@@ -708,12 +742,21 @@
             window.selectSchool = async (schoolName, districtName) => {
                 if (await CustomUI.confirm(`Confirm selection: ${schoolName}?`)) {
                     const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+                    
+                    // Increment monthly changes
+                    const currentMonth = new Date().getMonth() + 1;
+                    let changes = userData.schoolChangesThisMonth || 0;
+                    if ((userData.lastSchoolChangeMonth || 0) !== currentMonth) changes = 0;
+
                     await updateDoc(userRef, {
                         schoolId: schoolName,
                         schoolName: schoolName,
                         districtId: districtName || schoolName,
                         state: selectedState.name,
-                        stateAbbr: selectedState.abbr
+                        stateAbbr: selectedState.abbr,
+                        schoolSkipped: false,
+                        schoolChangesThisMonth: changes + 1,
+                        lastSchoolChangeMonth: currentMonth
                     });
                     document.getElementById('school-selection-modal').classList.remove('open');
                 }
@@ -725,8 +768,15 @@
             };
 
             document.getElementById('skip-school-btn').onclick = async () => {
-                if (await CustomUI.confirm("Skip school selection? You won't be able to see local moments.")) {
-                    await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { schoolSkipped: true });
+                if (await CustomUI.confirm("Skip school selection? You'll see moments from other users who also skipped.")) {
+                    await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { 
+                        schoolSkipped: true,
+                        schoolId: deleteField(),
+                        schoolName: deleteField(),
+                        districtId: deleteField(),
+                        state: deleteField(),
+                        stateAbbr: deleteField()
+                    });
                     document.getElementById('school-selection-modal').classList.remove('open');
                 }
             };
@@ -775,27 +825,45 @@
         function setupFeed() {
             unsubPosts();
             const grid = document.getElementById('photo-feed');
+            const toggleSchool = document.getElementById('feed-toggle-school');
+            const toggleDistrict = document.getElementById('feed-toggle-district');
+            
             grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin opacity-20 text-3xl"></i></div>';
 
             const today = new Date(); today.setHours(0,0,0,0);
             let q;
 
-            if (!userData.schoolId && !userData.schoolSkipped) {
-                grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Set your school to see moments.</p>';
-                return;
-            }
-
-            if (feedMode === 'district') {
-                if (!userData.districtId) { grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">No district found for your school.</p>'; return; }
-                q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('districtId', '==', userData.districtId), where('createdAt', '>=', today), limit(50));
+            // --- No School Logic ---
+            if (!userData.schoolId || userData.schoolSkipped) {
+                // Update toggle text for no-school mode
+                toggleSchool.textContent = 'Mutuals';
+                toggleDistrict.textContent = 'Public';
+                
+                if (feedMode === 'district' || feedMode === 'public') {
+                    // Show all public posts from users who also don't have a school
+                    q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', null), where('createdAt', '>=', today), limit(50));
+                } else {
+                    // Show posts from mutual friends who also don't have a school (or just mutuals)
+                    const uids = [currentUser.uid, ...mutualUids].slice(0, 10);
+                    q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', uids), where('createdAt', '>=', today));
+                }
             } else {
-                if (!userData.schoolId) { grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">School not set.</p>'; return; }
-                q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', userData.schoolId), where('createdAt', '>=', today), limit(50));
+                // School system active
+                toggleSchool.textContent = 'School';
+                toggleDistrict.textContent = 'District';
+
+                if (feedMode === 'district') {
+                    q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('districtId', '==', userData.districtId), where('createdAt', '>=', today), limit(50));
+                } else {
+                    q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', userData.schoolId), where('createdAt', '>=', today), limit(50));
+                }
             }
 
             unsubPosts = onSnapshot(q, snap => {
                 grid.innerHTML = '';
-                if (snap.empty) { grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today in your ${feedMode === 'district' ? 'district' : 'school'}.</p>`; return; }
+                const modeLabel = (!userData.schoolId || userData.schoolSkipped) ? (feedMode === 'district' ? 'the network' : 'your mutuals') : (feedMode === 'district' ? 'your district' : 'your school');
+                
+                if (snap.empty) { grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today from ${modeLabel}.</p>`; return; }
                 
                 // Sort client-side to avoid index errors
                 const sortedDocs = [...snap.docs].sort((a, b) => {
@@ -879,7 +947,7 @@
                                 </div>
                             </div>
 
-                            <div id="comments-section">
+                            <div id="comments-section" class="bg-white/5 border border-white/5">
                                 ${(data.comments || []).map(c => `
                                     <div class="mb-3 text-xs">
                                         <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
@@ -890,8 +958,8 @@
 
                             <div class="mt-auto pt-4">
                                 <div class="flex gap-2">
-                                    <input type="text" id="comment-input" placeholder="Say something..." class="flex-1 bg-black/20 border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)]">
-                                    <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-color)] text-white shadow-lg shadow-indigo-500/20"><i class="fas fa-paper-plane text-[10px]"></i></button>
+                                    <input type="text" id="comment-input" placeholder="Say something..." class="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)] focus:bg-white/10 transition-all text-white">
+                                    <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-color)] text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all"><i class="fas fa-paper-plane text-[10px]"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -920,29 +988,38 @@
                         };
                     }
 
+                    const commentInput = document.getElementById('comment-input');
                     const commentBtn = document.getElementById('send-comment-btn');
-                    if (commentBtn) {
-                        commentBtn.onclick = async () => {
-                            const input = document.getElementById('comment-input');
-                            const text = input.value.trim();
-                            if (!text) return;
-                            const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
-                            const myUsername = userSnap.data()?.username || "Someone";
-                            await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: text, timestamp: new Date() }) });
-                            
-                            if (!isOwner) {
-                                await addDoc(collection(db, 'notifications'), {
-                                    recipientId: data.creatorUid,
-                                    senderId: currentUser.uid,
-                                    senderUsername: myUsername,
-                                    type: 'comment',
-                                    postId: postId,
-                                    message: `@${myUsername} commented on your moment!`,
-                                    timestamp: serverTimestamp(),
-                                    read: false
-                                });
+
+                    const handleSendComment = async () => {
+                        const text = commentInput.value.trim();
+                        if (!text) return;
+                        const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+                        const myUsername = userSnap.data()?.username || "Someone";
+                        await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: text, timestamp: new Date() }) });
+                        
+                        if (!isOwner) {
+                            await addDoc(collection(db, 'notifications'), {
+                                recipientId: data.creatorUid,
+                                senderId: currentUser.uid,
+                                senderUsername: myUsername,
+                                type: 'comment',
+                                postId: postId,
+                                message: `@${myUsername} commented on your moment!`,
+                                timestamp: serverTimestamp(),
+                                read: false
+                            });
+                        }
+                        commentInput.value = '';
+                    };
+
+                    if (commentBtn) commentBtn.onclick = handleSendComment;
+                    if (commentInput) {
+                        commentInput.onkeydown = (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleSendComment();
                             }
-                            input.value = '';
                         };
                     }
                 } catch (err) {
@@ -968,8 +1045,19 @@
                 if (!file) return;
                 modal.classList.remove('open');
                 
-                const title = await CustomUI.prompt("Give your moment a title:", "Daily Moment");
-                if (title === null) return;
+                // Pre-calculate preview for the prompt
+                let previewUrl = "";
+                if (file.type === 'image/gif') {
+                    previewUrl = URL.createObjectURL(file);
+                } else {
+                    previewUrl = await compressImage(file, 400); // Smaller for preview
+                }
+
+                const title = await CustomUI.prompt("Give your moment a title:", "Daily Moment", "Post Moment", previewUrl);
+                if (title === null) {
+                    if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
+                    return;
+                }
                 
                 try {
                     await CustomUI.alert("Processing image, please wait...");
@@ -995,6 +1083,7 @@
                         const snapshot = await uploadBytes(storageRef, file, metadata);
                         const downloadURL = await getDownloadURL(snapshot.ref);
                         finalImageData = { imageURL: downloadURL };
+                        URL.revokeObjectURL(previewUrl);
                     } else {
                         // Other images get compressed and converted to Base64
                         const base64Str = await compressImage(file);
@@ -1120,14 +1209,18 @@
                 feedMode = 'school';
                 document.getElementById('feed-toggle-school').classList.add('active', 'btn-primary-override');
                 document.getElementById('feed-toggle-district').classList.remove('active', 'btn-primary-override');
-                document.getElementById('feed-desc').textContent = 'Moments from your school.';
+                
+                const isNoSchool = !userData.schoolId || userData.schoolSkipped;
+                document.getElementById('feed-desc').textContent = isNoSchool ? 'Moments from mutual friends.' : 'Moments from your school.';
                 setupFeed();
             };
             document.getElementById('feed-toggle-district').onclick = () => {
                 feedMode = 'district';
                 document.getElementById('feed-toggle-district').classList.add('active', 'btn-primary-override');
                 document.getElementById('feed-toggle-school').classList.remove('active', 'btn-primary-override');
-                document.getElementById('feed-desc').textContent = 'Moments from across your district.';
+                
+                const isNoSchool = !userData.schoolId || userData.schoolSkipped;
+                document.getElementById('feed-desc').textContent = isNoSchool ? 'Discover shared moments from across the network.' : 'Moments from across your district.';
                 setupFeed();
             };
         }
