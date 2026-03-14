@@ -1983,6 +1983,9 @@
                             <button class="action-btn btn-tag" data-action="set-tag" data-uid="${user.id}" data-username="${user.username || user.email}" title="Set Tag">
                                 <i class="fa-solid fa-tag"></i>
                             </button>
+                            <button class="action-btn text-red-500 hover:text-white hover:bg-red-900/40" data-action="delete-user" data-uid="${user.id}" data-username="${user.username || user.email}" title="Delete User">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
                             <button class="action-btn text-gray-400 hover:text-white hover:bg-white/10" data-action="view-details" data-uid="${user.id}" title="View Details">
                                 <i class="fa-solid fa-eye"></i>
                             </button>
@@ -2028,6 +2031,22 @@
                             });
                         }
                     } catch (err) { alert("Action failed: " + err.message); }
+                }
+            } else if (action === 'delete-user') {
+                const username = btn.dataset.username;
+                const confirmPrompt = prompt(`WARNING: This will permanently delete the user's Firestore document AND their Firebase Auth account.\n\nType the user's UID to confirm deletion:\n${uid}`);
+                
+                if (confirmPrompt === uid) {
+                    try {
+                        const deleteAuthUser = httpsCallable(functions, 'deleteAuthUser');
+                        await deleteAuthUser({ uid: uid }); // Call Cloud Function to delete Auth
+                        await deleteDoc(doc(db, 'users', uid)); // Delete Firestore Doc
+                        alert(`Successfully deleted user ${username} (${uid})`);
+                    } catch (err) {
+                        alert("Deletion failed: " + err.message);
+                    }
+                } else if (confirmPrompt !== null) {
+                    alert("UID mismatch. Deletion cancelled.");
                 }
             } else if (action === 'view-details') {
                 showUserDetails(uid);

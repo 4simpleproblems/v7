@@ -29,9 +29,9 @@ service cloud.firestore {
       allow read: if isAuthenticated(); 
       allow list: if isAdminOrSuperAdmin(); 
       
-      allow create: if isOwner(userId)
+      allow create: if (isOwner(userId)
                       && request.resource.id == request.auth.uid
-                      && 'username' in request.resource.data;
+                      && 'username' in request.resource.data) || isAdminOrSuperAdmin();
       
       allow update: if isOwner(userId) || 
                     (isAuthenticated() && 
