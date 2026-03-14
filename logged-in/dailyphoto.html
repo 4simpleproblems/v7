@@ -258,9 +258,11 @@
             background-color: var(--bg-card); 
             border: 1px solid var(--border-main);
             border-radius: 1.5rem; 
-            width: 100%; max-width: 1200px;
-            height: 90vh; max-height: 900px;
-            display: flex; flex-direction: column;
+            width: 95%; 
+            max-width: 1200px;
+            height: 90vh;
+            display: flex; 
+            flex-direction: column; 
             overflow: hidden;
             position: relative;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -271,12 +273,13 @@
         }
         
         #photo-display-area {
-            flex: 1;
+            flex: 1 1 auto; 
             background-color: #000;
-            display: flex; align-items: center; justify-content: center;
-            position: relative;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
             overflow: hidden;
-            min-height: 0; /* Critical for nested flex overflow */
+            min-width: 0; 
         }
         
         .photo-modal-img {
@@ -284,13 +287,13 @@
         }
 
         #photo-info-panel {
-            width: 100%;
             background-color: var(--bg-card);
-            border-top: 1px solid var(--border-main);
-            display: flex; flex-direction: column;
+            display: flex; 
+            flex-direction: column;
             padding: 1.5rem;
-            flex: 0 0 45%; /* Mobile height ratio */
+            width: 100%; 
             min-height: 0;
+            border-top: 1px solid var(--border-main);
         }
 
         @media (min-width: 1024px) {
@@ -1093,6 +1096,10 @@
                             </div>
                         </div>
                     `;
+
+                    // Auto-scroll to bottom of comments
+                    const commentsSection = document.getElementById('comments-section');
+                    if (commentsSection) commentsSection.scrollTop = commentsSection.scrollHeight;
 
                     const heartBtn = document.getElementById('modal-heart-btn');
                     if (heartBtn) {
