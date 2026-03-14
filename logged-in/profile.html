@@ -366,10 +366,14 @@
                 // Extract username from URL path: /logged-in/@username or query param path
                 const urlParams = new URLSearchParams(window.location.search);
                 let path = urlParams.get('path') || window.location.pathname;
-                let requestedUsername = null;
+                let requestedUsername = urlParams.get('username') || null;
 
-                if (path.includes('/@')) {
-                    requestedUsername = path.split('/@')[1].split('?')[0].split('/')[0];
+                if (!requestedUsername) {
+                    if (path.includes('/@')) {
+                        requestedUsername = path.split('/@')[1].split('?')[0].split('/')[0];
+                    } else if (path.startsWith('/@')) {
+                        requestedUsername = path.substring(2).split('?')[0].split('/')[0];
+                    }
                 }
 
                 try {
