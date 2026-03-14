@@ -41,7 +41,8 @@ service cloud.firestore {
                        'letterAvatarText', 'followerCount', 'followingCount', 'isOnline', 
                        'currentActivity', 'lastActive', 'totalV6Time', 'leaderboardAccepted', 
                        'leaderboardOptOut', 'dailySlotsUsed', 'downloadCode', 'mibiConfig',
-                       'userTag', 'pendingIn', 'pendingOut', 'contacts'
+                       'userTag', 'pendingIn', 'pendingOut', 'contacts',
+                       'schoolId', 'schoolName', 'districtId', 'state', 'stateAbbr', 'schoolSkipped'
                      ])) ||
                     isAdminOrSuperAdmin();
 

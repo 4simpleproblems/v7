@@ -330,13 +330,13 @@
                 <div class="flex justify-between items-center mb-10">
                     <div>
                         <h1 class="text-4xl font-bold mb-2">Dailyphoto</h1>
-                        <p id="feed-desc" class="opacity-60">Moments from mutual friends.</p>
+                        <p id="feed-desc" class="opacity-60">Moments from your school.</p>
                     </div>
                     
                     <div class="flex gap-3">
                         <div class="inline-flex bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl p-1">
-                            <button id="feed-toggle-friends" class="px-4 py-2 rounded-xl text-sm transition-all active btn-primary-override">Mutuals</button>
-                            <button id="feed-toggle-public" class="px-4 py-2 rounded-xl text-sm transition-all">Public</button>
+                            <button id="feed-toggle-school" class="px-4 py-2 rounded-xl text-sm transition-all active btn-primary-override">School</button>
+                            <button id="feed-toggle-district" class="px-4 py-2 rounded-xl text-sm transition-all">District</button>
                         </div>
                     </div>
                 </div>
@@ -344,6 +344,47 @@
                 <div id="photo-feed" class="photo-grid"></div>
             </div>
         </main>
+    </div>
+
+    <div id="announcement-modal" class="modal-backdrop">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-md p-8 text-center">
+            <div class="w-16 h-16 bg-indigo-500/20 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-school text-2xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-4">Simplifying Dailyphoto</h3>
+            <p class="opacity-60 mb-8 text-sm leading-relaxed">To keep our community safe and focused, we're moving to a school-based system. You'll now see moments from your school and district instead of a global public feed.</p>
+            <button id="announcement-continue-btn" class="btn-toolbar-style btn-primary-override w-full py-3">Find My School</button>
+        </div>
+    </div>
+
+    <div id="school-selection-modal" class="modal-backdrop">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-lg p-8">
+            <h3 class="text-2xl font-bold mb-2">Select Your School</h3>
+            <p class="text-xs opacity-50 mb-6 font-medium uppercase tracking-widest">Help us localize your feed</p>
+            
+            <div id="state-step">
+                <label class="text-xs font-bold opacity-40 uppercase mb-2 block">1. Search Your State</label>
+                <div class="relative mb-4">
+                    <input type="text" id="state-search-input" placeholder="Search by name or abbreviation (e.g. Ohio or OH)..." class="w-full p-4 pl-12 bg-black/40 border border-[var(--border-main)] rounded-2xl outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] transition-all">
+                    <i class="fas fa-map-marker-alt absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-lg"></i>
+                </div>
+                <div id="state-results" class="space-y-2 max-h-48 overflow-y-auto mb-6 custom-scroll"></div>
+            </div>
+
+            <div id="school-step" class="hidden">
+                <label class="text-xs font-bold opacity-40 uppercase mb-2 block">2. Find Your School</label>
+                <div class="relative mb-4">
+                    <input type="text" id="school-search-input" placeholder="Search by school, district, or tag..." class="w-full p-4 pl-12 bg-black/40 border border-[var(--border-main)] rounded-2xl outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] transition-all">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-lg"></i>
+                </div>
+                <div id="school-results" class="space-y-2 max-h-60 overflow-y-auto mb-6 custom-scroll"></div>
+                <button id="back-to-states" class="text-xs font-bold text-indigo-500 hover:text-indigo-400 transition-colors flex items-center gap-2"><i class="fas fa-arrow-left"></i> Change State</button>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-[var(--border-main)] flex gap-3">
+                <button id="skip-school-btn" class="px-6 py-3 rounded-xl text-sm font-bold opacity-40 hover:opacity-100 transition-all">Skip (Not in US)</button>
+            </div>
+        </div>
     </div>
 
     <!-- Modals -->
@@ -409,13 +450,19 @@
         const storage = getStorage();
 
         let currentUser = null;
+        let userData = {};
         let followingUids = [];
         let followerUids = [];
         let mutualUids = [];
         let blockedUsers = [];
-        let feedMode = 'friends';
+        let feedMode = 'school';
         let unsubPosts = () => {};
         let unsubModal = () => {};
+
+        // School selection state
+        let allStates = [];
+        let currentStateSchools = [];
+        let selectedState = null;
 
         const DAILY_COLLECTION = collection(db, 'daily_photos');
         const USERS_COLLECTION = 'users';
@@ -485,13 +532,19 @@
             setupFeedToggles();
             listenToUser();
             setupUserSearch();
+            setupSchoolSelection();
         }
 
         function listenToUser() {
             onSnapshot(doc(db, USERS_COLLECTION, currentUser.uid), async snap => {
-                const data = snap.data() || {};
-                blockedUsers = data.blocked_users || [];
+                userData = snap.data() || {};
+                blockedUsers = userData.blocked_users || [];
                 
+                // Check if school is set
+                if (!userData.schoolId && !userData.schoolSkipped) {
+                    document.getElementById('announcement-modal').classList.add('open');
+                }
+
                 // Fetch following and followers to determine mutuals
                 const followingSnap = await getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'following'));
                 followingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
@@ -501,11 +554,113 @@
                 
                 mutualUids = followingUids.filter(id => followerUids.includes(id));
 
-                renderMyPosts(data.dailySlotsUsed || []);
+                renderMyPosts(userData.dailySlotsUsed || []);
                 setupFeed();
                 if (!document.getElementById('friends-section-wrapper').classList.contains('hidden')) renderMutualsList();
                 if (!document.getElementById('blocked-section').classList.contains('hidden')) renderBlockedList();
             });
+        }
+
+        async function setupSchoolSelection() {
+            try {
+                const res = await fetch('/schools/states.json');
+                allStates = await res.json();
+            } catch (err) { console.error("Failed to load states:", err); }
+
+            document.getElementById('announcement-continue-btn').onclick = () => {
+                document.getElementById('announcement-modal').classList.remove('open');
+                document.getElementById('school-selection-modal').classList.add('open');
+            };
+
+            const stateInput = document.getElementById('state-search-input');
+            const stateResults = document.getElementById('state-results');
+            const schoolInput = document.getElementById('school-search-input');
+            const schoolResults = document.getElementById('school-results');
+
+            stateInput.oninput = () => {
+                const term = stateInput.value.trim().toLowerCase();
+                if (!term) { stateResults.innerHTML = ''; return; }
+                const filtered = allStates.filter(s => s.name.toLowerCase().includes(term) || s.abbr.toLowerCase().includes(term));
+                stateResults.innerHTML = filtered.map(s => `
+                    <div class="p-4 bg-black/20 border border-[var(--border-main)] rounded-xl cursor-pointer hover:border-indigo-500 transition-all flex justify-between items-center group" onclick="window.selectState('${s.abbr}')">
+                        <span class="font-bold">${s.name}</span>
+                        <span class="text-xs opacity-40 group-hover:opacity-100 transition-opacity">${s.abbr}</span>
+                    </div>
+                `).join('');
+            };
+
+            window.selectState = async (abbr) => {
+                selectedState = allStates.find(s => s.abbr === abbr);
+                stateResults.innerHTML = '<div class="p-8 text-center"><i class="fas fa-spinner fa-spin text-2xl opacity-20"></i></div>';
+                try {
+                    const res = await fetch(`/schools/${abbr.trim()}.json`);
+                    currentStateSchools = await res.json();
+                    // Sort alphabetically
+                    currentStateSchools.sort((a, b) => a.name.localeCompare(b.name));
+                    
+                    document.getElementById('state-step').classList.add('hidden');
+                    document.getElementById('school-step').classList.remove('hidden');
+                    renderSchools('');
+                } catch (err) { 
+                    console.error("Failed to load schools:", err); 
+                    alert("Failed to load schools for this state.");
+                }
+            };
+
+            schoolInput.oninput = () => renderSchools(schoolInput.value.trim());
+
+            function renderSchools(term) {
+                const search = term.toLowerCase();
+                // Filter by name, district, or any other field (tags)
+                const filtered = currentStateSchools.filter(s => {
+                    if (!search) return true;
+                    return s.name.toLowerCase().includes(search) || 
+                           (s.district && s.district.toLowerCase().includes(search)) ||
+                           (s.level && s.level.toLowerCase().includes(search)) ||
+                           (s.locale && s.locale.toLowerCase().includes(search));
+                }).slice(0, 100);
+
+                schoolResults.innerHTML = filtered.map(s => `
+                    <div class="p-4 bg-black/20 border border-[var(--border-main)] rounded-xl cursor-pointer hover:border-indigo-500 transition-all" onclick="window.selectSchool('${s.name}', '${s.district}')">
+                        <div class="font-bold text-sm mb-1">${s.name}</div>
+                        <div class="flex gap-3 text-[10px] opacity-40 uppercase tracking-widest font-bold">
+                            <span>${s.district || 'Independent'}</span>
+                            <span class="text-indigo-500/60">•</span>
+                            <span>${s.level}</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+                if (filtered.length === 0) {
+                    schoolResults.innerHTML = '<p class="text-center py-8 opacity-30 italic text-sm">No schools found matching your search.</p>';
+                }
+            }
+
+            window.selectSchool = async (schoolName, districtName) => {
+                if (await CustomUI.confirm(`Confirm selection: ${schoolName}?`)) {
+                    const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+                    await updateDoc(userRef, {
+                        schoolId: schoolName,
+                        schoolName: schoolName,
+                        districtId: districtName || schoolName,
+                        state: selectedState.name,
+                        stateAbbr: selectedState.abbr
+                    });
+                    document.getElementById('school-selection-modal').classList.remove('open');
+                }
+            };
+
+            document.getElementById('back-to-states').onclick = () => {
+                document.getElementById('school-step').classList.add('hidden');
+                document.getElementById('state-step').classList.remove('hidden');
+            };
+
+            document.getElementById('skip-school-btn').onclick = async () => {
+                if (await CustomUI.confirm("Skip school selection? You won't be able to see local moments.")) {
+                    await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { schoolSkipped: true });
+                    document.getElementById('school-selection-modal').classList.remove('open');
+                }
+            };
         }
 
         async function renderMyPosts(usedSlots) {
@@ -556,19 +711,31 @@
             const today = new Date(); today.setHours(0,0,0,0);
             let q;
 
-            if (feedMode === 'public') {
-                q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('isPublic', '==', true), where('createdAt', '>=', today), orderBy('createdAt', 'desc'), limit(50));
+            if (!userData.schoolId && !userData.schoolSkipped) {
+                grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Set your school to see moments.</p>';
+                return;
+            }
+
+            if (feedMode === 'district') {
+                if (!userData.districtId) { grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">No district found for your school.</p>'; return; }
+                q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('districtId', '==', userData.districtId), where('createdAt', '>=', today), limit(50));
             } else {
-                const uids = [currentUser.uid, ...mutualUids].filter(id => !blockedUsers.includes(id)).slice(0, 10);
-                if (uids.length === 0) { grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Follow mutual friends to see their moments.</p>'; return; }
-                q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', uids), where('createdAt', '>=', today), orderBy('createdAt', 'desc'));
+                if (!userData.schoolId) { grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">School not set.</p>'; return; }
+                q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', userData.schoolId), where('createdAt', '>=', today), limit(50));
             }
 
             unsubPosts = onSnapshot(q, snap => {
                 grid.innerHTML = '';
-                if (snap.empty) { grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">No moments yet today.</p>'; return; }
+                if (snap.empty) { grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today in your ${feedMode === 'district' ? 'district' : 'school'}.</p>`; return; }
                 
-                snap.forEach(docSnap => {
+                // Sort client-side to avoid index errors
+                const sortedDocs = [...snap.docs].sort((a, b) => {
+                    const timeA = a.data().createdAt?.toMillis() || 0;
+                    const timeB = b.data().createdAt?.toMillis() || 0;
+                    return timeB - timeA;
+                });
+
+                sortedDocs.forEach(docSnap => {
                     const data = docSnap.data();
                     if (blockedUsers.includes(data.creatorUid)) return;
                     const el = document.createElement('div');
@@ -588,6 +755,9 @@
                     el.onclick = () => window.viewPost(docSnap.id);
                     grid.appendChild(el);
                 });
+            }, err => {
+                console.error("Feed snapshot error:", err);
+                grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Error loading feed. (Check Console)</p>';
             });
         }
 
@@ -731,13 +901,13 @@
                 
                 const title = await CustomUI.prompt("Give your moment a title:", "Daily Moment");
                 if (title === null) return;
-                const isPublic = await CustomUI.confirm("Make this moment public?");
                 
                 try {
                     await CustomUI.alert("Processing image, please wait...");
                     
                     const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
-                    const username = userSnap.data().username;
+                    const uData = userSnap.data();
+                    const username = uData.username;
 
                     let finalImageData = {};
 
@@ -768,14 +938,15 @@
                         createdAt: serverTimestamp(),
                         ...finalImageData,
                         title: title || "Daily Moment",
-                        isPublic: isPublic,
+                        schoolId: uData.schoolId || null,
+                        districtId: uData.districtId || null,
                         status: 'active',
                         hearts: [],
                         comments: []
                     });
 
                     const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
-                    const slots = userSnap.data().dailySlotsUsed || [];
+                    const slots = uData.dailySlotsUsed || [];
                     while (slots.length <= slotIdx) slots.push(null);
                     slots[slotIdx] = postRef.id;
                     await updateDoc(userRef, { dailySlotsUsed: slots });
@@ -876,23 +1047,18 @@
         }
 
         function setupFeedToggles() {
-            document.getElementById('feed-toggle-friends').onclick = () => {
-                feedMode = 'friends';
-                document.getElementById('feed-toggle-friends').classList.add('active', 'btn-primary-override');
-                document.getElementById('feed-toggle-public').classList.remove('active', 'btn-primary-override');
-                document.getElementById('feed-desc').textContent = 'Moments from mutual friends.';
+            document.getElementById('feed-toggle-school').onclick = () => {
+                feedMode = 'school';
+                document.getElementById('feed-toggle-school').classList.add('active', 'btn-primary-override');
+                document.getElementById('feed-toggle-district').classList.remove('active', 'btn-primary-override');
+                document.getElementById('feed-desc').textContent = 'Moments from your school.';
                 setupFeed();
             };
-            document.getElementById('feed-toggle-public').onclick = async () => {
-                if (!localStorage.getItem('daily_public_warning')) {
-                    if (await CustomUI.confirm("Notice: The public feed may contain inappropriate content. Report violations immediately. Continue?")) {
-                        localStorage.setItem('daily_public_warning', 'true');
-                    } else return;
-                }
-                feedMode = 'public';
-                document.getElementById('feed-toggle-public').classList.add('active', 'btn-primary-override');
-                document.getElementById('feed-toggle-friends').classList.remove('active', 'btn-primary-override');
-                document.getElementById('feed-desc').textContent = 'Discover shared moments from across the network.';
+            document.getElementById('feed-toggle-district').onclick = () => {
+                feedMode = 'district';
+                document.getElementById('feed-toggle-district').classList.add('active', 'btn-primary-override');
+                document.getElementById('feed-toggle-school').classList.remove('active', 'btn-primary-override');
+                document.getElementById('feed-desc').textContent = 'Moments from across your district.';
                 setupFeed();
             };
         }
