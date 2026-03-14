@@ -352,6 +352,7 @@
 
         let firebaseAuthUser = null; 
         let profileOwnerId = null; 
+        let userDocData = null; 
         let isOwnProfile = false;
         let isFollowing = false;
         let isFollowedBy = false;
@@ -413,7 +414,6 @@
 
                     const userDocRef = doc(db, "users", profileOwnerId);
 
-                    let userDocData = null;
                     const updateStatusUI = () => {
                         if (!userDocData) return;
                         if (userDocData.isOnline && (isOwnProfile || isMutual)) {
