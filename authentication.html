@@ -307,6 +307,13 @@
 
        onAuthStateChanged(auth, async (user) => {
             if (user) {
+                // Check for email ban immediately
+                if (await checkEmailBan(user.email)) {
+                    await signOut(auth);
+                    showMessage(messageDivs.login, 'This email address is not permitted to access this network.', 'error');
+                    return;
+                }
+
                 // User is signed in.
                 const isAtAuthPage = window.location.pathname.endsWith('authentication.html') || 
                                     window.location.pathname === '/' || 

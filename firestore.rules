@@ -186,6 +186,16 @@ service cloud.firestore {
       allow create, update, delete: if isAdminOrSuperAdmin();
     }
 
+    match /email_bans/{email} {
+      allow read: if isAdminOrSuperAdmin();
+      allow create, update, delete: if isAdminOrSuperAdmin();
+    }
+
+    match /hardware_bans/{hwId} {
+      allow read: if true; // Everyone must be able to check their hardware ban status
+      allow create, update, delete: if isAdminOrSuperAdmin();
+    }
+
     // ----------------------------------------------------------------------------------
     // X. Global Configuration
     // ----------------------------------------------------------------------------------
