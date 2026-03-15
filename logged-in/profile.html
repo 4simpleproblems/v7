@@ -321,6 +321,8 @@
         const auth = getAuth();
         const db = getFirestore();
 
+        window.__PAGE_KEY = 'profile'; // Highlight profile tab
+
         const avatarPreview = document.getElementById('avatar-preview');
         const displayNameEl = document.getElementById('display-name');
         const usernameEl = document.getElementById('username');
@@ -359,11 +361,18 @@
         let isFollowedBy = false;
         let isMutual = false;
         let currentUsername = "";
+        let bannedUids = new Set(); // Cache banned UIDs
+
+        async function fetchBans() {
+            const banSnap = await getDocs(collection(db, 'bans'));
+            bannedUids = new Set(banSnap.docs.map(d => d.id));
+        }
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 firebaseAuthUser = user;
                 syncGooglePhoto(user); // Sync Google PFP to Firestore field
+                await fetchBans();
 
                 // Extract username from URL path: /logged-in/@username or query param path
                 const urlParams = new URLSearchParams(window.location.search);
@@ -406,6 +415,19 @@
                             document.getElementById('not-found-overlay').classList.remove('hidden');
                             return;
                         }
+                    }
+
+                    // CHECK IF BANNED
+                    if (bannedUids.has(profileOwnerId)) {
+                        document.getElementById('loading-overlay').classList.add('hidden');
+                        const bannedOverlay = document.getElementById('not-found-overlay').cloneNode(true);
+                        bannedOverlay.id = 'banned-overlay';
+                        bannedOverlay.querySelector('h2').textContent = "Account Banned";
+                        bannedOverlay.querySelector('p').textContent = "This account has been suspended for violating our terms of service.";
+                        bannedOverlay.querySelector('a').remove();
+                        document.body.appendChild(bannedOverlay);
+                        bannedOverlay.classList.remove('hidden');
+                        return;
                     }
 
                     isOwnProfile = profileOwnerId === user.uid;
@@ -565,10 +587,14 @@
 
         function loadCounts() {
             onSnapshot(collection(db, 'users', profileOwnerId, 'followers'), snap => {
-                followersCountEl.textContent = snap.docs.filter(d => d.id !== '.init').length;
+                // Filter out banned users from count
+                const validCount = snap.docs.filter(d => d.id !== '.init' && !bannedUids.has(d.id)).length;
+                followersCountEl.textContent = validCount;
             });
             onSnapshot(collection(db, 'users', profileOwnerId, 'following'), snap => {
-                followingCountEl.textContent = snap.docs.filter(d => d.id !== '.init').length;
+                // Filter out banned users from count
+                const validCount = snap.docs.filter(d => d.id !== '.init' && !bannedUids.has(d.id)).length;
+                followingCountEl.textContent = validCount;
             });
         }
 
@@ -622,44 +648,51 @@
         };
 
         async function loadDailyPhotos() {
-            // Check if we are friends (both following each other)
-            let areFriends = false;
-            if (!isOwnProfile && firebaseAuthUser) {
-                const followingThemSnap = await getDoc(doc(db, 'users', firebaseAuthUser.uid, 'following', profileOwnerId));
-                const followingMeSnap = await getDoc(doc(db, 'users', profileOwnerId, 'following', firebaseAuthUser.uid));
-                areFriends = followingThemSnap.exists() && followingMeSnap.exists();
-            }
+            // Get current user's data for district check
+            const meSnap = await getDoc(doc(db, 'users', firebaseAuthUser.uid));
+            const myData = meSnap.data();
+            const sameDistrict = myData?.schoolDistrict && myData.schoolDistrict === userDocData?.schoolDistrict;
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
 
             const q = query(
                 collection(db, 'daily_photos'),
                 where('creatorUid', '==', profileOwnerId),
                 where('status', '==', 'active'),
+                where('createdAt', '>=', today),
                 limit(6)
             );
 
             const snap = await getDocs(q);
-
             dailyphotoContainer.innerHTML = '';
 
-            const visiblePhotos = snap.docs.filter(doc => {
-                const data = doc.data();
-                if (isOwnProfile) return true;
-                if (data.isPublic) return true;
-                if (areFriends) return true;
-                return false;
-            });
+            const isRestricted = !isOwnProfile && !isMutual && !sameDistrict;
 
-            if (visiblePhotos.length === 0) {
-                dailyphotoContainer.innerHTML = '<p class="text-gray-600 italic py-8 col-span-full text-center">No visible photos shared yet.</p>';
+            if (isRestricted) {
+                dailyphotoContainer.innerHTML = `
+                    <div class="col-span-full py-12 px-6 text-center bg-white/5 border border-dashed border-white/10 rounded-3xl">
+                        <i class="fa-solid fa-lock text-3xl mb-4 opacity-20"></i>
+                        <p class="text-[var(--text-main)] font-medium">Private Content</p>
+                        <p class="text-xs text-[var(--text-muted)] opacity-60 mt-1 max-w-[240px] mx-auto leading-relaxed">
+                            You must be mutual followers or in the same district (${userDocData?.schoolDistrict || 'N/A'}) to see daily photos.
+                        </p>
+                    </div>
+                `;
                 return;
             }
 
-            visiblePhotos.forEach(doc => {
-                const data = doc.data();
+            if (snap.empty) {
+                dailyphotoContainer.innerHTML = '<p class="text-gray-600 italic py-8 col-span-full text-center">No photos shared today yet.</p>';
+                return;
+            }
+
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
                 const div = document.createElement('div');
                 div.className = 'photo-grid-item';
                 div.innerHTML = `<img src="${data.imageURL || data.imageBase64}" loading="lazy">`;
-                div.onclick = () => window.location.href = `/logged-in/dailyphoto.html?post=${doc.id}`;
+                div.onclick = () => window.location.href = `/logged-in/dailyphoto.html?post=${docSnap.id}`;
                 dailyphotoContainer.appendChild(div);
             });
         }
@@ -685,6 +718,8 @@
             
             for (const docSnap of snap.docs) {
                 if (docSnap.id === '.init') continue;
+                if (bannedUids.has(docSnap.id)) continue; // SKIP BANNED USERS IN LIST
+
                 const uSnap = await getDoc(doc(db, 'users', docSnap.id));
                 if (uSnap.exists()) {
                     const uData = uSnap.data();
