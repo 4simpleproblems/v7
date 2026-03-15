@@ -1762,7 +1762,7 @@
                         authMethod: providerId,
                         createdAt: u.creationTime ? new Date(u.creationTime) : serverTimestamp(),
                         username: username,
-                        emailVerified: u.emailVerified, 
+                        emailVerified: !!u.emailVerified, 
                         photoURL: u.photoURL || null
                     });
                     
