@@ -1,9 +1,39 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from "../firebase-config.js"; 
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        /**
+         * Syncs the user's Google profile picture URL to their Firestore document.
+         * Only runs if the user is authenticated via Google and the photoURL is missing or different.
+         */
+        export async function syncGooglePhoto(authUser) {
+            if (!authUser) return;
+            
+            try {
+                const googleProvider = authUser.providerData.find(p => p.providerId === 'google.com');
+                if (!googleProvider || !googleProvider.photoURL) return;
+
+                const userRef = doc(db, 'users', authUser.uid);
+                const userSnap = await getDoc(userRef);
+
+                if (userSnap.exists()) {
+                    const data = userSnap.data();
+                    const currentPhoto = data.photoURL;
+                    const googlePhoto = googleProvider.photoURL;
+
+                    // If photoURL is missing or different from Google's latest, update it
+                    if (currentPhoto !== googlePhoto) {
+                        console.log("Syncing Google PFP to Firestore...");
+                        await updateDoc(userRef, { photoURL: googlePhoto });
+                    }
+                }
+            } catch (e) {
+                console.error("Error syncing Google photo:", e);
+            }
+        }
 
         export const getLetterAvatarTextColor = (hex) => {
             if (!hex) return '#FFFFFF';

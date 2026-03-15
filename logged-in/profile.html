@@ -315,6 +315,7 @@
         import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, writeBatch, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from "/firebase-config.js";
         import { getAvatarHTML } from "/profile_picture_system.js";
+        import { syncGooglePhoto } from "/utils.js";
 
         if (!getApps().length) initializeApp(firebaseConfig);
         const auth = getAuth();
@@ -362,6 +363,7 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 firebaseAuthUser = user;
+                syncGooglePhoto(user); // Sync Google PFP to Firestore field
 
                 // Extract username from URL path: /logged-in/@username or query param path
                 const urlParams = new URLSearchParams(window.location.search);
