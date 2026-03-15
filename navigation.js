@@ -775,6 +775,16 @@ let db;
                             ${avatarHtml}
                         </button>
                         <div id="auth-menu-container" class="auth-menu-container closed">
+                            <div class="border-b mb-2 w-full min-w-0 flex items-center">
+                                <div class="min-w-0 flex-1 overflow-hidden">
+                                    <div class="marquee-container" id="username-marquee-auth">
+                                        <p class="text-sm font-semibold auth-menu-username marquee-content">${displayName}</p>
+                                    </div>
+                                    <div class="marquee-container" id="email-marquee-auth">
+                                        <p class="text-xs text-gray-400 auth-menu-email marquee-content">${user.email || 'No email'}</p>
+                                    </div>
+                                </div>
+                            </div>
                             <a href="/logged-in/settings.html" class="auth-menu-link">
                                 <i class="fa-solid fa-gear w-4"></i>
                                 Settings
@@ -1535,11 +1545,15 @@ let db;
             const response = await fetch(window.PAGE_CONFIG_URL);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             pages = await response.json();
+            allPages = pages; // Set allPages early
+            
+            // Render navbar immediately with null user to show auth button while Firebase loads
+            renderNavbar(null, null, pages, false);
         } catch (error) {
             console.error("Failed to load page identification config:", error);
-            pages = { 
-                'home': { name: "Home", url: "../index.html", icon: "fa-solid fa-house" },
-            };
+            pages = { 'home': { name: "Home", url: "../index.html", icon: "fa-solid fa-house" } };
+            allPages = pages;
+            renderNavbar(null, null, pages, false);
         }
 
         try {
@@ -1726,7 +1740,7 @@ let db;
                 transition: transform 0.2s ease-out, opacity 0.2s ease-out, background-color 0.3s ease, border-color 0.3s ease;
                 transform-origin: top right; z-index: 10000;
             }
-            .auth-menu-container .border-b { border-color: transparent !important; } /* Removed bottom border */
+            .auth-menu-container .border-b { border-color: var(--menu-divider, #333) !important; padding-bottom: 0.5rem; } /* Added padding and visible border */
             .auth-menu-displayname {
                 color: var(--menu-username-text, #ffffff) !important;
                 text-align: left !important; margin: 0 !important; font-weight: 600 !important;

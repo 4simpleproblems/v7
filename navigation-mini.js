@@ -549,7 +549,7 @@ let db;
                             ${avatarHtml}
                         </button>
                         <div id="auth-menu-container" class="auth-menu-container closed">
-                            <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center">
+                            <div class="border-b mb-2 w-full min-w-0 flex items-center">
                                 <div class="min-w-0 flex-1 overflow-hidden">
                                     <div class="marquee-container" id="username-marquee">
                                         <p class="text-sm font-semibold auth-menu-username marquee-content">${username}</p>
@@ -1094,9 +1094,15 @@ let db;
             const response = await fetch(window.PAGE_CONFIG_URL);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             pages = await response.json();
+            allPages = pages; // Ensure allPages is set for renderNavbar
+            
+            // Render navbar immediately with null user to show auth button while Firebase loads
+            renderNavbar(null, null, pages, false);
         } catch (error) {
             console.error("Failed to load page identification config:", error);
             pages = { 'home': { name: "Home", url: "../index.html", icon: "fa-solid fa-house" } };
+            allPages = pages;
+            renderNavbar(null, null, pages, false);
         }
 
         try {
@@ -1283,7 +1289,7 @@ let db;
                 transition: transform 0.2s ease-out, opacity 0.2s ease-out, background-color 0.3s ease, border-color 0.3s ease;
                 transform-origin: top right; z-index: 10000;
             }
-            .auth-menu-container .border-b { border-color: var(--menu-divider, #333) !important; transition: border-color 0.3s ease; }
+            .auth-menu-container .border-b { border-color: var(--menu-divider, #333) !important; transition: border-color 0.3s ease; padding-bottom: 0.5rem; }
             .auth-menu-username {
                 color: var(--menu-username-text, white);
                 transition: color 0.3s ease;
