@@ -11,23 +11,23 @@
         "url": "../logged-in/leaderboard.html",
         "aliases": ["/logged-in/leaderboard"]
     },
-    "soundboard": {
-        "name": "Soundboard",
-        "icon": "fa-solid fa-volume-up", 
-        "url": "../logged-in/soundboard.html",
-        "aliases": ["/logged-in/soundboard"]
+    "profile": {
+        "name": "Profile",
+        "icon": "fa-solid fa-user",
+        "url": "../logged-in/profile.html",
+        "aliases": ["/logged-in/profile", "/logged-in/@"]
+    },
+    "dailyphoto": {
+        "name": "Dailyphoto",
+        "icon": "fa-solid fa-image",
+        "url": "../logged-in/dailyphoto.html",
+        "aliases": ["/logged-in/dailyphoto"]
     },
     "notes": {
         "name": "Notes",
         "icon": "fa-solid fa-sticky-note", 
         "url": "../logged-in/notes.html",
         "aliases": ["/logged-in/notes"]
-    },
-     "dailyphoto": {
-        "name": "Dailyphoto",
-        "icon": "fa-solid fa-image",
-        "url": "../logged-in/dailyphoto.html",
-        "aliases": ["/logged-in/dailyphoto"]
     },
     "dictionary": {
         "name": "Dictionary",
@@ -46,6 +46,12 @@
         "icon": "fa-solid fa-comments", 
         "url": "../logged-in/messenger-tutorial.html",
         "aliases": ["/logged-in/messenger-tutorial", "/logged-in/messenger"]
+    },
+    "soundboard": {
+        "name": "Soundboard",
+        "icon": "fa-solid fa-volume-up", 
+        "url": "../logged-in/soundboard.html",
+        "aliases": ["/logged-in/soundboard"]
     },
     "games-4sp": {
         "name": "Games",
@@ -77,7 +83,6 @@
         "url": "../VELIUM/index.html",
         "aliases": ["/VELIUM/", "/VELIUM/index.html", "/VELIUM"]
     },
-
     "securly-tester": {
         "name": "Securly Tester",
         "icon": "fa-solid fa-shield-alt",
@@ -89,12 +94,6 @@
         "icon": "fa-solid fa-gear",
         "url": "../logged-in/settings.html",
         "aliases": ["/logged-in/settings"]
-    },
-    "profile": {
-        "name": "Profile",
-        "icon": "fa-solid fa-user",
-        "url": "../logged-in/profile.html",
-        "aliases": ["/logged-in/profile", "/logged-in/@"]
     },
     "analytics": {
         "name": "Analytics",
