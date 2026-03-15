@@ -226,11 +226,20 @@
         async function loadUserRankings(currentUid) {
             const rankingsEl = document.getElementById('rankings-list');
             
-            // Get current user's following list
+            // Get current user's following list and banned users
             let following = new Set();
+            let bannedUids = new Set();
+            
             if (currentUid) {
-                const followSnap = await getDocs(collection(db, 'users', currentUid, 'following'));
+                const [followSnap, banSnap] = await Promise.all([
+                    getDocs(collection(db, 'users', currentUid, 'following')),
+                    getDocs(collection(db, 'bans'))
+                ]);
                 followSnap.forEach(docSnap => following.add(docSnap.id));
+                banSnap.forEach(docSnap => bannedUids.add(docSnap.id));
+            } else {
+                const banSnap = await getDocs(collection(db, 'bans'));
+                banSnap.forEach(docSnap => bannedUids.add(docSnap.id));
             }
 
             const q = query(
@@ -238,7 +247,7 @@
                 where('leaderboardAccepted', '==', true),
                 where('leaderboardOptOut', '==', false),
                 orderBy('totalV6Time', 'desc'),
-                limit(50)
+                limit(100) // Increase limit slightly because we filter after fetch
             );
             
             const snap = await getDocs(q);
@@ -250,10 +259,15 @@
 
             rankingsEl.innerHTML = '';
             let i = 1;
+            let displayCount = 0;
             
             snap.forEach(docSnap => {
-                const data = docSnap.data();
+                if (displayCount >= 50) return; // Keep limit at 50 displayed
+                
                 const uid = docSnap.id;
+                if (bannedUids.has(uid)) return; // SKIP BANNED USERS
+
+                const data = docSnap.data();
                 const hours = Math.floor((data.totalV6Time || 0) / 3600);
                 const minutes = Math.floor(((data.totalV6Time || 0) % 3600) / 60);
 
@@ -293,6 +307,7 @@
                 }
 
                 i++;
+                displayCount++;
             });
         }
 
