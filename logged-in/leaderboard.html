@@ -205,6 +205,7 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from '../firebase-config.js';
+        import { getAvatarHTML } from "../utils.js";
 
         if (!getApps().length) initializeApp(firebaseConfig);
         const auth = getAuth();
@@ -267,10 +268,8 @@
 
                 item.innerHTML = `
                     <div class="rank-num ${i <= 3 ? 'rank-'+i : ''}">${i}</div>
-                    <div class="user-avatar" id="avatar-${uid}">
-                        <i class="fas fa-user text-[var(--text-muted)] opacity-40"></i>
-                    </div>
-                    <div class="flex-grow">
+                    ${getAvatarHTML(data, "w-16 h-16", false, auth.currentUser, "rounded-[20px]")}
+                    <div class="flex-grow ml-4">
                         <div class="text-lg font-medium text-[var(--text-main)]">${data.displayName || data.username || "Anonymous"}</div>
                         <div class="text-xs text-[var(--text-muted)] opacity-60 font-mono">${hours}h ${minutes}m</div>
                     </div>
@@ -287,7 +286,6 @@
                 };
 
                 rankingsEl.appendChild(item);
-                renderAvatar(data, `avatar-${uid}`);
 
                 const fBtn = item.querySelector('.follow-btn');
                 if (fBtn) {
@@ -331,47 +329,25 @@
             const hours = Math.floor((data.totalV6Time || 0) / 3600);
             const minutes = Math.floor(((data.totalV6Time || 0) % 3600) / 60);
             document.getElementById('champion-time').textContent = `${hours}h ${minutes}m total`;
-            renderAvatar(data, 'champion-avatar');
+            
+            const champAvatarContainer = document.getElementById('champion-avatar');
+            // champion-avatar id is on the container itself in the original HTML, but we'll replace it with the new div returned by getAvatarHTML
+            const newChampAvatar = getAvatarHTML(data, "w-24 h-24", false, auth.currentUser, "rounded-[32px]");
+            // We need to keep the ID or update the query. The original HTML has <div id="champion-avatar" ...>
+            // getAvatarHTML returns <div class="...">...</div>.
+            // I'll wrap it or give it an ID if needed, but since it's already a div, I'll just swap the outerHTML.
+            // Wait, if I swap outerHTML, the next updateChampion call will fail because id="champion-avatar" is gone.
+            // I'll update getAvatarHTML to optionally take an ID or I'll just set innerHTML of the container.
+            
+            champAvatarContainer.innerHTML = newChampAvatar;
+            // But getAvatarHTML returns a wrapper div. So we'll have nested divs. 
+            // To match leaderboard style perfectly, I'll just set innerHTML and maybe adjust the container classes.
             
             const championSection = document.getElementById('top-user-section');
             championSection.classList.add('cursor-pointer');
             championSection.onclick = () => {
                 if (data.username) window.location.href = `/logged-in/@${data.username}`;
             };
-        }
-
-        function renderAvatar(userData, containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            const initial = (userData.username || userData.displayName || '?').charAt(0).toUpperCase();
-            const pfpType = userData.pfpType || 'google';
-
-            let avatarHtml = '';
-
-            if (pfpType === 'custom' && userData.customPfp) {
-                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover">`;
-            } else if (pfpType === 'mibi' && userData.mibiConfig) {
-                const { eyes, mouths, hats, bgColor } = userData.mibiConfig || {};
-                avatarHtml = `
-                    <div class="relative w-full h-full" style="background-color: ${bgColor || '#3B82F6'};">
-                        <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
-                        ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                        ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                        ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                    </div>
-                `;
-            } else if (pfpType === 'letter') {
-                const bg = userData.pfpLetterBg || '#333';
-                avatarHtml = `<div class="w-full h-full flex items-center justify-center font-bold text-white" style="background: ${bg};">${initial}</div>`;
-            } else {
-                if (userData.photoURL) {
-                    avatarHtml = `<img src="${userData.photoURL}" class="w-full h-full object-cover">`;
-                } else {
-                    avatarHtml = `<div class="w-full h-full bg-indigo-600 flex items-center justify-center font-bold text-white">${initial}</div>`;
-                }
-            }
-
-            container.innerHTML = avatarHtml;
         }
 
         async function loadPageStats() {

@@ -18,7 +18,7 @@
          */
         export function getAvatarHTML(userData, sizeClass = "w-10 h-10", forceCSS = false, authUser = null, roundedClass = "rounded-xl", scaleClass = "", clipOuterContainer = true) {
             const pT = userData?.pfpType || 'user';
-            const dN = userData?.displayName || userData?.username || authUser?.displayName || 'User';
+            const dN = userData?.username || userData?.displayName || authUser?.displayName || 'User';
             
             const sizeMap = { 
                 "w-32 h-32": 128, "w-28 h-28": 112, "w-24 h-24": 96, "w-16 h-16": 64, 
@@ -111,11 +111,7 @@
             const outerContainerClasses = `${sizeClass} aspect-square ${roundedClass} shrink-0 flex items-center justify-center ${bgClass} border border-white/5`;
             const finalOuterContainerClasses = clipOuterContainer ? `${outerContainerClasses} overflow-hidden` : outerContainerClasses;
 
-            return `
-                <div class="${finalOuterContainerClasses}">
-                    ${innerHTML}
-                </div>
-            `;
+            return `<div class="${finalOuterContainerClasses}">${innerHTML}</div>`;
         }
 
         export function getEmbedUrl(url) {

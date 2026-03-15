@@ -309,8 +309,9 @@
     <script type="module">
         import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from '../firebase-config.js';
+        import { getAvatarHTML } from "../utils.js";
 
         if (!getApps().length) initializeApp(firebaseConfig);
         const auth = getAuth();
@@ -439,8 +440,8 @@
                 const hours = Math.floor((userData.totalV6Time || 0) / 3600);
                 const minutes = Math.floor(((userData.totalV6Time || 0) % 3600) / 60);
                 document.getElementById('user-stats-time').textContent = `${hours}h ${minutes}m total`;
-                renderAvatar(userData, 'user-avatar-widget');
-            }
+                const avatarWidget = document.getElementById('user-avatar-widget');
+                avatarWidget.innerHTML = getAvatarHTML(userData, "w-24 h-24", false, user, "rounded-[32px]");            }
         }
 
         function renderAvatar(userData, containerId) {

@@ -302,6 +302,7 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from '../firebase-config.js';
+        import { getAvatarHTML } from '../utils.js';
 
         if (!getApps().length) initializeApp(firebaseConfig);
         const auth = getAuth();
@@ -390,7 +391,8 @@
                 const hours = Math.floor((champion.totalV6Time || 0) / 3600);
                 const minutes = Math.floor(((champion.totalV6Time || 0) % 3600) / 60);
                 document.getElementById('champion-time-widget').textContent = `${hours}h ${minutes}m total`;
-                renderAvatar(champion, 'champion-avatar-widget');
+                const champAvatarWidget = document.getElementById('champion-avatar-widget');
+                champAvatarWidget.innerHTML = getAvatarHTML(champion, "w-24 h-24", false, auth.currentUser, "rounded-[32px]");
             }
         }
 
