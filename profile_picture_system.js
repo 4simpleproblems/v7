@@ -71,13 +71,13 @@ export function getAvatarHTML(userData, sizeClass = "w-10 h-10", forceCSS = fals
         innerHTML = `<div class="${innerClasses} flex items-center justify-center font-normal" style="background:${bg}; color: ${tC}; font-size: ${fontSize}px; line-height: 1;">${letter}</div>`;
     } else {
         // 2. Default Case (user, google, or undefined) -> Use photoURL if available
-        const googleProvider = authUser?.providerData?.find(p => p.providerId === 'google.com');
-        const googlePhoto = googleProvider ? googleProvider.photoURL : null;
-        let gP = googlePhoto || userData?.photoURL;
+        let gP = userData?.photoURL;
 
         // Fallback to authUser photo if viewing own profile and userData is partial
         if (!gP && authUser && (userData?.uid === authUser.uid || userData?.id === authUser.uid)) {
-            gP = authUser.photoURL;
+            // Only use authUser photo if we are definitely rendering the current user
+            const googleProvider = authUser?.providerData?.find(p => p.providerId === 'google.com');
+            gP = googleProvider ? googleProvider.photoURL : authUser.photoURL;
         }
 
         if (gP) {
