@@ -422,9 +422,27 @@
                         document.getElementById('loading-overlay').classList.add('hidden');
                         const bannedOverlay = document.getElementById('not-found-overlay').cloneNode(true);
                         bannedOverlay.id = 'banned-overlay';
+                        
+                        // Update content
                         bannedOverlay.querySelector('h2').textContent = "Account Banned";
                         bannedOverlay.querySelector('p').textContent = "This account has been suspended for violating our terms of service.";
-                        bannedOverlay.querySelector('a').remove();
+                        
+                        // Update icon to red slash
+                        const icon = bannedOverlay.querySelector('i');
+                        if (icon) {
+                            icon.classList.remove('fa-user-xmark', 'text-indigo-500');
+                            icon.classList.add('fa-user-slash', 'text-red-500');
+                        }
+                        const iconContainer = icon?.parentElement;
+                        if (iconContainer) {
+                            iconContainer.classList.remove('bg-indigo-900/20', 'border-indigo-900/40');
+                            iconContainer.classList.add('bg-red-900/20', 'border-red-900/40');
+                        }
+
+                        // Remove the return button as per original intent (but fixed selector)
+                        const btn = bannedOverlay.querySelector('button');
+                        if (btn) btn.remove();
+
                         document.body.appendChild(bannedOverlay);
                         bannedOverlay.classList.remove('hidden');
                         return;

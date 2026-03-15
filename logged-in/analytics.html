@@ -2472,36 +2472,22 @@
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Deleting...`;
 
             try {
-                // Call the backend function to delete from Auth
-                const response = await fetch('https://us-central1-project-zirconium.cloudfunctions.net/deleteUser', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        uid: userToDelete.uid,
-                        adminUid: auth.currentUser.uid 
-                    })
-                });
+                // Call the backend function to delete from Auth using httpsCallable
+                const deleteUserFn = httpsCallable(functions, 'deleteUser');
+                const result = await deleteUserFn({ uid: userToDelete.uid });
 
-                let result;
-                const contentType = response.headers.get("content-type");
-                if (contentType && contentType.indexOf("application/json") !== -1) {
-                    result = await response.json();
-                } else {
-                    const text = await response.text();
-                    console.error("Non-JSON response:", text);
-                    throw new Error(response.status === 404 ? 'Cloud function not found (404)' : 'Server returned non-JSON response');
+                if (!result.data || !result.data.success) {
+                    throw new Error('Deletion failed on server');
                 }
-
-                if (!response.ok) throw new Error(result.error || 'Cloud function failed');
 
                 alert(`Successfully deleted user ${userToDelete.username}`);
                 closeDeleteModal();
                 // Optionally refresh the table
-                allUsers = allUsers.filter(u => u.uid !== userToDelete.uid);
+                allUsers = allUsers.filter(u => u.id !== userToDelete.uid);
                 renderTable(getFilteredUsers());
             } catch (err) {
                 console.error("Deletion error:", err);
-                alert("Deletion failed: " + err.message);
+                alert("Deletion failed: " + (err.message || 'Unknown error'));
                 btn.disabled = false;
                 btn.innerHTML = `Permanently Delete`;
             }
