@@ -34,6 +34,7 @@
             let innerHTML = '';
             const innerClasses = `block min-w-full min-h-full w-full h-full object-cover ${scaleClass}`;
 
+            // 1. Try Specific Types First
             if (pT === 'custom' && userData?.customPfp) {
                 innerHTML = `<img src="${userData.customPfp}" class="${innerClasses}">`;
             } else if (pT === 'mibi' && (userData?.mibiConfig || userData?.mibiEyes)) {
@@ -71,6 +72,7 @@
                 const tC = getLetterAvatarTextColor(bg);
                 innerHTML = `<div class="${innerClasses} flex items-center justify-center font-normal" style="background:${bg}; color: ${tC}; font-size: ${fontSize}px; line-height: 1;">${letter}</div>`;
             } else {
+                // 2. Default Case (user, google, or undefined) -> Use photoURL if available
                 let gP = userData?.photoURL;
                 // Fallback to authUser photo if viewing own profile and userData is partial
                 if (!gP && authUser && (userData?.uid === authUser.uid || userData?.id === authUser.uid)) {
@@ -99,17 +101,9 @@
                 }
 
                 if (!innerHTML) {
-                    if (pT === 'letter') {
-                        const bg = userData?.pfpLetterBg || userData?.letterAvatarColor || '#4f46e5';
-                        const letter = (userData?.letterAvatarText || dN).charAt(0).toUpperCase();
-                        const fontSizeLetter = px * 0.35;
-                        const tC = getLetterAvatarTextColor(bg);
-                        innerHTML = `<div class="${innerClasses} flex items-center justify-center font-normal" style="background:${bg}; color: ${tC}; font-size: ${fontSizeLetter}px; line-height: 1;">${letter}</div>`;
-                    } else {
-                        // Default to blue user icon for 'user' type without photo
-                        const fontSizeIcon = px * 0.4;
-                        innerHTML = `<div class="${innerClasses} flex items-center justify-center bg-indigo-600/20 text-indigo-500" style="font-size: ${fontSizeIcon}px;"><i class="fa-solid fa-user"></i></div>`;
-                    }
+                    // 3. Absolute Fallback: Icon
+                    const fontSizeIcon = px * 0.4;
+                    innerHTML = `<div class="${innerClasses} flex items-center justify-center bg-indigo-600/20 text-indigo-500" style="font-size: ${fontSizeIcon}px;"><i class="fa-solid fa-user"></i></div>`;
                 }
             }
 
