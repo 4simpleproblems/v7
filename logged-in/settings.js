@@ -39,6 +39,8 @@
             deleteObject, 
             uploadBytes 
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
         
         // --- Import Firebase Config (Assumed to exist in a relative file) ---
         import { firebaseConfig } from "../firebase-config.js"; 
@@ -57,6 +59,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const storage = getStorage(app);
+        const functions = getFunctions(app);
 
         // --- Global State and Element References ---
         const sidebarTabs = document.querySelectorAll('.settings-tab');
@@ -1010,9 +1013,9 @@
                                     <i class="fas fa-map-marker-alt absolute left-3 top-1/2 -translate-y-1/2 opacity-30 text-sm"></i>
                                 </div>
                                 <div class="relative overflow-hidden">
-                                    <div id="settings-state-fade-top" class="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[#0d0d0d] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                                    <div id="settings-state-fade-top" class="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[var(--bg-secondary)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
                                     <div id="settings-state-results" class="space-y-1 max-h-48 overflow-y-auto custom-scroll"></div>
-                                    <div id="settings-state-fade-bottom" class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0d0d0d] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                                    <div id="settings-state-fade-bottom" class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[var(--bg-secondary)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
                                 </div>
                             </div>
 
@@ -1022,9 +1025,9 @@
                                     <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 opacity-30 text-sm"></i>
                                 </div>
                                 <div class="relative overflow-hidden">
-                                    <div id="settings-school-fade-top" class="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[#0d0d0d] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                                    <div id="settings-school-fade-top" class="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[var(--bg-secondary)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
                                     <div id="settings-school-results" class="space-y-1 max-h-60 overflow-y-auto custom-scroll"></div>
-                                    <div id="settings-school-fade-bottom" class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0d0d0d] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                                    <div id="settings-school-fade-bottom" class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[var(--bg-secondary)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
                                 </div>
                                 <button id="settings-back-to-states" class="mt-3 text-[10px] font-bold uppercase text-indigo-500 hover:text-indigo-400 flex items-center gap-2"><i class="fas fa-arrow-left"></i> Change State</button>
                             </div>
@@ -3258,85 +3261,22 @@
             // --- ACCOUNT DELETION LOGIC --- 
 
 /**
- * Executes the full account deletion process.
- * 1. Collects and executes a batch delete for all associated Firestore data.
- * 2. Deletes the Firebase Auth user (MUST BE LAST).
- * 3. Cleans up local data.
- * 4. Redirects the user.
+ * Orchestrates the deletion of a user's account and data via Cloud Functions.
  */
-const performAccountDeletion = async (credential) => {
+const performAccountDeletion = async () => {
     try {
         const userId = auth.currentUser.uid;
-        const userDoc = await getDoc(doc(db, 'users', userId));
-        const username = userDoc.exists() ? userDoc.data().username : null;
-
-        // Assuming showLoading() is defined elsewhere in your file
         showLoading("Permanently deleting your account and all associated data...");
 
-        // NOTE: All Firestore deletion queries and commits MUST run before deleteUser(auth.currentUser)
-        
-        // --- 1. FIRESTORE DELETION (BATCH WRITE) ---
-        // This is the FIRST action, ensuring permissions are valid while deleting.
-        const batch = writeBatch(db); 
+        // Call the Cloud Function
+        const deleteUserFn = httpsCallable(functions, 'deleteUser');
+        const result = await deleteUserFn({ uid: userId });
 
-        // A. Delete User Profile Document 
-        const userDocRef = doc(db, 'users', userId); 
-        batch.delete(userDocRef);
-
-        // B. Admin Document
-        batch.delete(doc(db, 'admins', userId));
-
-        // C. Messenger Profile
-        batch.delete(doc(db, 'messenger_profiles', userId));
-
-        // D. Username Reservation
-        if (username) {
-            batch.delete(doc(db, 'usernames', username.toLowerCase()));
+        if (!result.data || !result.data.success) {
+            throw new Error('Deletion failed on server');
         }
 
-        // E. Daily Photos
-        const photoCollections = ['dailyPhotos', 'daily_photos']; // Handle both variants
-        for (const colName of photoCollections) {
-            const q = query(collection(db, colName), where('creatorUid', '==', userId));
-            const snap = await getDocs(q);
-            snap.forEach(d => batch.delete(d.ref));
-            
-            // Also check 'userId' field variant
-            const q2 = query(collection(db, colName), where('userId', '==', userId));
-            const snap2 = await getDocs(q2);
-            snap2.forEach(d => batch.delete(d.ref));
-        }
-
-        // E. Messages (as sender or recipient)
-        const msgSent = query(collection(db, 'messages'), where('senderId', '==', userId));
-        const msgReceived = query(collection(db, 'messages'), where('recipientId', '==', userId));
-        (await getDocs(msgSent)).forEach(d => batch.delete(d.ref));
-        (await getDocs(msgReceived)).forEach(d => batch.delete(d.ref));
-
-        // F. Notifications
-        const notifs = query(collection(db, 'notifications'), where('recipientId', '==', userId));
-        (await getDocs(notifs)).forEach(d => batch.delete(d.ref));
-
-        // G. Friend Requests
-        const frSent = query(collection(db, 'friendRequests'), where('senderId', '==', userId));
-        const frReceived = query(collection(db, 'friendRequests'), where('recipientId', '==', userId));
-        (await getDocs(frSent)).forEach(d => batch.delete(d.ref));
-        (await getDocs(frReceived)).forEach(d => batch.delete(d.ref));
-
-        // H. Posts and Comments
-        const posts = query(collection(db, 'posts'), where('authorId', '==', userId));
-        (await getDocs(posts)).forEach(d => batch.delete(d.ref));
-        const comments = query(collection(db, 'comments'), where('authorId', '==', userId));
-        (await getDocs(comments)).forEach(d => batch.delete(d.ref));
-        
-        // EXECUTE THE BATCH: The permissions check happens here, with a valid token.
-        await batch.commit(); 
-
-        // --- 2. AUTH DELETION (LAST STEP) ---
-        // This is done after Firestore deletion to maintain permissions.
-        await deleteUser(auth.currentUser); 
-
-        // --- 3. Local Storage/IndexedDB Cleanup ---
+        // --- 3. Local Storage Cleanup ---
         localStorage.clear();
 
         // --- 4. Sign Out & Redirect ---
@@ -3344,23 +3284,27 @@ const performAccountDeletion = async (credential) => {
         window.location.href = '../authentication.html';
 
     } catch (error) {
-        console.error("Error deleting account:", error); 
-        let msg = "Failed to delete account completely. Please sign out and sign in again immediately to proceed with deletion.";
+        console.error("Error deleting account:", error);
+        let msg = "Failed to delete account completely. Please try again or contact support.";
 
-        // Handle re-login requirement specifically for security-sensitive operations
         if (error.code === 'auth/requires-recent-login') {
             msg = 'Deletion failed: For security, please sign out, sign in again, and then immediately try the deletion process.';
-        } else if (error.code === 'permission-denied' || error.message.includes('Missing or insufficient permissions')) {
-            msg = 'Deletion failed due to insufficient server permissions. Please ensure your Firestore rules and code order are correct.';
+        } else if (error.message.includes('permission-denied')) {
+            msg = 'Deletion failed: Permission denied.';
         }
-        
-        // Use the existing message display function
-        // Assuming deleteMessage is the UI element for displaying deletion errors
-        showMessage(deleteMessage, msg, 'error'); 
 
-        // Re-enable/reset UI elements (Requested Addition)
-        if (reauthenticateBtn) reauthenticateBtn.classList.remove('hidden');
+        const deleteMessage = document.getElementById('deleteMessage');
+        if (deleteMessage) showMessage(deleteMessage, msg, 'error');
+
+        // Re-enable/reset UI elements
+        const reauthenticateBtn = document.getElementById('reauthenticateBtn');
+        const finalDeleteBtn = document.getElementById('finalDeleteBtn');
+        if (reauthenticateBtn) {
+            reauthenticateBtn.disabled = false;
+            reauthenticateBtn.classList.remove('hidden');
+        }
         if (finalDeleteBtn) finalDeleteBtn.classList.add('hidden');
+        hideLoading();
     }
 };
 

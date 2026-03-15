@@ -117,14 +117,62 @@ exports.chatWithGroq = functions.https.onCall(async (data, context) => {
 
 // --- User Management ---
 exports.deleteUser = functions.https.onCall(async (data, context) => {
-    await validateAdmin(context);
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    }
     const { uid } = data;
+    const callerUid = context.auth.uid;
+
+    // Allow deletion if the user is deleting themselves, otherwise check for admin privileges
+    if (callerUid !== uid) {
+        await validateAdmin(context);
+    }
+
     try {
-        try { await admin.auth().deleteUser(uid); } catch (e) {}
-        const collections = ['users', 'admins', 'bans'];
-        await Promise.all(collections.map(col => admin.firestore().collection(col).doc(uid).delete()));
+        // 1. Delete from Auth
+        try { await admin.auth().deleteUser(uid); } catch (e) {
+            console.error("Auth deletion error (might already be deleted):", e);
+        }
+
+        // 2. Fetch username for cleanup
+        const userDoc = await admin.firestore().collection('users').doc(uid).get();
+        const username = userDoc.exists ? userDoc.data().username : null;
+
+        // 3. Cleanup Firestore (Batch)
+        const batch = admin.firestore().batch();
+        
+        // Basic docs
+        const collections = ['users', 'admins', 'bans', 'messenger_profiles'];
+        collections.forEach(col => batch.delete(admin.firestore().collection(col).doc(uid)));
+
+        // Username reservation
+        if (username) {
+            batch.delete(admin.firestore().collection('usernames').doc(username.toLowerCase()));
+        }
+
+        // Sub-collections or related data (limited to small sets to avoid batch limits)
+        // For larger datasets, one should use recursive deletes or background jobs
+        
+        const relatedQueries = [
+            admin.firestore().collection('daily_photos').where('creatorUid', '==', uid),
+            admin.firestore().collection('messages').where('senderId', '==', uid),
+            admin.firestore().collection('messages').where('recipientId', '==', uid),
+            admin.firestore().collection('notifications').where('recipientId', '==', uid),
+            admin.firestore().collection('friendRequests').where('senderId', '==', uid),
+            admin.firestore().collection('friendRequests').where('recipientId', '==', uid),
+            admin.firestore().collection('posts').where('authorId', '==', uid),
+            admin.firestore().collection('comments').where('authorId', '==', uid)
+        ];
+
+        for (const q of relatedQueries) {
+            const snap = await q.limit(50).get(); // Limit to stay within batch bounds for now
+            snap.forEach(doc => batch.delete(doc.ref));
+        }
+
+        await batch.commit();
         return { success: true };
     } catch (error) {
+        console.error("DeleteUser Error:", error);
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
