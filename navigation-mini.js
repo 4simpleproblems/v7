@@ -1292,7 +1292,7 @@ let db;
                 transition: color 0.3s ease;
                 text-align: left !important; margin: 0 !important; font-weight: 400 !important;
             }
-            .auth-menu-email { color: var(--menu-email-text, #9ca3af); text-align: left !important; margin: 0 !important; font-weight: 400 !important; }
+            .auth-menu-email { color: var(--menu-email-text, #9ca3af); text-align: left !important; margin: 0 !important; font-weight: 400 !important; padding-left: 0.25rem; }
             @keyframes menu-pop-in {
                 0% { opacity: 0; transform: translateY(-10px) scale(0.95); }
                 70% { transform: translateY(2px) scale(1.01); }
