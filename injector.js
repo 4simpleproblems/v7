@@ -10,6 +10,27 @@
     if (window.__4sp_injector_loaded) return;
     window.__4sp_injector_loaded = true;
 
+    // --- BareMux MessagePort fix for service worker communication ---
+    // Moved to injector for earliest possible activation to prevent UV retry loops.
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'getPort' && event.data.port) {
+                try {
+                    let workerPath = "/VELIUM/baremux/worker.js";
+                    const pathname = window.location.pathname.toLowerCase();
+                    if (pathname.includes('vora')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+                    else if (pathname.includes('/vora/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+                    else if (pathname.includes('/vern/')) workerPath = "/VERN/baremux/worker.js";
+                    else if (pathname.includes('/games/')) workerPath = "/GAMES/baremux/worker.js";
+                    else if (pathname.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
+
+                    const worker = new SharedWorker(workerPath, "bare-mux-worker");
+                    event.data.port.postMessage(worker.port, [worker.port]);
+                } catch (e) {}
+            }
+        });
+    }
+
     // --- Stub Global Loader Control (to prevent errors in other scripts) ---
     window.hideLoader = () => {
         const loader = document.getElementById('universal-loader');
