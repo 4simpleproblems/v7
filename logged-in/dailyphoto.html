@@ -1042,7 +1042,7 @@
                             <!-- Author Info -->
                             <div class="flex items-center gap-4 mb-6 shrink-0">
                                 <a href="/logged-in/@${data.creatorUsername}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity shrink-0">
-                                    ${authorData ? getAvatarHTML(authorData, "w-12 h-12", false, currentUser) : `<div class="w-full h-full bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-lg uppercase">${(data.creatorUsername || '?').charAt(0)}</div>`}
+                                    <div class="w-full h-full bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-lg uppercase">${(data.creatorUsername || '?').charAt(0)}</div>
                                 </a>
                                 <div class="min-w-0 flex-1">
                                     <a href="/logged-in/@${data.creatorUsername}" class="text-sm font-bold text-[var(--text-main)] truncate block hover:text-[var(--accent-color)] transition-colors">@${data.creatorUsername}</a>
