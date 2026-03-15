@@ -93,7 +93,7 @@
                     const letter = (userData?.letterAvatarText || dN).charAt(0).toUpperCase();
                     const fontSizeLetter = px * 0.35;
                     const tC = getLetterAvatarTextColor(bg);
-                    const fallbackHTML = `<div class="${innerClasses} flex items-center justify-center font-normal" style="background:${bg}; color: ${tC}; font-size: ${fontSizeLetter}px; line-height: 1;">${letter}</div>`;
+                    const fallbackHTML = `<div class='${innerClasses} flex items-center justify-center font-normal' style='background:${bg}; color: ${tC}; font-size: ${fontSizeLetter}px; line-height: 1;'>${letter}</div>`;
 
                     innerHTML = `<img src="${gP}" class="${innerClasses}" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML=\`${fallbackHTML}\` ">`;
                 }
