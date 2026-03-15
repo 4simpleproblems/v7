@@ -1057,8 +1057,8 @@ let db;
             // Determine the single active page key first
             const activePageKey = getCurrentPageKey();
 
-            // Check leaderboard eligibility
-            const canSeeLeaderboard = userData && userData.leaderboardAccepted && !userData.leaderboardOptOut;
+            // Check leaderboard eligibility: show by default (guests/new), but hide if they explicitly haven't agreed or opted out
+            const canSeeLeaderboard = !userData || (userData.leaderboardAccepted && !userData.leaderboardOptOut);
 
             const tabsHtml = Object.entries(pages || {})
                 .filter(([key, page]) => {
