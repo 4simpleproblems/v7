@@ -777,9 +777,6 @@ let db;
                         <div id="auth-menu-container" class="auth-menu-container closed">
                             <div class="border-b mb-2 w-full min-w-0 flex items-center">
                                 <div class="min-w-0 flex-1 overflow-hidden">
-                                    <div class="marquee-container" id="username-marquee-auth">
-                                        <p class="text-sm font-semibold auth-menu-username marquee-content">${displayName}</p>
-                                    </div>
                                     <div class="marquee-container" id="email-marquee-auth">
                                         <p class="text-xs text-gray-400 auth-menu-email marquee-content">${user.email || 'No email'}</p>
                                     </div>
