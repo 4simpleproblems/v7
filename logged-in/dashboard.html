@@ -441,7 +441,7 @@
                 const minutes = Math.floor(((userData.totalV6Time || 0) % 3600) / 60);
                 document.getElementById('user-stats-time').textContent = `${hours}h ${minutes}m total`;
                 const avatarWidget = document.getElementById('user-avatar-widget');
-                avatarWidget.innerHTML = getAvatarHTML(userData, "w-24 h-24", false, user, "rounded-[32px]");            }
+                avatarWidget.innerHTML = getAvatarHTML(userData, "w-24 h-24", false, auth.currentUser, "rounded-[32px]");            }
         }
 
         function renderAvatar(userData, containerId) {
