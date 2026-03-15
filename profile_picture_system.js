@@ -97,15 +97,21 @@ export function getAvatarHTML(userData, sizeClass = "w-10 h-10", forceCSS = fals
         }
 
         if (!innerHTML) {
-            const bg = userData?.pfpLetterBg || userData?.letterAvatarColor || '#4f46e5';
-            const letter = (userData?.letterAvatarText || dN).charAt(0).toUpperCase();
-            const fontSizeLetter = px * 0.35;
-            const tC = getLetterAvatarTextColor(bg);
-            innerHTML = `<div class="${innerClasses} flex items-center justify-center font-normal" style="background:${bg}; color: ${tC}; font-size: ${fontSizeLetter}px; line-height: 1;">${letter}</div>`;
+            if (pT === 'letter') {
+                const bg = userData?.pfpLetterBg || userData?.letterAvatarColor || '#4f46e5';
+                const letter = (userData?.letterAvatarText || dN).charAt(0).toUpperCase();
+                const fontSizeLetter = px * 0.35;
+                const tC = getLetterAvatarTextColor(bg);
+                innerHTML = `<div class="${innerClasses} flex items-center justify-center font-normal" style="background:${bg}; color: ${tC}; font-size: ${fontSizeLetter}px; line-height: 1;">${letter}</div>`;
+            } else {
+                // Default to blue user icon for 'user' type without photo
+                const fontSizeIcon = px * 0.4;
+                innerHTML = `<div class="${innerClasses} flex items-center justify-center bg-indigo-600/20 text-indigo-500" style="font-size: ${fontSizeIcon}px;"><i class="fa-solid fa-user"></i></div>`;
+            }
         }
     }
 
-    const bgClass = (innerHTML.includes('<img') || pT === 'letter' || pT === 'mibi' || !innerHTML.includes('fa-user')) ? '' : 'bg-gray-800';
+    const bgClass = (innerHTML.includes('<img') || pT === 'letter' || pT === 'mibi') ? '' : ''; // bg-gray-800 was here but we handle bg in innerHTML now
     const outerContainerClasses = `${sizeClass} aspect-square ${roundedClass} shrink-0 flex items-center justify-center ${bgClass} border border-white/5`;
     const finalOuterContainerClasses = clipOuterContainer ? `${outerContainerClasses} overflow-hidden` : outerContainerClasses;
 
