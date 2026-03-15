@@ -241,11 +241,23 @@ function lockPageAsBanned(banData) {
 
 // --- 3. Enforcement Logic ---
 (async function initBanEnforcement() {
+    const path = window.location.pathname;
+    const isExcludedPage = 
+        path === '/' || 
+        path.endsWith('index.html') || 
+        path.endsWith('legal.html') || 
+        path.endsWith('authentication.html') ||
+        path.includes('messenger-v2.html');
+
+    if (isExcludedPage) {
+        console.log("BanEnforcer: On excluded page. Skipping enforcement visuals.");
+    }
+
     // A. Check Hardware Ban first (even if signed out)
     const hwId = await getHardwareId();
     const deathSentence = checkDeathSentence();
     
-    if (deathSentence) {
+    if (deathSentence && !isExcludedPage) {
         lockPageAsBanned(deathSentence);
     }
 
@@ -253,7 +265,11 @@ function lockPageAsBanned(banData) {
     onSnapshot(doc(db, 'hardware_bans', hwId), docSnap => {
         if (docSnap.exists()) {
             const data = docSnap.data();
-            lockPageAsBanned({ severity: 'hardware', ...data });
+            if (!isExcludedPage) {
+                lockPageAsBanned({ severity: 'hardware', ...data });
+            } else {
+                currentBanData = { severity: 'hardware', ...data };
+            }
         } else {
             // Lift the lock if hardware ban is removed
             if (currentBanData && currentBanData.severity === 'hardware') {
@@ -265,14 +281,17 @@ function lockPageAsBanned(banData) {
     });
 
     // B. Check Auth Status and Account Ban
-    const path = window.location.pathname;
     if (!path.includes('messenger-v2.html')) {
         onAuthStateChanged(auth, user => {
             if (user) {
                 onSnapshot(doc(db, 'bans', user.uid), docSnap => {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
-                        lockPageAsBanned({ uid: user.uid, ...data });
+                        if (!isExcludedPage) {
+                            lockPageAsBanned({ uid: user.uid, ...data });
+                        } else {
+                            currentBanData = { uid: user.uid, ...data };
+                        }
                     } else {
                         // If account is unbanned but hardware isn't, stay locked
                         if (currentBanData && currentBanData.severity !== 'hardware') {
