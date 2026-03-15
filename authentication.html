@@ -457,6 +457,12 @@
             return docSnap.exists();
         };
 
+        const checkEmailBan = async (email) => {
+            const docRef = doc(db, 'email_bans', email.toLowerCase());
+            const docSnap = await getDoc(docRef);
+            return docSnap.exists();
+        };
+
         const validateEmail = (email) => {
             // Robust regex check for basic email format
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -560,6 +566,11 @@
                 const emailError = validateEmail(email);
                 if (emailError) { showMessage(messageDivs.signup, emailError); return; }
                 
+                if (await checkEmailBan(email)) {
+                    showMessage(messageDivs.signup, 'This email address is not permitted to create an account.');
+                    return;
+                }
+                
                 const passwordError = validatePassword(password);
                 if (passwordError) { showMessage(messageDivs.signup, passwordError); return; }
 
@@ -607,6 +618,12 @@
                         await handleSuccessfulLogin(user);
                     } else {
                         // New user -> Create account
+                        if (await checkEmailBan(user.email)) {
+                            await user.delete();
+                            const visibleMessageDiv = messageDivs.login.offsetParent ? messageDivs.login : messageDivs.username;
+                            showMessage(visibleMessageDiv, 'This email address is not permitted to access this network.');
+                            return;
+                        }
                         
                         let rawUsername = additionalInfo?.username || user.displayName || user.email.split('@')[0] || 'User';
                         let username = rawUsername.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);

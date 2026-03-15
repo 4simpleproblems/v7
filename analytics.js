@@ -16,7 +16,32 @@
         return sid;
     }
 
+    async function getHardwareId() {
+        const components = [
+            navigator.userAgent,
+            screen.width,
+            screen.height,
+            navigator.language,
+            navigator.hardwareConcurrency || 'unknown',
+            navigator.deviceMemory || 'unknown',
+            new Date().getTimezoneOffset()
+        ];
+        const data = components.join('|');
+        let hash = 0;
+        for (let i = 0; i < data.length; i++) {
+            const char = data.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash |= 0;
+        }
+        const fingerprint = 'HW-' + Math.abs(hash).toString(16).toUpperCase();
+        const persistentId = localStorage.getItem('__4sp_hw_id') || fingerprint;
+        if (!localStorage.getItem('__4sp_hw_id')) localStorage.setItem('__4sp_hw_id', fingerprint);
+        return persistentId;
+    }
+
     const sessionId = getSessionId();
+    let hardwareId = null;
+    getHardwareId().then(id => hardwareId = id);
     let db = null;
     let auth = null;
     let currentUser = 'anonymous';
@@ -230,6 +255,7 @@
         // Atomically add page visit and increment counter
         docRef.set({
             sessionId: sessionId,
+            hardwareId: hardwareId,
             userAgent: navigator.userAgent,
             version: 'project_niobium', // Codename for 4SP V6
             lastActive: window.firebase.firestore.FieldValue.serverTimestamp(),
@@ -253,6 +279,7 @@
 
         docRef.set({
             userId: currentUser,
+            hardwareId: hardwareId,
             version: 'project_niobium', // Codename for 4SP V6
             lastActive: window.firebase.firestore.FieldValue.serverTimestamp(),
             duration: duration,

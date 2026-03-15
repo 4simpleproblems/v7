@@ -613,26 +613,47 @@
                     <div class="w-10 h-10 rounded-full bg-red-900/20 flex items-center justify-center text-red-500">
                         <i class="fa-solid fa-gavel"></i>
                     </div>
-                    <h3 class="text-xl text-white font-light">Ban User</h3>
+                    <h3 class="text-xl text-white font-light">Enforce Ban</h3>
                 </div>
                 <button id="close-ban-modal" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark fa-lg"></i></button>
             </div>
-            <div class="space-y-4">
+            <div class="space-y-6">
                 <p class="text-gray-300 text-sm bg-[#111] p-3 rounded border border-[#333]" id="ban-user-target">Target: ...</p>
                 
                 <div>
-                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Quick Presets</label>
-                    <div class="flex flex-wrap gap-2">
-                        <button class="preset-chip" data-reason="Violation of Terms of Service" data-link="../legal.html">TOS Violation</button>
-                        <button class="preset-chip" data-reason="Posting Explicit Content" data-link="../legal.html#content-policy">Explicit Content</button>
-                        <button class="preset-chip" data-reason="Spamming or Harassment">Spam/Harassment</button>
-                        <button class="preset-chip" data-reason="Security Risk">Security Risk</button>
+                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3">Ban Severity</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-blue-500 transition-all group">
+                            <input type="radio" name="ban-severity" value="email" class="hidden peer">
+                            <i class="fa-solid fa-envelope text-lg text-gray-500 peer-checked:text-blue-500 group-hover:text-gray-300"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-blue-500">Email</span>
+                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-blue-500 rounded-xl pointer-events-none"></div>
+                        </label>
+                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-orange-500 transition-all group">
+                            <input type="radio" name="ban-severity" value="account" checked class="hidden peer">
+                            <i class="fa-solid fa-user-xmark text-lg text-gray-500 peer-checked:text-orange-500 group-hover:text-gray-300"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-orange-500">Account</span>
+                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-orange-500 rounded-xl pointer-events-none"></div>
+                        </label>
+                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-red-600 transition-all group">
+                            <input type="radio" name="ban-severity" value="hardware" class="hidden peer">
+                            <i class="fa-solid fa-microchip text-lg text-gray-500 peer-checked:text-red-600 group-hover:text-gray-300"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-red-600">Hardware</span>
+                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-red-600 rounded-xl pointer-events-none"></div>
+                        </label>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Ban Reason</label>
-                    <textarea id="ban-reason" class="w-full bg-[#111] text-white border border-[#333] rounded-[14px] p-3 text-sm focus:outline-none focus:border-red-500 min-h-[100px]" placeholder="Enter reason for ban..."></textarea>
+                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Preset Reason</label>
+                    <div class="flex">
+                        <button class="preset-chip w-full py-2 border-indigo-500/30 text-indigo-400 bg-indigo-900/10 hover:bg-indigo-900/20" data-reason="Violation of Terms of Service" data-link="../legal.html">Violation of Terms of Service</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Detailed Reason (Optional)</label>
+                    <textarea id="ban-reason" class="w-full bg-[#111] text-white border border-[#333] rounded-[14px] p-3 text-sm focus:outline-none focus:border-red-500 min-h-[80px]" placeholder="Explain the violation..."></textarea>
                 </div>
                 
                 <input type="hidden" id="ban-link" value="">
@@ -640,7 +661,7 @@
                 <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#333]">
                     <button id="cancel-ban" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
                     <button id="confirm-ban" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-[14px] text-sm transition font-medium shadow-lg shadow-red-900/20">
-                        Confirm Ban
+                        Confirm Enforcement
                     </button>
                 </div>
             </div>
@@ -2072,19 +2093,78 @@
 
         document.getElementById('confirm-ban').addEventListener('click', async () => {
             if (!userToBan) return;
-            const reason = document.getElementById('ban-reason').value.trim() || 'Admin Action';
+            const reason = document.getElementById('ban-reason').value.trim() || 'Violation of Terms of Service';
             const link = document.getElementById('ban-link').value;
+            const severity = document.querySelector('input[name="ban-severity"]:checked').value;
+
+            const btn = document.getElementById('confirm-ban');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Enforcing...`;
 
             try {
-                await setDoc(doc(db, 'bans', userToBan.uid), { 
+                const banData = { 
                     bannedAt: new Date(),
                     bannedBy: auth.currentUser.uid,
                     reason: reason,
-                    link: link || null
-                });
+                    link: link || null,
+                    severity: severity
+                };
+
+                const batch = writeBatch(db);
+                
+                // 1. Always create the main ban record
+                batch.set(doc(db, 'bans', userToBan.uid), banData);
+
+                // 2. Severity specific actions
+                if (severity === 'email') {
+                    const user = allUsers.find(u => u.id === userToBan.uid);
+                    if (user && user.email) {
+                        batch.set(doc(db, 'email_bans', user.email.toLowerCase()), {
+                            bannedAt: new Date(),
+                            bannedBy: auth.currentUser.uid,
+                            originalUid: userToBan.uid
+                        });
+                    }
+                } else if (severity === 'hardware') {
+                    // Fetch hardware IDs from analytics
+                    const q = query(collection(db, 'analytics'), where('userId', '==', userToBan.uid), limit(50));
+                    const snap = await getDocs(q);
+                    const hwIds = new Set();
+                    snap.forEach(d => {
+                        const data = d.data();
+                        if (data.hardwareId) hwIds.add(data.hardwareId);
+                    });
+
+                    hwIds.forEach(hwId => {
+                        batch.set(doc(db, 'hardware_bans', hwId), {
+                            bannedAt: new Date(),
+                            bannedBy: auth.currentUser.uid,
+                            originalUid: userToBan.uid,
+                            reason: reason
+                        });
+                    });
+                    
+                    // Also store the email to be safe
+                    const user = allUsers.find(u => u.id === userToBan.uid);
+                    if (user && user.email) {
+                        batch.set(doc(db, 'email_bans', user.email.toLowerCase()), {
+                            bannedAt: new Date(),
+                            bannedBy: auth.currentUser.uid,
+                            originalUid: userToBan.uid
+                        });
+                    }
+                }
+
+                await batch.commit();
+                showNotification(`Successfully enforced ${severity} ban.`, 'fa-solid fa-gavel', 'success');
                 closeBanModal();
             } catch (err) {
+                console.error("Ban failed:", err);
                 alert("Ban failed: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         });
 

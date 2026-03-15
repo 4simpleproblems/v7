@@ -18,7 +18,46 @@ const db = getFirestore();
 let banGuardInterval = null;
 let currentBanData = null; 
 
-// --- 1. Font Injection (Geist) & Styling Constraints ---
+// --- 1. Hardware Fingerprinting ---
+async function getHardwareId() {
+    const components = [
+        navigator.userAgent,
+        screen.width,
+        screen.height,
+        navigator.language,
+        navigator.hardwareConcurrency || 'unknown',
+        navigator.deviceMemory || 'unknown',
+        new Date().getTimezoneOffset()
+    ];
+    const data = components.join('|');
+    
+    // Simple hash function for the fingerprint
+    let hash = 0;
+    for (let i = 0; i < data.length; i++) {
+        const char = data.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash |= 0; 
+    }
+    const fingerprint = 'HW-' + Math.abs(hash).toString(16).toUpperCase();
+    
+    // Store in localStorage and check for persistent ban marker
+    const persistentId = localStorage.getItem('__4sp_hw_id') || fingerprint;
+    if (!localStorage.getItem('__4sp_hw_id')) localStorage.setItem('__4sp_hw_id', fingerprint);
+    
+    return persistentId;
+}
+
+const DEATH_SENTENCE_KEY = '__4sp_death_sentence';
+
+function checkDeathSentence() {
+    if (localStorage.getItem(DEATH_SENTENCE_KEY)) {
+        console.warn("Hardware Ban: Persistent marker detected.");
+        return JSON.parse(localStorage.getItem(DEATH_SENTENCE_KEY));
+    }
+    return null;
+}
+
+// --- 2. Font Injection (Geist) & Styling Constraints ---
 (function() {
     console.log("BanEnforcer: Injecting fonts and custom styles...");
     if (!document.querySelector('link[href*="fonts.googleapis.com/css2?family=Geist"]')) {
@@ -44,6 +83,12 @@ let currentBanData = null;
 })();
 
 function unlockPage() {
+    // Cannot unlock if it's a hardware ban
+    if (currentBanData && currentBanData.severity === 'hardware') {
+        console.log("BanEnforcer: Cannot unlock. Severity is Hardware.");
+        return;
+    }
+
     console.log("BanEnforcer: Calling unlockPage(). Removing visuals and interval guard.");
     if (banGuardInterval) {
         clearInterval(banGuardInterval);
@@ -63,14 +108,15 @@ function unlockPage() {
 }
 
 function renderBanVisuals(banData) {
-    console.log("BanEnforcer: Calling renderBanVisuals(). Attempting to draw shield and message box.");
+    console.log("BanEnforcer: Calling renderBanVisuals(). Severity:", banData.severity);
     
     if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) {
         if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
         else if (document.webkitExitFullscreen) document.webkitExitFullscreen().catch(() => {});
     }
 
-    const reason = banData.reason ? String(banData.reason).replace(/</g, "&lt;") : 'No reason provided.';
+    const severity = banData.severity || 'account';
+    const reason = banData.reason ? String(banData.reason).replace(/</g, "&lt;") : 'Violation of Terms of Service';
     let banTimestamp = '';
     if (banData.bannedAt && banData.bannedAt.toDate) {
         const date = banData.bannedAt.toDate();
@@ -80,30 +126,27 @@ function renderBanVisuals(banData) {
     const spacing = '30px'; 
     const homeBtnSize = '60px'; 
 
-    let actionButton = '';
-    if (banData.link) {
-         actionButton = `
-            <a id="ban-enforcer-policy-btn" href="../legal.html#terms-of-service" target="_blank" style="
-                display: inline-flex !important;
-                align-items: center !important;
-                gap: 10px !important;
-                padding: 12px 24px !important;
-                background-color: rgba(239, 68, 68, 0.1) !important;
-                border: 1px solid #d1d5db !important; 
-                color: #d1d5db !important; 
-                text-decoration: none !important;
-                border-radius: 1.25rem !important; 
-                font-weight: 400 !important; 
-                transition: all 0.2s !important;
-                margin-right: 10px !important;
-                pointer-events: auto !important;
-                backdrop-filter: blur(5px) !important;
-                -webkit-backdrop-filter: blur(5px) !important;
-            ">
-                <i class="fa-solid fa-file-lines"></i> Review Policy
-            </a>
-         `;
-    }
+    let actionButton = `
+        <a id="ban-enforcer-policy-btn" href="../legal.html#terms-of-service" target="_blank" style="
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            padding: 12px 24px !important;
+            background-color: rgba(239, 68, 68, 0.1) !important;
+            border: 1px solid #d1d5db !important; 
+            color: #d1d5db !important; 
+            text-decoration: none !important;
+            border-radius: 1.25rem !important; 
+            font-weight: 400 !important; 
+            transition: all 0.2s !important;
+            margin-right: 10px !important;
+            pointer-events: auto !important;
+            backdrop-filter: blur(5px) !important;
+            -webkit-backdrop-filter: blur(5px) !important;
+        ">
+            <i class="fa-solid fa-file-lines"></i> Review Policy
+        </a>
+     `;
 
     let shield = document.getElementById('ban-enforcer-shield');
     if (!shield) {
@@ -114,7 +157,7 @@ function renderBanVisuals(banData) {
     shield.style.cssText = `
         position: fixed !important; top: 0 !important; left: 0 !important; 
         width: 100vw !important; height: 100vh !important;
-        background-color: rgba(0, 0, 0, 0.95) !important;
+        background-color: ${severity === 'hardware' ? 'rgba(20, 0, 0, 0.98)' : 'rgba(0, 0, 0, 0.95)'} !important;
         backdrop-filter: blur(10px) !important; -webkit-backdrop-filter: blur(10px) !important;
         z-index: 2147483646 !important; cursor: default !important;
     `;
@@ -131,17 +174,21 @@ function renderBanVisuals(banData) {
         font-family: 'Geist', sans-serif !important; z-index: 2147483647 !important;
         text-align: left !important; text-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
     `;
+
+    const statusText = severity === 'hardware' ? 'SYSTEM BLACKLISTED' : 'ACCOUNT SUSPENDED';
+    const subTitle = severity === 'hardware' ? 'Permanent Hardware Block' : 'Violation Detected';
+
     messageBox.innerHTML = `
-        <h1 style="font-size: 4rem !important; color: #ffffff !important; margin: 0 0 20px 0 !important; font-weight: 400 !important; line-height: 1 !important; white-space: nowrap !important;">Access Denied</h1>
-        <p style="font-size: 1.25rem !important; margin: 0 0 10px 0 !important; color: #ef4444 !important; font-weight: 400 !important;">Account Suspended</p>
+        <h1 style="font-size: 4rem !important; color: #ffffff !important; margin: 0 0 20px 0 !important; font-weight: 400 !important; line-height: 1 !important; white-space: nowrap !important;">${statusText}</h1>
+        <p style="font-size: 1.25rem !important; margin: 0 0 10px 0 !important; color: #ef4444 !important; font-weight: 400 !important;">${subTitle}</p>
         <div style="width: 50px !important; height: 4px !important; background-color: #ef4444 !important; margin-bottom: 20px !important;"></div>
         <p style="font-size: 1rem !important; margin: 0 0 10px 0 !important; color: #d1d5db !important; max-width: 500px !important; line-height: 1.6 !important; font-weight: 400 !important;">
             <strong>Reason:</strong> ${reason}
         </p>
-        ${actionButton ? `<div style="margin-top: 20px !important;">${actionButton}</div>` : ''}
+        <div style="margin-top: 20px !important;">${actionButton}</div>
         <p style="font-size: 0.85rem !important; color: #6b7280 !important; margin-top: 20px !important; font-weight: 400 !important;">
-            Banned by administrator ${banTimestamp}.<br>
-            ID: ${banData.uid || 'UNKNOWN'}
+            ${severity === 'hardware' ? 'Hardware Ban enforced by Core Authority.' : `Banned by administrator ${banTimestamp}.`} <br>
+            Reference: ${banData.originalUid || banData.uid || 'UNKNOWN'}
         </p>
     `;
 
@@ -170,9 +217,13 @@ function renderBanVisuals(banData) {
 }
 
 function lockPageAsBanned(banData) {
-    console.log(`BanEnforcer: lockPageAsBanned triggered for UID: ${banData.uid}.`);
+    console.log(`BanEnforcer: lockPageAsBanned triggered. Severity: ${banData.severity}`);
     currentBanData = banData;
     renderBanVisuals(banData);
+
+    if (banData.severity === 'hardware') {
+        localStorage.setItem(DEATH_SENTENCE_KEY, JSON.stringify(banData));
+    }
 
     if (banGuardInterval) clearInterval(banGuardInterval);
     banGuardInterval = setInterval(() => {
@@ -188,20 +239,45 @@ function lockPageAsBanned(banData) {
     }, 200);
 }
 
-// --- 3. Auth & Firestore Listener ---
-const path = window.location.pathname;
-if (!path.includes('messenger-v2.html')) {
-    onAuthStateChanged(auth, user => {
-        if (user) {
-            onSnapshot(doc(db, 'bans', user.uid), docSnap => {
-                if (docSnap.exists()) {
-                    lockPageAsBanned({ uid: user.uid, ...docSnap.data() });
-                } else {
-                    if (currentBanData) unlockPage();
-                }
-            });
-        } else {
-            unlockPage();
+// --- 3. Enforcement Logic ---
+(async function initBanEnforcement() {
+    // A. Check Hardware Ban first (even if signed out)
+    const hwId = await getHardwareId();
+    const deathSentence = checkDeathSentence();
+    
+    if (deathSentence) {
+        lockPageAsBanned(deathSentence);
+    }
+
+    // Check Hardware Ban in DB
+    onSnapshot(doc(db, 'hardware_bans', hwId), docSnap => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            lockPageAsBanned({ severity: 'hardware', ...data });
         }
     });
-}
+
+    // B. Check Auth Status and Account Ban
+    const path = window.location.pathname;
+    if (!path.includes('messenger-v2.html')) {
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                onSnapshot(doc(db, 'bans', user.uid), docSnap => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        lockPageAsBanned({ uid: user.uid, ...data });
+                    } else {
+                        // If account is unbanned but hardware isn't, stay locked
+                        if (currentBanData && currentBanData.severity !== 'hardware') {
+                            unlockPage();
+                        }
+                    }
+                });
+            } else {
+                if (currentBanData && currentBanData.severity !== 'hardware') {
+                    unlockPage();
+                }
+            }
+        });
+    }
+})();
