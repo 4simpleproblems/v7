@@ -254,6 +254,13 @@ function lockPageAsBanned(banData) {
         if (docSnap.exists()) {
             const data = docSnap.data();
             lockPageAsBanned({ severity: 'hardware', ...data });
+        } else {
+            // Lift the lock if hardware ban is removed
+            if (currentBanData && currentBanData.severity === 'hardware') {
+                console.log("BanEnforcer: Hardware ban lifted in DB. Unlocking...");
+                localStorage.removeItem(DEATH_SENTENCE_KEY);
+                unlockPage();
+            }
         }
     });
 

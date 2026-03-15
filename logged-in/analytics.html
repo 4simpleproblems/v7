@@ -2031,10 +2031,30 @@
             if (action === 'toggle-ban') {
                 const isBanned = bannedUsers.has(uid);
                 if (isBanned) {
-                    if (confirm(`Are you sure you want to unban this user?`)) {
+                    if (confirm(`Are you sure you want to unban this user? This will also lift any associated hardware or email blocks.`)) {
                         try {
-                            await deleteDoc(doc(db, 'bans', uid));
-                        } catch (err) { alert("Unban failed: " + err.message); }
+                            const batch = writeBatch(db);
+                            
+                            // 1. Remove main ban record
+                            batch.delete(doc(db, 'bans', uid));
+                            
+                            // 2. Clear email bans
+                            const user = allUsers.find(u => u.id === uid);
+                            if (user && user.email) {
+                                batch.delete(doc(db, 'email_bans', user.email.toLowerCase()));
+                            }
+                            
+                            // 3. Clear hardware bans associated with this UID
+                            const hwQuery = query(collection(db, 'hardware_bans'), where('originalUid', '==', uid));
+                            const hwSnap = await getDocs(hwQuery);
+                            hwSnap.forEach(d => batch.delete(d.ref));
+                            
+                            await batch.commit();
+                            showNotification("User and associated hardware/email unbanned.", 'fa-solid fa-unlock', 'success');
+                        } catch (err) { 
+                            console.error("Unban failed:", err);
+                            alert("Unban failed: " + err.message); 
+                        }
                     }
                 } else {
                     userToBan = { uid, username: btn.dataset.username };
