@@ -402,6 +402,15 @@
                 }
             }
 
+        (async () => {
+            if ("serviceWorker" in navigator) {
+                try {
+                    await navigator.serviceWorker.register("/VERN_PROX/uv/sw.js", {
+                        scope: "/VERN_PROX/uv/service/"
+                    });
+                    console.log("VERN Proxy SW Registered");
+                } catch (e) { console.error("VERN Proxy Error", e); }
+            }
             // Init BareMux
             try {
                 const workerPath = "/VERN_PROX/baremux/worker.js";
