@@ -65,18 +65,28 @@ const transportPromise = new Promise(resolve => {
     transportResolve = resolve;
 });
 
-// Default worker path
-const workerPath = location.origin + configs.vora.worker;
-const connection = new BareMux.WorkerConnection(workerPath);
-const bareClient = new BareMux.BareClient(connection);
+// Create connections and clients for each config
+const connections = {};
+const bareClients = {};
+
+for (const key in configs) {
+    const workerPath = location.origin + configs[key].worker;
+    connections[key] = new BareMux.WorkerConnection(workerPath);
+    bareClients[key] = new BareMux.BareClient(connections[key]);
+}
 
 // Message listener for SharedWorker port synchronization
 self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
-        connection.port = event.data.port;
+    if (event.data && event.data.type === 'baremuxinit' && event.data.port && event.data.path) {
+        // Find which connection this port belongs to based on the path
+        for (const key in configs) {
+            if (event.data.path.includes(configs[key].worker)) {
+                connections[key].port = event.data.port;
+                console.log(`Root SW: Port synced for ${key} via ${event.data.path}`);
+            }
+        }
         transportReady = true;
         if (transportResolve) transportResolve();
-        console.log("Root SW: BareMux Port Synced via " + (event.data.path || "unknown"));
     }
 });
 
@@ -87,8 +97,8 @@ for (const key in configs) {
         encodeUrl: Ultraviolet.codec.xor.encode,
         decodeUrl: Ultraviolet.codec.xor.decode
     });
-    // Use the shared client
-    inst.bareClient = bareClient;
+    // Use the specific client for this instance
+    inst.bareClient = bareClients[key];
     instances[key] = inst;
 }
 

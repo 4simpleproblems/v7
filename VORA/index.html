@@ -36,15 +36,15 @@
 
                 // Sync with Root SW if it exists
                 const syncPort = () => {
-                    if (navigator.serviceWorker.controller && connection.port) {
-                        setTimeout(() => {
-                            navigator.serviceWorker.controller.postMessage({
-                                type: 'baremuxinit',
-                                path: workerPath,
-                                port: connection.port
-                            }, [connection.port]);
-                            console.log("BareMux Port Synced with Root SW");
-                        }, 100);
+                    // Always request a NEW port for the SW to avoid transferring the local one
+                    const swWorker = new SharedWorker(workerPath);
+                    if (navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({
+                            type: 'baremuxinit',
+                            path: workerPath,
+                            port: swWorker.port
+                        }, [swWorker.port]);
+                        console.log("BareMux Port Synced with Root SW (VORA)");
                     }
                 };
 

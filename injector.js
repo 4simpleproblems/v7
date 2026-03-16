@@ -11,7 +11,6 @@
     window.__4sp_injector_loaded = true;
 
     // --- BareMux MessagePort fix for service worker communication ---
-    // Moved to injector for earliest possible activation to prevent UV retry loops.
     if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
         navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'getPort' && event.data.port) {
@@ -24,7 +23,9 @@
                     else if (pathname.includes('/games/')) workerPath = "/GAMES/baremux/worker.js";
                     else if (pathname.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
 
-                    const worker = new SharedWorker(workerPath, "bare-mux-worker");
+                    // Always create a new SharedWorker instance to get a fresh port for the SW.
+                    // This prevents transferring the port that the current page might be using.
+                    const worker = new SharedWorker(workerPath);
                     event.data.port.postMessage(worker.port, [worker.port]);
                 } catch (e) {}
             }

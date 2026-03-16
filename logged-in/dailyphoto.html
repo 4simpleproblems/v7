@@ -867,9 +867,13 @@
             };
         }
 
+        let currentRenderId = 0;
         async function renderMyPosts(usedSlots) {
+            const myId = ++currentRenderId;
             const container = document.getElementById('daily-posts-container');
-            container.innerHTML = '';
+            
+            // Build content in memory first
+            const fragment = document.createDocumentFragment();
 
             for (let i = 0; i < 5; i++) {
                 const postId = usedSlots[i];
@@ -877,24 +881,28 @@
                 div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl overflow-hidden flex items-center p-2 gap-3 transition-all hover:border-[var(--accent-color)]';
                 
                 if (postId && postId !== 'DELETED') {
-                    const postSnap = await getDoc(doc(db, 'daily_photos', postId));
-                    if (postSnap.exists()) {
-                        const postData = postSnap.data();
-                        div.innerHTML = `
-                            <div class="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0">
-                                <img src="${postData.imageURL || postData.imageBase64}" class="w-full h-full object-cover">
-                            </div>
-                            <div class="flex-grow min-w-0">
-                                <p class="text-xs font-bold truncate">${postData.title}</p>
-                                <p class="text-[10px] opacity-50">${new Date(postData.createdAt?.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
-                            </div>
-                            <div class="flex gap-1 pr-1">
-                                <button onclick="window.viewPost('${postId}')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5" title="View"><i class="fas fa-eye text-xs"></i></button>
-                                <button onclick="window.deletePost('${postId}', ${i})" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-xs"></i></button>
-                            </div>
-                        `;
-                    } else {
-                        div.innerHTML = `<span class="text-xs opacity-30 p-3 italic">Post missing...</span><button onclick="window.fixSlot(${i})" class="text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-lg ml-auto mr-2">Fix</button>`;
+                    try {
+                        const postSnap = await getDoc(doc(db, 'daily_photos', postId));
+                        if (postSnap.exists()) {
+                            const postData = postSnap.data();
+                            div.innerHTML = `
+                                <div class="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0">
+                                    <img src="${postData.imageURL || postData.imageBase64}" class="w-full h-full object-cover">
+                                </div>
+                                <div class="flex-grow min-w-0">
+                                    <p class="text-xs font-bold truncate">${postData.title}</p>
+                                    <p class="text-[10px] opacity-50">${new Date(postData.createdAt?.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
+                                </div>
+                                <div class="flex gap-1 pr-1">
+                                    <button onclick="window.viewPost('${postId}')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5" title="View"><i class="fas fa-eye text-xs"></i></button>
+                                    <button onclick="window.deletePost('${postId}', ${i})" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-xs"></i></button>
+                                </div>
+                            `;
+                        } else {
+                            div.innerHTML = `<span class="text-xs opacity-30 p-3 italic">Post missing...</span><button onclick="window.fixSlot(${i})" class="text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-lg ml-auto mr-2">Fix</button>`;
+                        }
+                    } catch (e) {
+                        div.innerHTML = `<span class="text-xs opacity-30 p-3 italic text-red-500/50">Error loading</span>`;
                     }
                 } else {
                     div.innerHTML = `
@@ -903,7 +911,13 @@
                         <button onclick="window.openUpload(${i})" class="btn-icon w-8 h-8 rounded-lg ml-auto mr-1" title="Post Moment"><i class="fas fa-plus text-xs"></i></button>
                     `;
                 }
-                container.appendChild(div);
+                fragment.appendChild(div);
+            }
+
+            // Only update DOM if this is still the latest render call
+            if (myId === currentRenderId) {
+                container.innerHTML = '';
+                container.appendChild(fragment);
             }
         }
 
