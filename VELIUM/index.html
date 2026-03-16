@@ -12,15 +12,15 @@
     <script src="/injector.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- VELIUM Proxy Scripts (Local) -->
-    <link rel="preload" href="/VELIUM_PROX/uv/uv.bundle.js" as="script">
-    <link rel="preload" href="/VELIUM_PROX/baremux/index.js" as="script">
-    <link rel="preload" href="/VELIUM_PROX/baremux/worker.js" as="worker">
-    <link rel="preload" href="/VELIUM_PROX/uv/sw.js" as="worker">
+    <!-- VERN_SYSTEM Proxy Scripts (Local) -->
+    <link rel="preload" href="/VELIUM/uv/uv.bundle.js" as="script">
+    <link rel="preload" href="/VELIUM/baremux/index.js" as="script">
+    <link rel="preload" href="/VELIUM/baremux/worker.js" as="worker">
+    <link rel="preload" href="/VELIUM/uv/sw.js" as="worker">
 
-    <script src="/VELIUM_PROX/uv/uv.bundle.js"></script>
+    <script src="/VELIUM/uv/uv.bundle.js"></script>
     <script>
-        const basePath = "/VELIUM_PROX/uv/";
+        const basePath = "/VELIUM/uv/";
         self.__uv$config = {
             prefix: basePath + "service/",
             encodeUrl: Ultraviolet.codec.xor.encode,
@@ -33,42 +33,49 @@
             stockSW: basePath + "sw.js",
         };
     </script>
-    <script src="/VELIUM_PROX/baremux/index.js"></script>
+    <script src="/VELIUM/baremux/index.js"></script>
     <script>
-        // Immediate Initialization of Proxy
+        // Immediate Initialization of VERN_SYSTEM Proxy
         (async () => {
             if ("serviceWorker" in navigator) {
                 try {
-                    // Register SW
-                    const reg = await navigator.serviceWorker.register("/VELIUM_PROX/uv/sw.js", {
-                        scope: "/VELIUM_PROX/uv/service/"
+                    // Register Root SW
+                    const reg = await navigator.serviceWorker.register("/VELIUM/sw.js", {
+                        scope: "/VELIUM/"
                     });
-                    console.log("VELIUM Proxy SW Registered");
+                    console.log("VERN_SYSTEM SW Registered");
+
+                    // Reload if controller changes (SW activated)
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (!navigator.serviceWorker.controller) return;
+                        console.log("SW Activated, reloading...");
+                        window.location.reload();
+                    });
 
                 } catch (e) {
                     console.error("SW Register Failed", e);
                 }
             }
             try {
-                const workerPath = "/VELIUM_PROX/baremux/worker.js";
+                const workerPath = "/VELIUM/baremux/worker.js";
                 const connection = new BareMux.BareMuxConnection(workerPath);
                 const wispUrl = "wss://wisp.mercurywork.shop/";
-                connection.setTransport("/VELIUM_PROX/libcurl/index.mjs", [
+                connection.setTransport("/VELIUM/libcurl/index.mjs", [
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
                 
                 // Sync with Root SW if it exists
                 const syncPort = () => {
-                    // Always request a NEW port for the SW to avoid transferring the local one
-                    const swWorker = new SharedWorker(workerPath);
-                    if (navigator.serviceWorker.controller) {
-                        navigator.serviceWorker.controller.postMessage({
-                            type: 'baremuxinit',
-                            path: workerPath,
-                            port: swWorker.port
-                        }, [swWorker.port]);
-                        console.log("BareMux Port Synced with Root SW (VELIUM)");
+                    if (navigator.serviceWorker.controller && connection.port) {
+                        setTimeout(() => {
+                            navigator.serviceWorker.controller.postMessage({
+                                type: 'baremuxinit',
+                                path: workerPath,
+                                port: connection.port
+                            }, [connection.port]);
+                            console.log("BareMux Port Synced with Root SW");
+                        }, 100);
                     }
                 };
 

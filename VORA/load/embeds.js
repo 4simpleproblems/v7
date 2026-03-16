@@ -530,7 +530,7 @@ function proxyUrl(url) {
     if (!url) return url;
     if (url.startsWith('data:') || url.startsWith('blob:')) return url;
     
-    const prefix = "/VORA_PROX/uv/service/";
+    const prefix = "/VORA/VERN_SYSTEM/uv/service/";
     
     // Check multiple possible locations for the encoder
     const encoder = (window.__uv$config && window.__uv$config.encodeUrl) ? window.__uv$config.encodeUrl : 

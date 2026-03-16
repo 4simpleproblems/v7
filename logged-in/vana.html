@@ -16,14 +16,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/injector.js"></script>
 
-    <script src="/LOGGED_IN_PROX/uv/uv.bundle.js"></script>
-    <script src="/LOGGED_IN_PROX/uv/uv.config.js"></script>
-    <script src="/LOGGED_IN_PROX/baremux/index.js"></script>
+    <script src="/logged-in/uv/uv.bundle.js"></script>
+    <script src="/logged-in/uv/uv.config.js"></script>
+    <script src="/logged-in/baremux/index.js"></script>
     <script>
         (async () => {
             if ('serviceWorker' in navigator) {
                 try {
-                    const reg = await navigator.serviceWorker.register('/LOGGED_IN_PROX/uv/sw.js', { scope: '/LOGGED_IN_PROX/uv/service/' });
+                    const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
                     
                     navigator.serviceWorker.addEventListener('controllerchange', () => {
                         if (navigator.serviceWorker.controller) {
@@ -34,8 +34,8 @@
                 } catch(e) { console.error("SW Init Error:", e); }
             }
             try {
-                const conn = new BareMux.BareMuxConnection('/LOGGED_IN_PROX/baremux/worker.js');
-                await conn.setTransport('/LOGGED_IN_PROX/libcurl/index.mjs', [
+                const conn = new BareMux.BareMuxConnection('/logged-in/baremux/worker.js');
+                await conn.setTransport('/logged-in/libcurl/index.mjs', [
                     { websocket: 'wss://wisp.mercurywork.shop/' }
                 ]);
             } catch(e) { console.error("BareMux Init Error:", e); }
@@ -529,7 +529,7 @@
             const baseUrl = "https://api.duckduckgo.com/?q=" + encodeURIComponent(query) + "&format=json";
             
             // Construct absolute prefix to ensure SW interception
-            let prefix = (self.__uv$config && self.__uv$config.prefix) || "/LOGGED_IN_PROX/uv/service/";
+            let prefix = (self.__uv$config && self.__uv$config.prefix) || "/logged-in/uv/service/";
             if (prefix.startsWith('/')) {
                 prefix = window.location.origin + prefix;
             }

@@ -1760,7 +1760,7 @@
                     batch.set(docRef, {
                         email: u.email || null,
                         authMethod: providerId,
-                        createdAt: u.createdAt ? new Date(u.createdAt) : serverTimestamp(),
+                        createdAt: u.creationTime ? new Date(u.creationTime) : serverTimestamp(),
                         username: username,
                         emailVerified: !!u.emailVerified, 
                         photoURL: u.photoURL || null

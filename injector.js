@@ -10,34 +10,21 @@
     if (window.__4sp_injector_loaded) return;
     window.__4sp_injector_loaded = true;
 
-    // --- SW Cleanup (One-time check for stale root SWs) ---
-    if (navigator.serviceWorker && !localStorage.getItem('__4sp_sw_cleaned_v2')) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-            for (let registration of registrations) {
-                if (registration.scope === window.location.origin + '/') {
-                    registration.unregister();
-                    console.log('Unregistered stale root SW:', registration.scope);
-                }
-            }
-            localStorage.setItem('__4sp_sw_cleaned_v2', 'true');
-        });
-    }
-
     // --- BareMux MessagePort fix for service worker communication ---
+    // Moved to injector for earliest possible activation to prevent UV retry loops.
     if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
         navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'getPort' && event.data.port) {
                 try {
-                    let workerPath = "/VELIUM_PROX/baremux/worker.js";
+                    let workerPath = "/VELIUM/baremux/worker.js";
                     const pathname = window.location.pathname.toLowerCase();
-                    if (pathname.includes('vora')) workerPath = "/VORA_PROX/baremux/worker.js";
-                    else if (pathname.includes('/vora/')) workerPath = "/VORA_PROX/baremux/worker.js";
-                    else if (pathname.includes('/vern/')) workerPath = "/VERN_PROX/baremux/worker.js";
-                    else if (pathname.includes('/games/')) workerPath = "/GAMES_PROX/baremux/worker.js";
-                    else if (pathname.includes('/logged-in/')) workerPath = "/LOGGED_IN_PROX/baremux/worker.js";
+                    if (pathname.includes('vora')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+                    else if (pathname.includes('/vora/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+                    else if (pathname.includes('/vern/')) workerPath = "/VERN/baremux/worker.js";
+                    else if (pathname.includes('/games/')) workerPath = "/GAMES/baremux/worker.js";
+                    else if (pathname.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
 
-                    // Always create a new SharedWorker instance to get a fresh port for the SW.
-                    const worker = new SharedWorker(workerPath);
+                    const worker = new SharedWorker(workerPath, "bare-mux-worker");
                     event.data.port.postMessage(worker.port, [worker.port]);
                 } catch (e) {}
             }

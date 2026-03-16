@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-    <script src="/VORA_PROX/uv/uv.bundle.js"></script>
+    <script src="/VORA/VERN_SYSTEM/uv/uv.bundle.js"></script>
     <script>
-        const basePath = "/VORA_PROX/uv/";
+        const basePath = "/VORA/VERN_SYSTEM/uv/";
         self.__uv$config = {
             prefix: basePath + "service/",
             encodeUrl: Ultraviolet.codec.xor.encode,
@@ -13,20 +13,20 @@
             bundle: basePath + "uv.bundle.js",
             config: basePath + "uv.config.js",
             sw: basePath + "uv.sw.js",
-            stockSW: "/VORA_PROX/uv/sw.js",
+            stockSW: "/VORA/VERN_SYSTEM/sw.js",
         };
     </script>
-    <script src="/VORA_PROX/baremux/index.js"></script>
+    <script src="/VORA/VERN_SYSTEM/baremux/index.js"></script>
     <script type="module">
-        import * as libcurl from "/VORA_PROX/libcurl/index.mjs";
+        import * as libcurl from "/VORA/VERN_SYSTEM/libcurl/index.mjs";
 
         window.checkBare = async (retries = 5) => {
             if (window.__4sp_bare_mux_connecting) return;
             window.__4sp_bare_mux_connecting = true;
 
-            const connection = new BareMux.BareMuxConnection("/VORA_PROX/baremux/worker.js");
+            const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
             const wispUrl = "wss://wisp.mercurywork.shop/";
-            const transportPath = "/VORA_PROX/libcurl/index.mjs";
+            const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
 
             for (let i = 0; i < retries; i++) {
                 try {
