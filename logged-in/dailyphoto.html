@@ -595,6 +595,7 @@
         let isAdmin = false;
         let unsubPosts = () => {};
         let unsubModal = () => {};
+        let unsubUser = () => {};
 
         // School selection state
         let allStates = [];
@@ -690,7 +691,8 @@
         }
 
         function listenToUser() {
-            onSnapshot(doc(db, USERS_COLLECTION, currentUser.uid), async snap => {
+            unsubUser();
+            unsubUser = onSnapshot(doc(db, USERS_COLLECTION, currentUser.uid), async snap => {
                 userData = snap.data() || {};
                 blockedUsers = userData.blocked_users || [];
                 
