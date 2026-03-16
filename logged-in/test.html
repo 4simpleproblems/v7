@@ -1,144 +1,53 @@
 <!DOCTYPE html>
-<html lang="en"> 
+<html lang="en" class="dark">
 <head>
-    <title>4SP - GAMES</title>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" id="faviconLink" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4SP - DAILYPHOTO</title>
+    <meta name="description" content="Share your day with friends through daily photos.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
-    <script src="/logged-in/baremux/index.js"></script>
-    <script src="/logged-in/uv/uv.bundle.js"></script>
-    <script src="/logged-in/uv/uv.config.js"></script>
-    <script>
-        (async () => {
-            if ('serviceWorker' in navigator) {
-                try {
-                    const reg = await navigator.serviceWorker.register('/logged-in/sw.js', { scope: '/logged-in/' });
-                    
-                    navigator.serviceWorker.addEventListener('controllerchange', () => {
-                        if (navigator.serviceWorker.controller) {
-                            console.log("SW active, reloading...");
-                            window.location.reload();
-                        }
-                    });
-
-                    // Wait for service worker to be active/ready
-                    if (!navigator.serviceWorker.controller) {
-                        console.log("Waiting for service worker controller...");
-                        await new Promise(resolve => {
-                            const handler = () => {
-                                if (navigator.serviceWorker.controller) {
-                                    navigator.serviceWorker.removeEventListener('controllerchange', handler);
-                                    resolve();
-                                }
-                            };
-                            navigator.serviceWorker.addEventListener('controllerchange', handler);
-                            // Fallback if it takes too long
-                            setTimeout(resolve, 2000);
-                        });
-                    }
-                } catch(e) { console.error("SW Init Error:", e); }
-            }
-            try {
-                // Ensure BareMux is defined (from index.js)
-                if (typeof BareMux !== 'undefined') {
-                    const conn = new BareMux.BareMuxConnection('/logged-in/baremux/worker.js');
-                    await conn.setTransport('/logged-in/libcurl/index.mjs', [
-                        { websocket: 'wss://wisp-js.fly.dev/' }
-                    ]);
-                    console.log("BareMux initialized");
-                } else {
-                    console.error("BareMux library not loaded!");
-                }
-            } catch(e) { console.error("BareMux Init Error:", e); }
-        })();
-    </script>
-
     <script src="https://cdn.tailwindcss.com"></script>
-     <script src="../navigation.js"></script>
-     <script src="../ban-enforcer.js" type="module"></script>
-
-    
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-1D4F692C1Q');
-    </script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'deep-black': '#040404',
-                        'card-dark': '#111111',
-                        'accent-indigo': '#4f46e5',
-                        'brand-border': '#252525',
-                        'strongdog-orange': '#FFA500',
-                        'gn-math': '#FB2651',
-                        'gameboy': '#9A2257', 
-                        'other-grey': '#AAAAAA', 
-                    },
-                    fontFamily: {
-                        sans: ['Geist', 'sans-serif'],
-                    },
-                    borderRadius: {
-                        'md': '0.375rem',
-                        'lg': '0.5rem',
-                        'xl': '0.75rem',
-                        '2xl': '1.25rem',
-                        '3xl': '1.5rem', 
-                    },
-                    aspectRatio: {
-                        '3/2': '3 / 2',
-                    },
-                }
-            }
-        }
-    </script>
-    
+    <script src="/injector.js"></script>
     <style>
-        /* Base styles */
         :root {
-            --bg-page: var(--bg-primary, #040404);
-            --bg-card: var(--bg-secondary, #111111);
+            --bg-page: var(--bg-primary, #000000);
+            --bg-card: var(--bg-secondary, #0d0d0d);
             --text-main: var(--text-primary, #ffffff);
-            --text-muted: var(--text-secondary, #d1d5db);
+            --text-muted: var(--text-secondary, #c0c0c0);
             --accent-color: var(--accent-primary, #4f46e5);
-            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.1));
-            --border-main: var(--border-primary, #333);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #1a1a1a);
             --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
             --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
             --btn-text: var(--button-text, #4f46e5);
         }
 
-        body {
-            font-family: 'Geist', 'sans-serif';
-            font-weight: 300;
-            background-color: var(--bg-page);
-            color: var(--text-main);
-            padding-bottom: 100px;
+        body { 
+            font-family: 'Geist', sans-serif; 
+            background-color: var(--bg-page); 
+            color: var(--text-muted); 
+            font-weight: 300; 
+            overflow: hidden; 
+            height: 100vh;
+            padding-top: 64px; /* Space for navbar */
         }
         
-        h1, h2, h3, .font-bold, .font-semibold, strong {
-            font-weight: 400 !important;
+        h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-widest {
+            font-weight: 400 !important; 
+            color: var(--text-main);
         }
 
-        /* --- Toolbar Button Style (Global) --- */
+        /* --- THEME BUTTONS --- */
         .btn-toolbar-style {
             background: var(--bg-card);
             border: 1px solid var(--border-main);
-            border-radius: 14px; /* MATCHES auth-btn */
+            border-radius: 14px; 
             color: var(--text-muted);
-            padding: 0.5rem 1.25rem;
+            padding: 0.5rem 1rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
@@ -146,1688 +55,1431 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            text-decoration: none;
-            font-size: 1rem;
         }
         .btn-toolbar-style:hover {
-            background-color: var(--bg-card);
             border-color: var(--text-main);
             color: var(--text-main);
-            transform: translateY(-1px);
+        }
+        
+        .btn-toolbar-style.active, .btn-primary-override {
+            background-color: var(--btn-bg) !important;
+            border: 1px solid var(--accent-color) !important;
+            color: var(--accent-color) !important;
         }
 
-        /* --- Card Action Buttons --- */
-        .btn-card-action {
+        .btn-icon {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 2.25rem;
-            height: 2.25rem;
-            border-radius: 14px; /* MATCHES auth-btn */
-            background-color: transparent;
-            border: 1px solid transparent;
+            width: 2.5rem; 
+            height: 2.5rem; 
+            border-radius: 14px; 
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-main);
             color: var(--text-muted);
             cursor: pointer;
             transition: all 0.2s;
-            font-size: 1rem;
         }
-        .btn-card-action:hover {
-            background-color: var(--accent-glow);
-            color: var(--accent-color);
-            border-color: var(--accent-color);
-            transform: scale(1.1);
-        }
-        
-        /* Favorite Button Logic */
-        .btn-card-action.fav-action .fa-solid-star { display: none; }
-        .btn-card-action.fav-action .fa-regular-star { display: inline-block; }
-        
-        .btn-card-action.fav-action.favorited .fa-solid-star { display: inline-block; color: #facc15; }
-        .btn-card-action.fav-action.favorited .fa-regular-star { display: none; }
-        
-        .btn-card-action.fav-action:not(.favorited):hover .fa-regular-star { color: var(--accent-color); }
-        
-        /* Card Hover Effects */
-        .zone-item {
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            will-change: transform;
-        }
-        .zone-item:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 25px var(--accent-glow);
-        }
-        
-        .other-zone-item {
-            min-height: 250px;
-            transition: box-shadow 0.2s ease-in-out;
-            position: relative; 
-            z-index: 1; 
-        }
-        .other-zone-item:hover {
-            box-shadow: 0 8px 25px var(--accent-glow);
-            z-index: 10; 
-        }
-        .other-zone-item .image-overlay {
-            background: linear-gradient(90deg, rgba(7,7,7,0.85) 0%, rgba(7,7,7,0) 40%, rgba(7,7,7,0) 60%, rgba(7,7,7,0.85) 100%);
-            border-radius: 1.25rem; 
-        }
-        .other-zone-item:hover .image-overlay {
-            background: linear-gradient(90deg, rgba(7,7,7,0.7) 0%, rgba(7,7,7,0) 50%, rgba(7,7,7,0) 50%, rgba(7,7,7,0.7) 100%);
-        }
-
-        /* --- Animations --- */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes fadeOut {
-            from { opacity: 1; transform: scale(1); }
-            to { opacity: 0; transform: scale(0.98); }
-        }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        .animate-fade-out { animation: fadeOut 0.3s ease-out forwards; }
-
-        .fade-out-card {
-            animation: fadeOut 0.3s ease-out forwards;
-            pointer-events: none;
-        }
-
-        /* Search Bar & Results */
-        #bottom-fixed-bar {
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
-            background-color: var(--bg-card);
-            border-color: var(--border-main);
-        }
-        #bottom-fixed-bar:focus-within {
-            transform: translateY(-5px);
-            border-color: var(--accent-color);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 0 2px var(--accent-glow);
-        }
-
-        .search-results-container {
-            max-height: 300px;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border-main) transparent;
-            transition: opacity 0.3s ease;
-        }
-        .search-item {
-            display: flex;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: var(--text-muted);
-            text-decoration: none;
-            padding: 10px 15px;
-        }
-        .search-item:hover { 
-            background-color: var(--accent-glow); 
-            padding-left: 20px;
-        }
-
-        .category-badge {
-            font-size: 0.6rem;
-            padding: 1px 6px;
-            border-radius: 6px;
-            font-weight: 400;
-            margin-top: 4px;
-            border: 1px solid currentColor;
-            background: transparent !important;
-            display: inline-block;
-        }
-
-        @media (max-width: 768px) {
-            #bottom-fixed-bar {
-                left: 10px !important; right: 10px !important;
-                bottom: 10px !important; width: auto !important;
-            }
-        }
-
-        /* Polyfill for aspect-ratio */
-        .aspect-w-3 { position: relative; padding-bottom: 66.666667%; }
-        .aspect-h-2 { }
-        .aspect-w-3 > * { position: absolute; height: 100%; width: 100%; top: 0; right: 0; bottom: 0; left: 0; }
-        
-        /* --- Game Viewer Modal --- */
-        #zoneViewer { 
-            display: none; position: fixed; 
-            top: 64px; /* Clearance for navbar */
-            left: 0; width: 100%; 
-            height: calc(100% - 64px); 
-            background-color: var(--bg-page); z-index: 5000; flex-direction: column; 
-            opacity: 0;
-        }
-        #zoneViewer.active { display: flex; opacity: 1; }
-
-        #zoneViewer .zone-header {
-            background-color: var(--bg-card);
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-main);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            flex-shrink: 0;
-        }
-        #zoneViewer .zone-header .zone-title h2 {
-            margin: 0;
-            font-size: 1.2rem;
+        .btn-icon:hover {
+            border-color: var(--text-main);
             color: var(--text-main);
-            font-family: 'Geist', sans-serif;
-            font-weight: 500;
-        }
-        #zoneViewer .zone-header .zone-controls { display: flex; align-items: center; gap: 8px; }
-        
-        #zoneViewer .zone-header .zone-controls button,
-        #zoneViewer .zone-header .zone-controls a {
-            margin: 0;
-            width: 40px;
-            height: 40px;
-            background-color: var(--bg-page);
-            color: var(--text-muted);
-            border: 1px solid var(--border-main);
-            border-radius: 14px; /* MATCHES auth-btn */
-            cursor: pointer;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            text-decoration: none;
-        }
-        #zoneViewer .zone-header .zone-controls button:hover,
-        #zoneViewer .zone-header .zone-controls a:hover { 
-            background-color: var(--accent-glow); 
-            border-color: var(--accent-color);
-            color: var(--accent-color);
-            transform: scale(1.1);
-        }
-        #zoneViewer iframe { flex-grow: 1; border: none; background-color: var(--bg-page); }
-        .hidden { display: none !important; }
-
-        /* --- Dropdown (Modified to popup ABOVE) --- */
-        .eagler-dropdown {
-            display: none;
-            position: absolute;
-            bottom: 120%; /* Pops up above the button */
-            right: 0;
-            margin-bottom: 5px;
-            background-color: var(--bg-card);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border-main);
-            border-radius: 0.75rem;
-            padding: 0.5rem;
-            z-index: 1000;
-            min-width: 200px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-            transform-origin: bottom right;
-        }
-        .eagler-dropdown.show { display: block; animation: fadeInUp 0.15s ease-out; }
-        
-        @keyframes fadeInUp { 
-            from { opacity: 0; transform: translateY(10px) scale(0.95); } 
-            to { opacity: 1; transform: translateY(0) scale(1); } 
-        }
-
-        .eagler-dropdown-link {
-            display: block;
-            padding: 0.6rem 0.8rem;
-            color: var(--text-muted);
-            text-decoration: none;
-            border-radius: 0.5rem;
-            transition: all 0.2s;
-            font-weight: 400;
-            white-space: nowrap;
-            font-size: 0.9rem;
-        }
-        .eagler-dropdown-link:hover { background-color: var(--accent-glow); color: var(--text-main); }
-
-        #creditsModal { display: none; }
-        
-        /* Modal Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-        @keyframes popOut {
-            0% { transform: scale(1); opacity: 1; }
-            40% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(0); opacity: 0; }
-        }
-        .animate-pop-out { animation: popOut 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
-        .particle {
-            position: fixed;
-            pointer-events: none;
-            border-radius: 50%;
-            z-index: 10000;
-            animation: particle-fly 0.6s ease-out forwards;
-        }
-        @keyframes particle-fly {
-            0% { transform: translate(0, 0) scale(1); opacity: 1; }
-            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
-        }
-
-        /* --- Fullscreen Credits Styles --- */
-        #creditsModal {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background-color: var(--bg-page);
-            display: none; /* Flex when active */
-            flex-direction: column;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-        #creditsModal.active { display: flex; opacity: 1; }
-
-        .credits-scroll-container {
-            flex-grow: 1;
-            overflow-y: auto;
-            scroll-snap-type: y mandatory;
-            scrollbar-width: none; /* Hide scrollbar for immersion */
-        }
-        .credits-scroll-container::-webkit-scrollbar { display: none; }
-
-        .credit-section {
-            height: 100vh;
-            width: 100%;
-            scroll-snap-align: start;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4rem;
-            position: relative;
-            background-size: cover;
-            background-position: center;
         }
         
-        .credit-content-grid {
+        /* --- LAYOUT --- */
+        .app-container {
             display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 6rem;
-            max-width: 1600px;
+            grid-template-areas: "sidebar main";
+            grid-template-columns: 350px 1fr;
+            height: calc(100vh - 64px);
             width: 100%;
-            z-index: 10;
+            background: var(--bg-page);
         }
 
-        .credit-text-col {
+        /* --- SIDEBAR --- */
+        .sidebar {
+            grid-area: sidebar;
+            background-color: var(--bg-page);
+            border-right: 1px solid var(--border-main);
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 2rem;
+            z-index: 50;
         }
 
-        .credit-title {
-            font-size: 5rem;
-            font-weight: 700;
-            line-height: 1;
-            background: linear-gradient(to right, #fff, #999);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            opacity: 0;
-            transform: translateY(30px);
-            animation: slideUpFade 0.8s ease-out forwards 0.2s;
+        .sidebar-scroll-content {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex-grow: 1;
         }
+        .sidebar-scroll-content::-webkit-scrollbar { display: none; }
 
-        .credit-desc {
-            font-size: 1.5rem;
-            color: var(--text-muted);
-            line-height: 1.6;
-            max-width: 600px;
-            opacity: 0;
-            transform: translateY(30px);
-            animation: slideUpFade 0.8s ease-out forwards 0.4s;
-        }
-
-        .credit-links {
+        .sidebar-bottom-controls {
             display: flex;
-            gap: 1.5rem;
-            margin-top: 1rem;
-            opacity: 0;
-            transform: translateY(30px);
-            animation: slideUpFade 0.8s ease-out forwards 0.6s;
-        }
-
-        .credit-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            padding: 1rem 2rem;
-            border-radius: 1rem;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-        .credit-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        /* Specialized Brand Colors */
-        .btn-github:hover { border-color: #a78bfa; color: #a78bfa; background: rgba(167, 139, 250, 0.1); }
-        .btn-discord:hover { border-color: #5865F2; color: #5865F2; background: rgba(88, 101, 242, 0.1); }
-
-        .credit-img-col {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            transform: scale(0.9);
-            animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards 0.4s;
-        }
-        .credit-logo {
             width: 100%;
-            max-width: 500px;
-            aspect-ratio: 1/1;
-            object-fit: contain;
-            filter: drop-shadow(0 20px 50px rgba(0,0,0,0.6));
+            border-top: 1px solid var(--border-main);
+            background-color: var(--bg-card);
         }
-
-        @keyframes slideUpFade {
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes popIn {
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        #closeCreditsFixed {
-            position: fixed;
-            top: 2rem;
-            right: 2rem;
-            z-index: 10000;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-main);
-            color: #fff;
-            width: 2.5rem; /* Smaller width */
-            height: 2.5rem; /* Smaller height */
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        #closeCreditsFixed i {
-            font-size: 1rem; /* Smaller icon */
-        }
-        #closeCreditsFixed:hover {
-            filter: brightness(1.2);
-            background: rgba(20, 20, 20, 0.8);
-            border-color: var(--accent-color);
-        }
-
-        .credits-nav-bar {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10000;
-            display: flex;
-            gap: 1rem;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
-            padding: 0.5rem;
-            border-radius: 2rem; /* More rounded (pill shape) */
-            border: 1px solid var(--border-main);
-        }
-        .credits-nav-btn {
+        .sidebar-control-btn {
+            flex: 1; 
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            padding: 1rem 0;
             background: transparent;
             border: none;
-            color: var(--text-muted);
-            width: 2.5rem; /* Smaller width */
-            height: 2.5rem; /* Smaller height */
-            border-radius: 1rem; /* More rounded */
             cursor: pointer;
-            transition: all 0.2s;
+            transition: color 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .sidebar-control-btn:hover { color: var(--text-main); }
+        .sidebar-control-btn.active { color: var(--accent-color); }
+
+        /* --- LISTS --- */
+        .compact-list-wrapper {
+             background-color: var(--bg-card);
+             border-radius: 1.25rem; 
+             border: 1px solid var(--border-main); 
+             margin-top: 0.75rem;
+             overflow: hidden;
+        }
+        .compact-list-items {
+            overflow-y: auto;
+            max-height: 350px; 
+            padding: 0.25rem; 
+        }
+        
+        .compact-list-item {
+            border-radius: 14px; 
+            margin-bottom: 2px;
+            padding: 0.5rem; 
+            transition: background-color 0.2s;
+        }
+        .compact-list-item:hover { background-color: var(--border-faint); }
+
+        /* --- FEED PANEL --- */
+        .main-view { 
+            grid-area: main;
+            height: 100%;
+            background-color: var(--bg-page);
+            padding: 2rem; 
+            overflow-y: auto; 
+        }
+        .main-view::-webkit-scrollbar { display: none; }
+        
+        .feed-content-inner {
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding-bottom: 5rem; 
+        }
+
+        /* --- GRID & PHOTOS --- */
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+            gap: 1.5rem; 
+        }
+        .photo-thumbnail {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1.25rem; 
+            cursor: pointer;
+            aspect-ratio: 1 / 1; 
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-main);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+        .photo-thumbnail:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-color);
+        }
+        .photo-thumbnail img {
+            width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;
+        }
+        .photo-thumbnail:hover img { transform: scale(1.05); }
+        
+        .photo-thumbnail.is-mutual {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+        .mutual-badge {
+            position: absolute;
+            top: 0.75rem;
+            left: 0.75rem;
+            background: var(--accent-glow);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            color: white;
+            padding: 0.35rem 0.6rem;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            z-index: 20;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 1rem; /* Smaller icon */
+            gap: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            border: 1px solid var(--accent-color);
         }
-        .credits-nav-btn:hover:not(:disabled) {
+        
+        .overlay-grad {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 50%);
+            pointer-events: none; 
+        }
+        .title-overlay {
+            position: absolute; bottom: 0.75rem; left: 0.75rem; right: 0.75rem;
+            color: white; font-size: 0.8rem; font-weight: 400;
+            white-space: nowrap; overflow: hidden;
+            z-index: 10;
             background: var(--accent-glow);
-            color: #fff;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--accent-color);
+            text-align: left;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
-        .credits-nav-btn:disabled {
-            opacity: 0.3;
-            cursor: default;
-            color: #555;
+        
+        /* --- MODAL STYLES (Robust Refactor) --- */
+        .modal-backdrop {
+            position: fixed; inset: 0;
+            background-color: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+            padding: 1rem;
         }
+        .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+        
+        .modal-content {
+            background-color: var(--bg-card); 
+            border: 1px solid var(--border-main);
+            border-radius: 1.5rem; 
+            width: 95%; 
+            max-width: 1200px;
+            height: 90vh;
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        @media (min-width: 1024px) {
+            .modal-content { flex-direction: row; }
+        }
+        
+        #photo-display-area {
+            flex: 1 1 auto; 
+            background-color: #000;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            overflow: hidden;
+            min-width: 0; 
+        }
+        
+        .photo-modal-img {
+            width: 100%; height: 100%; object-fit: contain; 
+        }
+
+        #photo-info-panel {
+            background-color: var(--bg-card);
+            display: flex; 
+            flex-direction: column;
+            padding: 1.5rem;
+            width: 100%; 
+            min-height: 0;
+            border-top: 1px solid var(--border-main);
+        }
+
+        @media (min-width: 1024px) {
+            #photo-info-panel {
+                width: 400px;
+                flex: 0 0 400px;
+                height: 100%;
+                border-top: none;
+                border-left: 1px solid var(--border-main);
+            }
+        }
+
+        #comments-section {
+            flex: 1;
+            background-color: rgba(255,255,255,0.05); 
+            border-radius: 1.25rem; 
+            padding: 1rem;
+            margin-bottom: 1rem;
+            overflow-y: auto;
+            border: 1px solid var(--border-main);
+            min-height: 0; /* Critical for scroll */
+        }
+        #comments-section::-webkit-scrollbar { display: none; }
+
+        .modal-close-btn {
+            position: absolute; top: 1.25rem; left: 1.25rem;
+            width: 2.5rem; height: 2.5rem;
+            display: flex; align-items: center; justify-content: center;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            color: #ffffff;
+            z-index: 100;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .modal-close-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+            transform: scale(1.05);
+            border-color: #ffffff;
+        }
+        .modal-close-btn i { font-size: 14px; }
+
+        /* --- SCROLL FADE EFFECTS --- */
+        .scroll-container-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+        .scroll-fade-top, .scroll-fade-bottom {
+            position: absolute;
+            left: 0; right: 0; height: 40px;
+            pointer-events: none;
+            z-index: 10;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+        .scroll-fade-top {
+            top: 0;
+            background: linear-gradient(to bottom, var(--bg-card), transparent);
+        }
+        .scroll-fade-bottom {
+            bottom: 0;
+            background: linear-gradient(to top, var(--bg-card), transparent);
+        }
+        .scroll-fade-active { opacity: 1; }
+
+        .custom-scroll {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .custom-scroll::-webkit-scrollbar { display: none; }
+
+        .list-item-themed {
+            background-color: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-main);
+            border-radius: 1rem;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .list-item-themed:hover {
+            background-color: var(--btn-bg);
+            border-color: var(--accent-color);
+            transform: translateX(4px);
+        }
+
+        /* Custom Tooltip */
+        #custom-tooltip {
+            position: fixed; background-color: #000; border: 1px solid #333; color: #fff;
+            padding: 0.4rem 0.8rem; border-radius: 14px; font-size: 0.75rem;
+            pointer-events: none; z-index: 10000; opacity: 0; transition: opacity 0.15s ease;
+            white-space: nowrap; box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }
+
+        .hidden { display: none !important; }
     </style>
 </head>
+<body>
+    <div id="custom-tooltip"></div>
 
-<body class="bg-deep-black text-white min-h-screen">
-
-    <main class="mx-auto my-5 w-full max-w-screen-2xl px-4 relative">
-        <button id="creditsBtn" class="absolute top-0 right-4 z-20 btn-toolbar-style">
-            <i class="fa-solid fa-users mr-2"></i>Credits
-        </button>
-        
-        <div class="mx-auto my-8 p-4 sm:p-6 w-full max-w-3xl relative">
-            <p class="bg-card-dark text-white p-5 rounded-2xl shadow-lg border border-brand-border text-center">
-                <strong class="text-sm sm:text-base">Update: Proxied StrongdogXP Games</strong><br>
-                <span class="text-xs sm:text-sm text-gray-400">Update: GN-Math games are no longer blocked on most school networks, now loading from a widely used file source. For StrongdogXP games, instead of entirely relying on 4SP's sources, we're now proxying games fetched directly from the Strongdog website for a wider and more consistent selection.</span>
-            </p>
-        </div>
-        
-        <div id="favoritesSection">
-            <h2 id="favoritesHeader" class="text-center text-3xl font-bold mt-12 mb-6 text-white" style="display: none;">
-                <strong>Favorites</strong>
-            </h2>
-            <div class="games-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-4" id="favoritesGameList" style="display: none;"></div>
-        </div>
-
-        <div id="category-viewer" class="w-full mt-12">
-            <div id="category-slider-container" class="relative flex items-center justify-center max-w-sm mx-auto h-12">
-                <button id="prev-category" class="absolute left-0 top-1/2 -translate-y-1/2 text-2xl text-gray-500 hover:text-white transition-all p-2 z-10 disabled:opacity-30 disabled:text-gray-700 disabled:hover:text-gray-700">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <div class="overflow-hidden w-64 text-center">
-                    <div id="category-slider" class="flex transition-transform duration-500 ease-in-out">
-                        </div>
-                </div>
-                <button id="next-category" class="absolute right-0 top-1/2 -translate-y-1/2 text-2xl text-gray-500 hover:text-white transition-all p-2 z-10 disabled:opacity-30 disabled:text-gray-700 disabled:hover:text-gray-700">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-            
-            <div id="games-grid-container" class="games-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-4 mt-6 transition-opacity duration-300 ease-in-out">
-                </div>
-        </div>
-    </main>
-
-    <div id="bottom-fixed-bar" class="fixed bottom-4 right-4 bg-black/80 backdrop-blur-xl rounded-3xl border border-brand-border shadow-2xl shadow-black/50 w-full max-w-md z-50 transition-all duration-300 flex flex-col">
-        <div id="searchResults" class="search-results-container w-full" style="display: none;">
-            </div>
-        
-        <div id="searchDivider" class="w-full h-[1px] bg-white/10" style="display: none;"></div>
-
-        <div class="flex items-center w-full p-1">
-            <div class="pl-4 pr-2 text-gray-400">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </div>
-            <input type="text" id="searchInput" placeholder="Search for games…" autocomplete="off" class="w-full py-3 pr-4 bg-transparent text-white placeholder-gray-500 focus:outline-none focus:ring-0 text-base" />
-        </div>
-    </div>
-    
-    <div id="zoneViewer" aria-modal="true" role="dialog">
-        <div class="zone-header">
-             <div class="zone-title">
-                <h2 id="zoneNameEl">Game Title</h2>
-             </div>
-             <div class="zone-controls">
-                <button id="fullscreenBtnZone" title="Fullscreen"><i class="fas fa-expand"></i></button>
-                <a id="downloadBtnZone" title="Download" class="hidden" href="#"><i class="fas fa-download"></i></a>
-                <button id="closeBtnZone" title="Close"><i class="fas fa-times"></i></button>
-             </div>
-        </div>
-        <iframe id="zoneFrame" title="Game Content" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"></iframe>
-    </div>
-
-    <div id="creditsModal">
-        <button id="closeCreditsFixed"><i class="fas fa-times text-2xl"></i></button>
-        <div id="creditsScrollContainer" class="credits-scroll-container">
-            </div>
-        <div class="credits-nav-bar">
-            <button id="creditsPrevBtn" class="credits-nav-btn"><i class="fas fa-chevron-up"></i></button>
-            <button id="creditsNextBtn" class="credits-nav-btn"><i class="fas fa-chevron-down"></i></button>
-        </div>
-    </div>
-
-    <div id="instruction-overlay" class="fixed inset-0 bg-black/80 z-[8000] transition-opacity duration-300 opacity-0 flex items-center justify-center p-4" style="display: none;">
-        <div class="bg-card-dark text-white rounded-3xl border border-gray-700 shadow-2xl backdrop-blur-md w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div class="p-6 sm:p-8 overflow-y-auto custom-scrollbar">
-                <h3 class="text-2xl font-bold mb-4 text-center">Welcome to 4SP Games</h3>
-                <p class="text-sm text-gray-400 mb-6 text-center">Please read the following information before playing.</p>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-scroll-content">
                 
-                <ul class="space-y-4 text-gray-300 text-sm sm:text-base leading-relaxed">
-                    <li class="flex items-start">
-                        <i class="fas fa-compass mt-1 mr-3 text-accent-indigo"></i>
-                        <span><strong>Navigation:</strong> Use the arrows next to the category title (currently "<strong>StrongdogXP</strong>") to switch between different game collections like <strong>GN-Math</strong> and <strong>Others</strong>.</span>
-                    </li>
-                    <li class="flex items-start">
-                        <i class="fas fa-file-signature mt-1 mr-3 text-accent-indigo"></i>
-                        <span><strong>Rebranding:</strong> "4SP Game Hub" is now shortened to "<strong>4SP Games</strong>".</span>
-                    </li>
-                    <li class="flex items-start">
-                        <i class="fas fa-bug mt-1 mr-3 text-strongdog-orange"></i>
-                        <span><strong>Stability Disclaimer:</strong> Some games may be unstable, glitchy, or fail to load. This is often due to browser restrictions or the age of the game files.</span>
-                    </li>
-                    <li class="flex items-start">
-                        <i class="fas fa-user-gear mt-1 mr-3 text-gn-math"></i>
-                        <span><strong>Management:</strong> I do not personally manage or host the files for these game collections. I cannot directly fix broken game files or save data issues.</span>
-                    </li>
-                    <li class="flex items-start">
-                        <i class="fas fa-server mt-1 mr-3 text-gn-math"></i>
-                        <span><strong>GN-Math & CDN:</strong> The <strong>GN-Math</strong> category is particularly hard to modify because it uses a <em>CDN (Content Delivery Network)</em>. This means the game files are hosted on remote servers around the world to load faster, rather than being stored here. I cannot edit those files.</span>
-                    </li>
-                </ul>
+                <div id="school-indicator-sidebar" class="mb-4 hidden">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-1">Your School</p>
+                    <p id="sidebar-school-name" class="text-sm font-bold truncate" style="color: var(--accent-color)"></p>
+                </div>
+
+                <div class="mb-6 pb-4 border-b border-[var(--border-main)]">
+                    <h2 class="text-lg mb-2">Find Users</h2>
+                    <div class="relative">
+                        <input type="text" id="user-search-input" placeholder="Search by username..." class="w-full p-3 pl-10 bg-white/5 border border-white/10 rounded-[14px] outline-none focus:border-[var(--accent-color)] focus:bg-white/10 text-[var(--text-main)] transition-all">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 opacity-30"></i>
+                    </div>
+                    <div id="search-results" class="mt-2 space-y-1"></div>
+                </div>
+
+                <!-- My Posts Section (With Images) -->
+                <div id="daily-posts-section">
+                    <h2 class="text-lg mb-2">My Posts</h2>
+                    <p class="text-xs opacity-50 mb-3">5 slots / day</p>
+                    <div id="daily-posts-container" class="space-y-2">
+                        <!-- Post slots will be rendered here -->
+                    </div>
+                </div>
+
+                <div id="friends-section-wrapper" class="hidden">
+                    <h2 class="text-lg mb-2">Mutual Following</h2>
+                    <p class="text-[10px] opacity-40 mb-3">Users you follow and who follow you back.</p>
+                    <div id="friends-list-wrapper" class="compact-list-wrapper">
+                        <div id="friends-list-items" class="compact-list-items"></div>
+                    </div>
+                </div>
+
+                <div id="blocked-section" class="hidden">
+                    <h2 class="text-lg mb-2">Blocked</h2>
+                    <div id="blocked-list-wrapper" class="compact-list-wrapper">
+                        <div id="blocked-list-items" class="compact-list-items"></div>
+                    </div>
+                </div>
+
             </div>
+
+            <div class="sidebar-bottom-controls">
+                <button id="sidebar-nav-posts" class="sidebar-control-btn active" title="My Posts"><i class="fas fa-images"></i></button>
+                <button id="sidebar-nav-friends" class="sidebar-control-btn" title="Mutuals"><i class="fas fa-user-friends"></i></button>
+                <button id="sidebar-nav-blocked" class="sidebar-control-btn" title="Blocked Users"><i class="fas fa-user-shield"></i></button>
+            </div>
+        </aside>
+
+        <!-- Main View -->
+        <main class="main-view">
+            <div class="feed-content-inner">
+                <div class="flex justify-between items-center mb-10">
+                    <div>
+                        <h1 class="text-4xl font-bold mb-2">Dailyphoto</h1>
+                        <p id="feed-desc" class="opacity-60">Moments from your school.</p>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <div class="inline-flex bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl p-1">
+                            <button id="feed-toggle-school" class="px-4 py-2 rounded-xl text-sm transition-all active btn-primary-override">School</button>
+                            <button id="feed-toggle-district" class="px-4 py-2 rounded-xl text-sm transition-all">District</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="photo-feed" class="photo-grid"></div>
+            </div>
+        </main>
+    </div>
+
+    <div id="announcement-modal" class="modal-backdrop">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-md p-8 text-center">
+            <div class="w-16 h-16 bg-indigo-500/20 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-school text-2xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-4">Simplifying Dailyphoto</h3>
+            <p class="opacity-60 mb-8 text-sm leading-relaxed">To keep our community safe and focused, we're moving to a school-based system. You'll now see moments from your school and district instead of a global public feed.</p>
+            <button id="announcement-continue-btn" class="btn-toolbar-style btn-primary-override w-full py-3">Find My School</button>
+        </div>
+    </div>
+
+    <div id="school-selection-modal" class="modal-backdrop">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-lg p-8">
+            <h3 class="text-2xl font-bold mb-2">Select Your School</h3>
+            <p class="text-xs opacity-50 mb-6 font-medium uppercase tracking-widest">Help us localize your feed</p>
             
-            <div class="p-6 border-t border-gray-800 bg-black/20 rounded-b-3xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                <span class="text-xs text-gray-500">Type "I understand" to continue.</span>
-                <input type="text" id="instruction-input" placeholder="Type 'I understand'" class="w-full sm:w-auto px-6 py-3 border border-transparent text-base font-normal rounded-xl text-white bg-purple-500/10 ring-1 ring-purple-500/50 focus:ring-purple-500/80 focus:bg-purple-500/20 focus:outline-none placeholder-gray-400 transition-all duration-200">
+            <div id="state-step">
+                <label class="text-xs font-bold opacity-40 uppercase mb-2 block">1. Search Your State</label>
+                <div class="relative mb-4">
+                    <input type="text" id="state-search-input" placeholder="Search by name or abbreviation (e.g. Ohio or OH)..." class="w-full p-4 pl-12 bg-black/40 border border-[var(--border-main)] rounded-2xl outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] transition-all">
+                    <i class="fas fa-map-marker-alt absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-lg"></i>
+                </div>
+                <div class="scroll-container-wrapper">
+                    <div id="state-fade-top" class="scroll-fade-top"></div>
+                    <div id="state-results" class="space-y-2 max-h-48 overflow-y-auto mb-6 custom-scroll"></div>
+                    <div id="state-fade-bottom" class="scroll-fade-bottom"></div>
+                </div>
+            </div>
+
+            <div id="school-step" class="hidden">
+                <label class="text-xs font-bold opacity-40 uppercase mb-2 block">2. Find Your School</label>
+                <div class="relative mb-4">
+                    <input type="text" id="school-search-input" placeholder="Search by school, district, or county..." class="w-full p-4 pl-12 bg-black/40 border border-[var(--border-main)] rounded-2xl outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] transition-all">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-lg"></i>
+                </div>
+                <div class="scroll-container-wrapper">
+                    <div id="school-fade-top" class="scroll-fade-top"></div>
+                    <div id="school-results" class="space-y-2 max-h-60 overflow-y-auto mb-6 custom-scroll"></div>
+                    <div id="school-fade-bottom" class="scroll-fade-bottom"></div>
+                </div>
+                <button id="back-to-states" class="btn-toolbar-style w-full py-3 mt-4 text-xs font-bold flex items-center justify-center gap-2">
+                    <i class="fas fa-arrow-left"></i> Change State
+                </button>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-[var(--border-main)] flex gap-3">
+                <button id="skip-school-btn" class="btn-toolbar-style w-full py-3 opacity-60 hover:opacity-100 transition-all font-bold">Skip (Not in US)</button>
             </div>
         </div>
     </div>
 
-    <script>
-        // --- Configuration & Globals ---
-        
-        const GN_ZONES_URL = "https://cdn.jsdelivr.net/gh/gn-math/assets@main/zones.json";
-        const GN_COVER_URL_BASE = "https://cdn.jsdelivr.net/gh/gn-math/covers@main";
-        
-        // UPDATED: Use cdn.jsdelivr.net for GN-Math and handle content injection
-        const GN_HTML_URL_BASE = "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main";
-        
-        const DV_SERVICE_LFS_ROOT = "https://dv-service-lfs.4simpleproblems.workers.dev/";
-        const STRONGDOG_ROOT = "https://strongdog.com/";
-        const GAMES_BASE_URL = `${DV_SERVICE_LFS_ROOT}GAMES/`; // Games served from the DV service
-        const CARDS_DATA_URL = "../GAMES/cards-data.js";
-        const WORKER_ROOT = DV_SERVICE_LFS_ROOT; // Use DV_SERVICE_LFS_ROOT as the base for worker-rooted paths
+    <!-- Modals -->
+    <div id="photo-modal" class="modal-backdrop">
+        <div id="modal-content-container" class="modal-content"></div>
+    </div>
 
-        const FAVORITES_KEY = 'gameHubFavorites_v3';
+    <div id="upload-menu-modal" class="modal-backdrop">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8">
+            <h3 class="text-2xl font-bold mb-6">Post Photo</h3>
+            <input type="file" id="upload-file-input" class="hidden" accept="image/*">
+            <label for="upload-file-input" class="bg-black/40 border-2 border-dashed border-[var(--border-main)] rounded-[22px] p-12 text-center cursor-pointer hover:border-[var(--accent-color)] transition-all block mb-6">
+                <i class="fas fa-cloud-upload-alt text-5xl mb-4 opacity-20"></i>
+                <span class="block font-medium opacity-60">Select Image</span>
+            </label>
+            <button id="upload-menu-close-btn" class="btn-toolbar-style w-full py-3">Cancel</button>
+        </div>
+    </div>
 
-        let allGames = [];
-        let searchableGames = [];
-        let categories = [];
-        let currentCategoryIndex = 0;
-        const categoryColors = {
-            'StrongdogXP': 'text-strongdog-orange',
-            'GN-Math': 'text-gn-math',
-            'Others': 'text-other-grey', 
-        };
-        
-        const CREDITS_DATA = {
-            'StrongdogXP': { 
-                desc: "Main Creator: Josh P. The powerhouse behind the core game collection. Providing a vast library of classic and modern web games, StrongdogXP ensures stability and quality for the 4SP Games Hub.",
-                links: [
-                    { type: 'github', url: "https://github.com/jman1593/", label: "GitHub" },
-                    { type: 'discord', url: "https://discord.com/invite/strongdog", label: "Discord" }
-                ],
-                logo: "images/credits/strongdog_logo.png",
-                color: "#FF8C00"
+    <!-- Custom UI Modals -->
+    <div id="custom-alert-modal" class="modal-backdrop">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8 text-center">
+            <h3 id="custom-alert-title" class="text-xl font-bold mb-4">Alert</h3>
+            <p id="custom-alert-message" class="opacity-60 mb-8 text-sm"></p>
+            <button id="custom-alert-btn" class="btn-toolbar-style btn-primary-override w-full py-3">OK</button>
+        </div>
+    </div>
+
+    <div id="custom-confirm-modal" class="modal-backdrop">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8 text-center">
+            <h3 id="custom-confirm-title" class="text-xl font-bold mb-4">Confirm</h3>
+            <p id="custom-confirm-message" class="opacity-60 mb-8 text-sm"></p>
+            <div class="flex gap-3">
+                <button id="custom-confirm-cancel" class="btn-toolbar-style flex-1 py-3">Cancel</button>
+                <button id="custom-confirm-ok" class="btn-toolbar-style btn-primary-override flex-1 py-3">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-prompt-modal" class="modal-backdrop">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8">
+            <h3 id="custom-prompt-title" class="text-xl font-bold mb-4">Input</h3>
+            <div id="custom-prompt-preview-container" class="hidden mb-6 aspect-video rounded-xl overflow-hidden bg-black/40 border border-[var(--border-main)]">
+                <img id="custom-prompt-preview-img" src="" class="w-full h-full object-contain">
+            </div>
+            <p id="custom-prompt-message" class="opacity-60 mb-4 text-sm"></p>
+            <input type="text" id="custom-prompt-input" class="w-full p-3 bg-black/20 border border-[var(--border-main)] rounded-[14px] outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] mb-6">
+            <div class="flex gap-3">
+                <button id="custom-prompt-cancel" class="btn-toolbar-style flex-1 py-3">Cancel</button>
+                <button id="custom-prompt-ok" class="btn-toolbar-style btn-primary-override flex-1 py-3">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc, setDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, arrayRemove, writeBatch, limit, addDoc, deleteDoc, serverTimestamp, orderBy, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        import { firebaseConfig } from "/firebase-config.js";
+        import { getAvatarHTML } from "/utils.js";
+
+        if (!getApps().length) initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore();
+        const storage = getStorage();
+
+        let currentUser = null;
+        let userData = {};
+        let followingUids = [];
+        let followerUids = [];
+        let mutualUids = [];
+        let blockedUsers = [];
+        let feedMode = 'school';
+        let isAdmin = false;
+        let unsubPosts = () => {};
+        let unsubModal = () => {};
+        let unsubUser = () => {};
+
+        // School selection state
+        let allStates = [];
+        let currentStateSchools = [];
+        let selectedState = null;
+
+        const DAILY_COLLECTION = collection(db, 'daily_photos');
+        const USERS_COLLECTION = 'users';
+
+        // --- Custom UI Helpers ---
+        const CustomUI = {
+            alert: (message, title = "Notice") => {
+                return new Promise(resolve => {
+                    const modal = document.getElementById('custom-alert-modal');
+                    document.getElementById('custom-alert-title').textContent = title;
+                    document.getElementById('custom-alert-message').textContent = message;
+                    modal.classList.add('open');
+                    document.getElementById('custom-alert-btn').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve();
+                    };
+                });
             },
-            'GN-Math': { 
-                desc: "Main Creator: Genizy. A dedicated community focused on unblocked gaming solutions. The GN-Math infrastructure powers our external game loading system, bypassing many common network restrictions.",
-                links: [
-                    { type: 'github', url: "https://github.com/gn-math/", label: "Organization" },
-                    { type: 'github', url: "https://github.com/genizy", label: "Genizy" },
-                    { type: 'discord', url: "https://discord.com/invite/gn-math", label: "Discord" }
-                ],
-                logo: "images/credits/gn_logo.png",
-                color: "#FD2E59"
+            confirm: (message, title = "Confirm") => {
+                return new Promise(resolve => {
+                    const modal = document.getElementById('custom-confirm-modal');
+                    document.getElementById('custom-confirm-title').textContent = title;
+                    document.getElementById('custom-confirm-message').textContent = message;
+                    modal.classList.add('open');
+                    document.getElementById('custom-confirm-ok').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve(true);
+                    };
+                    document.getElementById('custom-confirm-cancel').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve(false);
+                    };
+                });
             },
-            'Others': { 
-                desc: "A tribute to the open-source community. This section features projects like Eaglercraft, JS-DOS, and Doom, developed by talented individuals who believe in accessible software for everyone.",
-                links: [],
-                logo: "images/credits/opensource.png",
-                color: "#d1d5db"
+            prompt: (message, defaultValue = "", title = "Input", previewSrc = null) => {
+                return new Promise(resolve => {
+                    const modal = document.getElementById('custom-prompt-modal');
+                    const input = document.getElementById('custom-prompt-input');
+                    const previewContainer = document.getElementById('custom-prompt-preview-container');
+                    const previewImg = document.getElementById('custom-prompt-preview-img');
+                    
+                    document.getElementById('custom-prompt-title').textContent = title;
+                    document.getElementById('custom-prompt-message').textContent = message;
+                    input.value = defaultValue;
+                    
+                    if (previewSrc) {
+                        previewImg.src = previewSrc;
+                        previewContainer.classList.remove('hidden');
+                    } else {
+                        previewContainer.classList.add('hidden');
+                    }
+
+                    modal.classList.add('open');
+                    setTimeout(() => input.focus(), 100);
+                    document.getElementById('custom-prompt-ok').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve(input.value);
+                    };
+                    document.getElementById('custom-prompt-cancel').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve(null);
+                    };
+                });
             }
         };
 
-        const favoritesHeader = document.getElementById("favoritesHeader");
-        const favoritesGameList = document.getElementById("favoritesGameList");
-        const searchInput = document.getElementById("searchInput");
-        const searchResults = document.getElementById("searchResults");
-        const searchDivider = document.getElementById("searchDivider");
-        const categorySlider = document.getElementById('category-slider');
-        const prevCategoryBtn = document.getElementById('prev-category');
-        const nextCategoryBtn = document.getElementById('next-category');
-        const gamesGridContainer = document.getElementById('games-grid-container');
-        
-        const creditsModal = document.getElementById('creditsModal');
-        const creditsScrollContainer = document.getElementById('creditsScrollContainer');
-        const creditsBtn = document.getElementById('creditsBtn');
-        const closeCreditsFixed = document.getElementById('closeCreditsFixed');
-        const creditsPrevBtn = document.getElementById('creditsPrevBtn');
-        const creditsNextBtn = document.getElementById('creditsNextBtn');
-
-        const INSTRUCTION_KEY = '4sp-games-instruction-extended-seen';
-        const instructionOverlay = document.getElementById('instruction-overlay');
-        const instructionInput = document.getElementById('instruction-input');
-
-        // --- Intersection Observer for Image Virtualization ---
-        const imageObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                const img = entry.target;
-                if (entry.isIntersecting) {
-                    if (img.dataset.src) {
-                        img.src = img.dataset.src;
-                    }
-                } else {
-                    if(img.src && !img.src.includes('placehold.co') && !img.dataset.src) {
-                         img.dataset.src = img.src;
-                    }
-                    if(img.dataset.src) {
-                        img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-                    }
-                }
-            });
-        }, {
-            rootMargin: "300px 0px", 
-            threshold: 0.01
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                initApp();
+            } else {
+                await signInAnonymously(auth);
+            }
         });
 
-        function observeImages(container) {
-            const images = container.querySelectorAll('img[data-src]');
-            images.forEach(img => imageObserver.observe(img));
-        }
-
-        // --- URL Management ---
-        function updateURL(category, gameId = null) {
-            let hash = `#${encodeURIComponent(category.replace(/\s+/g, '-'))}`;
-            if (gameId) hash += `?id=${gameId}`;
+        async function initApp() {
+            // Check admin status
             try {
-                // Safely attempt to replace state if the environment allows it
-                if (window.history && typeof window.history.replaceState === 'function') {
-                    history.replaceState(null, null, hash);
-                }
-            } catch(e) {
-                // Ignoring errors in restricted environments (like file:// or sandbox)
-            }
+                const adminSnap = await getDoc(doc(db, 'admins', currentUser.uid));
+                isAdmin = adminSnap.exists() || currentUser.email === '4simpleproblems@gmail.com';
+            } catch (e) { console.warn("Admin check failed", e); }
+
+            setupSidebarNav();
+            setupFeedToggles();
+            listenToUser();
+            setupUserSearch();
+            setupSchoolSelection();
         }
 
-        function parseURL() {
-            const hash = window.location.hash.substring(1);
-            if (!hash) return { category: null, gameId: null };
-            const parts = hash.split('?');
-            let rawCategory = parts[0];
-            let category = decodeURIComponent(rawCategory).replace(/-/g, ' '); 
-            let gameId = null;
-            if (parts[1]) {
-                const params = new URLSearchParams(parts[1]);
-                gameId = params.get('id');
-            }
-            return { category: rawCategory, gameId };
-        }
+       let lastSchoolId = null
+let lastDistrictId = null
 
-        function setupInstructionOverlay() {
-            if (localStorage.getItem(INSTRUCTION_KEY) !== 'seen') {
-                instructionOverlay.style.display = 'flex';
-                document.body.style.overflow = 'hidden'; 
-                setTimeout(() => {
-                    instructionOverlay.classList.remove('opacity-0');
-                    instructionOverlay.classList.add('opacity-100');
-                }, 10);
-                instructionInput.addEventListener('input', (e) => {
-                    if (e.target.value.trim().toLowerCase() === 'i understand') {
-                        instructionOverlay.classList.remove('opacity-100');
-                        instructionOverlay.classList.add('opacity-0');
-                        setTimeout(() => {
-                            instructionOverlay.style.display = 'none';
-                            document.body.style.overflow = '';
-                            localStorage.setItem(INSTRUCTION_KEY, 'seen');
-                        }, 300);
-                    }
-                });
-            }
-        }
-
-        // --- Favorites Management (Live Updates) ---
-        const getFavorites = () => JSON.parse(localStorage.getItem(FAVORITES_KEY)) || [];
-        const saveFavorites = (favs) => localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+function listenToUser() {
+    unsubUser()
+    unsubUser = onSnapshot(doc(db, USERS_COLLECTION, currentUser.uid), async snap => {
+        userData = snap.data() || {}
+        blockedUsers = userData.blocked_users || []
         
-        function createParticles(x, y, color) {
-            for (let i = 0; i < 8; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.left = x + 'px';
-                p.style.top = y + 'px';
-                p.style.width = '6px';
-                p.style.height = '6px';
-                p.style.backgroundColor = color || '#facc15';
-                
-                const dx = (Math.random() - 0.5) * 100;
-                const dy = (Math.random() - 0.5) * 100;
-                p.style.setProperty('--dx', dx + 'px');
-                p.style.setProperty('--dy', dy + 'px');
-                
-                document.body.appendChild(p);
-                setTimeout(() => p.remove(), 600);
-            }
+        const schoolIndicator = document.getElementById('school-indicator-sidebar')
+        const sidebarSchoolName = document.getElementById('sidebar-school-name')
+        if (userData.schoolName) {
+            sidebarSchoolName.textContent = userData.schoolName
+            schoolIndicator.classList.remove('hidden')
+        } else {
+            schoolIndicator.classList.add('hidden')
         }
 
-        function toggleFavorite(gameId) {
-            const strGameId = String(gameId);
-            let favorites = getFavorites().map(String);
-            const isRemoving = favorites.includes(strGameId);
+        const urlParams = new URLSearchParams(window.location.search)
+        const forceChange = urlParams.get('changeSchool') === 'true'
 
-            if (isRemoving) {
-                favorites = favorites.filter(id => id !== strGameId);
-                saveFavorites(favorites);
-                updateAllFavoriteButtons();
-                const favCard = favoritesGameList.querySelector(`[data-game-id='${strGameId}']`);
-                if (favCard) {
-                    const rect = favCard.getBoundingClientRect();
-                    createParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, '#facc15');
-                    favCard.classList.add('animate-pop-out');
-                    setTimeout(() => {
-                        favCard.remove();
-                        if (favoritesGameList.children.length === 0) {
-                            favoritesHeader.style.display = 'none';
-                            favoritesGameList.style.display = 'none';
-                        }
-                    }, 400); 
-                }
-            } else {
-                favorites.push(strGameId);
-                saveFavorites(favorites);
-                updateAllFavoriteButtons();
-                let gameData = allGames.find(g => String(g.id) === strGameId);
-                if (!gameData) {
-                    allGames.some(g => {
-                        if (g.versions) {
-                            const ver = g.versions.find(v => String(v.favoriteId) === strGameId);
-                            if (ver) {
-                                gameData = { ...g, id: ver.favoriteId, name: `${g.name} - ${ver.name}`, url: ver.url, versions: undefined };
-                                return true;
-                            }
-                        }
-                        return false;
-                    });
-                }
-                if (gameData) {
-                    favoritesHeader.style.display = "block";
-                    favoritesGameList.style.display = "grid";
-                    favoritesGameList.appendChild(createGameCard(gameData, true));
-                }
-            }
+        if ((!userData.schoolId && !userData.schoolSkipped) || forceChange) {
+            document.getElementById('announcement-modal').classList.add('open')
+            if (forceChange) window.history.replaceState({}, '', window.location.pathname)
         }
 
-        function updateAllFavoriteButtons() {
-            const favorites = getFavorites().map(String);
-            document.querySelectorAll('.btn-card-action.fav-action').forEach(btn => {
-                const card = btn.closest('.zone-item, .other-zone-item, .search-item');
-                if (!card) return;
-                const cardGameId = String(card.dataset.gameId);
-                if (btn.classList.contains('version-favorite-btn')) {
-                    const isAnyVersionFavorited = favorites.some(favId => favId.startsWith(cardGameId + '_'));
-                    btn.classList.toggle('favorited', isAnyVersionFavorited);
-                } else {
-                    const isFavorited = favorites.includes(cardGameId);
-                    btn.classList.toggle('favorited', isFavorited);
-                    btn.title = isFavorited ? 'Remove from Favorites' : 'Add to Favorites';
-                }
-            });
-        }
-
-        // --- URL Helpers (Strongdog) ---
-        // Modified to support injected URLs using WORKER_ROOT + directory logic
-        function getAdjustedUrls(game) {
-            let root = game.source === 'dv-service-lfs' ? DV_SERVICE_LFS_ROOT : STRONGDOG_ROOT;
-
-            if (game.page && game.page > 1) {
-                // Numbered pages (strongdog2, 3...) are nested under GAMES/strongdogX/
-                return { adjustedImgSrc: proxyUrl(`${root}GAMES/strongdog${game.page}/img/${game.imgSrc}`) };
-            }
-            // Page 1 / default games are inside the GAMES directory
-            return { adjustedImgSrc: proxyUrl(`${root}GAMES/img/${game.imgSrc}`) }; 
-        }
+        const followingSnap = await getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'following'))
+        followingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init')
         
-        function sd_getBaseURLForPage(game) {
-            let root = game.source === 'dv-service-lfs' ? DV_SERVICE_LFS_ROOT : STRONGDOG_ROOT;
-
-            if (game.page > 1) return `${root}GAMES/strongdog${game.page}/`;
-            return `${root}GAMES/`; 
-        }
+        const followersSnap = await getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'followers'))
+        followerUids = followersSnap.docs.map(d => d.id).filter(id => id !== '.init')
         
-        async function sd_getEmbedPath(adjustedHref, originalHref, page) {
-            const originalBase = adjustedHref; // non-proxied base for relative resolution
-            let cleanHref = adjustedHref.replace(/index\.html$/, "").replace(/base\.html$/, "").replace(/\.html$/, "");
-            if (!cleanHref.endsWith("/")) cleanHref += "/";
-            const pathsToTry = [cleanHref + "game/index.html", cleanHref + "game/base.html", cleanHref + "gamereal/index.html", cleanHref + "gamereal/base.html", cleanHref + "index.html", cleanHref + "base.html", ];
+        mutualUids = followingUids.filter(id => followerUids.includes(id))
+
+        renderMyPosts(userData.dailySlotsUsed || [])
+        
+        if (lastSchoolId !== userData.schoolId || lastDistrictId !== userData.districtId) {
+            lastSchoolId = userData.schoolId
+            lastDistrictId = userData.districtId
+            setupFeed()
+        }
+
+        if (!document.getElementById('friends-section-wrapper').classList.contains('hidden')) renderMutualsList()
+        if (!document.getElementById('blocked-section').classList.contains('hidden')) renderBlockedList()
+    })
+}
+        async function setupSchoolSelection() {
             try {
-                const response = await fetch(proxyUrl(adjustedHref));
-                if (response.ok) {
-                    const text = await response.text();
-                    const match = text.match(/embedGame\((['"])(.*?)\1,\s*(['"])(.*?)\3\)/);
-                    if (match) {
-                        const resolvedPath = new URL(match[2], originalBase).href;
-                        if (await sd_fileExists(resolvedPath)) return proxyUrl(resolvedPath);
-                    }
-                }
-            } catch (error) {}
-            for (const path of pathsToTry) {
-                if (await sd_fileExists(path)) return proxyUrl(path);
-            }
-            return proxyUrl(adjustedHref);
-        }
-        async function sd_fileExists(url) {
-            try { const response = await fetch(proxyUrl(url), { method: "HEAD" }); return response.ok; } catch { return false; }
-        }
+                const res = await fetch('/schools/states.json');
+                allStates = await res.json();
+            } catch (err) { console.error("Failed to load states:", err); }
 
-        function proxyUrl(url) {
-            if (!url) return url;
-            const origin = window.location.origin;
-            if (url.startsWith(origin)) return url;
-            
-            // PERFORMANCE: Direct loading for safe CORS domains
-            // Workers and jsDelivr support CORS and are usually faster than proxying
-            if ((url.includes('workers.dev') && !url.includes('gvc.html')) || url.includes('cdn.jsdelivr.net')) {
-                return url;
-            }
+            document.getElementById('announcement-continue-btn').onclick = () => {
+                document.getElementById('announcement-modal').classList.remove('open');
+                document.getElementById('school-selection-modal').classList.add('open');
+            };
 
-            // Ensure UV is ready for encoding
-            if (window.Ultraviolet && window.__uv$config) {
+            const stateInput = document.getElementById('state-search-input');
+            const stateResults = document.getElementById('state-results');
+            const schoolInput = document.getElementById('school-search-input');
+            const schoolResults = document.getElementById('school-results');
+
+            stateInput.oninput = () => {
+                const term = stateInput.value.trim().toLowerCase();
+                if (!term) { stateResults.innerHTML = ''; return; }
+                const filtered = allStates.filter(s => s.name.toLowerCase().includes(term) || s.abbr.toLowerCase().includes(term));
+                stateResults.innerHTML = filtered.map(s => `
+                    <div class="list-item-themed flex justify-between items-center group" onclick="window.selectState('${s.abbr}')">
+                        <span class="font-bold">${s.name}</span>
+                        <span class="text-xs opacity-40 group-hover:opacity-100 transition-opacity">${s.abbr}</span>
+                    </div>
+                `).join('');
+                updateScrollFades(stateResults, 'state-fade-top', 'state-fade-bottom');
+            };
+
+            stateResults.onscroll = () => updateScrollFades(stateResults, 'state-fade-top', 'state-fade-bottom');
+            schoolResults.onscroll = () => updateScrollFades(schoolResults, 'school-fade-top', 'school-fade-bottom');
+
+            window.selectState = async (abbr) => {
+                selectedState = allStates.find(s => s.abbr === abbr);
+                stateResults.innerHTML = '<div class="p-8 text-center"><i class="fas fa-spinner fa-spin text-2xl opacity-20"></i></div>';
                 try {
-                    return origin + window.__uv$config.prefix + window.__uv$config.encodeUrl(url);
-                } catch(e) {
-                    console.error("Encoding failed", e);
+                    const res = await fetch(`/schools/${abbr.trim()}.json`);
+                    currentStateSchools = await res.json();
+                    // Sort alphabetically
+                    currentStateSchools.sort((a, b) => a.name.localeCompare(b.name));
+                    
+                    document.getElementById('state-step').classList.add('hidden');
+                    document.getElementById('school-step').classList.remove('hidden');
+                    renderSchools('');
+                } catch (err) { 
+                    console.error("Failed to load schools:", err); 
+                    alert("Failed to load schools for this state.");
                 }
-            }
-            
-            // Fallback during early boot
-            if (window.Ultraviolet && Ultraviolet.codec && Ultraviolet.codec.xor) {
-                return origin + "/logged-in/uv/service/" + Ultraviolet.codec.xor.encode(url);
-            }
-            
-            return url;
-        }
+            };
 
-        function resolveGameUrl(relativePath) {
-            if (!relativePath) return "";
-            
-            // If it's already an absolute URL return it
-            if (relativePath.startsWith('http') || relativePath.startsWith('//')) {
-                return proxyUrl(relativePath);
-            }
+            schoolInput.oninput = () => renderSchools(schoolInput.value.trim());
 
-            // If it's a root-relative path, prepend the origin to make it a full absolute URL
-            if (relativePath.startsWith('/')) {
-                // If it's something like /images/eaglercraft.png, use WORKER_ROOT as base.
-                // Otherwise, use window.location.origin as base for other root-relative paths.
-                if (relativePath.startsWith('/images/')) {
-                    return proxyUrl(`${GAMES_BASE_URL}${relativePath.substring(1)}`); // Remove leading '/' and use WORKER_ROOT
-                }
-                return proxyUrl(window.location.origin + relativePath);
-            }
+            function renderSchools(term) {
+                const search = term.toLowerCase();
+                // Filter by name or district - EXCLUDING level (elementary/middle/etc)
+                const filtered = currentStateSchools.filter(s => {
+                    if (!search) return true;
+                    return s.name.toLowerCase().includes(search) || 
+                           (s.district && s.district.toLowerCase().includes(search)) ||
+                           (s.county && s.county.toLowerCase().includes(search));
+                }).slice(0, 100);
 
-            if (relativePath.startsWith('../')) {
-                const pathPart = relativePath.substring(3); // Remove '../'
-                return proxyUrl(`${WORKER_ROOT}${pathPart}`);
-            }
-            
-            // Handle paths starting with "images/" which are relative to the project root.
-            // This is a common pattern for othersGames in our setup.
-            if (relativePath.startsWith('images/')) {
-                return proxyUrl(`${GAMES_BASE_URL}${relativePath}`);
-            }
-            
-            // If it doesn't start with ../, assume it's relative to GAMES base
-            return proxyUrl(`${GAMES_BASE_URL}${relativePath.replace(/^\.\//, '')}`);
-        }
-
-        // --- Game Data (Others) ---
-        // We keep the original relative paths here so the resolver logic above can handle them dynamically
-        const othersGames = [
-            { id: "other-eaglercraft", name: "Eaglercraft", imgSrc: "images/eaglercraft.png", description: "The classic survival and building game with authentic block-based physics and multiplayer support, accessible directly in the browser.", category: "Others", versions: [ { name: "1.12.2", url: "../EAGLERCRAFT/eaglercraft-1.12.2.html", favoriteId: "other-eaglercraft_1.12.2" }, { name: "1.12.2 WASM", url: "../EAGLERCRAFT/eaglercraft-1.12.2-wasm.html", favoriteId: "other-eaglercraft_wasm", wasm: true } ] },
-            { id: "other-balatro", name: "Balatro", imgSrc: "../GAMES/others/balatro.png", description: "Balatro is a poker-themed deck-building roguelike video game.", category: "Others", url: "https://drive.google.com/uc?export=download&id=1EiwjvWTq3M9_Q1CPyd1g1zNZITzRa9mA", isDownload: true },
-            { id: "other-gta", name: "Grand Theft Auto", imgSrc: "images/gta.png", description: "The original top-down classic. Cause chaos, complete missions, or just go for a drive in three iconic cities.", category: "Others", versions: [ { name: "Carnage3D", url: "../CARNAGE3D/web/carnage3D.html", favoriteId: "other-gta_carnage3d" }, { name: "Grand Theft Auto (JS-DOS)", url: "../GTA-JSDOS/index.html", favoriteId: "other-gta_jsdos" } ] },
-            { id: "other-simcity", name: "Sim City", imgSrc: "images/simcity2000.png", description: "The original city-building classics. Design, build, and manage the city of your dreams in either the original Sim City or the detailed Sim City 2000.", category: "Others", versions: [ { name: "Sim City", url: "../SIM-CITY/index.html", favoriteId: "other-simcity_1" }, { name: "Sim City 2000", url: "../SIM-CITY-2/index.html", favoriteId: "other-simcity_2000" } ] },
-            { id: "other-doom", name: "DOOM", imgSrc: "images/doom.png", description: "The legendary first-person shooter that pioneered the genre, focusing on blasting through hordes of demons in a timeless, adrenaline-fueled classic.", category: "Others", url: "../DOOM/index.html" },
-            { id: "other-sm64", name: "Super Mario 64", imgSrc: "images/sm64.png", description: "The iconic 3D platformer that revolutionized gaming. Run, jump, and triple-jump your way through vast worlds to collect stars and save the princess.", category: "Others", url: "../GAMES/sm64/index.html" },
-            { id: "other-be-clicker", name: "Big E Clicker", imgSrc: "../GAMES/others/be_clicker.png", description: "The ultimate clicker experience featuring Big E. Click your way to glory!", category: "Others", url: "https://drive.google.com/uc?export=download&id=1n7u_jT99S7QJzP4E_r6TzVz6W-W0fLwZ", isDownload: true, privileged: true }
-        ];
-
-        // --- Card Creation ---
-
-        function createOthersGameCard(game) {
-            const favorites = getFavorites().map(String);
-            const isAnyFavorite = game.versions ? favorites.some(favId => game.versions.some(v => String(v.favoriteId) === favId)) : favorites.includes(String(game.id));
-            const card = document.createElement("div");
-            card.className = 'other-zone-item bg-card-dark rounded-2xl border border-brand-border col-span-full shadow-lg'; 
-            card.dataset.gameId = game.id;
-
-            // Resolve Image URL
-            const resolvedImgSrc = game.id === 'other-balatro' ? game.imgSrc : resolveGameUrl(game.imgSrc);
-
-            let gameButtonsHtml = '';
-            let favoriteButtonHtml = '';
-            
-            if (game.versions && game.versions.length > 0) {
-                const availableVersions = game.versions; 
-                if (availableVersions.length === 1) {
-                    const vUrl = resolveGameUrl(availableVersions[0].url);
-                    gameButtonsHtml = `<button class="btn-card-action play-action" data-url="${vUrl}" data-version-name="${availableVersions[0].name}" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`;
-                } else {
-                    const dropdownLinks = availableVersions.map(v => {
-                        const vUrl = resolveGameUrl(v.url);
-                        return `<a href="#" class="eagler-dropdown-link" data-url="${vUrl}" data-version-name="${v.name}">${v.name}</a>`
-                    }).join('');
-                    gameButtonsHtml = `<div class="relative"><button class="btn-card-action version-btn" title="Select Version"><i class="fa-solid fa-chevron-up transition-colors"></i></button><div class="eagler-dropdown">${dropdownLinks}</div></div>`;
-                }
-                favoriteButtonHtml = `<div class="relative"><button class="btn-card-action fav-action version-favorite-btn ${isAnyFavorite ? 'favorited' : ''}" title="Favorite a version"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button><div class="eagler-dropdown">${game.versions.map(v => `<a href="#" class="eagler-dropdown-link favorite-link" data-favorite-id="${v.favoriteId}">${v.name}</a>`).join('')}</div></div>`;
-            } else {
-                if (game.isDownload) {
-                    gameButtonsHtml = `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download transition-colors"></i></a>`;
-                } else {
-                    const gUrl = resolveGameUrl(game.url);
-                    gameButtonsHtml = `<button class="btn-card-action play-action" data-url="${gUrl}" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`;
-                }
-                favoriteButtonHtml = `<button class="btn-card-action fav-action ${isAnyFavorite ? 'favorited' : ''}" title="${isAnyFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>`;
-            }
-
-            card.innerHTML = `
-                <div class="relative w-full h-full cursor-pointer group" style="min-height: 250px;">
-                    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${resolvedImgSrc}" alt="${game.name}" class="w-full h-full object-cover absolute inset-0 rounded-2xl">
-                    <div class="image-overlay absolute inset-0 transition-colors duration-200"></div>
-                    <div class="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between rounded-2xl">
-                        <div class="flex items-start justify-between w-full">
-                            <h3 class="text-4xl font-bold text-white truncate drop-shadow-lg group-hover:max-w-[calc(100%-1rem)] transition-all duration-700 ease-[cubic-bezier(0.45,0,0.55,1)]" title="${game.name}">${game.name}</h3>
-                            <div class="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-2xl p-1.5">
-                                ${gameButtonsHtml}
-                                ${favoriteButtonHtml}
-                            </div>
+                schoolResults.innerHTML = filtered.map(s => `
+                    <div class="list-item-themed" onclick="window.selectSchool('${s.name}', '${s.district}')">
+                        <div class="font-bold text-sm mb-1">${s.name}</div>
+                        <div class="flex gap-3 text-[10px] opacity-40 uppercase tracking-widest font-bold">
+                            <span>${s.district || 'Independent'}</span>
+                            <span class="text-indigo-500/60">•</span>
+                            <span>${s.level}</span>
                         </div>
-                        <p class="text-lg text-white font-medium drop-shadow-lg" style="max-width: 50%;">${game.description}</p>
                     </div>
-                </div>
-            `;
-            
-            if (!game.versions) { 
-                if (game.isDownload) {
-                     card.querySelector('.group').addEventListener('click', (e) => { e.preventDefault(); window.open(game.url, '_blank'); });
-                } else {
-                     card.querySelector('.group').addEventListener('click', () => {
-                          const gUrl = resolveGameUrl(game.url);
-                          openZone({...game, url: gUrl}); 
-                     }); 
+                `).join('');
+                
+                if (filtered.length === 0) {
+                    schoolResults.innerHTML = '<p class="text-center py-8 opacity-30 italic text-sm">No schools found matching your search.</p>';
                 }
-            }
-            card.querySelectorAll('.play-action, .download-action').forEach(btn => btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (btn.classList.contains('download-action')) {
-                    window.open(btn.href, '_blank');
-                } else {
-                    openZone({ ...game, name: btn.dataset.versionName ? `${game.name} - ${btn.dataset.versionName}` : game.name, url: btn.dataset.url });
-                }
-            }));
-            
-            const versionBtn = card.querySelector('.version-btn');
-            if (versionBtn) { versionBtn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.eagler-dropdown.show').forEach(d => d.classList.remove('show')); versionBtn.nextElementSibling.classList.toggle('show'); }); }
-            
-            card.querySelectorAll('.eagler-dropdown-link:not(.favorite-link)').forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openZone({ ...game, name: link.dataset.versionName ? `${game.name} - ${link.dataset.versionName}` : game.name, url: link.dataset.url }); link.closest('.eagler-dropdown').classList.remove('show'); }));
-
-            const favBtn = card.querySelector('.btn-card-action.fav-action');
-            if (favBtn.classList.contains('version-favorite-btn')) {
-                favBtn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.eagler-dropdown.show').forEach(d => d.classList.remove('show')); favBtn.nextElementSibling.classList.toggle('show'); });
-                card.querySelectorAll('.favorite-link').forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(link.dataset.favoriteId); link.closest('.eagler-dropdown').classList.remove('show'); }));
-            } else {
-                favBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(game.id); });
-            }
-            imageObserver.observe(card.querySelector('img'));
-            return card;
-        }
-
-        function createGameCard(game, forceSmallCard = false) {
-            if (game.category === 'Others' && !forceSmallCard) return createOthersGameCard(game);
-            const isStrongdog = game.category === 'StrongdogXP';
-            
-            // Resolve Image Src
-            let imgSrc = game.imgSrc;
-            if (game.id === 'other-balatro' && forceSmallCard) {
-                imgSrc = "../GAMES/others/balatro-3-2.png";
-            } else if (isStrongdog) {
-                 imgSrc = getAdjustedUrls(game).adjustedImgSrc;
-            } else if (game.category === 'Others') {
-                 imgSrc = resolveGameUrl(game.imgSrc);
+                updateScrollFades(schoolResults, 'school-fade-top', 'school-fade-bottom');
             }
 
-            const isFavorite = getFavorites().map(String).includes(String(game.id));
+            function updateScrollFades(el, topId, bottomId) {
+                const topFade = document.getElementById(topId);
+                const bottomFade = document.getElementById(bottomId);
+                if (!el || !topFade || !bottomFade) return;
 
-            const card = document.createElement("div");
-            card.className = 'zone-item bg-card-dark rounded-2xl border border-brand-border overflow-hidden';
-            card.dataset.gameId = game.id;
-            card.innerHTML = `
-                <div class="relative w-full cursor-pointer group">
-                    <div class="aspect-w-3 aspect-h-2"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover"></div>
-                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] group-hover:max-w-[calc(100%-1rem)] transition-all duration-700 ease-[cubic-bezier(0.45,0,0.55,1)] bg-black/60 backdrop-blur-md rounded-xl px-3 py-1.5 text-white truncate text-sm font-semibold shadow-lg" title="${game.name}">${game.name}</h3>
-                    <div class="absolute bottom-2 right-2 bg-black/50 backdrop-blur-sm rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg">
-                        ${game.isDownload ? `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download transition-colors"></i></a>` : `<button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`}
-                        <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>
-                    </div>
-                </div>
-            `;
-            
-            const handlePlay = async (e) => {
-                e.stopPropagation();
-                if (game.isDownload) {
-                    window.open(game.url, '_blank');
-                } else if (isStrongdog) {
-                    const baseURL = sd_getBaseURLForPage(game);
-                    let adjustedHref = baseURL.endsWith("/") ? baseURL + game.href.replace(/^\.\//, "") : baseURL + "/" + game.href.replace(/^\.\//, "");
-                    const embedPath = await sd_getEmbedPath(adjustedHref, game.href, game.page);
-                    openZone({ name: game.name, url: embedPath, category: game.category, id: game.id });
-                } else {
-                    let gUrl = game.url;
-                    if (game.category === 'Others') {
-                        gUrl = resolveGameUrl(gUrl);
-                    }
-                    openZone({ ...game, url: gUrl });
+                const isAtTop = el.scrollTop <= 5;
+                const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 5;
+                const hasScroll = el.scrollHeight > el.clientHeight;
+
+                topFade.classList.toggle('scroll-fade-active', hasScroll && !isAtTop);
+                bottomFade.classList.toggle('scroll-fade-active', hasScroll && !isAtBottom);
+            }
+
+            window.selectSchool = async (schoolName, districtName) => {
+                if (await CustomUI.confirm(`Confirm selection: ${schoolName}?`)) {
+                    const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+                    
+                    // Increment monthly changes
+                    const currentMonth = new Date().getMonth() + 1;
+                    let changes = userData.schoolChangesThisMonth || 0;
+                    if ((userData.lastSchoolChangeMonth || 0) !== currentMonth) changes = 0;
+
+                    await updateDoc(userRef, {
+                        schoolId: schoolName,
+                        schoolName: schoolName,
+                        districtId: districtName || schoolName,
+                        state: selectedState.name,
+                        stateAbbr: selectedState.abbr,
+                        schoolSkipped: false,
+                        schoolChangesThisMonth: changes + 1,
+                        lastSchoolChangeMonth: currentMonth
+                    });
+                    document.getElementById('school-selection-modal').classList.remove('open');
                 }
             };
 
-            if (game.isDownload) {
-                 card.querySelector('.group').addEventListener('click', (e) => { e.preventDefault(); window.open(game.url, '_blank'); });
-                 card.querySelector('.download-action').addEventListener('click', (e) => { e.stopPropagation(); window.open(e.currentTarget.href, '_blank'); });
-            } else {
-                 card.querySelector('.group').addEventListener('click', handlePlay);
-                 card.querySelector('.play-action').addEventListener('click', handlePlay);
-            }
-            card.querySelector('.fav-action').addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(game.id); });
-            imageObserver.observe(card.querySelector('img'));
-            return card;
+            document.getElementById('back-to-states').onclick = () => {
+                document.getElementById('school-step').classList.add('hidden');
+                document.getElementById('state-step').classList.remove('hidden');
+            };
+
+            document.getElementById('skip-school-btn').onclick = async () => {
+                if (await CustomUI.confirm("Skip school selection? You'll see moments from other users who also skipped.")) {
+                    await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { 
+                        schoolSkipped: true,
+                        schoolId: deleteField(),
+                        schoolName: deleteField(),
+                        districtId: deleteField(),
+                        state: deleteField(),
+                        stateAbbr: deleteField()
+                    });
+                    document.getElementById('school-selection-modal').classList.remove('open');
+                }
+            };
         }
 
-        // --- Helper for Download ---
-        async function downloadResource(url, filename) {
+        let currentRenderId = 0;
+        async function renderMyPosts(usedSlots) {
+            const myId = ++currentRenderId;
+            const container = document.getElementById('daily-posts-container');
+            
+            // Build content in memory first
+            const fragment = document.createDocumentFragment();
+
+            // Parallel fetch all post documents
+            const postPromises = usedSlots.map(postId => {
+                if (postId && postId !== 'DELETED') {
+                    return getDoc(doc(db, 'daily_photos', postId));
+                }
+                return Promise.resolve(null);
+            });
+
+            const postSnaps = await Promise.all(postPromises);
+
+            for (let i = 0; i < 5; i++) {
+                const postSnap = postSnaps[i];
+                const postId = usedSlots[i];
+                const div = document.createElement('div');
+                div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl overflow-hidden flex items-center p-2 gap-3 transition-all hover:border-[var(--accent-color)]';
+                
+                if (postId && postId !== 'DELETED' && postSnap && postSnap.exists()) {
+                    const postData = postSnap.data();
+                    div.innerHTML = `
+                        <div class="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0">
+                            <img src="${postData.imageURL || postData.imageBase64}" class="w-full h-full object-cover" loading="lazy">
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <p class="text-xs font-bold truncate">${postData.title}</p>
+                            <p class="text-[10px] opacity-50">${new Date(postData.createdAt?.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        <div class="flex gap-1 pr-1">
+                            <button onclick="window.viewPost('${postId}')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5" title="View"><i class="fas fa-eye text-xs"></i></button>
+                            <button onclick="window.deletePost('${postId}', ${i})" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-xs"></i></button>
+                        </div>
+                    `;
+                } else if (postId && postId !== 'DELETED') {
+                    div.innerHTML = `<span class="text-xs opacity-30 p-3 italic">Post missing...</span><button onclick="window.fixSlot(${i})" class="text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-lg ml-auto mr-2">Fix</button>`;
+                } else {
+                    div.innerHTML = `
+                        <div class="w-12 h-12 rounded-xl border border-dashed border-[var(--border-main)] flex items-center justify-center shrink-0 opacity-20"><i class="fas fa-plus text-xs"></i></div>
+                        <span class="text-xs opacity-30 italic">Empty Slot ${i+1}</span>
+                        <button onclick="window.openUpload(${i})" class="btn-icon w-8 h-8 rounded-lg ml-auto mr-1" title="Post Moment"><i class="fas fa-plus text-xs"></i></button>
+                    `;
+                }
+                fragment.appendChild(div);
+            }
+
+            // Only update DOM if this is still the latest render call
+            if (myId === currentRenderId) {
+                container.innerHTML = '';
+                container.appendChild(fragment);
+            }
+        }
+
+        async function setupFeed() {
+            unsubPosts();
+            const grid = document.getElementById('photo-feed');
+            const toggleSchool = document.getElementById('feed-toggle-school');
+            const toggleDistrict = document.getElementById('feed-toggle-district');
+            
+            grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin opacity-20 text-3xl"></i></div>';
+
+            const today = new Date(); today.setHours(0,0,0,0);
+            
             try {
-                const r = await fetch(url);
-                if (!r.ok) throw new Error("Fetch failed");
-                const b = await r.blob();
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(b);
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(a.href);
+                let primaryQuery;
+                const isNoSchool = !userData.schoolId || userData.schoolSkipped;
+
+                if (isNoSchool) {
+                    toggleSchool.textContent = 'Mutuals';
+                    toggleDistrict.textContent = 'Public';
+                    if (feedMode === 'district' || feedMode === 'public') {
+                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', null), where('createdAt', '>=', today), limit(50));
+                    } else {
+                        const uids = [currentUser.uid, ...mutualUids].slice(0, 10);
+                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', uids), where('createdAt', '>=', today));
+                    }
+                } else {
+                    toggleSchool.textContent = 'School';
+                    toggleDistrict.textContent = 'District';
+                    if (feedMode === 'district') {
+                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('districtId', '==', userData.districtId), where('createdAt', '>=', today), limit(50));
+                    } else {
+                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', userData.schoolId), where('createdAt', '>=', today), limit(50));
+                    }
+                }
+
+                // If in school/district mode, also fetch mutuals to inject them
+                let friendDocs = [];
+                if (!isNoSchool && mutualUids.length > 0) {
+                    const friendQ = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', mutualUids.slice(0, 10)), where('createdAt', '>=', today));
+                    const friendSnap = await getDocs(friendQ);
+                    friendDocs = friendSnap.docs;
+                }
+
+                // Debounce the render function to prevent rapid re-renders
+                let renderTimeout;
+                unsubPosts = onSnapshot(primaryQuery, snap => {
+                    clearTimeout(renderTimeout);
+                    renderTimeout = setTimeout(() => {
+                        const modeLabel = isNoSchool ? (feedMode === 'district' ? 'the network' : 'your mutuals') : (feedMode === 'district' ? 'your district' : 'your school');
+                        
+                        // Merge and Deduplicate
+                        const combinedMap = new Map();
+                        snap.docs.forEach(d => combinedMap.set(d.id, d));
+                        friendDocs.forEach(d => combinedMap.set(d.id, d));
+                        
+                        const allDocs = Array.from(combinedMap.values());
+
+                        if (allDocs.length === 0) {
+                            grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today from ${modeLabel}.</p>`;
+                            return;
+                        }
+                        
+                        // Sort: Mutuals first, then by time
+                        const sortedDocs = allDocs.sort((a, b) => {
+                            const dataA = a.data();
+                            const dataB = b.data();
+                            const isAMutual = mutualUids.includes(dataA.creatorUid);
+                            const isBMutual = mutualUids.includes(dataB.creatorUid);
+                            
+                            if (isAMutual && !isBMutual) return -1;
+                            if (!isAMutual && isBMutual) return 1;
+                            
+                            const timeA = dataA.createdAt?.toMillis() || 0;
+                            const timeB = dataB.createdAt?.toMillis() || 0;
+                            return timeB - timeA;
+                        });
+
+                        // Efficiency: Use DocumentFragment and build HTML strings where possible
+                        const fragment = document.createDocumentFragment();
+                        sortedDocs.forEach(docSnap => {
+                            const data = docSnap.data();
+                            if (blockedUsers.includes(data.creatorUid)) return;
+                            
+                            const isMutual = mutualUids.includes(data.creatorUid);
+                            const el = document.createElement('div');
+                            el.className = `photo-thumbnail ${isMutual ? 'is-mutual' : ''}`;
+                            el.innerHTML = `
+                                ${isMutual ? `<div class="mutual-badge"><i class="fas fa-heart"></i> Mutual</div>` : ''}
+                                <img src="${data.imageURL || data.imageBase64}" loading="lazy">
+                                <div class="overlay-grad"></div>
+                                <div class="absolute top-3 right-3 flex gap-2">
+                                    <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
+                                        <i class="fas fa-heart text-red-500"></i> ${data.hearts?.length || 0}
+                                    </span>
+                                    <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
+                                        <i class="fas fa-comment text-indigo-400"></i> ${data.comments?.length || 0}
+                                    </span>
+                                </div>
+                                <div class="title-overlay">
+                                    ${data.title}
+                                </div>
+                            `;
+                            el.onclick = () => window.viewPost(docSnap.id);
+                            fragment.appendChild(el);
+                        });
+
+                        grid.innerHTML = '';
+                        grid.appendChild(fragment);
+                    }, 50); // 50ms debounce
+                }, err => {
+                    console.error("Feed snapshot error:", err);
+                    grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Error loading feed. (Check Console)</p>';
+                });
+
             } catch (e) {
-                console.error(e);
-                alert("Download failed.");
+                console.error("Setup feed error:", e);
             }
         }
 
-        // --- Game Viewer Logic ---
-        async function openZone(game) {
-            if (!game || !game.url) return;
+        window.viewPost = (postId) => {
+            const modal = document.getElementById('photo-modal');
+            const container = document.getElementById('modal-content-container');
+            modal.classList.add('open');
+            container.innerHTML = '<div class="w-full h-full flex items-center justify-center"><i class="fas fa-spinner fa-spin text-2xl"></i></div>';
 
-            // Auto-replace legacy GN-Math URLs
-            if (game.category === 'GN-Math' && game.url.includes('raw.githack.com/gn-math/html/main/')) {
-                game.url = game.url.replace('raw.githack.com/gn-math/html/main/', 'cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/');
-            }
-
-            updateURL(categories[currentCategoryIndex], game.id || null);
-            
-            const zoneViewer = document.getElementById('zoneViewer');
-            const zoneFrame = document.getElementById('zoneFrame');
-            const zoneNameEl = document.getElementById('zoneNameEl');
-            const downloadBtn = document.getElementById('downloadBtnZone');
-            const controls = zoneViewer.querySelector('.zone-controls');
-
-            // --- CRITICAL FIX: SHOW VIEWER FIRST ---
-            // Setting display: flex BEFORE loading content ensures the iframe has physical dimensions.
-            // This prevents "Undefined viewport" errors in WebGL games that check window.innerWidth/Height on load.
-            zoneViewer.style.opacity = '0'; // Keep hidden visually but active in DOM
-            zoneViewer.style.display = 'flex';
-
-            // --- Custom 404 Page Helper ---
-            const show404 = (errorMsg = "Game content unavailable.") => {
-                // Ensure frame is cleared
-                zoneFrame.src = 'about:blank';
-                // Show overlay error
-                const doc = zoneFrame.contentWindow.document;
-                doc.open();
-                doc.write(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
-                        <style>
-                            body { background: #000; color: #fff; font-family: 'Geist', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
-                            h1 { font-size: 4rem; margin: 0; color: #4f46e5; }
-                            p { color: #888; font-size: 1.2rem; max-width: 400px; margin-top: 10px; }
-                            .btn { margin-top: 30px; padding: 10px 25px; border: 1px solid #333; border-radius: 12px; color: #fff; cursor: pointer; background: #111; transition: all 0.2s; }
-                            .btn:hover { border-color: #4f46e5; background: #4f46e51a; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Load Failed</h1>
-                        <p><strong>${game.name}</strong> could not be loaded.<br><span style="font-size: 0.9rem; opacity: 0.7;">${errorMsg}</span></p>
-                        <div class="btn" onclick="window.parent.closeZoneViewer()">Return to Hub</div>
-                    </body>
-                    </html>
-                `);
-                doc.close();
-                // Ensure visibility if show404 is called directly
-                zoneViewer.style.display = "flex";
-                zoneViewer.classList.add('active', 'animate-fade-in');
-                zoneViewer.style.opacity = '1';
-            };
-
-            // Setup Download Button (Specific to Eaglercraft)
-            const isEagler = game.baseGameId === 'other-eaglercraft' || game.id === 'other-eaglercraft' || (game.id && String(game.id).startsWith('other-eaglercraft'));
-            if (isEagler) {
-                downloadBtn.href = "#"; 
-                downloadBtn.onclick = (e) => {
-                    e.preventDefault();
-                    downloadResource(game.url, game.name.replace(/ /g, '_') + '.html');
-                };
-                downloadBtn.classList.remove('hidden');
-            } else {
-                downloadBtn.classList.add('hidden');
-                downloadBtn.href = '#';
-                downloadBtn.onclick = null;
-                downloadBtn.removeAttribute('download');
-            }
-
-            // --- INJECT FAVORITE BUTTON IN PLAYER HEADER ---
-            const existingFav = controls.querySelector('.player-fav-btn');
-            if (existingFav) existingFav.remove();
-
-            const favBtn = document.createElement('button');
-            favBtn.className = 'player-fav-btn btn-card-action fav-action';
-            favBtn.innerHTML = '<i class="fa-solid fa-star fa-solid-star"></i><i class="fa-regular fa-star fa-regular-star"></i>';
-            const isFavorited = getFavorites().map(String).includes(String(game.id));
-            if (isFavorited) favBtn.classList.add('favorited');
-            
-            favBtn.onclick = (e) => {
-                e.stopPropagation();
-                toggleFavorite(game.id);
-                favBtn.classList.toggle('favorited');
-            };
-            controls.prepend(favBtn);
-
-            zoneNameEl.textContent = game.name;
-            zoneFrame.src = 'about:blank';
-            
-            // Fixed Allow attribute syntax to prevent warnings and enable features properly
-            // Removed allowfullscreen as "allow='fullscreen'" takes precedence
-            zoneFrame.setAttribute('allow', 'autoplay; fullscreen; pointer-lock; clipboard-write');
-            
-            // STRICT SANDBOX: Removing 'allow-popups' and 'allow-top-navigation' to prevent redirects
-            const sandboxRules = 'allow-scripts allow-same-origin allow-forms allow-pointer-lock';
-            zoneFrame.setAttribute('sandbox', sandboxRules);
-
-            // --- REVISED LOGIC FOR LOADING GAMES WITH RETRY ---
-            // GN-Math uses content injection. StrongdogXP and Others use standard loading.
-            // EXCEPTION: Eaglercraft uses injection to ensure keyboard focus/input works correctly as a "local" file.
-            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP';
-            
-            const attemptLoad = async (retriesLeft) => {
+            unsubModal();
+            unsubModal = onSnapshot(doc(db, 'daily_photos', postId), async snap => {
                 try {
-                    // Pre-check URL validity
-                    const check = await fetch(game.url, { method: 'HEAD' });
-                    if (!check.ok) throw new Error(`HTTP ${check.status}`);
-                    
-                    // If successful, set src
-                    if (isStandardURLGame) {
-                        zoneFrame.src = game.url;
-                        // Prevent showing raw directory listing if it resolves to a folder
-                        zoneFrame.onload = () => {
-                            try {
-                                const doc = zoneFrame.contentDocument;
-                                const title = doc.title;
-                                // UPDATED CHECK: Detects 'CDN files' specifically (as seen in screenshot) and generic directory listings
-                                if (title.includes("CDN files") || title.includes("Index of") || title.includes("Directory listing") || (doc.body && doc.body.textContent.includes("4sp-dv CDN files"))) {
-                                     console.warn("Directory listing detected. Aborting.");
-                                     closeZoneViewer();
-                                     // Previously reloaded page, now just closes viewer
-                                     return;
-                                }
-                                zoneFrame.contentWindow.focus();
-                                zoneFrame.focus();
-                            } catch (e) {
-                                // Cross-origin might block access. If it's a cross-origin game that loads fine, this error is expected and ignored.
-                            }
-                        };
-                    } else {
-                        // For embedded content fetching
-                        const response = await fetch(`${game.url}?t=${Date.now()}`);
-                        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-                        const html = await response.text();
-                        const doc = zoneFrame.contentWindow.document;
-                        doc.open();
-                        doc.write(html);
-                        doc.close();
+                    if (!snap.exists()) { window.closeModal(); return; }
+                    const data = snap.data();
+                    const isHearted = data.hearts?.includes(currentUser.uid);
+                    const isOwner = data.creatorUid === currentUser.uid;
+
+                    const authorSnap = await getDoc(doc(db, USERS_COLLECTION, data.creatorUid));
+                    const authorData = authorSnap.exists() ? authorSnap.data() : null;
+
+                    container.innerHTML = `
+                        <button onclick="window.closeModal()" class="modal-close-btn" title="Close">
+                            <i class="fas fa-times"></i>
+                        </button>
                         
-                        // Aggressively force focus for injected games (Eaglercraft needs this)
-                        // We try multiple times because the game engine takes a moment to mount the canvas
-                        let focusAttempts = 0;
-                        const forceFocusInterval = setInterval(() => {
-                            if (zoneFrame.contentWindow) {
-                                zoneFrame.contentWindow.focus();
-                                zoneFrame.focus();
-                            }
-                            focusAttempts++;
-                            if (focusAttempts > 20) clearInterval(forceFocusInterval); // Stop after ~2 seconds
-                        }, 100);
+                        <div id="photo-display-area">
+                            <img src="${data.imageURL || data.imageBase64}" class="photo-modal-img" onerror="this.src='/assets/placeholder-image.png'">
+                        </div>
                         
-                        // Also ensure clicking the frame area works if the interval misses it
-                        zoneFrame.contentWindow.addEventListener('click', () => {
-                            zoneFrame.contentWindow.focus();
-                        });
-                    }
-
-                    // Reveal the viewer fully after content load starts
-                    zoneViewer.classList.remove('animate-fade-out');
-                    zoneViewer.classList.add('active', 'animate-fade-in');
-                    zoneViewer.style.opacity = '1';
-
-                } catch (e) {
-                    console.warn(`Load failed for ${game.name}. Retries left: ${retriesLeft}`, e);
-                    if (retriesLeft > 0) {
-                        setTimeout(() => attemptLoad(retriesLeft - 1), 1000); // Retry after 1s
-                    } else {
-                        show404("The game files could not be loaded after multiple attempts.");
-                    }
-                }
-            };
-
-            attemptLoad(2); // Try 3 times total (1 initial + 2 retries)
-        }
-
-        function closeZoneViewer() {
-            const zoneViewer = document.getElementById('zoneViewer');
-            const zoneFrame = document.getElementById('zoneFrame');
-            
-            zoneViewer.classList.remove('animate-fade-in');
-            zoneViewer.classList.add('animate-fade-out');
-            
-            setTimeout(() => {
-                zoneViewer.style.display = "none";
-                zoneViewer.classList.remove('active', 'animate-fade-out');
-                zoneViewer.style.opacity = '0'; // Reset opacity
-                if (zoneFrame) {
-                    zoneFrame.src = 'about:blank';
-                }
-                updateURL(categories[currentCategoryIndex]);
-                const downloadBtn = document.getElementById('downloadBtnZone');
-                downloadBtn.classList.add('hidden');
-                downloadBtn.href = '#';
-                downloadBtn.removeAttribute('download');
-                downloadBtn.removeAttribute('target');
-            }, 300);
-        }
-
-        // --- Render Lists ---
-        function renderGames(gamesToRender, targetElement, forceSmallCard = false) {
-            targetElement.innerHTML = '';
-            targetElement.className = (categories[currentCategoryIndex] === 'Others' && !forceSmallCard) ? 'grid grid-cols-1 gap-6 mt-6' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-4 mt-6';
-            gamesToRender.forEach(game => targetElement.appendChild(createGameCard(game, forceSmallCard)));
-            observeImages(targetElement);
-        }
-
-        function renderFavorites() {
-            const favoriteIds = getFavorites().map(String);
-            if (favoriteIds.length > 0) {
-                favoritesHeader.style.display = "block";
-                favoritesGameList.style.display = "grid"; 
-                const favoriteGames = [];
-                allGames.forEach(game => {
-                    if (favoriteIds.includes(String(game.id)) && !game.versions) { favoriteGames.push(game); }
-                    else if (game.versions) { 
-                        game.versions.forEach(v => { 
-                            if (favoriteIds.includes(String(v.favoriteId))) {
-                                let vUrl = v.url;
-                                if (game.category === 'Others') {
-                                    vUrl = resolveGameUrl(v.url);
-                                }
-                                favoriteGames.push({ ...game, id: v.favoriteId, name: `${game.name} - ${v.name}`, url: vUrl, imgSrc: game.imgSrc, versions: undefined }); 
-                            }
-                        }); 
-                    }
-                });
-                renderGames(favoriteGames.sort((a, b) => a.name.localeCompare(b.name)), favoritesGameList, true);
-            } else {
-                favoritesHeader.style.display = "none";
-                favoritesGameList.style.display = "none";
-            }
-        }
-
-        // --- Category Nav ---
-        function updateArrowVisibility() {
-            prevCategoryBtn.disabled = currentCategoryIndex === 0;
-            nextCategoryBtn.disabled = currentCategoryIndex === categories.length - 1;
-        }
-
-        function switchCategory(newIndex) {
-            currentCategoryIndex = newIndex;
-            categorySlider.style.transform = `translateX(-${currentCategoryIndex * (100 / categories.length)}%)`;
-            renderGamesForCurrentCategory();
-            updateArrowVisibility();
-            updateURL(categories[currentCategoryIndex]);
-        }
-        
-        async function renderGamesForCurrentCategory() {
-            const categoryName = categories[currentCategoryIndex];
-            gamesGridContainer.classList.add('opacity-0');
-            await new Promise(r => setTimeout(r, 150));
-            renderGames(allGames.filter(g => g.category === categoryName), gamesGridContainer, false);
-            gamesGridContainer.classList.remove('opacity-0');
-        }
-
-        // --- Search ---
-        function debounce(func, delay) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), delay);
-            };
-        }
-
-        const handleSearch = debounce(() => {
-            const text = searchInput.value.toLowerCase().trim();
-            const filteredDropdown = text ? searchableGames.filter(g => g.name.toLowerCase().includes(text)).slice(0, 5) : [];
-            
-            searchResults.innerHTML = "";
-            
-            if (filteredDropdown.length === 0 || !text) {
-                searchResults.style.display = "none";
-                searchDivider.style.display = "none";
-                return;
-            }
-            
-            const favorites = getFavorites().map(String);
-            filteredDropdown.forEach(game => {
-                const isStrongdog = game.category === 'StrongdogXP';
-                let imgSrc;
-                let finalGameData = { ...game }; // clone
-
-                if (isStrongdog) {
-                    const { adjustedImgSrc } = getAdjustedUrls(game);
-                    imgSrc = adjustedImgSrc;
-                } else if (game.category === 'Others') {
-                    imgSrc = resolveGameUrl(game.imgSrc);
-                    finalGameData.url = resolveGameUrl(game.url);
-                } else {
-                    imgSrc = game.imgSrc;
-                }
-                
-                const linkEl = document.createElement("a");
-                linkEl.href = '#';
-                linkEl.className = 'search-item flex justify-between items-center';
-                linkEl.dataset.gameId = game.id;
-                let isFavorite = favorites.includes(String(game.id));
-
-                const catLabel = game.category === 'StrongdogXP' ? 'StrongdogXP' : (game.category === 'GN-Math' ? 'GN-Math' : 'Others');
-                const catColor = game.category === 'StrongdogXP' ? 'text-strongdog-orange' : (game.category === 'GN-Math' ? 'text-gn-math' : 'text-gray-400');
-
-                linkEl.innerHTML = `
-                    <div class="flex items-center truncate min-w-0">
-                        <img src="${imgSrc}" alt="${game.name}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
-                        <div class="flex flex-col ml-3 truncate min-w-0">
-                            <span class="font-medium truncate text-gray-200" title="${game.name}">${game.name}</span>
-                            <span class="category-badge w-fit ${catColor}">${catLabel}</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center flex-shrink-0">
-                        <div class="bg-black/50 backdrop-blur-sm rounded-2xl p-1.5 flex items-center gap-1.5">
-                            <button class="btn-card-action play-action" title="Play Game">
-                                <i class="fa-solid fa-play transition-colors"></i>
-                            </button>
-                            <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}">
-                                <i class="fa-solid fa-star fa-solid-star transition-colors"></i>
-                                <i class="fa-regular fa-star fa-regular-star transition-colors"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                const favBtn = linkEl.querySelector('.fav-action');
-                favBtn.addEventListener('click', (e) => {
-                    e.preventDefault(); e.stopPropagation(); 
-                    toggleFavorite(game.id);
-                });
-
-                linkEl.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    if (isStrongdog) {
-                        const baseURL = sd_getBaseURLForPage(game);
-                        let adjustedHref = baseURL.endsWith("/") ? baseURL + game.href.replace(/^\.\//, "") : baseURL + "/" + game.href.replace(/^\.\//, "");
-                        const embedPath = await sd_getEmbedPath(adjustedHref, game.href, game.page);
-                        const strongdogGameData = { name: game.name, url: embedPath, category: game.category, id: game.id };
-                        openZone(strongdogGameData);
-                    } else {
-                        openZone(finalGameData);
-                    }
-                    searchResults.style.display = "none";
-                    searchDivider.style.display = "none";
-                });
-                searchResults.appendChild(linkEl);
-            });
-            searchResults.style.display = "block";
-            searchDivider.style.display = "block";
-        }, 250);
-
-        // --- FETCHING DATA MANUALLY (NO MODULES) ---
-        // This function fetches the JS file as text, transforms it to set a global variable, and evals it.
-        // This bypasses module loading restrictions on file:// protocols.
-        async function fetchGameData() {
-            try {
-                // Fetch the file
-                const response = await fetch(CARDS_DATA_URL);
-                if (!response.ok) throw new Error('Failed to fetch game data');
-                let scriptText = await response.text();
-                
-                // Transform 'export default' to 'window.loadedGameData ='
-                // This assumes the file structure is simple "export default [...]"
-                if (scriptText.includes('export default')) {
-                    scriptText = scriptText.replace('export default', 'window.loadedGameData =');
-                }
-                
-                // Execute the script
-                // We use new Function instead of eval for slight isolation, though still unsafe for untrusted code
-                // (But we trust this source).
-                // However, new Function creates a local scope. We need global assignment.
-                // Standard eval or appending a script tag is better.
-                const scriptEl = document.createElement('script');
-                scriptEl.textContent = scriptText;
-                document.body.appendChild(scriptEl);
-                
-                // Wait a tick for execution
-                await new Promise(resolve => setTimeout(resolve, 0));
-                
-                if (window.loadedGameData) {
-                    return window.loadedGameData;
-                } else {
-                    console.warn("Script loaded but window.loadedGameData is undefined");
-                    return [];
-                }
-            } catch (e) {
-                console.error("Error manual loading games:", e);
-                return [];
-            }
-        }
-
-        // --- Init ---
-        async function initializeApp() {
-            // Load Game Data Manually
-            let gamesData = [];
-            try {
-                const module = await import(CARDS_DATA_URL);
-                gamesData = module.default;
-            } catch (e) {
-                console.error("Could not load external games data", e);
-            }
-            
-            const strongdogGames = gamesData.map(g => {
-                const prefixedId = `sd-${g.id}`;
-                if (g.versions) {
-                    const prefixedVersions = g.versions.map(v => ({
-                        ...v,
-                        favoriteId: `${prefixedId}_${v.name.replace(/\s+/g, '-')}` // Ensure favoriteId is also unique
-                    }));
-                    return { ...g, id: prefixedId, category: 'StrongdogXP', versions: prefixedVersions };
-                }
-                return { ...g, id: prefixedId, category: 'StrongdogXP' };
-            });
-            
-            try {
-                const res = await fetch(GN_ZONES_URL);
-                const gnMathRaw = await res.json();
-                const gnMathGames = gnMathRaw.map(g => ({ id: `gn-${g.id}`, name: g.name, imgSrc: g.cover.replace("{COVER_URL}", GN_COVER_URL_BASE), category: 'GN-Math', url: g.url.replace("{HTML_URL}", GN_HTML_URL_BASE) }));
-                allGames = [...strongdogGames, ...gnMathGames, ...othersGames];
-            } catch (error) { 
-                console.warn("Failed to load GN-Math, falling back to others.", error);
-                allGames = [...strongdogGames, ...othersGames]; 
-            }
-
-            allGames = allGames.filter(g => !['bitlife', 'soundboard'].some(term => g.name.toLowerCase().includes(term)));
-            
-            searchableGames = [];
-            allGames.forEach(game => {
-                if (game.versions && game.versions.length > 0) {
-                    game.versions.forEach(version => {
-                        searchableGames.push({
-                            ...game,
-                            id: version.favoriteId,
-                            name: `${game.name} - ${version.name}`,
-                            url: version.url,
-                            wasm: version.wasm,
-                            versions: undefined,
-                            baseGameId: game.id
-                        });
-                    });
-                } else {
-                    searchableGames.push(game);
-                }
-            });
-
-            categories = ['StrongdogXP', 'GN-Math', 'Others'].filter(cat => allGames.some(g => g.category === cat));
-
-            const { category: urlCat } = parseURL();
-            if (urlCat) currentCategoryIndex = Math.max(0, categories.findIndex(c => c.replace(/\s+/g, '-').toLowerCase() === urlCat.toLowerCase()));
-
-            categorySlider.style.width = `${categories.length * 100}%`;
-            categorySlider.innerHTML = categories.map(cat => `<div class="w-64 flex-shrink-0"><h2 class="text-3xl font-bold ${categoryColors[cat] || 'text-white'}"><strong>${cat}</strong></h2></div>`).join('');
-
-            switchCategory(currentCategoryIndex);
-            renderFavorites();
-            setupInstructionOverlay();
-            
-            searchInput.placeholder = `Search all games...`;
-            searchInput.addEventListener("input", handleSearch);
-            searchInput.addEventListener("focus", handleSearch);
-
-            document.addEventListener("click", ev => {
-                if (!document.getElementById('bottom-fixed-bar').contains(ev.target)) {
-                    searchResults.style.display = "none";
-                    searchDivider.style.display = "none";
-                }
-                if (!ev.target.closest('.version-btn') && !ev.target.closest('.version-favorite-btn') && !ev.target.closest('.eagler-dropdown')) {
-                    document.querySelectorAll('.eagler-dropdown.show').forEach(d => {
-                        d.classList.remove('show');
-                    });
-                }
-            });
-
-            prevCategoryBtn.addEventListener('click', () => switchCategory(currentCategoryIndex - 1));
-            nextCategoryBtn.addEventListener('click', () => switchCategory(currentCategoryIndex + 1));
-            document.getElementById('closeBtnZone').addEventListener('click', closeZoneViewer);
-
-            // If the user clicks the black background around the game, force focus back to the game
-            document.getElementById('zoneViewer').addEventListener('click', (e) => {
-                // Don't refocus if they clicked a button in the header
-                if (e.target.closest('.zone-controls')) return;
-                
-                const zoneFrame = document.getElementById('zoneFrame');
-                if (zoneFrame && zoneFrame.contentWindow) {
-                    zoneFrame.contentWindow.focus();
-                    zoneFrame.focus();
-                }
-            });
-
-            // --- FULLSCREEN BUTTON LISTENER ---
-            document.getElementById('fullscreenBtnZone').addEventListener('click', () => {
-                const zoneFrame = document.getElementById('zoneFrame');
-                if (zoneFrame && zoneFrame.requestFullscreen) {
-                    zoneFrame.requestFullscreen();
-                } else if (zoneFrame && zoneFrame.webkitRequestFullscreen) {
-                    zoneFrame.webkitRequestFullscreen();
-                } else if (zoneFrame && zoneFrame.msRequestFullscreen) {
-                    zoneFrame.msRequestFullscreen();
-                }
-            });
-
-            // --- SCROLL PREVENTION LOGIC ---
-            window.addEventListener('keydown', (e) => {
-                const zoneViewer = document.getElementById('zoneViewer');
-                // Check if any game player is active
-                if (zoneViewer && zoneViewer.style.display === 'flex') {
-                    const scrollKeys = ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
-                    if (scrollKeys.includes(e.code) || (e.key === ' ' || scrollKeys.includes(e.key))) {
-                        // Only prevent if focus is on the page itself or the iframe
-                        e.preventDefault();
-                    }
-                }
-            }, false);
-
-            const updateNavButtons = () => {
-                const scrollTop = creditsScrollContainer.scrollTop;
-                const maxScroll = creditsScrollContainer.scrollHeight - creditsScrollContainer.clientHeight;
-                
-                // Allow a small buffer (e.g., 5px) for floating point inaccuracies
-                creditsPrevBtn.disabled = scrollTop <= 5;
-                creditsNextBtn.disabled = scrollTop >= maxScroll - 5;
-            };
-
-            creditsScrollContainer.addEventListener('scroll', updateNavButtons);
-
-            creditsBtn.addEventListener('click', () => { 
-                creditsModal.classList.add('active');
-                creditsScrollContainer.innerHTML = '';
-                
-                Object.keys(CREDITS_DATA).forEach(key => {
-                    const data = CREDITS_DATA[key];
-                    const section = document.createElement('section');
-                    section.className = 'credit-section';
-                    
-                    let linksHtml = '';
-                    if (data.links.length > 0) {
-                        linksHtml = `<div class="credit-links">` + data.links.map(l => `
-                            <a href="${l.url}" target="_blank" class="credit-btn" style="border-color: ${data.color}; color: ${data.color}; background: ${data.color}1a;">
-                                <i class="fa-brands fa-${l.type}"></i> ${l.label}
-                            </a>
-                        `).join('') + `</div>`;
-                    }
-
-                    section.innerHTML = `
-                        <div class="credit-content-grid">
-                            <div class="credit-text-col">
-                                <h2 class="credit-title" style="background: ${data.color}; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${key}</h2>
-                                <p class="credit-desc" style="border-left: 2px solid ${data.color}; padding-left: 1rem;">${data.desc}</p>
-                                ${linksHtml}
+                        <div id="photo-info-panel">
+                            <!-- Author Info -->
+                            <div class="flex items-center gap-4 mb-6 shrink-0">
+                                <a href="/logged-in/@${data.creatorUsername}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity shrink-0">
+                                    ${authorData ? getAvatarHTML(authorData, "w-12 h-12", false, currentUser) : `<div class="w-full h-full bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-lg uppercase">${(data.creatorUsername || '?').charAt(0)}</div>`}
+                                </a>
+                                <div class="min-w-0 flex-1">
+                                    <a href="/logged-in/@${data.creatorUsername}" class="text-sm font-bold text-[var(--text-main)] truncate block hover:text-[var(--accent-color)] transition-colors">@${data.creatorUsername}</a>
+                                    <p class="text-[10px] opacity-50 font-mono uppercase tracking-tighter">${data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : 'Just now'}</p>
+                                </div>
                             </div>
-                            <div class="credit-img-col">
-                                <img src="${resolveGameUrl(data.logo)}" class="credit-logo" onerror="this.style.display='none'">
+
+                            <!-- Title & Actions -->
+                            <div class="mb-4 shrink-0">
+                                <h3 class="text-lg font-black leading-tight text-[var(--text-main)] mb-4">${data.title || "Untitled Moment"}</h3>
+                                
+                                <div class="flex items-center gap-3">
+                                    <button id="modal-heart-btn" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all ${isHearted ? 'text-red-500' : 'opacity-60'}">
+                                        <i class="fas fa-heart ${isHearted ? '' : 'far'}"></i> 
+                                        <span class="text-sm font-bold">${data.hearts?.length || 0}</span>
+                                    </button>
+                                    <div class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 opacity-40">
+                                        <i class="fas fa-comment"></i> 
+                                        <span class="text-sm font-bold">${data.comments?.length || 0}</span>
+                                    </div>
+                                    <div class="ml-auto flex gap-2">
+                                        ${!isOwner ? `
+                                            <button onclick="window.blockUser('${data.creatorUid}', '${data.creatorUsername}')" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xs opacity-40 hover:opacity-100 hover:text-red-500 transition-all" title="Block"><i class="fas fa-ban"></i></button>
+                                        ` : ''}
+                                        ${(isOwner || isAdmin) ? `
+                                            <button onclick="window.deletePost('${postId}')" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xs opacity-40 hover:opacity-100 hover:text-red-500 transition-all" title="Delete"><i class="fas fa-trash"></i></button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Comments (Scrollable) -->
+                            <div id="comments-section">
+                                ${(data.comments || []).map(c => `
+                                    <div class="mb-3 text-xs leading-relaxed">
+                                        <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
+                                        <span class="text-[var(--text-main)] opacity-90">${c.text}</span>
+                                    </div>
+                                `).join('') || '<div class="h-full flex items-center justify-center opacity-20 italic text-xs py-10">No comments yet.</div>'}
+                            </div>
+
+                            <!-- Input (Pinned to bottom) -->
+                            <div class="mt-auto pt-4 border-t border-[var(--border-main)] shrink-0">
+                                <div class="flex gap-2">
+                                    <input type="text" id="comment-input" placeholder="Add a comment..." class="flex-1 bg-white/5 border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)] focus:bg-white/10 transition-all text-[var(--text-main)] placeholder:opacity-30">
+                                    <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-color)] text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all shrink-0">
+                                        <i class="fas fa-paper-plane text-[10px]"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     `;
-                    creditsScrollContainer.appendChild(section);
-                });
+
+                    // Auto-scroll to bottom of comments
+                    const commentsSection = document.getElementById('comments-section');
+                    if (commentsSection) commentsSection.scrollTop = commentsSection.scrollHeight;
+
+                    const heartBtn = document.getElementById('modal-heart-btn');
+                    if (heartBtn) {
+                        heartBtn.onclick = async () => {
+                            const newIsHearted = !isHearted;
+                            await updateDoc(doc(db, 'daily_photos', postId), { hearts: newIsHearted ? arrayUnion(currentUser.uid) : arrayRemove(currentUser.uid) });
+                            
+                            if (newIsHearted && !isOwner) {
+                                const meSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+                                const myUsername = meSnap.data()?.username || "Someone";
+                                await addDoc(collection(db, 'notifications'), {
+                                    recipientId: data.creatorUid,
+                                    senderId: currentUser.uid,
+                                    senderUsername: myUsername,
+                                    type: 'like',
+                                    postId: postId,
+                                    message: `@${myUsername} liked your moment!`,
+                                    timestamp: serverTimestamp(),
+                                    read: false
+                                });
+                            }
+                        };
+                    }
+
+                    const commentInput = document.getElementById('comment-input');
+                    const commentBtn = document.getElementById('send-comment-btn');
+
+                    const handleSendComment = async () => {
+                        const text = commentInput.value.trim();
+                        if (!text) return;
+                        const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+                        const myUsername = userSnap.data()?.username || "Someone";
+                        await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: text, timestamp: new Date() }) });
+                        
+                        if (!isOwner) {
+                            await addDoc(collection(db, 'notifications'), {
+                                recipientId: data.creatorUid,
+                                senderId: currentUser.uid,
+                                senderUsername: myUsername,
+                                type: 'comment',
+                                postId: postId,
+                                message: `@${myUsername} commented on your moment!`,
+                                timestamp: serverTimestamp(),
+                                read: false
+                            });
+                        }
+                        commentInput.value = '';
+                    };
+
+                    if (commentBtn) commentBtn.onclick = handleSendComment;
+                    if (commentInput) {
+                        commentInput.onkeydown = (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleSendComment();
+                            }
+                        };
+                    }
+                } catch (err) {
+                    console.error("Error rendering post modal:", err);
+                    container.innerHTML = `
+                        <div class="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                            <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4 opacity-50"></i>
+                            <h3 class="text-lg font-bold mb-2">Failed to load moment</h3>
+                            <p class="text-sm opacity-50 mb-8">This post might have been deleted or there was a network error.</p>
+                            <button onclick="window.closeModal()" class="btn-toolbar-style px-8 py-3">Close Modal</button>
+                        </div>
+                    `;
+                }
+            });
+        };
+
+        window.openUpload = (slotIdx) => {
+            const modal = document.getElementById('upload-menu-modal');
+            const fileInput = document.getElementById('upload-file-input');
+            modal.classList.add('open');
+            fileInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                modal.classList.remove('open');
                 
-                // Reset scroll and update buttons after rendering
-                requestAnimationFrame(() => {
-                    creditsScrollContainer.scrollTop = 0;
-                    updateNavButtons();
-                });
-            });
-            
-            closeCreditsFixed.addEventListener('click', () => {
-                creditsModal.classList.remove('active');
-            });
+                // Pre-calculate preview for the prompt
+                let previewUrl = "";
+                if (file.type === 'image/gif') {
+                    previewUrl = URL.createObjectURL(file);
+                } else {
+                    previewUrl = await compressImage(file, 400); // Smaller for preview
+                }
 
-            creditsPrevBtn.addEventListener('click', () => {
-                creditsScrollContainer.scrollBy({ top: -window.innerHeight, behavior: 'smooth' });
-            });
+                const title = await CustomUI.prompt("Give your moment a title:", "Daily Moment", "Post Moment", previewUrl);
+                if (title === null) {
+                    if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
+                    return;
+                }
+                
+                try {
+                    await CustomUI.alert("Processing image, please wait...");
+                    
+                    const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+                    const uData = userSnap.data();
+                    const username = uData.username;
 
-            creditsNextBtn.addEventListener('click', () => {
-                creditsScrollContainer.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+                    let finalImageData = {};
+
+                    if (file.type === 'image/gif') {
+                        // GIFs go to Firebase Storage (with 24h custom metadata flag for cleanup script)
+                        const storageRef = ref(storage, `daily_photos/${currentUser.uid}/${Date.now()}_${file.name}`);
+                        
+                        // Custom metadata to indicate it should be deleted after 24 hours
+                        const metadata = {
+                            customMetadata: {
+                                deleteAfter24h: 'true',
+                                uploadedAt: Date.now().toString()
+                            }
+                        };
+                        
+                        const snapshot = await uploadBytes(storageRef, file, metadata);
+                        const downloadURL = await getDownloadURL(snapshot.ref);
+                        finalImageData = { imageURL: downloadURL };
+                        URL.revokeObjectURL(previewUrl);
+                    } else {
+                        // Other images get compressed and converted to Base64
+                        const base64Str = await compressImage(file);
+                        finalImageData = { imageBase64: base64Str };
+                    }
+
+                    const postRef = await addDoc(collection(db, 'daily_photos'), {
+                        creatorUid: currentUser.uid,
+                        creatorUsername: username,
+                        createdAt: serverTimestamp(),
+                        ...finalImageData,
+                        title: title || "Daily Moment",
+                        schoolId: uData.schoolId || null,
+                        districtId: uData.districtId || null,
+                        status: 'active',
+                        hearts: [],
+                        comments: []
+                    });
+
+                    const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+                    const slots = uData.dailySlotsUsed || [];
+                    while (slots.length <= slotIdx) slots.push(null);
+                    slots[slotIdx] = postRef.id;
+                    await updateDoc(userRef, { dailySlotsUsed: slots });
+                    await CustomUI.alert("Upload complete!");
+                } catch (error) {
+                    console.error("Upload error:", error);
+                    await CustomUI.alert("Failed to upload image. Please try again.");
+                }
+            };
+        };
+
+        // Helper function to compress images before saving as Base64
+        function compressImage(file, maxWidth = 800) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = event => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > maxWidth) {
+                            height = Math.round((height *= maxWidth / width));
+                            width = maxWidth;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Compress as JPEG
+                        resolve(canvas.toDataURL('image/jpeg', 0.8));
+                    };
+                    img.onerror = error => reject(error);
+                };
+                reader.onerror = error => reject(error);
             });
         }
 
-        document.addEventListener('DOMContentLoaded', initializeApp);
+        window.deletePost = async (postId, idx) => {
+            if (!(await CustomUI.confirm("Delete this moment?"))) return;
+            
+            // Only update local slots if we are the owner
+            const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+            const userSnap = await getDoc(userRef);
+            const uData = userSnap.data();
+            
+            const slots = [...(uData.dailySlotsUsed || [])];
+            const slotIdx = idx !== undefined ? idx : slots.indexOf(postId);
+            
+            if (slotIdx > -1) {
+                slots[slotIdx] = 'DELETED';
+                await updateDoc(userRef, { dailySlotsUsed: slots });
+            }
+            
+            await deleteDoc(doc(db, 'daily_photos', postId));
+            if (idx === undefined) window.closeModal();
+        };
+
+        window.blockUser = async (uid, username) => {
+            if (await CustomUI.confirm(`Block @${username}? You won't see their posts anymore.`)) {
+                await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { 
+                    blocked_users: arrayUnion(uid),
+                    friends: arrayRemove(uid)
+                });
+                await updateDoc(doc(db, USERS_COLLECTION, uid), { friends: arrayRemove(currentUser.uid) });
+                window.closeModal();
+            }
+        };
+
+        window.reportPost = async (postId) => {
+            if (await CustomUI.confirm("Report this post for inappropriate content?")) {
+                await addDoc(collection(db, 'reports'), { postId, reportedBy: currentUser.uid, timestamp: serverTimestamp(), type: 'daily_photo' });
+                await CustomUI.alert("Thank you. Our moderators will review this post.");
+            }
+        };
+
+        window.closeModal = () => {
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
+            unsubModal();
+            // Clear content to prevent "ghost" data on next open
+            setTimeout(() => {
+                const container = document.getElementById('modal-content-container');
+                if (container) container.innerHTML = '';
+            }, 300);
+        };
+
+        function setupSidebarNav() {
+            const btns = { posts: 'sidebar-nav-posts', friends: 'sidebar-nav-friends', blocked: 'sidebar-nav-blocked' };
+            const sections = { posts: 'daily-posts-section', friends: 'friends-section-wrapper', blocked: 'blocked-section' };
+            
+            Object.keys(btns).forEach(key => {
+                document.getElementById(btns[key]).onclick = () => {
+                    Object.values(btns).forEach(b => document.getElementById(b).classList.remove('active'));
+                    Object.values(sections).forEach(s => document.getElementById(s).classList.add('hidden'));
+                    document.getElementById(btns[key]).classList.add('active');
+                    document.getElementById(sections[key]).classList.remove('hidden');
+                    if (key === 'friends') renderMutualsList();
+                    if (key === 'blocked') renderBlockedList();
+                };
+            });
+        }
+
+        function setupFeedToggles() {
+            document.getElementById('feed-toggle-school').onclick = () => {
+                feedMode = 'school';
+                document.getElementById('feed-toggle-school').classList.add('active', 'btn-primary-override');
+                document.getElementById('feed-toggle-district').classList.remove('active', 'btn-primary-override');
+                
+                const isNoSchool = !userData.schoolId || userData.schoolSkipped;
+                document.getElementById('feed-desc').textContent = isNoSchool ? 'Moments from mutual friends.' : 'Moments from your school.';
+                setupFeed();
+            };
+            document.getElementById('feed-toggle-district').onclick = () => {
+                feedMode = 'district';
+                document.getElementById('feed-toggle-district').classList.add('active', 'btn-primary-override');
+                document.getElementById('feed-toggle-school').classList.remove('active', 'btn-primary-override');
+                
+                const isNoSchool = !userData.schoolId || userData.schoolSkipped;
+                document.getElementById('feed-desc').textContent = isNoSchool ? 'Discover shared moments from across the network.' : 'Moments from across your district.';
+                setupFeed();
+            };
+        }
+
+        function setupUserSearch() {
+            const input = document.getElementById('user-search-input');
+            const results = document.getElementById('search-results');
+            
+            input.oninput = async (e) => {
+                const term = e.target.value.trim().toLowerCase();
+                if (term.length < 2) { results.innerHTML = ''; return; }
+                
+                const q = query(collection(db, USERS_COLLECTION), where('username', '>=', term), where('username', '<=', term + '\uf8ff'), limit(5));
+                const snap = await getDocs(q);
+                
+                results.innerHTML = '';
+                snap.forEach(docSnap => {
+                    if (docSnap.id === currentUser.uid) return;
+                    const d = docSnap.data();
+                    const div = document.createElement('div');
+                    div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-xl p-2 flex items-center gap-3 cursor-pointer hover:border-[var(--accent-color)] transition-all';
+                    div.innerHTML = `
+                        <div class="w-8 h-8 rounded-lg overflow-hidden shrink-0">${getAvatarHTML(d, "w-8 h-8", false, currentUser)}</div>
+                        <span class="text-xs font-bold truncate">@${d.username}</span>
+                    `;
+                    div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
+                    results.appendChild(div);
+                });
+            };
+        }
+
+        async function renderMutualsList() {
+            const list = document.getElementById('friends-list-items');
+            list.innerHTML = '<div class="p-4 text-center opacity-20"><i class="fas fa-spinner fa-spin"></i></div>';
+            
+            list.innerHTML = '';
+            if (mutualUids.length === 0) {
+                list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No mutual friends yet.</p>';
+                return;
+            }
+
+            for (const uid of mutualUids) {
+                const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
+                const d = snap.data() || {};
+                const div = document.createElement('div');
+                div.className = 'compact-list-item flex items-center gap-3 cursor-pointer hover:bg-white/5';
+                div.innerHTML = `
+                    <div class="w-6 h-6 rounded-lg overflow-hidden shrink-0">${getAvatarHTML(d, "w-6 h-6", false, currentUser)}</div>
+                    <span class="text-xs truncate">@${d.username}</span>
+                `;
+                div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
+                list.appendChild(div);
+            }
+        }
+
+        async function renderBlockedList() {
+            const list = document.getElementById('blocked-list-items');
+            list.innerHTML = '';
+            if (blockedUsers.length === 0) { list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No users blocked.</p>'; return; }
+            for (const uid of blockedUsers) {
+                const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
+                const div = document.createElement('div');
+                div.className = 'compact-list-item flex justify-between items-center';
+                div.innerHTML = `<span class="text-xs opacity-50">@${snap.data()?.username || 'Unknown'}</span><button onclick="window.unblock('${uid}')" class="text-[var(--accent-color)] text-[10px] border border-[var(--accent-color)]/20 px-2 py-1 rounded-lg hover:bg-[var(--accent-color)]/10">Unblock</button>`;
+                list.appendChild(div);
+            }
+        }
+
+        window.unblock = async (uid) => {
+            await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { blocked_users: arrayRemove(uid) });
+        };
+
+        window.fixSlot = async (idx) => {
+            const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+            const userSnap = await getDoc(userRef);
+            const slots = userSnap.data().dailySlotsUsed || [];
+            slots[idx] = null;
+            await updateDoc(userRef, { dailySlotsUsed: slots });
+        };
+
+        document.getElementById('upload-menu-close-btn').onclick = () => window.closeModal();
     </script>
 </body>
 </html>
-<!-- Made with ❤️ from 4SP -->
-<!-- Made with ❤️ from 4SP -->
 <!-- Made with ❤️ from 4SP -->
