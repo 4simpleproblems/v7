@@ -72,7 +72,7 @@ service cloud.firestore {
     // III. Username Reservations (`usernames`)
     // ----------------------------------------------------------------------------------
     match /usernames/{username} {
-      allow read: if isAuthenticated();
+      allow read: if true; // Guests need to check if username is taken
       allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
       allow delete: if (isAuthenticated() && resource.data.uid == request.auth.uid) || isAdminOrSuperAdmin();
     }
@@ -187,7 +187,7 @@ service cloud.firestore {
     }
 
     match /email_bans/{email} {
-      allow read: if isAdminOrSuperAdmin();
+      allow read: if true; // Guests need to check if their email is banned
       allow create, update, delete: if isAdminOrSuperAdmin();
     }
 

@@ -80,25 +80,26 @@
             letter-spacing: 0.025em;
         }
         .btn-primary {
-            background-color: var(--accent-color);
+            background-color: rgba(79, 70, 229, 0.05);
             border: 1px solid var(--accent-color);
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+            color: var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
         .btn-primary:hover {
-            background-color: #4338ca;
-            border-color: #4338ca;
+            background-color: rgba(79, 70, 229, 0.1);
+            border-color: #6366f1;
+            color: #6366f1;
             transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
         }
         .btn-secondary {
-            background-color: #111111;
-            color: var(--text-main);
+            background-color: #050505;
+            color: var(--text-muted);
             border: 1px solid var(--border-main);
         }
         .btn-secondary:hover {
-            background-color: #1a1a1a;
+            background-color: #0a0a0a;
             border-color: var(--border-hover);
+            color: var(--text-main);
             transform: translateY(-1px);
         }
 
@@ -276,7 +277,7 @@
             <div class="right-col p-8 sm:p-12 flex flex-col justify-center bg-[#0a0a0a]/50">
                 <div class="w-full">
                     <div class="mb-10 text-center">
-                        <h2 class="text-2xl font-bold text-white mb-2 tracking-tighter">Continue instantly</h2>
+                        <h2 class="text-2xl font-normal text-white mb-2 tracking-tighter">Continue instantly</h2>
                         <p class="text-sm text-gray-400 font-light">Use a trusted provider to sign in.</p>
                     </div>
                     
