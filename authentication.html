@@ -15,37 +15,55 @@
     <script src="/injector.js"></script>
 
     <style>
+        :root {
+            --bg-page: #040404;
+            --bg-card: #0d0d0d;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --accent-color: #4f46e5;
+            --accent-glow: rgba(79, 70, 229, 0.15);
+            --border-main: #1a1a1a;
+            --border-hover: #333333;
+        }
+
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: #000000; 
-            color: #c0c0c0; 
+            background-color: var(--bg-page); 
+            color: var(--text-muted); 
             font-weight: 300;
+            overflow-x: hidden;
         }
 
         h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-tighter {
             font-weight: 400 !important;
+            color: var(--text-main);
         }
 
         .auth-container {
-            background-color: #0a0a0a;
-            border: 1px solid #252525;
-            border-radius: 1.25rem;
-            padding: 2rem;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-main);
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
 
         .input-style {
             width: 100%; 
-            padding: 0.75rem; 
-            border: 1px solid #252525; 
-            background-color: #000000; 
-            border-radius: 14px; 
-            color: #c0c0c0; 
-            transition: all 0.2s;
+            padding: 0.875rem 1rem; 
+            border: 1px solid var(--border-main); 
+            background-color: #050505; 
+            border-radius: 16px; 
+            color: var(--text-main); 
+            font-size: 0.9375rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .input-style:focus {
-            border-color: #505050; 
+            border-color: var(--accent-color); 
             outline: none;
-            box-shadow: 0 0 0 2px rgba(80, 80, 80, 0.5);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+            background-color: #080808;
         }
 
         .btn {
@@ -53,203 +71,249 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            padding: 0.75rem;
-            font-size: 1rem;
-            border-radius: 14px;
-            font-weight: 400;
-            transition: all 0.2s;
+            padding: 0.875rem;
+            font-size: 0.9375rem;
+            border-radius: 16px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
+            letter-spacing: 0.025em;
         }
         .btn-primary {
-            background-color: rgba(79, 70, 229, 0.1);
-            border: 1px solid #4f46e5;
-            color: #4f46e5;
+            background-color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
         }
         .btn-primary:hover {
-            background-color: rgba(79, 70, 229, 0.15);
-            border-color: #6366f1;
-            color: #6366f1;
+            background-color: #4338ca;
+            border-color: #4338ca;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
         }
         .btn-secondary {
             background-color: #111111;
-            color: #9ca3af;
-            border: 1px solid #333;
+            color: var(--text-main);
+            border: 1px solid var(--border-main);
         }
         .btn-secondary:hover {
-            background-color: rgba(79, 70, 229, 0.05);
-            border-color: #d1d5db;
-            color: #ffffff;
+            background-color: #1a1a1a;
+            border-color: var(--border-hover);
+            transform: translateY(-1px);
         }
 
-        .message-area { min-height: 20px; }
-        .error-message { color: #f87171; }
-        .success-message { color: #4ade80; }
-        .warning-message { color: #fbbf24; }
+        .message-area { 
+            min-height: 24px;
+            transition: all 0.3s ease;
+        }
+        .error-message { color: #f87171; background: rgba(248, 113, 113, 0.05); padding: 0.5rem; border-radius: 12px; }
+        .success-message { color: #4ade80; background: rgba(74, 222, 128, 0.05); padding: 0.5rem; border-radius: 12px; }
+        .warning-message { color: #fbbf24; background: rgba(251, 191, 36, 0.05); padding: 0.5rem; border-radius: 12px; }
         
-        @media (max-width: 767px) {
-            .right-col { display: none; }
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-main), transparent);
+            width: 100%;
+            margin: 2rem 0;
         }
 
         .auth-view {
-            transition: opacity 0.3s ease, transform 0.3s ease;
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes fadeOut {
-            from { opacity: 1; transform: translateY(0); }
-            to { opacity: 0; transform: translateY(-10px); }
+        .animate-slide-up {
+            animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
-        .fade-in {
-            animation: fadeIn 0.3s ease forwards;
+        /* Responsive refinements */
+        @media (max-width: 767px) {
+            .right-col { 
+                border-top: 1px solid var(--border-main);
+                background-color: #080808;
+            }
+        }
+        @media (min-width: 768px) {
+            .right-col {
+                border-left: 1px solid var(--border-main);
+            }
         }
 
-        .fade-out {
-            animation: fadeOut 0.3s ease forwards;
+        /* Branding background effect */
+        .brand-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(79, 70, 229, 0.05) 0%, transparent 40%);
+            z-index: -1;
         }
     </style>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-1D4F692C1Q');
-</script>
-    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-1D4F692C1Q');
+    </script>
 </head>
-<body class="bg-[#040404] text-[#c0c0c0] min-h-screen flex flex-col">
-
+<body class="flex flex-col min-h-screen">
+    <div class="brand-bg"></div>
     <div id="navbar-container"></div>
-    <main class="flex-grow flex items-center justify-center p-4">
-        <div class="w-full max-w-4xl grid md:grid-cols-2 gap-0 auth-container overflow-hidden">
-            <div class="left-col flex-1 p-8 flex flex-col justify-center items-center">
 
-                <div id="loginContainer" class="w-full flex flex-col items-center auth-view">
-                    <h2 class="text-3xl font-normal text-white mb-6 text-center w-full tracking-tighter">Login to Your Account</h2>
-                    <form id="loginForm" novalidate class="w-full max-w-md"> 
-                        <div class="mb-5">
-                            <label for="loginEmail" class="block mb-2 text-custom-light-gray text-sm font-light text-left">Email</label>
-                            <input type="email" id="loginEmail" placeholder="Enter your email" required class="input-style">
-                        </div>
-                        <div class="mb-5">
-                            <label for="loginPassword" class="block mb-2 text-custom-light-gray text-sm font-light text-left">Password</label>
-                            <input type="password" id="loginPassword" placeholder="Enter your password" required class="input-style">
-                        </div>
-                        <button type="submit" class="btn btn-primary">LOGIN</button>
-                    </form>
-                    <div id="loginMessage" class="message-area w-full max-w-md mt-4 text-center text-sm"></div>
-                    <div class="w-full max-w-md mt-4 text-center"> 
-                        <a id="forgotPasswordLink" class="text-white hover:text-gray-300 font-normal text-sm cursor-pointer">Forgot Password?</a> 
+    <main class="flex-grow flex items-center justify-center p-6 sm:p-12">
+        <div class="w-full max-w-5xl grid md:grid-cols-2 auth-container animate-slide-up">
+            
+            <!-- Left: Traditional Auth -->
+            <div class="left-col p-8 sm:p-12 flex flex-col justify-center">
+
+                <!-- Login View -->
+                <div id="loginContainer" class="w-full auth-view">
+                    <div class="mb-10 text-center md:text-left">
+                        <h2 class="text-4xl font-bold text-white mb-3 tracking-tighter">Welcome back</h2>
+                        <p class="text-sm text-gray-400 font-light">Access your 4SP dashboard and tools.</p>
                     </div>
-                    <p class="text-sm text-custom-light-gray mt-6 text-center w-full max-w-md">
-                        Don't have an account? 
-                        <a id="showSignupLink" href="#" class="text-white hover:text-gray-300 font-normal transition">Sign up here</a>
+                    <form id="loginForm" novalidate class="space-y-5"> 
+                        <div>
+                            <label for="loginEmail" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Email Address</label>
+                            <input type="email" id="loginEmail" placeholder="name@example.com" required class="input-style">
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="loginPassword" class="text-gray-400 text-xs font-bold uppercase tracking-widest">Password</label>
+                                <a id="forgotPasswordLink" class="text-indigo-400 hover:text-indigo-300 text-xs font-medium cursor-pointer transition-colors">Forgot?</a>
+                            </div>
+                            <input type="password" id="loginPassword" placeholder="••••••••" required class="input-style">
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-4">Sign In</button>
+                    </form>
+                    <div id="loginMessage" class="message-area mt-6 text-center text-sm"></div>
+                    
+                    <p class="text-sm text-gray-500 mt-10 text-center font-light">
+                        New to 4SP? 
+                        <a id="showSignupLink" href="#" class="text-white hover:text-indigo-400 font-medium transition-colors">Create an account</a>
                     </p>
                 </div>
 
-                <div id="resetPasswordContainer" class="w-full flex-col items-center auth-view" style="display: none;">
-                    <h2 class="text-3xl font-normal text-white mb-6 text-center w-full tracking-tighter">Reset Your Password</h2>
-                    <p class="text-custom-light-gray text-base mb-6 text-center max-w-md font-normal">Enter your email address and we'll send you a link to reset your password.</p>
-                    <form id="resetPasswordForm" novalidate class="w-full max-w-md">
-                        <div class="mb-5">
-                            <label for="resetEmail" class="block mb-2 text-custom-light-gray text-sm font-light text-left">Email</label>
-                            <input type="email" id="resetEmail" placeholder="Enter your registered email" required class="input-style">
+                <!-- Reset View -->
+                <div id="resetPasswordContainer" class="w-full auth-view" style="display: none;">
+                    <div class="mb-10">
+                        <h2 class="text-4xl font-bold text-white mb-3 tracking-tighter">Recover account</h2>
+                        <p class="text-sm text-gray-400 font-light leading-relaxed">Enter your email and we'll send a recovery link.</p>
+                    </div>
+                    <form id="resetPasswordForm" novalidate class="space-y-5">
+                        <div>
+                            <label for="resetEmail" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Email Address</label>
+                            <input type="email" id="resetEmail" placeholder="name@example.com" required class="input-style">
                         </div>
-                        <button type="submit" class="btn btn-primary">SEND RESET LINK</button>
+                        <button type="submit" class="btn btn-primary mt-4">Send Reset Link</button>
                     </form>
-                    <div id="resetMessage" class="message-area w-full max-w-md mt-4 text-center text-sm"></div>
-                    <div class="w-full max-w-md mt-6 text-center"> 
-                        <a id="backToLoginLink" class="text-white hover:text-gray-300 font-normal text-sm cursor-pointer">&larr; Back to Login</a> 
+                    <div id="resetMessage" class="message-area mt-6 text-center text-sm"></div>
+                    <div class="mt-8 text-center"> 
+                        <a id="backToLoginLink" class="text-gray-400 hover:text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-arrow-left text-xs"></i> Back to Login
+                        </a> 
                     </div>
                 </div>
 
-                <div id="usernameContainer" class="w-full flex-col items-center auth-view" style="display: none;">
-                    <h2 class="text-3xl font-normal text-white mb-6 text-center w-full tracking-tighter">Choose Your Username</h2>
-                    <form id="usernameForm" novalidate class="w-full max-w-md"> 
-                        <div class="mb-5">
-                            <label for="signupUsername" class="block mb-2 text-custom-light-gray text-sm font-light text-left">Username</label>
-                            <input type="text" id="signupUsername" placeholder="6-24 characters, including symbols" required class="input-style">
-                            <p class="text-xs text-custom-lighter-gray mt-2 text-left font-light">Allowed symbols: .,-+\_!?$</p>
+                <!-- Username Step View -->
+                <div id="usernameContainer" class="w-full auth-view" style="display: none;">
+                    <div class="mb-10 text-center md:text-left">
+                        <h2 class="text-4xl font-bold text-white mb-3 tracking-tighter">Identity</h2>
+                        <p class="text-sm text-gray-400 font-light">Choose a unique username for the 4SP network.</p>
+                    </div>
+                    <form id="usernameForm" novalidate class="space-y-5"> 
+                        <div>
+                            <label for="signupUsername" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Username</label>
+                            <input type="text" id="signupUsername" placeholder="your_name" required class="input-style">
+                            <p class="text-[10px] text-gray-500 mt-3 font-medium uppercase tracking-tighter">6-24 chars • Letters, numbers, and .,-+\_!?$</p>
                         </div>
-                        <button type="submit" class="btn btn-primary">NEXT</button>
+                        <button type="submit" class="btn btn-primary mt-4">Continue <i class="fa-solid fa-arrow-right ml-2 text-xs"></i></button>
                     </form>
-                    <div id="usernameMessage" class="message-area w-full max-w-md mt-4 text-center text-sm"></div>
-                    <p class="text-sm text-custom-light-gray mt-6 text-center w-full max-w-md">
+                    <div id="usernameMessage" class="message-area mt-6 text-center text-sm"></div>
+                    <p class="text-sm text-gray-500 mt-10 text-center font-light">
                         Already have an account? 
-                        <a id="showLoginLink" href="#" class="text-white hover:text-gray-300 font-normal transition">Login here</a>
+                        <a id="showLoginLink" href="#" class="text-white hover:text-indigo-400 font-medium transition-colors">Login here</a>
                     </p>
                 </div>
                 
-                <div id="signupContainer" class="w-full flex-col items-center auth-view" style="display: none;">
-                    <h2 class="text-3xl font-normal text-white mb-6 text-center w-full tracking-tighter">Set Your Credentials</h2>
-                    <form id="signupForm" novalidate class="w-full max-w-md"> 
-                        <div class="mb-5">
-                            <label for="signupEmail" class="block mb-2 text-custom-light-gray text-sm font-light text-left">Email</label>
-                            <input type="email" id="signupEmail" placeholder="Enter your email" required class="input-style">
+                <!-- Final Signup View -->
+                <div id="signupContainer" class="w-full auth-view" style="display: none;">
+                    <div class="mb-10">
+                        <h2 class="text-4xl font-bold text-white mb-3 tracking-tighter">Security</h2>
+                        <p class="text-sm text-gray-400 font-light">Set your login credentials.</p>
+                    </div>
+                    <form id="signupForm" novalidate class="space-y-5"> 
+                        <div>
+                            <label for="signupEmail" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Email Address</label>
+                            <input type="email" id="signupEmail" placeholder="name@example.com" required class="input-style">
                         </div>
-                        <div class="mb-5">
-                            <label for="signupPassword" class="block mb-2 text-custom-light-gray text-sm font-light text-left">Password</label>
-                            <input type="password" id="signupPassword" placeholder="Enter your password" required class="input-style">
-                            <p class="text-xs text-custom-lighter-gray mt-2 text-left font-light">At least 8 characters, including a number, an uppercase, and a lowercase letter.</p>
+                        <div>
+                            <label for="signupPassword" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">New Password</label>
+                            <input type="password" id="signupPassword" placeholder="••••••••" required class="input-style">
+                            <p class="text-[10px] text-gray-500 mt-3 font-medium uppercase tracking-tighter">8+ chars • Uppercase • Lowercase • Number</p>
                         </div>
-                        <button type="submit" class="btn btn-primary">CREATE ACCOUNT</button>
+                        <button type="submit" class="btn btn-primary mt-4">Create Account</button>
                     </form>
-                    <div id="signupMessage" class="message-area w-full max-w-md mt-4 text-center text-sm"></div>
-                    <div class="w-full max-w-md mt-6 text-center"> 
-                        <a id="backToUsernameLink" class="text-white hover:text-gray-300 font-normal text-sm cursor-pointer">&larr; Back to Username</a> 
+                    <div id="signupMessage" class="message-area mt-6 text-center text-sm"></div>
+                    <div class="mt-8 text-center"> 
+                        <a id="backToUsernameLink" class="text-gray-400 hover:text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-arrow-left text-xs"></i> Back to Username
+                        </a> 
                     </div>
                 </div>
 
             </div>
 
-            <div class="right-col flex-1 p-8 flex flex-col justify-center items-center">
-                <div class="w-full flex flex-col items-center justify-center">
-                    <h2 class="text-3xl font-normal text-white mb-6 text-center w-full tracking-tighter">Continue instantly</h2>
-                    <p class="text-lg text-custom-light-gray mb-8 text-center max-w-md font-normal">
-                        Use a trusted provider to sign in or create an account in one click.
-                    </p>
+            <!-- Right: Social Auth -->
+            <div class="right-col p-8 sm:p-12 flex flex-col justify-center bg-[#0a0a0a]/50">
+                <div class="w-full">
+                    <div class="mb-10 text-center">
+                        <h2 class="text-2xl font-bold text-white mb-2 tracking-tighter">Continue instantly</h2>
+                        <p class="text-sm text-gray-400 font-light">Use a trusted provider to sign in.</p>
+                    </div>
                     
-                    <button id="googleAuthBtn" class="btn btn-secondary mb-3">
-                        <img src="images/google-icon.png" alt="Google Logo" class="w-6 h-6 mr-3">
-                        Continue with Google
-                    </button>
-                    <button id="microsoftAuthBtn" class="btn btn-secondary mb-3">
-                        <img src="images/microsoft.png" alt="Microsoft Logo" class="w-6 h-6 mr-3">
-                        Continue with Microsoft
-                    </button>
-                    <button id="githubAuthBtn" class="btn btn-secondary mb-3">
-                        <img src="images/github-mark-white.png" alt="GitHub Logo" class="w-6 h-6 mr-3">
-                        Continue with GitHub
-                    </button>
-                    
-                    <button id="twitterAuthBtn" class="btn btn-secondary mb-3">
-                        <img src="../images/x-white.png" alt="X Logo" class="w-6 h-6 mr-3">
-                        Continue with X
-                    </button>
+                    <div class="space-y-3">
+                        <button id="googleAuthBtn" class="btn btn-secondary">
+                            <img src="images/google-icon.png" alt="Google" class="w-5 h-5 mr-3">
+                            Google
+                        </button>
+                        <button id="microsoftAuthBtn" class="btn btn-secondary">
+                            <img src="images/microsoft.png" alt="Microsoft" class="w-5 h-5 mr-3">
+                            Microsoft
+                        </button>
+                        <button id="githubAuthBtn" class="btn btn-secondary">
+                            <img src="images/github-mark-white.png" alt="GitHub" class="w-5 h-5 mr-3">
+                            GitHub
+                        </button>
+                        <button id="twitterAuthBtn" class="btn btn-secondary">
+                            <img src="../images/x-white.png" alt="X" class="w-5 h-5 mr-3">
+                            X (Twitter)
+                        </button>
+                    </div>
 
-                    
-                    <p class="text-xs italic text-custom-light-gray text-center max-w-md mt-4 leading-relaxed font-light">
-                        By continuing, you agree to our 
-                        <a href="legal.html#terms-of-service" target="_blank" class="text-white hover:text-gray-300 font-normal">Terms of Service</a> and 
-                        <a href="legal.html#privacy-policy" target="_blank" class="text-white hover:text-gray-300 font-normal">Privacy Policy</a>.
-                    </p>
+                    <div class="mt-10">
+                        <p class="text-[10px] text-gray-500 text-center leading-relaxed font-medium uppercase tracking-wider">
+                            By continuing, you agree to our 
+                            <a href="legal.html#terms-of-service" target="_blank" class="text-gray-300 hover:text-white transition-colors">Terms</a> & 
+                            <a href="legal.html#privacy-policy" target="_blank" class="text-gray-300 hover:text-white transition-colors">Privacy</a>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <footer class="border-t border-gray-900 py-6">
-        <div class="mx-auto max-w-7xl px-4 text-center text-gray-500 text-sm">
+    <footer class="py-8">
+        <div class="mx-auto max-w-7xl px-4 text-center text-gray-600 text-[10px] font-bold uppercase tracking-widest">
             &copy; 2026 4simpleproblems (4SP). Built for students.
-            <span class="mx-2">|</span>
-            <a href="legal.html#terms-of-service" class="hover:underline">Terms of Service</a>
-            <span class="mx-2">|</span>
-            <a href="legal.html#privacy-policy" class="hover:underline">Privacy Policy</a>
         </div>
     </footer>
 
@@ -284,7 +348,8 @@
             where,
             getDocs,
             serverTimestamp,
-            setLogLevel
+            setLogLevel,
+            writeBatch
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         
         // --- Import Firebase Config ---
@@ -301,7 +366,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        setLogLevel('debug'); // Enable Firestore logging
+        // setLogLevel('debug'); // Disabled for production cleanup
 
         let hasRedirected = false;
 
@@ -364,40 +429,22 @@
         // --- View Management ---
         const showView = (viewName) => {
             Object.values(messageDivs).forEach(div => div.innerHTML = '');
-            let activeContainer = null;
+            
+            // Hide all first
             for(const key in containers) {
-                if (containers[key].style.display === 'flex') {
-                    activeContainer = containers[key];
-                    break;
-                }
+                containers[key].style.display = 'none';
+                containers[key].classList.remove('animate-slide-up');
             }
 
-            if (activeContainer) {
-                activeContainer.classList.add('fade-out');
-                activeContainer.addEventListener('animationend', () => {
-                    activeContainer.style.display = 'none';
-                    activeContainer.classList.remove('fade-out');
-                    
-                    const newContainer = containers[viewName];
-                    newContainer.style.display = 'flex';
-                    newContainer.style.flexDirection = 'column';
-                    newContainer.classList.add('fade-in');
-                    newContainer.addEventListener('animationend', () => {
-                        newContainer.classList.remove('fade-in');
-                    }, { once: true });
-
-                }, { once: true });
-            } else {
-                const newContainer = containers[viewName];
-                newContainer.style.display = 'flex';
-                newContainer.style.flexDirection = 'column';
-            }
+            const newContainer = containers[viewName];
+            newContainer.style.display = 'block';
+            newContainer.classList.add('animate-slide-up');
         };
 
         // --- Helper Functions ---
         const showMessage = (element, text, type = 'error') => {
             element.innerHTML = text;
-            element.className = `message-area w-full max-w-md mt-4 text-center text-sm ${type}-message`;
+            element.className = `message-area mt-4 text-center text-sm ${type}-message`;
         };
         
         const navigateToDashboard = () => window.location.href = '/logged-in/dashboard.html';
@@ -432,13 +479,12 @@
         const handleSuccessfulLogin = async (user) => {
             await setPersistence(auth, browserLocalPersistence);
             
-
-            
             const isProviderLogin = user.providerData.some(p => ['google.com', 'github.com', 'twitter.com', 'microsoft.com'].includes(p.providerId));
             
-                        if (user.emailVerified || isProviderLogin) {                                                                                                                   
-                            navigateToDashboard();
-                        } else {                showMessage(messageDivs.login, 'Your email is not verified. Please check your inbox. <a href="#" id="resend-link" class="underline cursor-pointer">Resend email</a>', 'error');
+            if (user.emailVerified || isProviderLogin) {                                                                                                                   
+                navigateToDashboard();
+            } else {
+                showMessage(messageDivs.login, 'Your email is not verified. Please check your inbox. <a href="#" id="resend-link" class="underline cursor-pointer">Resend email</a>', 'error');
                 document.getElementById('resend-link').addEventListener('click', async (e) => {
                     e.preventDefault();
                     try {
@@ -478,7 +524,6 @@
             return null;
         };
         
-        // --- UPDATED PASSWORD VALIDATION: Minimum length changed to 8 ---
         const validatePassword = (password) => {
             if (password.length < 8) return 'Password must be at least 8 characters.';
             if (!/[0-9]/.test(password)) return 'Password must contain at least one number.';
@@ -487,7 +532,6 @@
 
             return null;
         };
-        // --- END UPDATED VALIDATION ---
 
         // --- Event Listener Setup ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -602,7 +646,6 @@
                     } else if (error.code === 'auth/invalid-email') {
                         msg = 'The email address is not valid.';
                     } else if (error.code === 'auth/weak-password') {
-                        // This catch block handles residual weak password errors if the server check is stricter than client check
                         msg = 'Password is too weak. Please ensure it meets all complexity requirements.';
                     }
                     showMessage(messageDivs.signup, msg);
@@ -610,7 +653,7 @@
                 }
             });
 
-            // --- Social Authentication Handler (Unified for Login & Signup) ---
+            // --- Social Authentication Handler ---
             const handleSocialAuth = async (provider) => {
                 try {
                     const result = await signInWithPopup(auth, provider);
@@ -620,11 +663,8 @@
                     const providerName = provider.providerId.split('.')[0];
 
                     if (userDoc.exists()) {
-                        // User exists -> Log them in
-                        // This will trigger handleSuccessfulLogin, which has the beta check.
                         await handleSuccessfulLogin(user);
                     } else {
-                        // New user -> Create account
                         if (await checkEmailBan(user.email)) {
                             await user.delete();
                             const visibleMessageDiv = messageDivs.login.offsetParent ? messageDivs.login : messageDivs.username;
@@ -646,8 +686,6 @@
 
                         const docCreated = await createUserDocument(user, providerName, finalUsername);
                         if (docCreated) {
-                            // Since this is a new social user, they are already "verified"
-                            // and have passed the beta check. Log them in.
                             await setPersistence(auth, browserLocalPersistence);
                             navigateToDashboard();
                         } else {
@@ -659,9 +697,8 @@
                     if (error.code === 'auth/account-exists-with-different-credential') {
                         msg = 'An account with this email already exists using a different sign-in method. Please sign in with the provider you originally used.';
                     } else if (error.code === 'auth/popup-closed-by-user') {
-                        return; // User cancelled, do nothing.
+                        return;
                     }
-                    // Show error on the currently visible panel
                     const visibleMessageDiv = messageDivs.login.offsetParent ? messageDivs.login : messageDivs.username;
                     showMessage(visibleMessageDiv, msg);
                 }
@@ -676,3 +713,4 @@
     </script>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->
