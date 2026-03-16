@@ -407,7 +407,7 @@
                 const workerPath = "/VERN/baremux/worker.js";
                 const connection = new BareMux.BareMuxConnection(workerPath);
                 const wispUrl = "wss://wisp.mercurywork.shop/";
-                connection.setTransport("/VERN/libcurl/index.mjs", [
+                await connection.setTransport("/VERN/libcurl/index.mjs", [
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);

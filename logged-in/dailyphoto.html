@@ -875,35 +875,39 @@
             // Build content in memory first
             const fragment = document.createDocumentFragment();
 
+            // Parallel fetch all post documents
+            const postPromises = usedSlots.map(postId => {
+                if (postId && postId !== 'DELETED') {
+                    return getDoc(doc(db, 'daily_photos', postId));
+                }
+                return Promise.resolve(null);
+            });
+
+            const postSnaps = await Promise.all(postPromises);
+
             for (let i = 0; i < 5; i++) {
+                const postSnap = postSnaps[i];
                 const postId = usedSlots[i];
                 const div = document.createElement('div');
                 div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl overflow-hidden flex items-center p-2 gap-3 transition-all hover:border-[var(--accent-color)]';
                 
-                if (postId && postId !== 'DELETED') {
-                    try {
-                        const postSnap = await getDoc(doc(db, 'daily_photos', postId));
-                        if (postSnap.exists()) {
-                            const postData = postSnap.data();
-                            div.innerHTML = `
-                                <div class="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0">
-                                    <img src="${postData.imageURL || postData.imageBase64}" class="w-full h-full object-cover">
-                                </div>
-                                <div class="flex-grow min-w-0">
-                                    <p class="text-xs font-bold truncate">${postData.title}</p>
-                                    <p class="text-[10px] opacity-50">${new Date(postData.createdAt?.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
-                                </div>
-                                <div class="flex gap-1 pr-1">
-                                    <button onclick="window.viewPost('${postId}')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5" title="View"><i class="fas fa-eye text-xs"></i></button>
-                                    <button onclick="window.deletePost('${postId}', ${i})" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-xs"></i></button>
-                                </div>
-                            `;
-                        } else {
-                            div.innerHTML = `<span class="text-xs opacity-30 p-3 italic">Post missing...</span><button onclick="window.fixSlot(${i})" class="text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-lg ml-auto mr-2">Fix</button>`;
-                        }
-                    } catch (e) {
-                        div.innerHTML = `<span class="text-xs opacity-30 p-3 italic text-red-500/50">Error loading</span>`;
-                    }
+                if (postId && postId !== 'DELETED' && postSnap && postSnap.exists()) {
+                    const postData = postSnap.data();
+                    div.innerHTML = `
+                        <div class="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0">
+                            <img src="${postData.imageURL || postData.imageBase64}" class="w-full h-full object-cover" loading="lazy">
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <p class="text-xs font-bold truncate">${postData.title}</p>
+                            <p class="text-[10px] opacity-50">${new Date(postData.createdAt?.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        <div class="flex gap-1 pr-1">
+                            <button onclick="window.viewPost('${postId}')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5" title="View"><i class="fas fa-eye text-xs"></i></button>
+                            <button onclick="window.deletePost('${postId}', ${i})" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-xs"></i></button>
+                        </div>
+                    `;
+                } else if (postId && postId !== 'DELETED') {
+                    div.innerHTML = `<span class="text-xs opacity-30 p-3 italic">Post missing...</span><button onclick="window.fixSlot(${i})" class="text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-lg ml-auto mr-2">Fix</button>`;
                 } else {
                     div.innerHTML = `
                         <div class="w-12 h-12 rounded-xl border border-dashed border-[var(--border-main)] flex items-center justify-center shrink-0 opacity-20"><i class="fas fa-plus text-xs"></i></div>
@@ -931,7 +935,6 @@
 
             const today = new Date(); today.setHours(0,0,0,0);
             
-            // --- Hybrid Feed Logic ---
             try {
                 let primaryQuery;
                 const isNoSchool = !userData.schoolId || userData.schoolSkipped;
@@ -963,61 +966,72 @@
                     friendDocs = friendSnap.docs;
                 }
 
+                // Debounce the render function to prevent rapid re-renders
+                let renderTimeout;
                 unsubPosts = onSnapshot(primaryQuery, snap => {
-                    grid.innerHTML = '';
-                    const modeLabel = isNoSchool ? (feedMode === 'district' ? 'the network' : 'your mutuals') : (feedMode === 'district' ? 'your district' : 'your school');
-                    
-                    // Merge and Deduplicate
-                    const combinedMap = new Map();
-                    snap.docs.forEach(d => combinedMap.set(d.id, d));
-                    friendDocs.forEach(d => combinedMap.set(d.id, d));
-                    
-                    const allDocs = Array.from(combinedMap.values());
+                    clearTimeout(renderTimeout);
+                    renderTimeout = setTimeout(() => {
+                        const modeLabel = isNoSchool ? (feedMode === 'district' ? 'the network' : 'your mutuals') : (feedMode === 'district' ? 'your district' : 'your school');
+                        
+                        // Merge and Deduplicate
+                        const combinedMap = new Map();
+                        snap.docs.forEach(d => combinedMap.set(d.id, d));
+                        friendDocs.forEach(d => combinedMap.set(d.id, d));
+                        
+                        const allDocs = Array.from(combinedMap.values());
 
-                    if (allDocs.length === 0) {
-                        grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today from ${modeLabel}.</p>`;
-                        return;
-                    }
-                    
-                    // Sort: Mutuals first, then by time
-                    const sortedDocs = allDocs.sort((a, b) => {
-                        const isAMutual = mutualUids.includes(a.data().creatorUid);
-                        const isBMutual = mutualUids.includes(b.data().creatorUid);
+                        if (allDocs.length === 0) {
+                            grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today from ${modeLabel}.</p>`;
+                            return;
+                        }
                         
-                        if (isAMutual && !isBMutual) return -1;
-                        if (!isAMutual && isBMutual) return 1;
-                        
-                        const timeA = a.data().createdAt?.toMillis() || 0;
-                        const timeB = b.data().createdAt?.toMillis() || 0;
-                        return timeB - timeA;
-                    });
+                        // Sort: Mutuals first, then by time
+                        const sortedDocs = allDocs.sort((a, b) => {
+                            const dataA = a.data();
+                            const dataB = b.data();
+                            const isAMutual = mutualUids.includes(dataA.creatorUid);
+                            const isBMutual = mutualUids.includes(dataB.creatorUid);
+                            
+                            if (isAMutual && !isBMutual) return -1;
+                            if (!isAMutual && isBMutual) return 1;
+                            
+                            const timeA = dataA.createdAt?.toMillis() || 0;
+                            const timeB = dataB.createdAt?.toMillis() || 0;
+                            return timeB - timeA;
+                        });
 
-                    sortedDocs.forEach(docSnap => {
-                        const data = docSnap.data();
-                        if (blockedUsers.includes(data.creatorUid)) return;
-                        
-                        const isMutual = mutualUids.includes(data.creatorUid);
-                        const el = document.createElement('div');
-                        el.className = `photo-thumbnail ${isMutual ? 'is-mutual' : ''}`;
-                        el.innerHTML = `
-                            ${isMutual ? `<div class="mutual-badge"><i class="fas fa-heart"></i> Mutual</div>` : ''}
-                            <img src="${data.imageURL || data.imageBase64}" loading="lazy">
-                            <div class="overlay-grad"></div>
-                            <div class="absolute top-3 right-3 flex gap-2">
-                                <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
-                                    <i class="fas fa-heart text-red-500"></i> ${data.hearts?.length || 0}
-                                </span>
-                                <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
-                                    <i class="fas fa-comment text-indigo-400"></i> ${data.comments?.length || 0}
-                                </span>
-                            </div>
-                            <div class="title-overlay">
-                                ${data.title}
-                            </div>
-                        `;
-                        el.onclick = () => window.viewPost(docSnap.id);
-                        grid.appendChild(el);
-                    });
+                        // Efficiency: Use DocumentFragment and build HTML strings where possible
+                        const fragment = document.createDocumentFragment();
+                        sortedDocs.forEach(docSnap => {
+                            const data = docSnap.data();
+                            if (blockedUsers.includes(data.creatorUid)) return;
+                            
+                            const isMutual = mutualUids.includes(data.creatorUid);
+                            const el = document.createElement('div');
+                            el.className = `photo-thumbnail ${isMutual ? 'is-mutual' : ''}`;
+                            el.innerHTML = `
+                                ${isMutual ? `<div class="mutual-badge"><i class="fas fa-heart"></i> Mutual</div>` : ''}
+                                <img src="${data.imageURL || data.imageBase64}" loading="lazy">
+                                <div class="overlay-grad"></div>
+                                <div class="absolute top-3 right-3 flex gap-2">
+                                    <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
+                                        <i class="fas fa-heart text-red-500"></i> ${data.hearts?.length || 0}
+                                    </span>
+                                    <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
+                                        <i class="fas fa-comment text-indigo-400"></i> ${data.comments?.length || 0}
+                                    </span>
+                                </div>
+                                <div class="title-overlay">
+                                    ${data.title}
+                                </div>
+                            `;
+                            el.onclick = () => window.viewPost(docSnap.id);
+                            fragment.appendChild(el);
+                        });
+
+                        grid.innerHTML = '';
+                        grid.appendChild(fragment);
+                    }, 50); // 50ms debounce
                 }, err => {
                     console.error("Feed snapshot error:", err);
                     grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Error loading feed. (Check Console)</p>';
