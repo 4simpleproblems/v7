@@ -411,28 +411,25 @@
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
+                console.log("BareMux Transport Set");
 
-                // Sync with Service Workers
-                const syncPort = (port) => {
-                    // Try to sync with all registrations to be safe
+                // Signal to Service Workers that transport is ready
+                const bc = new BroadcastChannel("bare-mux-sync");
+                const signalReady = () => {
+                    const msg = { type: 'baremuxready', path: workerPath };
+                    bc.postMessage(msg);
+                    
+                    // Also try direct postMessage as fallback
                     navigator.serviceWorker.getRegistrations().then(registrations => {
                         registrations.forEach(reg => {
                             const sw = reg.active || reg.waiting || reg.installing;
-                            if (sw) {
-                                sw.postMessage({
-                                    type: 'baremuxinit',
-                                    path: workerPath,
-                                    port: port
-                                }, [port]);
-                            }
+                            if (sw) sw.postMessage(msg);
                         });
                     });
                 };
-
-                if (connection.port) {
-                    syncPort(connection.port);
-                    console.log("BareMux Port Synced");
-                }
+                
+                signalReady();
+                console.log("BareMux Transport Ready Signal Sent");
             } catch (e) {
                 console.error("BareMux Init Failed", e);
             }
