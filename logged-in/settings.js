@@ -1680,14 +1680,29 @@
          * Generates the HTML for the "About 4SP" section.
          */
         function getAboutContent() {
+            let adminOptions = '';
+            if (isUserAdmin) {
+                const currentSource = localStorage.getItem('__4sp_theme_source') || 'themes.json';
+                adminOptions = `
+                    <div class="mt-8 pt-6 border-t border-[var(--border-main)]">
+                        <h3 class="text-xl font-bold text-indigo-400 mb-2 uppercase tracking-widest text-xs">Admin: Theme Source</h3>
+                        <p class="text-sm text-[var(--text-muted)] opacity-60 mb-4 text-xs font-light">Switch between production and experimental themes. Refresh to see changes in picker.</p>
+                        <div class="flex gap-2">
+                            <button id="useProdThemes" class="btn-toolbar-style flex-1 ${currentSource === 'themes.json' ? 'ring-1 ring-indigo-500 bg-indigo-500/10' : 'opacity-50'}">Production</button>
+                            <button id="useTestThemes" class="btn-toolbar-style flex-1 ${currentSource === 'themes-test.json' ? 'ring-1 ring-indigo-500 bg-indigo-500/10' : 'opacity-50'}">Experimental</button>
+                        </div>
+                    </div>
+                `;
+            }
+
             return `
                 <h2 class="text-3xl font-bold text-[var(--text-main)] mb-4">About 4SP (4simpleproblems)</h2>
-                
+
                 <div class="about-section-content">
                     <p class="text-lg text-[var(--text-muted)] opacity-80 leading-relaxed">
                         <span class="text-emphasis">4SP (4simpleproblems)</span> is a <span class="text-emphasis">Student Toolkit and Entertainment website</span> designed to boost student productivity and provide useful resources. We aim to solve four core challenges that students face every day by integrating essential tools and engaging digital content into one seamless platform.
                     </p>
-                    
+
                     <h3 class="text-xl font-bold text-[var(--text-main)] mt-6 mb-2">The Four Simple Problems We Address</h3>
                     <ul class="list-disc list-inside ml-4 text-lg text-gray-400 leading-relaxed">
                         <li>Providing a <span class="text-emphasis">digital leisure platform free of advertisements</span>.</li>
@@ -1699,10 +1714,10 @@
                     <p class="text-lg text-gray-400 mt-4 leading-relaxed">
                         Features currently include an <span class="text-emphasis">online notebook</span> in the Notes App for secure organization, a <span class="text-emphasis">live clock</span> on the dashboard, a <span class="text-emphasis">dictionary</span> for quick lookups, and more tools.
                     </p>
-                    
+
                     <h3 class="text-xl font-bold text-[var(--text-main)] mt-6 mb-2">Version</h3>
                     <p class="text-[var(--text-muted)] opacity-80">
-                        Current Version: <span class="text-blue-400 text-emphasis">6.0.0</span>
+                        Current Version: <span class="text-blue-400 text-emphasis">6.6.2</span>
                     </p>
 
                     <h3 class="text-xl font-bold text-[var(--text-main)] mt-6 mb-3">Connect & Support</h3>
@@ -1720,16 +1735,17 @@
                             <i class="fa-brands fa-github fa-lg mr-2 light-invert"></i> Github
                         </a>
                     </div>
-                    
+
                     <h3 class="text-xl font-bold text-[var(--text-main)] mt-6 mb-3">Legal Information</h3>
                     <div class="legal-buttons">
                         <a href="../legal.html#terms-of-service" class="btn-toolbar-style">Terms of Service</a>
                         <a href="../legal.html#privacy-policy" class="btn-toolbar-style">Privacy Policy</a>
                     </div>
+
+                    ${adminOptions}
                 </div>
             `;
         }
-
         /**
          * Generates the HTML for the "Coming Soon" sections.
          */
@@ -4301,13 +4317,14 @@ const performAccountDeletion = async () => {
             const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink', 'Birthday'];
 
             try {
-                // 1. Fetch themes
-                const response = await fetch('../themes.json');
-                if (!response.ok) throw new Error('Failed to fetch themes.json');
+                // 1. Fetch themes (Allow admin to switch to experimental source)
+                const themeSource = (isUserAdmin && localStorage.getItem('__4sp_theme_source')) || 'themes.json';
+                const response = await fetch(`../${themeSource}`);
+                if (!response.ok) throw new Error(`Failed to fetch ${themeSource}`);
                 let themes = await response.json(); // Use 'let' to reassign
                 
                 if (!themes || themes.length === 0) {
-                     throw new Error('themes.json is empty or invalid');
+                     throw new Error(`${themeSource} is empty or invalid`);
                 }
 
                 // --- NEW: Sorting Logic ---
@@ -4513,6 +4530,21 @@ const performAccountDeletion = async () => {
             }
             else if (tabId === 'about') {
                 mainView.innerHTML = getAboutContent();
+                // Add Admin Theme Toggle Listeners
+                if (isUserAdmin) {
+                    const btnProd = document.getElementById('useProdThemes');
+                    const btnTest = document.getElementById('useTestThemes');
+                    if (btnProd && btnTest) {
+                        btnProd.onclick = () => {
+                            localStorage.setItem('__4sp_theme_source', 'themes.json');
+                            switchTab('about'); // Refresh
+                        };
+                        btnTest.onclick = () => {
+                            localStorage.setItem('__4sp_theme_source', 'themes-test.json');
+                            switchTab('about'); // Refresh
+                        };
+                    }
+                }
             } else {
                 const content = tabContent[tabId];
                 mainView.innerHTML = getComingSoonContent(content.title);
