@@ -1,6 +1,5 @@
 (() => {
-    // Root-relative path for logged-in directory
-    const basePath = "/logged-in/uv/";
+    const basePath = "/VELIUM_PROX/uv/";
 
     self.__uv$config = {
         prefix: basePath + "service/",
@@ -11,6 +10,6 @@
         bundle: basePath + "uv.bundle.js",
         config: basePath + "uv.config.js",
         sw: basePath + "uv.sw.js",
-        stockSW: "/sw.js",
+        stockSW: basePath + "sw.js",
     };
 })();

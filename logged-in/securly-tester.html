@@ -13,9 +13,9 @@
     <script src="../navigation.js"></script>
 
     <!-- VERN Proxy Scripts -->
-    <script src="/logged-in/uv/uv.bundle.js"></script>
+    <script src="/LOGGED_IN_PROX/uv/uv.bundle.js"></script>
     <script>
-        const basePath = "/logged-in/uv/";
+        const basePath = "/LOGGED_IN_PROX/uv/";
         self.__uv$config = {
             prefix: basePath + "service/",
             encodeUrl: Ultraviolet.codec.xor.encode,
@@ -28,12 +28,12 @@
             stockSW: basePath + "sw.js",
         };
     </script>
-    <script src="/logged-in/baremux/index.js"></script>
+    <script src="/LOGGED_IN_PROX/baremux/index.js"></script>
     <script>
         (async () => {
             if ("serviceWorker" in navigator) {
                 try {
-                    await navigator.serviceWorker.register("/sw.js", {
+                    await navigator.serviceWorker.register("/LOGGED_IN_PROX/uv/sw.js", {
                         scope: "/logged-in/"
                     });
                     console.log("VERN SW Registered");
@@ -48,9 +48,9 @@
                 }
             }
             try {
-                const connection = new BareMux.BareMuxConnection(window.location.origin + "/logged-in/baremux/worker.js");
+                const connection = new BareMux.BareMuxConnection(window.location.origin + "/LOGGED_IN_PROX/baremux/worker.js");
                 const wispUrl = "wss://wisp.mercurywork.shop/";
-                await connection.setTransport("/logged-in/libcurl/index.mjs", [
+                await connection.setTransport("/LOGGED_IN_PROX/libcurl/index.mjs", [
                     { websocket: wispUrl }
                 ]);
                 console.log("BareMux Initialized");
@@ -65,7 +65,7 @@
             }
             // Fallback
             if (window.Ultraviolet && window.Ultraviolet.codec && window.Ultraviolet.codec.xor) {
-                 return "/logged-in/uv/service/" + window.Ultraviolet.codec.xor.encode(url);
+                 return "/LOGGED_IN_PROX/uv/service/" + window.Ultraviolet.codec.xor.encode(url);
             }
             return url;
         }

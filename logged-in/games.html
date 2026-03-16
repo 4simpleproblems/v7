@@ -56,15 +56,30 @@
     </script>
     
     <script>
-        // Initialize Service Worker at root for broad scope
+        // Initialize Service Worker for Games
         (async () => {
             if ('serviceWorker' in navigator) {
                 try {
-                    await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-                    console.log("VERN_SYSTEM SW Registered at root");
+                    await navigator.serviceWorker.register('/GAMES_PROX/uv/sw.js', { 
+                        scope: '/GAMES_PROX/uv/service/' 
+                    });
+                    console.log("GAMES Proxy SW Registered");
                 } catch(e) { console.error("SW Init Error:", e); }
             }
         })();
+
+        function getProxyUrl(url) {
+            if (!url) return url;
+            if (url.startsWith('http') || url.startsWith('//')) {
+                // Check if we have Ultraviolet loaded
+                if (window.Ultraviolet && window.Ultraviolet.codec && window.Ultraviolet.codec.xor) {
+                    return "/GAMES_PROX/uv/service/" + window.Ultraviolet.codec.xor.encode(url);
+                }
+                // Fallback to simpler encoding if needed, or just return as is (but proxying is preferred)
+                return "/GAMES_PROX/uv/service/" + btoa(url).replace(/\//g, '_').replace(/\+/g, '-').replace(/=/g, '');
+            }
+            return url;
+        }
     </script>
     <style>
         /* Base styles */
@@ -1269,7 +1284,7 @@
                     
                     // If successful, set src
                     if (isStandardURLGame) {
-                        zoneFrame.src = game.url;
+                        zoneFrame.src = getProxyUrl(game.url);
                         // Prevent showing raw directory listing if it resolves to a folder
                         zoneFrame.onload = () => {
                             try {

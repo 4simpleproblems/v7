@@ -1,3 +1,10 @@
+function getProxyUrl(url) {
+    if (window.__uv$config && window.__uv$config.prefix && window.__uv$config.encodeUrl) {
+        return window.__uv$config.prefix + window.__uv$config.encodeUrl(url);
+    }
+    return url;
+}
+
 var themoviedb = ( () => {
     var a = new Headers;
     a.append("Accept", "application/json"),
@@ -17,7 +24,7 @@ var themoviedb = ( () => {
             i.searchParams.set(a, e)
         }
         ),
-        await t("tmdb-" + encodeURIComponent(a), i.toString())
+        await t("tmdb-" + encodeURIComponent(a), getProxyUrl(i.toString()))
     }
 }
 )()
@@ -38,7 +45,7 @@ var themoviedb = ( () => {
             i.searchParams.set(a, e)
         }
         ),
-        await r("etv7-" + encodeURIComponent(a), i.toString(), e?.headers)
+        await r("etv7-" + encodeURIComponent(a), getProxyUrl(i.toString()), e?.headers)
     }
 }
 )()

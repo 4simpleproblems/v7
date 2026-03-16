@@ -15,16 +15,15 @@
         navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'getPort' && event.data.port) {
                 try {
-                    let workerPath = "/VELIUM/baremux/worker.js";
+                    let workerPath = "/VELIUM_PROX/baremux/worker.js";
                     const pathname = window.location.pathname.toLowerCase();
-                    if (pathname.includes('vora')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
-                    else if (pathname.includes('/vora/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
-                    else if (pathname.includes('/vern/')) workerPath = "/VERN/baremux/worker.js";
-                    else if (pathname.includes('/games/')) workerPath = "/GAMES/baremux/worker.js";
-                    else if (pathname.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
+                    if (pathname.includes('vora')) workerPath = "/VORA_PROX/baremux/worker.js";
+                    else if (pathname.includes('/vora/')) workerPath = "/VORA_PROX/baremux/worker.js";
+                    else if (pathname.includes('/vern/')) workerPath = "/VERN_PROX/baremux/worker.js";
+                    else if (pathname.includes('/games/')) workerPath = "/GAMES_PROX/baremux/worker.js";
+                    else if (pathname.includes('/logged-in/')) workerPath = "/LOGGED_IN_PROX/baremux/worker.js";
 
                     // Always create a new SharedWorker instance to get a fresh port for the SW.
-                    // This prevents transferring the port that the current page might be using.
                     const worker = new SharedWorker(workerPath);
                     event.data.port.postMessage(worker.port, [worker.port]);
                 } catch (e) {}

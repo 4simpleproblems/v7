@@ -1,5 +1,5 @@
 (() => {
-    const basePath = "/VORA/VERN_SYSTEM/uv/";
+    const basePath = "/VERN_PROX/uv/";
 
     self.__uv$config = {
         prefix: basePath + "service/",
@@ -10,11 +10,6 @@
         bundle: basePath + "uv.bundle.js",
         config: basePath + "uv.config.js",
         sw: basePath + "uv.sw.js",
-        stockSW: "/VORA/VERN_SYSTEM/sw.js",
-        /**
-         * @type {string}
-         * @description The Bare server to use. This can be an absolute URL or a relative path.
-         */
-        bare: "/api/bare", // This will be handled by BareMux/Wisp in the frontend
+        stockSW: basePath + "sw.js",
     };
 })();

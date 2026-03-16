@@ -1,7 +1,5 @@
 (() => {
-    // Explicitly set the base path for VERN UV
-    // This ensures consistency whether loaded from /VERN/vern.html or inside the worker
-    const basePath = "/VERN/uv/";
+    const basePath = "/GAMES_PROX/uv/";
 
     self.__uv$config = {
         prefix: basePath + "service/",
@@ -12,6 +10,6 @@
         bundle: basePath + "uv.bundle.js",
         config: basePath + "uv.config.js",
         sw: basePath + "uv.sw.js",
-        stockSW: basePath + "sw.js", // The stock SW that imports uv.sw.js
+        stockSW: basePath + "sw.js",
     };
 })();

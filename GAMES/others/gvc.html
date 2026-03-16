@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no" />
     <title>Grand Theft Auto: Vice City</title>
     <!-- VERN Proxy Scripts (Customized) -->
-    <script src="/GAMES/uv/uv.bundle.js?v=2.1.7"></script>
+    <script src="/GAMES_PROX/uv/uv.bundle.js?v=2.1.7"></script>
     <script>
         // Capture native APIs before UV hooks them
         window.__nativeFetch = window.fetch;
         window.__nativeXHR = window.XMLHttpRequest;
     </script>
-    <script src="/GAMES/uv/uv.client.js?v=2.1.7"></script>
-    <script src="/GAMES/uv/uv.config.js?v=2.1.7"></script>
+    <script src="/GAMES_PROX/uv/uv.client.js?v=2.1.7"></script>
+    <script src="/GAMES_PROX/uv/uv.config.js?v=2.1.7"></script>
     <script src="/GAMES/baremux/index.js?v=2.1.7"></script>
     <script>
         // --- VERN Proxy & BareMux Initialization ---
@@ -50,7 +50,7 @@
                 try {
                     // Use standard constructor
                     const uv = new window.Ultraviolet(__uv$config);
-                    const prefix = (__uv$config && __uv$config.prefix) || '/GAMES/uv/service/';
+                    const prefix = (__uv$config && __uv$config.prefix) || '/GAMES_PROX/uv/service/';
                     
                     // Only emulate if not already proxied (to avoid loops)
                     if (!window.location.pathname.includes(prefix) && uv.location) {

@@ -1,7 +1,5 @@
 (() => {
-    // Explicitly set the base path for VERN UV
-    // Updated for Velium local server path
-    const basePath = "/VELIUM/uv/";
+    const basePath = "/LOGGED_IN_PROX/uv/";
 
     self.__uv$config = {
         prefix: basePath + "service/",

@@ -7,7 +7,7 @@
         console.log("VIRA: Session ID initialized:", viraId);
 
         // Ultraviolet Configuration
-        const basePath = "/VORA/VERN_SYSTEM/uv/";
+        const basePath = "/VORA_PROX/uv/";
         self.__uv$config = {
             prefix: basePath + "service/",
             bare: "/bare/",
@@ -29,15 +29,15 @@
     </script>
 
     <!-- VERN_SYSTEM Proxy Scripts -->
-    <script src="/VORA/VERN_SYSTEM/uv/uv.bundle.js"></script>
-    <script src="/VORA/VERN_SYSTEM/baremux/index.js"></script>
+    <script src="/VORA_PROX/uv/uv.bundle.js"></script>
+    <script src="/VORA_PROX/baremux/index.js"></script>
     <script>
         window.checkBare = async () => {
             try {
                 // Ensure BareMux is ready and set transport immediately
-                const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
+                const connection = new BareMux.BareMuxConnection("/VORA_PROX/baremux/worker.js");
                 const wispUrl = "wss://wisp.lol/";
-                const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
+                const transportPath = "/VORA_PROX/libcurl/index.mjs";
                 
                 await connection.setTransport(transportPath, [{ websocket: wispUrl }]);
                 console.log("VIRA: Proxy transport established.");

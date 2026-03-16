@@ -1,19 +1,20 @@
 importScripts('uv.bundle.js');
 importScripts('uv.config.js');
-importScripts('../baremux/index.js');
-
-// Shared transport state
-const workerPath = location.origin + "/VERN/baremux/worker.js";
-const connection = new BareMux.WorkerConnection(workerPath);
-const bareClient = new BareMux.BareClient(connection);
-
 importScripts(__uv$config.sw || 'uv.sw.js');
 
 const uv = new UVServiceWorker();
-uv.bareClient = bareClient;
+let config = {
+    blocklist: new Set(),
+}
 
 async function handleRequest(event) {
     if (uv.route(event)) {
+        if (config.blocklist.size !== 0) {
+            let decodedUrl = new URL(__uv$config.decodeUrl(new URL(event.request.url).pathname.slice(__uv$config.prefix.length)));
+            if (config.blocklist.has(decodedUrl.hostname)) {
+                return new Response("", { status: 404 });
+            }
+        }
         return await uv.fetch(event);
     }
     
@@ -25,10 +26,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener("message", (event) => {
-    if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
-        connection.port = event.data.port;
-        console.log("VERN SW: BareMux Port Synced");
-    }
+    config = event.data;
 });
 
 self.addEventListener("activate", () => {

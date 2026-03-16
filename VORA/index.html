@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-    <!-- VERN_SYSTEM Proxy -->
-    <script src="/VORA/VERN_SYSTEM/uv/uv.bundle.js"></script>
+    <!-- VORA Proxy -->
+    <script src="/VORA_PROX/uv/uv.bundle.js"></script>
     <script>
-        const basePath = "/VORA/VERN_SYSTEM/uv/";
+        const basePath = "/VORA_PROX/uv/";
         self.__uv$config = {
             prefix: basePath + "service/",
             encodeUrl: Ultraviolet.codec.xor.encode,
@@ -14,16 +14,16 @@
             bundle: basePath + "uv.bundle.js",
             config: basePath + "uv.config.js",
             sw: basePath + "uv.sw.js",
-            stockSW: "/VORA/VERN_SYSTEM/sw.js",
+            stockSW: "/VORA_PROX/uv/sw.js",
         };
     </script>
-    <script src="/VORA/VERN_SYSTEM/baremux/index.js"></script>
+    <script src="/VORA_PROX/baremux/index.js"></script>
     <script>
         window.checkBare = async () => {
-            const workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+            const workerPath = "/VORA_PROX/baremux/worker.js";
             const connection = new BareMux.BareMuxConnection(workerPath);
             const wispUrl = "wss://wisp.mercurywork.shop/";
-            const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
+            const transportPath = "/VORA_PROX/libcurl/index.mjs";
             
             try {
                 const transport = await connection.getTransport();
@@ -64,10 +64,10 @@
         (async () => {
             if ("serviceWorker" in navigator) {
                 try {
-                    await navigator.serviceWorker.register("/VORA/VERN_SYSTEM/sw.js", {
-                        scope: "/VORA/VERN_SYSTEM/"
+                    await navigator.serviceWorker.register("/VORA_PROX/uv/sw.js", {
+                        scope: "/VORA_PROX/uv/service/"
                     });
-                } catch (e) { console.error("VERN Proxy Error", e); }
+                } catch (e) { console.error("VORA Proxy Error", e); }
             }
             await window.checkBare();
         })();

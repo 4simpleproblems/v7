@@ -60,7 +60,7 @@ function getProxyUrl(url, size = null) {
         return window.__uv$config.prefix + window.__uv$config.encodeUrl(url);
     }
     if (window.Ultraviolet && window.Ultraviolet.codec && window.Ultraviolet.codec.xor) {
-         return "/VELIUM/uv/service/" + window.Ultraviolet.codec.xor.encode(url);
+         return "/VELIUM_PROX/uv/service/" + window.Ultraviolet.codec.xor.encode(url);
     }
     
     return url;
