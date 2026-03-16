@@ -412,24 +412,26 @@
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
 
-                // Sync with Root SW if it exists
-                const syncPort = () => {
-                    if (navigator.serviceWorker.controller && connection.port) {
-                        setTimeout(() => {
-                            navigator.serviceWorker.controller.postMessage({
-                                type: 'baremuxinit',
-                                path: workerPath,
-                                port: connection.port
-                            }, [connection.port]);
-                            console.log("BareMux Port Synced with Root SW");
-                        }, 100);
-                    }
+                // Sync with Service Workers
+                const syncPort = (port) => {
+                    // Try to sync with all registrations to be safe
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        registrations.forEach(reg => {
+                            const sw = reg.active || reg.waiting || reg.installing;
+                            if (sw) {
+                                sw.postMessage({
+                                    type: 'baremuxinit',
+                                    path: workerPath,
+                                    port: port
+                                }, [port]);
+                            }
+                        });
+                    });
                 };
 
-                if (navigator.serviceWorker.controller) {
-                    syncPort();
-                } else {
-                    navigator.serviceWorker.addEventListener('controllerchange', syncPort);
+                if (connection.port) {
+                    syncPort(connection.port);
+                    console.log("BareMux Port Synced");
                 }
             } catch (e) {
                 console.error("BareMux Init Failed", e);

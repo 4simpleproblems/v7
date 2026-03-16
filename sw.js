@@ -74,8 +74,10 @@ const bareClient = new BareMux.BareClient(connection);
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
         connection.port = event.data.port;
-        transportReady = true;
-        if (transportResolve) transportResolve();
+        if (!transportReady) {
+            transportReady = true;
+            if (transportResolve) transportResolve();
+        }
         console.log("Root SW: BareMux Port Synced via " + (event.data.path || "unknown"));
     }
 });
@@ -118,13 +120,10 @@ async function handleRequest(event) {
                        autoProxyDomains.some(domain => url.includes(domain)) || 
                        url.includes('hvtrs8%2F-');
 
-    // If we need proxying but transport isn't ready, wait for up to 2 seconds
+    // If we need proxying but transport isn't ready, wait for it
     if (needsProxy && !transportReady) {
         console.log("Root SW: Waiting for transport for " + url);
-        await Promise.race([
-            transportPromise,
-            new Promise(r => setTimeout(r, 2000))
-        ]);
+        await transportPromise;
     }
 
     // Find the matching instance based on prefix

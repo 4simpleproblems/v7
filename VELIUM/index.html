@@ -60,7 +60,7 @@
                 const workerPath = "/VELIUM/baremux/worker.js";
                 const connection = new BareMux.BareMuxConnection(workerPath);
                 const wispUrl = "wss://wisp.mercurywork.shop/";
-                connection.setTransport("/VELIUM/libcurl/index.mjs", [
+                await connection.setTransport("/VELIUM/libcurl/index.mjs", [
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
