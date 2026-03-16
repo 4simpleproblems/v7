@@ -10,6 +10,19 @@
     if (window.__4sp_injector_loaded) return;
     window.__4sp_injector_loaded = true;
 
+    // --- SW Cleanup (One-time check for stale root SWs) ---
+    if (navigator.serviceWorker && !localStorage.getItem('__4sp_sw_cleaned_v2')) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            for (let registration of registrations) {
+                if (registration.scope === window.location.origin + '/') {
+                    registration.unregister();
+                    console.log('Unregistered stale root SW:', registration.scope);
+                }
+            }
+            localStorage.setItem('__4sp_sw_cleaned_v2', 'true');
+        });
+    }
+
     // --- BareMux MessagePort fix for service worker communication ---
     if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
         navigator.serviceWorker.addEventListener('message', (event) => {
