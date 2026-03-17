@@ -18,15 +18,16 @@
     }
 
     async function fetchSportsData(path) {
-        // Correct path handling: strip leading slash if present
+        // Remove leading slash if present to avoid double slash
         const cleanPath = path.startsWith('/') ? path.substring(1) : path;
         const url = `${API_BASE}/${cleanPath}`;
         const proxied = getProxyUrl(url);
         
         try {
             const response = await fetch(proxied);
-            if (!response.ok) throw new Error('Network response was not ok');
-            return await response.json();
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            return data;
         } catch (e) {
             console.error("Valo API Error:", e);
             return null;
@@ -44,13 +45,15 @@
 
     // --- UI Logic ---
     async function init() {
+        // Load matches first so user sees content
+        loadMatches();
+        
         const sportsData = await SportsAPI.getSports();
         if (sportsData) {
             sports = Array.isArray(sportsData) ? sportsData : (sportsData.sports || []);
             renderSidebar();
             renderSportChips();
         }
-        loadMatches();
         setupSearch();
     }
 
@@ -59,7 +62,7 @@
         if (!container) return;
         
         container.innerHTML = sports.map(sport => `
-            <div class="nav-item" onclick="switchSport('${sport.id}')" id="nav-${sport.id}">
+            <div class="nav-item ${currentSport === sport.id ? 'active' : ''}" onclick="switchSport('${sport.id}')" id="nav-${sport.id}">
                 <i class="fas ${getSportIcon(sport.id)}"></i>
                 <span>${sport.name}</span>
             </div>
@@ -71,12 +74,12 @@
         if (!container) return;
 
         const baseChips = `
-            <div class="sport-chip active" id="chip-all" onclick="switchSport('all')">All Events</div>
-            <div class="sport-chip" id="chip-live" onclick="switchSport('live')">Live Now</div>
+            <div class="sport-chip ${currentSport === 'all' ? 'active' : ''}" id="chip-all" onclick="switchSport('all')">All Events</div>
+            <div class="sport-chip ${currentSport === 'live' ? 'active' : ''}" id="chip-live" onclick="switchSport('live')">Live Now</div>
         `;
 
         container.innerHTML = baseChips + sports.map(sport => `
-            <div class="sport-chip" id="chip-${sport.id}" onclick="switchSport('${sport.id}')">${sport.name}</div>
+            <div class="sport-chip ${currentSport === sport.id ? 'active' : ''}" id="chip-${sport.id}" onclick="switchSport('${sport.id}')">${sport.name}</div>
         `).join('');
     }
 
@@ -94,19 +97,22 @@
                 data = await SportsAPI.getMatches(currentSport);
             }
         } catch (e) {
-            console.error("Valo Fetch Error:", e);
+            console.error("Valo API Fetch Error:", e);
         }
 
+        console.log("Valo API Response:", data);
+
         if (!data) {
-            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">Failed to connect to sports node.</div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">Sports node busy. Retrying...</div>';
+            setTimeout(loadMatches, 3000);
             return;
         }
 
-        // Robust data extraction
+        // The API might return { matches: [] } or just []
         allMatches = Array.isArray(data) ? data : (data.matches || []);
 
         if (allMatches.length === 0) {
-            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">No live or upcoming matches in this category.</div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">No active events found.</div>';
             return;
         }
 
@@ -161,11 +167,12 @@
     window.switchSport = function(sportId) {
         currentSport = sportId;
         
-        // Update UI
+        // Update Sidebar UI
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         const activeNav = document.getElementById('nav-' + sportId);
         if (activeNav) activeNav.classList.add('active');
 
+        // Update Chip UI
         document.querySelectorAll('.sport-chip').forEach(el => el.classList.remove('active'));
         const activeChip = document.getElementById('chip-' + sportId);
         if (activeChip) activeChip.classList.add('active');
@@ -188,7 +195,7 @@
             return;
         }
 
-        // Pick the first stream
+        // Select the most stable source
         const stream = streams.streams[0];
         const streamUrl = getProxyUrl(stream.url);
         
@@ -249,7 +256,6 @@
         return icons[id] || 'fa-trophy';
     }
 
-    // Start
     init();
 
 })();

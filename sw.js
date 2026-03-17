@@ -95,6 +95,9 @@ bc.onmessage = (event) => {
 // Message listener for SharedWorker port synchronization (legacy/direct fallback)
 self.addEventListener('message', (event) => {
     if (event.data && (event.data.type === 'baremuxinit' || event.data.type === 'baremuxready')) {
+        // If a new path is provided, we should ideally switch the worker,
+        // but since BareClient is already tied to 'connection', we just update the port.
+        // For SharedWorker stability, we assume the apps are somewhat consistent or use the first available transport.
         if (event.data.port) connection.port = event.data.port;
         if (!transportReady) {
             transportReady = true;
