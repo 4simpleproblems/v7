@@ -101,5 +101,12 @@
         "url": "../logged-in/analytics.html",
         "aliases": ["/logged-in/analytics"],
         "adminOnly": true
+    },
+    "valo": {
+        "name": "Valo",
+        "icon": "fa-solid fa-trophy",
+        "url": "../logged-in/valo.html",
+        "aliases": ["/logged-in/valo"],
+        "adminOnly": true
     }
 }

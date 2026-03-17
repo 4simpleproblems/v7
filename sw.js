@@ -52,6 +52,16 @@ const configs = {
         handler: '/GAMES/uv/uv.handler.js',
         client: '/GAMES/uv/uv.client.js',
         worker: '/GAMES/baremux/worker.js'
+    },
+    valo: {
+        prefix: '/VERN/uv/service/',
+        bare: '/bare/',
+        bundle: '/VERN/uv/uv.bundle.js',
+        config: '/VERN/uv/uv.config.js',
+        sw: '/VERN/uv/uv.sw.js',
+        handler: '/VERN/uv/uv.handler.js',
+        client: '/VERN/uv/uv.client.js',
+        worker: '/VERN/baremux/worker.js'
     }
 };
 
@@ -125,7 +135,8 @@ async function handleRequest(event) {
         'sub.wyzie.ru',
         'saavncdn.com',
         'soundcloud.com',
-        'sndcdn.com'
+        'sndcdn.com',
+        'streamed.pk'
     ];
 
     const needsProxy = Object.values(configs).some(c => url.includes(c.prefix)) || 
