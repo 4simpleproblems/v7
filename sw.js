@@ -132,10 +132,17 @@ async function handleRequest(event) {
                        autoProxyDomains.some(domain => url.includes(domain)) || 
                        url.includes('hvtrs8%2F-');
 
-    // If we need proxying but transport isn't ready, wait for it
+    // If we need proxying but transport isn't ready, wait for up to 3 seconds
     if (needsProxy && !transportReady) {
         console.log("Root SW: Waiting for transport for " + url);
-        await transportPromise;
+        await Promise.race([
+            transportPromise,
+            new Promise(r => setTimeout(r, 3000))
+        ]);
+        
+        // If still not ready after timeout, log it but let the fetch proceed 
+        // (which might fail or hang, but prevents complete worker deadlock)
+        if (!transportReady) console.warn("Root SW: Transport wait timed out for " + url);
     }
 
     // Find the matching instance based on prefix
