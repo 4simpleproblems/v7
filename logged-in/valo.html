@@ -50,7 +50,9 @@
                     bc.postMessage(signal);
                     
                     if (navigator.serviceWorker.controller) {
-                        navigator.serviceWorker.controller.postMessage(signal, [connection.port]);
+                        // Fix for TypeError: Only transfer port if it exists and is valid
+                        const transferList = connection.port ? [connection.port] : [];
+                        navigator.serviceWorker.controller.postMessage(signal, transferList);
                     }
 
                     window.__4sp_bare_mux_connecting = false;
