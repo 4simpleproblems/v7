@@ -18,7 +18,7 @@
     }
 
     async function fetchSportsData(path) {
-        // Remove leading slash if present to avoid double slash
+        // Clean path: streamed.pk/api endpoints dont want leading slashes or doubled api
         const cleanPath = path.startsWith('/') ? path.substring(1) : path;
         const url = `${API_BASE}/${cleanPath}`;
         const proxied = getProxyUrl(url);
@@ -36,7 +36,10 @@
 
     const SportsAPI = {
         getSports: () => fetchSportsData('sports'),
-        getMatches: (sport = 'all') => fetchSportsData(`matches/${sport}`),
+        getMatches: (sport = 'all') => {
+            // "all" match endpoint is actually just /matches/all
+            return fetchSportsData(`matches/${sport}`);
+        },
         getLiveMatches: () => fetchSportsData('matches/live'),
         getTodayMatches: () => fetchSportsData('matches/all-today'),
         getStreams: (source, id) => fetchSportsData(`stream/${source}/${id}`),
@@ -45,15 +48,16 @@
 
     // --- UI Logic ---
     async function init() {
-        // Load matches first so user sees content
-        loadMatches();
-        
+        // Fetch sports categories first to build UI
         const sportsData = await SportsAPI.getSports();
         if (sportsData) {
             sports = Array.isArray(sportsData) ? sportsData : (sportsData.sports || []);
             renderSidebar();
             renderSportChips();
         }
+        
+        // Then load initial matches
+        loadMatches();
         setupSearch();
     }
 
@@ -91,8 +95,6 @@
         try {
             if (currentSport === 'live') {
                 data = await SportsAPI.getLiveMatches();
-            } else if (currentSport === 'all') {
-                data = await SportsAPI.getMatches('all');
             } else {
                 data = await SportsAPI.getMatches(currentSport);
             }
@@ -103,16 +105,16 @@
         console.log("Valo API Response:", data);
 
         if (!data) {
-            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">Sports node busy. Retrying...</div>';
-            setTimeout(loadMatches, 3000);
+            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">Failed to connect to sports node. Retrying...</div>';
+            setTimeout(loadMatches, 5000);
             return;
         }
 
-        // The API might return { matches: [] } or just []
+        // Logic from scraps: data is either [] or { matches: [] }
         allMatches = Array.isArray(data) ? data : (data.matches || []);
 
         if (allMatches.length === 0) {
-            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">No active events found.</div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">No active events found in this category.</div>';
             return;
         }
 
@@ -123,11 +125,12 @@
         const grid = document.getElementById('matches-grid');
         grid.innerHTML = matches.map(match => {
             const isLive = match.status?.toLowerCase() === 'live';
-            const homeBadge = SportsAPI.getTeamBadge(match.home_team?.badge);
-            const awayBadge = SportsAPI.getTeamBadge(match.away_team?.badge);
+            // Scraps show badges might be in home_team.badge
+            const homeBadge = SportsAPI.getTeamBadge(match.home_team?.badge || match.home_badge);
+            const awayBadge = SportsAPI.getTeamBadge(match.away_team?.badge || match.away_badge);
             
             return `
-                <div class="match-card group" onclick="playMatch('${match.source}', '${match.id}', '${match.title.replace(/'/g, "\\'")}')">
+                <div class="match-card group" onclick="playMatch('${match.source}', '${match.id}', '${(match.title || 'Match').replace(/'/g, "\\'")}')">
                     <div class="flex justify-between items-start mb-6">
                         <span class="status-badge ${isLive ? 'live' : ''}">${match.status || 'Scheduled'}</span>
                         <span class="text-[10px] opacity-40 uppercase font-bold">${match.sport_id || 'Sports'}</span>
@@ -136,17 +139,17 @@
                     <div class="flex items-center justify-between gap-4 mb-8">
                         <div class="flex flex-col items-center gap-3 flex-1 text-center">
                             <img src="${homeBadge}" class="team-logo" onerror="this.src='/images/logo.png'">
-                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.home_team?.name || 'Home'}</span>
+                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.home_team?.name || match.home_name || 'Home'}</span>
                         </div>
                         
                         <div class="flex flex-col items-center gap-1">
                             <span class="text-2xl font-black text-white italic">VS</span>
-                            ${match.score ? `<span class="text-sm font-mono text-[var(--accent-color)]">${match.score}</span>` : ''}
+                            ${match.score ? `<span class="text-sm font-mono text-[var(--accent-orange)]">${match.score}</span>` : ''}
                         </div>
 
                         <div class="flex flex-col items-center gap-3 flex-1 text-center">
                             <img src="${awayBadge}" class="team-logo" onerror="this.src='/images/logo.png'">
-                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.away_team?.name || 'Away'}</span>
+                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.away_team?.name || match.away_name || 'Away'}</span>
                         </div>
                     </div>
 
@@ -155,7 +158,7 @@
                             <span class="text-[10px] opacity-40 uppercase font-bold">Tournament</span>
                             <span class="text-[11px] text-white font-medium truncate max-w-[150px]">${match.league || 'Global'}</span>
                         </div>
-                        <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[var(--accent-color)] transition-colors">
+                        <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[var(--accent-orange)] transition-colors">
                             <i class="fas fa-play text-[10px] text-white"></i>
                         </div>
                     </div>
@@ -167,12 +170,11 @@
     window.switchSport = function(sportId) {
         currentSport = sportId;
         
-        // Update Sidebar UI
+        // Update UI
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         const activeNav = document.getElementById('nav-' + sportId);
         if (activeNav) activeNav.classList.add('active');
 
-        // Update Chip UI
         document.querySelectorAll('.sport-chip').forEach(el => el.classList.remove('active'));
         const activeChip = document.getElementById('chip-' + sportId);
         if (activeChip) activeChip.classList.add('active');
@@ -195,7 +197,6 @@
             return;
         }
 
-        // Select the most stable source
         const stream = streams.streams[0];
         const streamUrl = getProxyUrl(stream.url);
         
@@ -228,10 +229,10 @@
                     return;
                 }
                 const filtered = allMatches.filter(m => 
-                    m.title.toLowerCase().includes(val) || 
-                    m.league?.toLowerCase().includes(val) ||
-                    m.home_team?.name.toLowerCase().includes(val) ||
-                    m.away_team?.name.toLowerCase().includes(val)
+                    (m.title && m.title.toLowerCase().includes(val)) || 
+                    (m.league && m.league.toLowerCase().includes(val)) ||
+                    (m.home_team?.name && m.home_team.name.toLowerCase().includes(val)) ||
+                    (m.away_team?.name && m.away_team.name.toLowerCase().includes(val))
                 );
                 renderMatches(filtered);
             }, 300);
@@ -250,8 +251,7 @@
             'cricket': 'fa-bat-ball',
             'golf': 'fa-golf-ball',
             'racing': 'fa-car',
-            'nfl': 'fa-football-ball',
-            'american-football': 'fa-football-ball'
+            'nfl': 'fa-football-ball'
         };
         return icons[id] || 'fa-trophy';
     }
