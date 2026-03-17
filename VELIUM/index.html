@@ -64,28 +64,31 @@
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
+                console.log("VELIUM: BareMux Transport Active");
                 
-                // Sync with Root SW if it exists
-                const syncPort = () => {
-                    if (navigator.serviceWorker.controller && connection.port) {
-                        setTimeout(() => {
-                            navigator.serviceWorker.controller.postMessage({
-                                type: 'baremuxinit',
-                                path: workerPath,
-                                port: connection.port
-                            }, [connection.port]);
-                            console.log("BareMux Port Synced with Root SW");
-                        }, 100);
-                    }
+                // Signal to all Service Workers (Root and local)
+                const bc = new BroadcastChannel("bare-mux-sync");
+                const signalReady = () => {
+                    const msg = { type: 'baremuxready', path: workerPath, port: connection.port };
+                    bc.postMessage(msg);
+                    
+                    // Also try direct postMessage as fallback
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        registrations.forEach(reg => {
+                            const sw = reg.active || reg.waiting || reg.installing;
+                            if (sw) {
+                                if (connection.port) {
+                                    sw.postMessage(msg, [connection.port]);
+                                } else {
+                                    sw.postMessage(msg);
+                                }
+                            }
+                        });
+                    });
                 };
-
-                if (navigator.serviceWorker.controller) {
-                    syncPort();
-                } else {
-                    navigator.serviceWorker.addEventListener('controllerchange', syncPort);
-                }
-
-                console.log("BareMux Initialized");
+                
+                signalReady();
+                console.log("VELIUM: BareMux Ready Signal Sent");
             } catch (e) {
                 console.error("BareMux Init Failed", e);
             }

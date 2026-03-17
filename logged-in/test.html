@@ -872,6 +872,8 @@ function listenToUser() {
         }
 
         let currentRenderId = 0;
+        let loadedPosts = new Map(); // Cache for loaded posts to prevent re-renders
+
         async function renderMyPosts(usedSlots) {
             const myId = ++currentRenderId;
             const container = document.getElementById('daily-posts-container');
@@ -935,7 +937,10 @@ function listenToUser() {
             const toggleSchool = document.getElementById('feed-toggle-school');
             const toggleDistrict = document.getElementById('feed-toggle-district');
             
-            grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin opacity-20 text-3xl"></i></div>';
+            // Only show spinner on first load of a mode if nothing is cached
+            if (grid.children.length === 0) {
+                grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin opacity-20 text-3xl"></i></div>';
+            }
 
             const today = new Date(); today.setHours(0,0,0,0);
             
@@ -956,7 +961,7 @@ function listenToUser() {
                     toggleSchool.textContent = 'School';
                     toggleDistrict.textContent = 'District';
                     if (feedMode === 'district') {
-                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('districtId', '==', userData.districtId), where('createdAt', '>=', today), limit(50));
+                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('districtId', '==', userData.districtId), where('createdAt', '>=', today), limit(100));
                     } else {
                         primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', userData.schoolId), where('createdAt', '>=', today), limit(50));
                     }
@@ -984,7 +989,7 @@ function listenToUser() {
                         
                         const allDocs = Array.from(combinedMap.values());
 
-                        if (allDocs.length === 0) {
+                        if (allDocs.length === 0 && grid.children.length === 0) {
                             grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today from ${modeLabel}.</p>`;
                             return;
                         }
@@ -1004,32 +1009,57 @@ function listenToUser() {
                             return timeB - timeA;
                         });
 
-                        // Efficiency: Use DocumentFragment and build HTML strings where possible
+                        // Incremental rendering: Only add what's new OR re-render if order changed significantly
+                        const currentIds = Array.from(grid.querySelectorAll('[data-post-id]')).map(el => el.getAttribute('data-post-id'));
+                        const newIds = sortedDocs.map(d => d.id);
+                        
+                        // If the IDs match perfectly, skip DOM updates
+                        if (JSON.stringify(currentIds) === JSON.stringify(newIds)) return;
+
                         const fragment = document.createDocumentFragment();
                         sortedDocs.forEach(docSnap => {
                             const data = docSnap.data();
                             if (blockedUsers.includes(data.creatorUid)) return;
                             
                             const isMutual = mutualUids.includes(data.creatorUid);
-                            const el = document.createElement('div');
-                            el.className = `photo-thumbnail ${isMutual ? 'is-mutual' : ''}`;
-                            el.innerHTML = `
-                                ${isMutual ? `<div class="mutual-badge"><i class="fas fa-heart"></i> Mutual</div>` : ''}
-                                <img src="${data.imageURL || data.imageBase64}" loading="lazy">
-                                <div class="overlay-grad"></div>
-                                <div class="absolute top-3 right-3 flex gap-2">
-                                    <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
-                                        <i class="fas fa-heart text-red-500"></i> ${data.hearts?.length || 0}
-                                    </span>
-                                    <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
-                                        <i class="fas fa-comment text-indigo-400"></i> ${data.comments?.length || 0}
-                                    </span>
-                                </div>
-                                <div class="title-overlay">
-                                    ${data.title}
-                                </div>
-                            `;
-                            el.onclick = () => window.viewPost(docSnap.id);
+                            
+                            // Check if we already have this element cached
+                            let el;
+                            if (loadedPosts.has(docSnap.id)) {
+                                el = loadedPosts.get(docSnap.id);
+                                // Update dynamic parts like hearts/comments
+                                const heartCount = el.querySelector('.heart-count');
+                                const commentCount = el.querySelector('.comment-count');
+                                if (heartCount) heartCount.textContent = data.hearts?.length || 0;
+                                if (commentCount) commentCount.textContent = data.comments?.length || 0;
+                            } else {
+                                el = document.createElement('div');
+                                el.className = `photo-thumbnail ${isMutual ? 'is-mutual' : ''}`;
+                                el.setAttribute('data-post-id', docSnap.id);
+                                
+                                // Show school/district metadata if in district mode
+                                const metaLabel = (feedMode === 'district' && data.schoolId) ? `<div class="absolute bottom-12 left-3 z-20 text-[8px] font-black uppercase tracking-widest opacity-40 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/5 truncate max-w-[80%]">${data.schoolId}</div>` : '';
+
+                                el.innerHTML = `
+                                    ${isMutual ? `<div class="mutual-badge"><i class="fas fa-heart"></i> Mutual</div>` : ''}
+                                    <img src="${data.imageURL || data.imageBase64}" loading="lazy">
+                                    <div class="overlay-grad"></div>
+                                    <div class="absolute top-3 right-3 flex gap-2">
+                                        <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
+                                            <i class="fas fa-heart text-red-500"></i> <span class="heart-count">${data.hearts?.length || 0}</span>
+                                        </span>
+                                        <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
+                                            <i class="fas fa-comment text-indigo-400"></i> <span class="comment-count">${data.comments?.length || 0}</span>
+                                        </span>
+                                    </div>
+                                    ${metaLabel}
+                                    <div class="title-overlay">
+                                        ${data.title}
+                                    </div>
+                                `;
+                                el.onclick = () => window.viewPost(docSnap.id);
+                                loadedPosts.set(docSnap.id, el);
+                            }
                             fragment.appendChild(el);
                         });
 

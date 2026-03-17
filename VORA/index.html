@@ -26,38 +26,37 @@
             const transportPath = "/VORA/VERN_SYSTEM/libcurl/index.mjs";
             
             try {
-                const transport = await connection.getTransport();
-                if (!transport || transport.path !== transportPath) {
-                    await connection.setTransport(transportPath, [
-                        { websocket: wispUrl },
-                        { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                    ]);
-                }
-
-                // Sync with Root SW if it exists
-                const syncPort = () => {
-                    if (navigator.serviceWorker.controller && connection.port) {
-                        setTimeout(() => {
-                            navigator.serviceWorker.controller.postMessage({
-                                type: 'baremuxinit',
-                                path: workerPath,
-                                port: connection.port
-                            }, [connection.port]);
-                            console.log("BareMux Port Synced with Root SW");
-                        }, 100);
-                    }
-                };
-
-                if (navigator.serviceWorker.controller) {
-                    syncPort();
-                } else {
-                    navigator.serviceWorker.addEventListener('controllerchange', syncPort);
-                }
-            } catch (e) {
                 await connection.setTransport(transportPath, [
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
+                console.log("Vora: BareMux Transport Active");
+
+                // Signal to all Service Workers (Root and local)
+                const bc = new BroadcastChannel("bare-mux-sync");
+                const signalReady = () => {
+                    const msg = { type: 'baremuxready', path: workerPath, port: connection.port };
+                    bc.postMessage(msg);
+                    
+                    // Also try direct postMessage as fallback
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        registrations.forEach(reg => {
+                            const sw = reg.active || reg.waiting || reg.installing;
+                            if (sw) {
+                                if (connection.port) {
+                                    sw.postMessage(msg, [connection.port]);
+                                } else {
+                                    sw.postMessage(msg);
+                                }
+                            }
+                        });
+                    });
+                };
+                
+                signalReady();
+                console.log("Vora: BareMux Ready Signal Sent");
+            } catch (e) {
+                console.error("Vora: BareMux Init Failed", e);
             }
         };
 

@@ -70,15 +70,27 @@ const workerPath = location.origin + configs.vora.worker;
 const connection = new BareMux.WorkerConnection(workerPath);
 const bareClient = new BareMux.BareClient(connection);
 
-// Message listener for SharedWorker port synchronization
-self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
-        connection.port = event.data.port;
+// Use BroadcastChannel for more reliable signaling across contexts
+const bc = new BroadcastChannel("bare-mux-sync");
+bc.onmessage = (event) => {
+    if (event.data && event.data.type === 'baremuxready') {
         if (!transportReady) {
             transportReady = true;
             if (transportResolve) transportResolve();
         }
-        console.log("Root SW: BareMux Port Synced via " + (event.data.path || "unknown"));
+        console.log("Root SW: BareMux Ready Signal Received via " + (event.data.path || "unknown"));
+    }
+};
+
+// Message listener for SharedWorker port synchronization (legacy/direct fallback)
+self.addEventListener('message', (event) => {
+    if (event.data && (event.data.type === 'baremuxinit' || event.data.type === 'baremuxready')) {
+        if (event.data.port) connection.port = event.data.port;
+        if (!transportReady) {
+            transportReady = true;
+            if (transportResolve) transportResolve();
+        }
+        console.log("Root SW: BareMux Port/Ready Synced via " + (event.data.path || "unknown"));
     }
 });
 
