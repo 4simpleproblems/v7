@@ -1,5 +1,6 @@
 (function() {
-    const API_BASE = 'https://streamed.pk/api';
+    // Official documentation suggests streamed.pk, using streamed.ad as a stable mirror
+    const API_BASE = 'https://streamed.ad/api'; 
     const PROXY_PREFIX = '/VERN/uv/service/';
     
     // State
@@ -18,46 +19,60 @@
     }
 
     async function fetchSportsData(path) {
-        // Clean path: streamed.pk/api endpoints dont want leading slashes or doubled api
         const cleanPath = path.startsWith('/') ? path.substring(1) : path;
         const url = `${API_BASE}/${cleanPath}`;
         const proxied = getProxyUrl(url);
         
         try {
-            const response = await fetch(proxied);
+            const response = await fetch(proxied, {
+                headers: {
+                    'Referer': API_BASE + '/',
+                    'Origin': API_BASE.replace('/api', '')
+                }
+            });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const data = await response.json();
             return data;
         } catch (e) {
             console.error("Valo API Error:", e);
+            // Fallback mirror if primary fails
+            if (API_BASE.includes('streamed.ad')) {
+                return fetchFallbackData(path);
+            }
             return null;
         }
     }
 
+    async function fetchFallbackData(path) {
+        const fallbackBase = 'https://streamed.pk/api';
+        const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+        const url = `${fallbackBase}/${cleanPath}`;
+        const proxied = getProxyUrl(url);
+        try {
+            const response = await fetch(proxied);
+            if (!response.ok) return null;
+            return await response.json();
+        } catch (e) { return null; }
+    }
+
     const SportsAPI = {
         getSports: () => fetchSportsData('sports'),
-        getMatches: (sport = 'all') => {
-            // "all" match endpoint is actually just /matches/all
-            return fetchSportsData(`matches/${sport}`);
-        },
+        getMatches: (sport = 'all') => fetchSportsData(`matches/${sport === 'all' ? 'all' : sport}`),
         getLiveMatches: () => fetchSportsData('matches/live'),
-        getTodayMatches: () => fetchSportsData('matches/all-today'),
         getStreams: (source, id) => fetchSportsData(`stream/${source}/${id}`),
         getTeamBadge: (id) => id ? `https://images.weserv.nl/?url=${encodeURIComponent(`${API_BASE}/images/badge/${id}.webp`)}&w=100&h=100&fit=contain` : '/images/logo.png'
     };
 
     // --- UI Logic ---
     async function init() {
-        // Fetch sports categories first to build UI
+        loadMatches();
+        
         const sportsData = await SportsAPI.getSports();
         if (sportsData) {
             sports = Array.isArray(sportsData) ? sportsData : (sportsData.sports || []);
             renderSidebar();
             renderSportChips();
         }
-        
-        // Then load initial matches
-        loadMatches();
         setupSearch();
     }
 
@@ -92,29 +107,24 @@
         grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin text-4xl opacity-20"></i></div>';
 
         let data;
-        try {
-            if (currentSport === 'live') {
-                data = await SportsAPI.getLiveMatches();
-            } else {
-                data = await SportsAPI.getMatches(currentSport);
-            }
-        } catch (e) {
-            console.error("Valo API Fetch Error:", e);
+        if (currentSport === 'live') {
+            data = await SportsAPI.getLiveMatches();
+        } else {
+            data = await SportsAPI.getMatches(currentSport);
         }
 
         console.log("Valo API Response:", data);
 
         if (!data) {
-            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">Failed to connect to sports node. Retrying...</div>';
-            setTimeout(loadMatches, 5000);
+            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">Failed to connect to sports node.</div>';
             return;
         }
 
-        // Logic from scraps: data is either [] or { matches: [] }
+        // Handle direct array or { matches: [] }
         allMatches = Array.isArray(data) ? data : (data.matches || []);
 
         if (allMatches.length === 0) {
-            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">No active events found in this category.</div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">No active matches found.</div>';
             return;
         }
 
@@ -125,12 +135,16 @@
         const grid = document.getElementById('matches-grid');
         grid.innerHTML = matches.map(match => {
             const isLive = match.status?.toLowerCase() === 'live';
-            // Scraps show badges might be in home_team.badge
-            const homeBadge = SportsAPI.getTeamBadge(match.home_team?.badge || match.home_badge);
-            const awayBadge = SportsAPI.getTeamBadge(match.away_team?.badge || match.away_badge);
+            const homeBadge = SportsAPI.getTeamBadge(match.home_team?.badge);
+            const awayBadge = SportsAPI.getTeamBadge(match.away_team?.badge);
             
+            // Check for sources array as per API docs
+            const firstSource = match.sources?.[0] || { source: match.source, id: match.id };
+            
+            if (!firstSource.source || !firstSource.id) return '';
+
             return `
-                <div class="match-card group" onclick="playMatch('${match.source}', '${match.id}', '${(match.title || 'Match').replace(/'/g, "\\'")}')">
+                <div class="match-card group" onclick="playMatch('${firstSource.source}', '${firstSource.id}', '${(match.title || 'Match').replace(/'/g, "\\'")}')">
                     <div class="flex justify-between items-start mb-6">
                         <span class="status-badge ${isLive ? 'live' : ''}">${match.status || 'Scheduled'}</span>
                         <span class="text-[10px] opacity-40 uppercase font-bold">${match.sport_id || 'Sports'}</span>
@@ -139,7 +153,7 @@
                     <div class="flex items-center justify-between gap-4 mb-8">
                         <div class="flex flex-col items-center gap-3 flex-1 text-center">
                             <img src="${homeBadge}" class="team-logo" onerror="this.src='/images/logo.png'">
-                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.home_team?.name || match.home_name || 'Home'}</span>
+                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.home_team?.name || 'Home'}</span>
                         </div>
                         
                         <div class="flex flex-col items-center gap-1">
@@ -149,7 +163,7 @@
 
                         <div class="flex flex-col items-center gap-3 flex-1 text-center">
                             <img src="${awayBadge}" class="team-logo" onerror="this.src='/images/logo.png'">
-                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.away_team?.name || match.away_name || 'Away'}</span>
+                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.away_team?.name || 'Away'}</span>
                         </div>
                     </div>
 
@@ -169,16 +183,12 @@
 
     window.switchSport = function(sportId) {
         currentSport = sportId;
-        
-        // Update UI
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         const activeNav = document.getElementById('nav-' + sportId);
         if (activeNav) activeNav.classList.add('active');
-
         document.querySelectorAll('.sport-chip').forEach(el => el.classList.remove('active'));
         const activeChip = document.getElementById('chip-' + sportId);
         if (activeChip) activeChip.classList.add('active');
-
         loadMatches();
     };
 
@@ -219,7 +229,6 @@
     function setupSearch() {
         const input = document.getElementById('searchInput');
         if (!input) return;
-
         input.oninput = (e) => {
             clearTimeout(searchTimeout);
             const val = e.target.value.toLowerCase();
@@ -241,23 +250,14 @@
 
     function getSportIcon(id) {
         const icons = {
-            'football': 'fa-soccer-ball',
-            'basketball': 'fa-basketball-ball',
-            'tennis': 'fa-tennis-ball',
-            'hockey': 'fa-hockey-puck',
-            'baseball': 'fa-baseball-ball',
-            'mma': 'fa-hand-fist',
-            'boxing': 'fa-hand-fist',
-            'cricket': 'fa-bat-ball',
-            'golf': 'fa-golf-ball',
-            'racing': 'fa-car',
-            'nfl': 'fa-football-ball'
+            'football': 'fa-soccer-ball', 'basketball': 'fa-basketball-ball', 'tennis': 'fa-tennis-ball',
+            'hockey': 'fa-hockey-puck', 'baseball': 'fa-baseball-ball', 'mma': 'fa-hand-fist',
+            'boxing': 'fa-hand-fist', 'cricket': 'fa-bat-ball', 'golf': 'fa-golf-ball',
+            'racing': 'fa-car', 'nfl': 'fa-football-ball'
         };
         return icons[id] || 'fa-trophy';
     }
 
     init();
-
 })();
-
 // Made with ❤️ from 4SP

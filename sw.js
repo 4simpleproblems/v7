@@ -139,7 +139,9 @@ async function handleRequest(event) {
         'saavncdn.com',
         'soundcloud.com',
         'sndcdn.com',
-        'streamed.pk'
+        'streamed.pk',
+        'streamed.ad',
+        'strmd.link'
     ];
 
     const needsProxy = Object.values(configs).some(c => url.includes(c.prefix)) || 
