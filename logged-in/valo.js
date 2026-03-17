@@ -1,10 +1,5 @@
 (function() {
-    const MIRRORS = [
-        'https://streamed.ad/api',
-        'https://streamed.pk/api',
-        'https://strmd.link/api'
-    ];
-    let mirrorIndex = 0;
+    const API_BASE = 'https://streamed.pk/api';
     const PROXY_PREFIX = '/VERN/uv/service/';
     
     // State
@@ -23,54 +18,45 @@
     }
 
     async function fetchSportsData(path) {
+        // Clean path: streamed.pk/api endpoints dont want leading slashes or doubled api
         const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-        const currentBase = MIRRORS[mirrorIndex];
-        const url = `${currentBase}/${cleanPath}`;
+        const url = `${API_BASE}/${cleanPath}`;
         const proxied = getProxyUrl(url);
         
         try {
-            const response = await fetch(proxied, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Referer': currentBase.replace('/api', '') + '/'
-                }
-            });
-            
-            if (response.status === 404 && mirrorIndex < MIRRORS.length - 1) {
-                mirrorIndex++;
-                return fetchSportsData(path);
-            }
-
+            const response = await fetch(proxied);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const data = await response.json();
             return data;
         } catch (e) {
             console.error("Valo API Error:", e);
-            if (mirrorIndex < MIRRORS.length - 1) {
-                mirrorIndex++;
-                return fetchSportsData(path);
-            }
             return null;
         }
     }
 
     const SportsAPI = {
         getSports: () => fetchSportsData('sports'),
-        getMatches: (sport = 'all') => fetchSportsData(`matches/${sport === 'all' ? 'all' : sport}`),
+        getMatches: (sport = 'all') => {
+            // "all" match endpoint is actually just /matches/all
+            return fetchSportsData(`matches/${sport}`);
+        },
         getLiveMatches: () => fetchSportsData('matches/live'),
+        getTodayMatches: () => fetchSportsData('matches/all-today'),
         getStreams: (source, id) => fetchSportsData(`stream/${source}/${id}`),
-        getTeamBadge: (id) => id ? getProxyUrl(`${MIRRORS[mirrorIndex]}/images/badge/${id}.webp`) : '/images/logo.png',
-        getPoster: (path) => path ? getProxyUrl(`${MIRRORS[mirrorIndex].replace('/api', '')}${path}.webp`) : ''
+        getTeamBadge: (id) => id ? `https://images.weserv.nl/?url=${encodeURIComponent(`${API_BASE}/images/badge/${id}.webp`)}&w=100&h=100&fit=contain` : '/images/logo.png'
     };
 
     // --- UI Logic ---
     async function init() {
+        // Fetch sports categories first to build UI
         const sportsData = await SportsAPI.getSports();
         if (sportsData) {
             sports = Array.isArray(sportsData) ? sportsData : (sportsData.sports || []);
             renderSidebar();
             renderSportChips();
         }
+        
+        // Then load initial matches
         loadMatches();
         setupSearch();
     }
@@ -78,6 +64,7 @@
     function renderSidebar() {
         const container = document.getElementById('sports-list');
         if (!container) return;
+        
         container.innerHTML = sports.map(sport => `
             <div class="nav-item ${currentSport === sport.id ? 'active' : ''}" onclick="switchSport('${sport.id}')" id="nav-${sport.id}">
                 <i class="fas ${getSportIcon(sport.id)}"></i>
@@ -89,10 +76,12 @@
     function renderSportChips() {
         const container = document.getElementById('sport-chips');
         if (!container) return;
+
         const baseChips = `
             <div class="sport-chip ${currentSport === 'all' ? 'active' : ''}" id="chip-all" onclick="switchSport('all')">All Events</div>
             <div class="sport-chip ${currentSport === 'live' ? 'active' : ''}" id="chip-live" onclick="switchSport('live')">Live Now</div>
         `;
+
         container.innerHTML = baseChips + sports.map(sport => `
             <div class="sport-chip ${currentSport === sport.id ? 'active' : ''}" id="chip-${sport.id}" onclick="switchSport('${sport.id}')">${sport.name}</div>
         `).join('');
@@ -103,23 +92,29 @@
         grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin text-4xl opacity-20"></i></div>';
 
         let data;
-        if (currentSport === 'live') {
-            data = await SportsAPI.getLiveMatches();
-        } else {
-            data = await SportsAPI.getMatches(currentSport);
+        try {
+            if (currentSport === 'live') {
+                data = await SportsAPI.getLiveMatches();
+            } else {
+                data = await SportsAPI.getMatches(currentSport);
+            }
+        } catch (e) {
+            console.error("Valo API Fetch Error:", e);
         }
 
         console.log("Valo API Response:", data);
 
         if (!data) {
-            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">Arena nodes busy. Retrying...</div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">Failed to connect to sports node. Retrying...</div>';
+            setTimeout(loadMatches, 5000);
             return;
         }
 
+        // Logic from scraps: data is either [] or { matches: [] }
         allMatches = Array.isArray(data) ? data : (data.matches || []);
 
         if (allMatches.length === 0) {
-            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">No active events found.</div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">No active events found in this category.</div>';
             return;
         }
 
@@ -130,46 +125,40 @@
         const grid = document.getElementById('matches-grid');
         grid.innerHTML = matches.map(match => {
             const isLive = match.status?.toLowerCase() === 'live';
+            // Scraps show badges might be in home_team.badge
+            const homeBadge = SportsAPI.getTeamBadge(match.home_team?.badge || match.home_badge);
+            const awayBadge = SportsAPI.getTeamBadge(match.away_team?.badge || match.away_badge);
             
-            // DOCS: use match.teams.home.badge
-            const homeBadge = match.teams?.home?.badge ? SportsAPI.getTeamBadge(match.teams.home.badge) : '/images/logo.png';
-            const awayBadge = match.teams?.away?.badge ? SportsAPI.getTeamBadge(match.teams.away.badge) : '/images/logo.png';
-            const homeName = match.teams?.home?.name || 'Home';
-            const awayName = match.teams?.away?.name || 'Away';
-            
-            const firstSource = (match.sources && match.sources[0]) ? match.sources[0] : null;
-            if (!firstSource) return '';
-
             return `
-                <div class="match-card group" onclick="playMatch('${firstSource.source}', '${firstSource.id}', '${(match.title || 'Match').replace(/'/g, "\\'")}')">
+                <div class="match-card group" onclick="playMatch('${match.source}', '${match.id}', '${(match.title || 'Match').replace(/'/g, "\\'")}')">
                     <div class="flex justify-between items-start mb-6">
                         <span class="status-badge ${isLive ? 'live' : ''}">${match.status || 'Scheduled'}</span>
-                        <span class="text-[10px] opacity-40 uppercase font-bold">${match.category || 'Sports'}</span>
+                        <span class="text-[10px] opacity-40 uppercase font-bold">${match.sport_id || 'Sports'}</span>
                     </div>
                     
                     <div class="flex items-center justify-between gap-4 mb-8">
                         <div class="flex flex-col items-center gap-3 flex-1 text-center">
                             <img src="${homeBadge}" class="team-logo" onerror="this.src='/images/logo.png'">
-                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${homeName}</span>
+                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.home_team?.name || match.home_name || 'Home'}</span>
                         </div>
                         
                         <div class="flex flex-col items-center gap-1">
                             <span class="text-2xl font-black text-white italic">VS</span>
-                            ${match.score ? `<span class="text-sm font-mono text-[var(--accent-orange)]">${match.score}</span>` : ''}
+                            ${match.score ? `<span class="text-sm font-mono text-[var(--accent-color)]">${match.score}</span>` : ''}
                         </div>
 
                         <div class="flex flex-col items-center gap-3 flex-1 text-center">
                             <img src="${awayBadge}" class="team-logo" onerror="this.src='/images/logo.png'">
-                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${awayName}</span>
+                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.away_team?.name || match.away_name || 'Away'}</span>
                         </div>
                     </div>
 
                     <div class="pt-4 border-t border-white/5 flex items-center justify-between">
                         <div class="flex flex-col">
-                            <span class="text-[10px] opacity-40 uppercase font-bold">Event</span>
-                            <span class="text-[11px] text-white font-medium truncate max-w-[150px]">${match.title || 'Live Match'}</span>
+                            <span class="text-[10px] opacity-40 uppercase font-bold">Tournament</span>
+                            <span class="text-[11px] text-white font-medium truncate max-w-[150px]">${match.league || 'Global'}</span>
                         </div>
-                        <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[var(--accent-orange)] transition-colors">
+                        <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[var(--accent-color)] transition-colors">
                             <i class="fas fa-play text-[10px] text-white"></i>
                         </div>
                     </div>
@@ -180,12 +169,16 @@
 
     window.switchSport = function(sportId) {
         currentSport = sportId;
+        
+        // Update UI
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         const activeNav = document.getElementById('nav-' + sportId);
         if (activeNav) activeNav.classList.add('active');
+
         document.querySelectorAll('.sport-chip').forEach(el => el.classList.remove('active'));
         const activeChip = document.getElementById('chip-' + sportId);
         if (activeChip) activeChip.classList.add('active');
+
         loadMatches();
     };
 
@@ -199,14 +192,13 @@
         container.innerHTML = '<div class="flex items-center justify-center h-full"><i class="fas fa-spinner fa-spin text-4xl text-white opacity-20"></i></div>';
 
         const streams = await SportsAPI.getStreams(source, id);
-        if (!streams || streams.length === 0) {
+        if (!streams || !streams.streams || streams.streams.length === 0) {
             container.innerHTML = '<div class="flex items-center justify-center h-full text-white opacity-40">No streams available for this match.</div>';
             return;
         }
 
-        // DOCS: use stream.embedUrl
-        const stream = streams[0];
-        const streamUrl = getProxyUrl(stream.embedUrl);
+        const stream = streams.streams[0];
+        const streamUrl = getProxyUrl(stream.url);
         
         container.innerHTML = `<iframe src="${streamUrl}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>`;
         
@@ -227,6 +219,7 @@
     function setupSearch() {
         const input = document.getElementById('searchInput');
         if (!input) return;
+
         input.oninput = (e) => {
             clearTimeout(searchTimeout);
             const val = e.target.value.toLowerCase();
@@ -237,9 +230,9 @@
                 }
                 const filtered = allMatches.filter(m => 
                     (m.title && m.title.toLowerCase().includes(val)) || 
-                    (m.category && m.category.toLowerCase().includes(val)) ||
-                    (m.teams?.home?.name && m.teams.home.name.toLowerCase().includes(val)) ||
-                    (m.teams?.away?.name && m.teams.away.name.toLowerCase().includes(val))
+                    (m.league && m.league.toLowerCase().includes(val)) ||
+                    (m.home_team?.name && m.home_team.name.toLowerCase().includes(val)) ||
+                    (m.away_team?.name && m.away_team.name.toLowerCase().includes(val))
                 );
                 renderMatches(filtered);
             }, 300);
@@ -248,14 +241,23 @@
 
     function getSportIcon(id) {
         const icons = {
-            'football': 'fa-soccer-ball', 'basketball': 'fa-basketball-ball', 'tennis': 'fa-tennis-ball',
-            'hockey': 'fa-hockey-puck', 'baseball': 'fa-baseball-ball', 'mma': 'fa-hand-fist',
-            'boxing': 'fa-hand-fist', 'cricket': 'fa-bat-ball', 'golf': 'fa-golf-ball',
-            'racing': 'fa-car', 'nfl': 'fa-football-ball'
+            'football': 'fa-soccer-ball',
+            'basketball': 'fa-basketball-ball',
+            'tennis': 'fa-tennis-ball',
+            'hockey': 'fa-hockey-puck',
+            'baseball': 'fa-baseball-ball',
+            'mma': 'fa-hand-fist',
+            'boxing': 'fa-hand-fist',
+            'cricket': 'fa-bat-ball',
+            'golf': 'fa-golf-ball',
+            'racing': 'fa-car',
+            'nfl': 'fa-football-ball'
         };
         return icons[id] || 'fa-trophy';
     }
 
     init();
+
 })();
+
 // Made with ❤️ from 4SP
