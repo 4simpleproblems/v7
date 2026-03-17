@@ -1,6 +1,10 @@
 (function() {
-    // Official documentation suggests streamed.pk, using streamed.ad as a stable mirror
-    const API_BASE = 'https://streamed.ad/api'; 
+    const MIRRORS = [
+        'https://streamed.pk/api',
+        'https://streamed.ad/api',
+        'https://strmd.link/api'
+    ];
+    let mirrorIndex = 0;
     const PROXY_PREFIX = '/VERN/uv/service/';
     
     // State
@@ -20,39 +24,35 @@
 
     async function fetchSportsData(path) {
         const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-        const url = `${API_BASE}/${cleanPath}`;
+        const currentBase = MIRRORS[mirrorIndex];
+        const url = `${currentBase}/${cleanPath}`;
         const proxied = getProxyUrl(url);
         
         try {
             const response = await fetch(proxied, {
                 headers: {
-                    'Referer': API_BASE + '/',
-                    'Origin': API_BASE.replace('/api', '')
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Referer': currentBase.replace('/api', '') + '/'
                 }
             });
+            
+            if (response.status === 404 && mirrorIndex < MIRRORS.length - 1) {
+                console.warn(`Mirror ${MIRRORS[mirrorIndex]} returned 404, rotating...`);
+                mirrorIndex++;
+                return fetchSportsData(path);
+            }
+
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const data = await response.json();
             return data;
         } catch (e) {
             console.error("Valo API Error:", e);
-            // Fallback mirror if primary fails
-            if (API_BASE.includes('streamed.ad')) {
-                return fetchFallbackData(path);
+            if (mirrorIndex < MIRRORS.length - 1) {
+                mirrorIndex++;
+                return fetchSportsData(path);
             }
             return null;
         }
-    }
-
-    async function fetchFallbackData(path) {
-        const fallbackBase = 'https://streamed.pk/api';
-        const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-        const url = `${fallbackBase}/${cleanPath}`;
-        const proxied = getProxyUrl(url);
-        try {
-            const response = await fetch(proxied);
-            if (!response.ok) return null;
-            return await response.json();
-        } catch (e) { return null; }
     }
 
     const SportsAPI = {
@@ -60,19 +60,21 @@
         getMatches: (sport = 'all') => fetchSportsData(`matches/${sport === 'all' ? 'all' : sport}`),
         getLiveMatches: () => fetchSportsData('matches/live'),
         getStreams: (source, id) => fetchSportsData(`stream/${source}/${id}`),
-        getTeamBadge: (id) => id ? `https://images.weserv.nl/?url=${encodeURIComponent(`${API_BASE}/images/badge/${id}.webp`)}&w=100&h=100&fit=contain` : '/images/logo.png'
+        getTeamBadge: (id) => id ? `https://images.weserv.nl/?url=${encodeURIComponent(`${MIRRORS[mirrorIndex]}/images/badge/${id}.webp`)}&w=100&h=100&fit=contain` : '/images/logo.png'
     };
 
     // --- UI Logic ---
     async function init() {
-        loadMatches();
-        
+        // Load categories
         const sportsData = await SportsAPI.getSports();
         if (sportsData) {
             sports = Array.isArray(sportsData) ? sportsData : (sportsData.sports || []);
             renderSidebar();
             renderSportChips();
         }
+        
+        // Load initial matches
+        loadMatches();
         setupSearch();
     }
 
@@ -113,18 +115,16 @@
             data = await SportsAPI.getMatches(currentSport);
         }
 
-        console.log("Valo API Response:", data);
-
         if (!data) {
-            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">Failed to connect to sports node.</div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">Failed to connect to sports arena. Retrying...</div>';
+            setTimeout(loadMatches, 5000);
             return;
         }
 
-        // Handle direct array or { matches: [] }
         allMatches = Array.isArray(data) ? data : (data.matches || []);
 
         if (allMatches.length === 0) {
-            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">No active matches found.</div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-40">No active events found.</div>';
             return;
         }
 
@@ -135,11 +135,11 @@
         const grid = document.getElementById('matches-grid');
         grid.innerHTML = matches.map(match => {
             const isLive = match.status?.toLowerCase() === 'live';
-            const homeBadge = SportsAPI.getTeamBadge(match.home_team?.badge);
-            const awayBadge = SportsAPI.getTeamBadge(match.away_team?.badge);
+            const homeBadge = SportsAPI.getTeamBadge(match.home_team?.badge || match.home_badge);
+            const awayBadge = SportsAPI.getTeamBadge(match.away_team?.badge || match.away_badge);
             
-            // Check for sources array as per API docs
-            const firstSource = match.sources?.[0] || { source: match.source, id: match.id };
+            // Logic from docs: use sources array
+            const firstSource = (match.sources && match.sources[0]) ? match.sources[0] : { source: match.source, id: match.id };
             
             if (!firstSource.source || !firstSource.id) return '';
 
@@ -153,7 +153,7 @@
                     <div class="flex items-center justify-between gap-4 mb-8">
                         <div class="flex flex-col items-center gap-3 flex-1 text-center">
                             <img src="${homeBadge}" class="team-logo" onerror="this.src='/images/logo.png'">
-                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.home_team?.name || 'Home'}</span>
+                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.home_team?.name || match.home_name || 'Home'}</span>
                         </div>
                         
                         <div class="flex flex-col items-center gap-1">
@@ -163,7 +163,7 @@
 
                         <div class="flex flex-col items-center gap-3 flex-1 text-center">
                             <img src="${awayBadge}" class="team-logo" onerror="this.src='/images/logo.png'">
-                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.away_team?.name || 'Away'}</span>
+                            <span class="text-xs font-bold text-white line-clamp-2 h-8">${match.away_team?.name || match.away_name || 'Away'}</span>
                         </div>
                     </div>
 

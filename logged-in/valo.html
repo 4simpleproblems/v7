@@ -44,9 +44,14 @@
                     }
                     console.log("Valo: BareMux Transport Active");
                     
-                    // Signal readiness to Root SW
+                    // Signal readiness to all Service Workers
                     const bc = new BroadcastChannel("bare-mux-sync");
-                    bc.postMessage({ type: 'baremuxready', path: "/VERN/baremux/worker.js" });
+                    const signal = { type: 'baremuxready', path: "/VERN/baremux/worker.js", port: connection.port };
+                    bc.postMessage(signal);
+                    
+                    if (navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage(signal, [connection.port]);
+                    }
 
                     window.__4sp_bare_mux_connecting = false;
                     return; 
