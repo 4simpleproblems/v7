@@ -2,13 +2,9 @@ importScripts('uv/uv.bundle.js');
 importScripts('uv/uv.config.js');
 importScripts('baremux/index.js');
 
-// Shared transport state - Use a promise to avoid the auto-retry loop in BareMux 2.x
-let resolvePort;
-const portPromise = new Promise(resolve => {
-    resolvePort = resolve;
-});
-
-const connection = new BareMux.WorkerConnection(portPromise);
+// Consistent SharedWorker worker path
+const workerPath = location.origin + "/VELIUM/baremux/worker.js";
+const connection = new BareMux.WorkerConnection(workerPath);
 const bareClient = new BareMux.BareClient(connection);
 
 importScripts(__uv$config.sw || 'uv/uv.sw.js');
@@ -18,9 +14,12 @@ uv.bareClient = bareClient;
 
 // Sync port from main thread
 self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
-        resolvePort(event.data.port);
-        console.log("VELIUM SW: BareMux Port Synced");
+    if (event.data && (event.data.type === 'baremuxinit' || event.data.type === 'baremuxready')) {
+        const port = event.data.port || (event.ports && event.ports[0]);
+        if (port) {
+            connection.port = port;
+            console.log("VELIUM SW: BareMux Port Synced (" + event.data.type + ")");
+        }
     }
 });
 
@@ -33,22 +32,48 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', event => {
+    const url = event.request.url;
+    const prefix = "/VELIUM/uv/service/";
+
     event.respondWith(
         (async () => {
-            if (uv.route(event)) {
+            // Auto-proxy certain domains or encoded URLs even if prefix is missing
+            const isEncoded = url.includes('hvtrs8');
+            const isMediaDomain = url.includes('saavncdn.com') || url.includes('soundcloud.com') || url.includes('sndcdn.com') || url.includes('fastly.net');
+            
+            let targetEvent = event;
+            let shouldRoute = uv.route(event);
+
+            if (!shouldRoute && (isEncoded || isMediaDomain)) {
+                let encodedPart = "";
+                if (isEncoded) {
+                    encodedPart = url.split('hvtrs8')[1];
+                    // Reconstruct with proper prefix
+                    const fullProxyUrl = location.origin + prefix + 'hvtrs8' + encodedPart;
+                    targetEvent = { ...event, request: new Request(fullProxyUrl, event.request) };
+                    shouldRoute = true;
+                } else if (isMediaDomain) {
+                    const encoded = "hvtrs8" + Ultraviolet.codec.xor.encode(url).split('hvtrs8')[1];
+                    const fullProxyUrl = location.origin + prefix + encoded;
+                    targetEvent = { ...event, request: new Request(fullProxyUrl, event.request) };
+                    shouldRoute = true;
+                }
+            }
+
+            if (shouldRoute) {
                 // Optimization: If it's an image or audio request, bypass UV's heavy processing
                 // and fetch it directly through the Bare client for maximum speed.
-                const url = uv.unroute(event);
-                const isMedia = event.request.destination === 'image' || 
-                                event.request.destination === 'audio' ||
-                                url.match(/\.(mp3|wav|ogg|m4a|png|jpg|jpeg|webp|gif|svg)$/i);
+                const unroutedUrl = uv.unroute(targetEvent);
+                const isMedia = targetEvent.request.destination === 'image' || 
+                                targetEvent.request.destination === 'audio' ||
+                                unroutedUrl.match(/\.(mp3|wav|ogg|m4a|png|jpg|jpeg|webp|gif|svg)$/i);
 
                 if (isMedia) {
                     try {
-                        const response = await bareClient.fetch(url, {
-                            headers: event.request.headers,
-                            method: event.request.method,
-                            body: event.request.body,
+                        const response = await bareClient.fetch(unroutedUrl, {
+                            headers: targetEvent.request.headers,
+                            method: targetEvent.request.method,
+                            body: targetEvent.request.body,
                             redirect: 'follow'
                         });
                         return response;
@@ -57,7 +82,7 @@ self.addEventListener('fetch', event => {
                     }
                 }
 
-                return await uv.fetch(event);
+                return await uv.fetch(targetEvent);
             }
             return await fetch(event.request);
         })()

@@ -56,11 +56,14 @@ function getProxyUrl(url, size = null) {
 
     if (url.startsWith('//')) url = 'https:' + url;
 
-    if (window.__uv$config && window.__uv$config.prefix && window.__uv$config.encodeUrl) {
-        return window.__uv$config.prefix + window.__uv$config.encodeUrl(url);
-    }
-    if (window.Ultraviolet && window.Ultraviolet.codec && window.Ultraviolet.codec.xor) {
-         return "/VELIUM/uv/service/" + window.Ultraviolet.codec.xor.encode(url);
+    const prefix = (window.__uv$config && window.__uv$config.prefix) || "/VELIUM/uv/service/";
+    const encode = (window.__uv$config && window.__uv$config.encodeUrl) || (window.Ultraviolet && window.Ultraviolet.codec && window.Ultraviolet.codec.xor && window.Ultraviolet.codec.xor.encode);
+
+    if (encode) {
+        const encoded = encode(url);
+        // Ensure prefix is only added once
+        if (encoded.startsWith(prefix)) return encoded;
+        return prefix + encoded;
     }
     
     return url;
