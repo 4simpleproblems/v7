@@ -5,7 +5,7 @@ importScripts('/VELIUM/baremux/index.js');
 const configs = {
     velium: {
         prefix: '/VELIUM/uv/service/',
-        bare: '/bare/',
+        bare: '/api/bare',
         bundle: '/VELIUM/uv/uv.bundle.js',
         config: '/VELIUM/uv/uv.config.js',
         sw: '/VELIUM/uv/uv.sw.js',
@@ -76,33 +76,44 @@ const transportPromise = new Promise(resolve => {
 });
 
 // Default worker path
-const workerPath = location.origin + configs.vora.worker;
-const connection = new BareMux.WorkerConnection(workerPath);
-const bareClient = new BareMux.BareClient(connection);
+let currentWorkerPath = location.origin + configs.vora.worker;
+let connection = new BareMux.WorkerConnection(currentWorkerPath);
+let bareClient = new BareMux.BareClient(connection);
+
+function updateTransport(path, port = null) {
+    if (path && path !== currentWorkerPath) {
+        console.log("Root SW: Switching BareMux Worker to " + path);
+        currentWorkerPath = path;
+        connection = new BareMux.WorkerConnection(currentWorkerPath);
+        bareClient = new BareMux.BareClient(connection);
+        // Re-inject into all instances
+        for (const key in instances) {
+            instances[key].bareClient = bareClient;
+        }
+    }
+    if (port) {
+        connection.port = port;
+    }
+    if (!transportReady) {
+        transportReady = true;
+        if (transportResolve) transportResolve();
+    }
+}
 
 // Use BroadcastChannel for more reliable signaling across contexts
 const bc = new BroadcastChannel("bare-mux-sync");
 bc.onmessage = (event) => {
     if (event.data && event.data.type === 'baremuxready') {
-        if (!transportReady) {
-            transportReady = true;
-            if (transportResolve) transportResolve();
-        }
+        updateTransport(event.data.path);
         console.log("Root SW: BareMux Ready Signal Received via " + (event.data.path || "unknown"));
     }
 };
 
-// Message listener for SharedWorker port synchronization (legacy/direct fallback)
+// Message listener for SharedWorker port synchronization
 self.addEventListener('message', (event) => {
     if (event.data && (event.data.type === 'baremuxinit' || event.data.type === 'baremuxready')) {
-        // If a new path is provided, we should ideally switch the worker,
-        // but since BareClient is already tied to 'connection', we just update the port.
-        // For SharedWorker stability, we assume the apps are somewhat consistent or use the first available transport.
-        if (event.data.port) connection.port = event.data.port;
-        if (!transportReady) {
-            transportReady = true;
-            if (transportResolve) transportResolve();
-        }
+        const port = event.data.port || (event.ports && event.ports[0]);
+        updateTransport(event.data.path, port);
         console.log("Root SW: BareMux Port/Ready Synced via " + (event.data.path || "unknown"));
     }
 });

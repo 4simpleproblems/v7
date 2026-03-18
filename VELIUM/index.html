@@ -57,29 +57,33 @@
                 }
             }
             try {
-                // Use consistent root paths for BareMux
-                const workerPath = "/baremux/worker.js";
+                // Use consistent relative paths for BareMux within VELIUM
+                const workerPath = "/VELIUM/baremux/worker.js";
                 const connection = new BareMux.BareMuxConnection(workerPath);
                 const wispUrl = "wss://wisp.mercurywork.shop/";
-                await connection.setTransport("/libcurl/index.mjs", [
+                await connection.setTransport("/VELIUM/libcurl/index.mjs", [
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
-                console.log("VELIUM: BareMux Transport Active (Root)");
+                console.log("VELIUM: BareMux Transport Active (Local)");
                 
                 // Signal to all Service Workers
                 const bc = new BroadcastChannel("bare-mux-sync");
                 const signalReady = () => {
-                    const msg = { type: 'baremuxready', path: workerPath, port: connection.port };
+                    const msg = { type: 'baremuxready', path: workerPath };
                     bc.postMessage(msg);
                     
                     navigator.serviceWorker.getRegistrations().then(registrations => {
                         registrations.forEach(reg => {
                             const sw = reg.active || reg.waiting || reg.installing;
                             if (sw) {
-                                if (connection.port) {
-                                    sw.postMessage(msg, [connection.port]);
-                                } else {
+                                // Create a fresh connection to the SharedWorker to get a port for the SW
+                                // This avoids transferring (and thus killing) the main thread's connection
+                                try {
+                                    const swConn = new SharedWorker(workerPath);
+                                    sw.postMessage(msg, [swConn.port]);
+                                } catch (e) {
+                                    // Fallback for environments where SharedWorker is restricted
                                     sw.postMessage(msg);
                                 }
                             }
