@@ -20,18 +20,32 @@ let currentBanData = null;
 
 // --- 1. Hardware Fingerprinting ---
 async function getHardwareId() {
+    // Enhanced fingerprinting to reduce collisions
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = "top";
+    ctx.font = "14px 'Arial'";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#f60";
+    ctx.fillRect(125, 1, 62, 20);
+    ctx.fillStyle = "#069";
+    ctx.fillText("4SP_BAN_ENFORCER_v6", 2, 15);
+    ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+    ctx.fillText("4SP_BAN_ENFORCER_v6", 4, 17);
+    const canvasData = canvas.toDataURL();
+
     const components = [
         navigator.userAgent,
-        screen.width,
-        screen.height,
+        screen.width + 'x' + screen.height,
         navigator.language,
         navigator.hardwareConcurrency || 'unknown',
         navigator.deviceMemory || 'unknown',
-        new Date().getTimezoneOffset()
+        new Date().getTimezoneOffset(),
+        canvasData.length // Use length as a simple proxy for uniqueness
     ];
     const data = components.join('|');
     
-    // Simple hash function for the fingerprint
+    // MurmurHash3-like simple hash
     let hash = 0;
     for (let i = 0; i < data.length; i++) {
         const char = data.charCodeAt(i);
@@ -40,19 +54,32 @@ async function getHardwareId() {
     }
     const fingerprint = 'HW-' + Math.abs(hash).toString(16).toUpperCase();
     
-    // Store in localStorage and check for persistent ban marker
-    const persistentId = localStorage.getItem('__4sp_hw_id') || fingerprint;
-    if (!localStorage.getItem('__4sp_hw_id')) localStorage.setItem('__4sp_hw_id', fingerprint);
+    // Persistent ID handling
+    let persistentId = localStorage.getItem('__4sp_hw_id');
+    if (!persistentId) {
+        persistentId = fingerprint;
+        localStorage.setItem('__4sp_hw_id', fingerprint);
+    }
     
     return persistentId;
 }
 
 const DEATH_SENTENCE_KEY = '__4sp_death_sentence';
 
-function checkDeathSentence() {
-    if (localStorage.getItem(DEATH_SENTENCE_KEY)) {
-        console.warn("Hardware Ban: Persistent marker detected.");
-        return JSON.parse(localStorage.getItem(DEATH_SENTENCE_KEY));
+async function checkDeathSentence() {
+    const stored = localStorage.getItem(DEATH_SENTENCE_KEY);
+    if (stored) {
+        const data = JSON.parse(stored);
+        const currentHwId = await getHardwareId();
+        // Only enforce if the stored HWID matches the current device
+        if (data.hwId === currentHwId) {
+            console.warn("Hardware Ban: Persistent marker detected for this device.");
+            return data;
+        } else {
+            // If it doesn't match, it might be a remnant from another account/device on a shared machine
+            // We'll let the DB check handle it rather than auto-locking.
+            return null;
+        }
     }
     return null;
 }
@@ -222,7 +249,10 @@ function lockPageAsBanned(banData) {
     renderBanVisuals(banData);
 
     if (banData.severity === 'hardware') {
-        localStorage.setItem(DEATH_SENTENCE_KEY, JSON.stringify(banData));
+        // Ensure the death sentence is locked specifically to this hardware ID
+        getHardwareId().then(hwId => {
+            localStorage.setItem(DEATH_SENTENCE_KEY, JSON.stringify({ ...banData, hwId }));
+        });
     }
 
     if (banGuardInterval) clearInterval(banGuardInterval);
@@ -255,7 +285,7 @@ function lockPageAsBanned(banData) {
 
     // A. Check Hardware Ban first (even if signed out)
     const hwId = await getHardwareId();
-    const deathSentence = checkDeathSentence();
+    const deathSentence = await checkDeathSentence();
     
     if (deathSentence && !isExcludedPage) {
         lockPageAsBanned(deathSentence);
@@ -271,7 +301,8 @@ function lockPageAsBanned(banData) {
                 currentBanData = { severity: 'hardware', ...data };
             }
         } else {
-            // Lift the lock if hardware ban is removed
+            // Lift the lock if hardware ban is removed in the database
+            // ONLY if the current device is the one that was banned
             if (currentBanData && currentBanData.severity === 'hardware') {
                 console.log("BanEnforcer: Hardware ban lifted in DB. Unlocking...");
                 localStorage.removeItem(DEATH_SENTENCE_KEY);

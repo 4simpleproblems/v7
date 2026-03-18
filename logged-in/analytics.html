@@ -218,7 +218,7 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 <div class="stat-card">
                     <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Total Users</span>
                     <span id="total-users-count" class="text-4xl text-white font-light">--</span>
@@ -226,6 +226,10 @@
                 <div class="stat-card">
                     <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Admins</span>
                     <span id="total-admins-count" class="text-4xl text-blue-400 font-light">--</span>
+                </div>
+                <div class="stat-card">
+                    <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Sub-Admins</span>
+                    <span id="total-subadmins-count" class="text-4xl text-indigo-400 font-light">--</span>
                 </div>
                 <div class="stat-card">
                     <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Banned</span>
@@ -668,6 +672,50 @@
         </div>
     </div>
 
+    <div id="admin-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-start mb-6 border-b border-[#333] pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-900/20 flex items-center justify-center text-blue-500">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <h3 class="text-xl text-white font-light">Admin Permissions</h3>
+                </div>
+                <button id="close-admin-modal" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark fa-lg"></i></button>
+            </div>
+            <div class="space-y-6">
+                <p class="text-gray-300 text-sm bg-[#111] p-3 rounded border border-[#333]" id="admin-user-target">Target: ...</p>
+                
+                <div>
+                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3">Permission Level</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="relative flex flex-col items-center gap-2 p-4 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-blue-500 transition-all group">
+                            <input type="radio" name="admin-type" value="full" checked class="hidden peer">
+                            <i class="fa-solid fa-user-shield text-xl text-gray-500 peer-checked:text-blue-500 group-hover:text-gray-300"></i>
+                            <span class="text-xs font-bold uppercase tracking-wider text-gray-500 peer-checked:text-blue-500">Full Admin</span>
+                            <p class="text-[9px] text-gray-600 text-center peer-checked:text-blue-400/60">Full management access</p>
+                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-blue-500 rounded-xl pointer-events-none"></div>
+                        </label>
+                        <label class="relative flex flex-col items-center gap-2 p-4 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-indigo-500 transition-all group">
+                            <input type="radio" name="admin-type" value="sub" class="hidden peer">
+                            <i class="fa-solid fa-user-check text-xl text-gray-500 peer-checked:text-indigo-500 group-hover:text-gray-300"></i>
+                            <span class="text-xs font-bold uppercase tracking-wider text-gray-500 peer-checked:text-indigo-500">Sub Admin</span>
+                            <p class="text-[9px] text-gray-600 text-center peer-checked:text-indigo-400/60">Limited monitoring access</p>
+                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-indigo-500 rounded-xl pointer-events-none"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#333]">
+                    <button id="cancel-admin" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+                    <button id="confirm-admin" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-[14px] text-sm transition font-medium shadow-lg shadow-blue-900/20">
+                        Apply Permissions
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="tag-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="flex justify-between items-start mb-6 border-b border-[#333] pb-4">
@@ -795,6 +843,7 @@
         let allUsers = [];      // From Firestore
         let allAuthUsers = [];  // From Cloud Function
         
+        let subAdmins = new Set();
         // Messenger Graph Data
         let messengerNodes = [];
         let messengerLinks = [];
@@ -1580,8 +1629,14 @@
             });
 
             unsubscribeAdmins = onSnapshot(collection(db, 'admins'), (snapshot) => {
-                admins = new Set(snapshot.docs.map(d => d.id));
+                const adminsList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                admins = new Set(adminsList.filter(a => a.role === 'admin' && a.type !== 'sub').map(a => a.id));
+                subAdmins = new Set(adminsList.filter(a => a.role === 'admin' && a.type === 'sub').map(a => a.id));
+                
                 document.getElementById('total-admins-count').textContent = admins.size;
+                const subCountEl = document.getElementById('total-subadmins-count');
+                if (subCountEl) subCountEl.textContent = subAdmins.size;
+                
                 renderTable(getFilteredUsers()); 
             });
 
@@ -1958,15 +2013,23 @@
                 return;
             }
 
+            const currentUser = auth.currentUser;
+            const isSuperAdmin = currentUser && currentUser.email === '4simpleproblems@gmail.com';
+            const isFullAdmin = isSuperAdmin || (currentUser && admins.has(currentUser.uid));
+
             users.forEach(user => {
                 const tr = document.createElement('tr');
                 const isAdmin = admins.has(user.id);
+                const isSubAdmin = subAdmins.has(user.id);
                 const isBanned = bannedUsers.has(user.id);
                 const isVerified = user.emailVerified === true;
                 
-                const roleBadge = isAdmin 
-                    ? `<span class="bg-blue-900/30 text-blue-400 text-[10px] uppercase font-bold px-2 py-1 rounded border border-blue-500/30 tracking-wider">Admin</span>`
-                    : `<span class="text-gray-600 text-[10px] uppercase font-bold tracking-wider">User</span>`;
+                let roleBadge = `<span class="text-gray-600 text-[10px] uppercase font-bold tracking-wider">User</span>`;
+                if (isAdmin) {
+                    roleBadge = `<span class="bg-blue-900/30 text-blue-400 text-[10px] uppercase font-bold px-2 py-1 rounded border border-blue-500/30 tracking-wider">Admin</span>`;
+                } else if (isSubAdmin) {
+                    roleBadge = `<span class="bg-indigo-900/30 text-indigo-400 text-[10px] uppercase font-bold px-2 py-1 rounded border border-indigo-500/30 tracking-wider">Sub-Admin</span>`;
+                }
 
                 const statusBadge = isBanned
                     ? `<span class="bg-red-900/30 text-red-400 text-xs px-2 py-1 rounded border border-red-500/30">Banned</span>`
@@ -1975,6 +2038,15 @@
                 const verifiedIcon = isVerified
                     ? `<i class="fa-solid fa-check-circle text-green-500" title="Email Verified"></i>`
                     : `<i class="fa-regular fa-circle text-gray-600" title="Unverified"></i>`;
+
+                // Restriction Logic
+                let canRemove = false;
+                if (isSuperAdmin) {
+                    canRemove = true; // Super can remove everyone
+                } else if (isFullAdmin) {
+                    // Full Admin can remove Sub-Admins but NOT other Full Admins
+                    canRemove = isSubAdmin;
+                }
 
                 tr.innerHTML = `
                     <td>
@@ -2000,9 +2072,14 @@
                             <button class="action-btn ${isBanned ? 'btn-unblock' : 'btn-block'}" data-action="toggle-ban" data-uid="${user.id}" data-username="${user.username || user.email}" title="${isBanned ? 'Unban' : 'Ban'}">
                                 ${isBanned ? '<i class="fa-solid fa-unlock"></i>' : '<i class="fa-solid fa-ban"></i>'}
                             </button>
-                            <button class="action-btn ${isAdmin ? 'btn-remove-admin' : 'btn-admin'}" data-action="toggle-admin" data-uid="${user.id}" title="${isAdmin ? 'Remove Admin' : 'Make Admin'}">
-                                ${isAdmin ? '<i class="fa-solid fa-user-minus"></i>' : '<i class="fa-solid fa-user-shield"></i>'}
-                            </button>
+                            ${(isAdmin || isSubAdmin) 
+                                ? `<button class="action-btn btn-remove-admin ${!canRemove ? 'opacity-30 cursor-not-allowed' : ''}" data-action="remove-admin" data-uid="${user.id}" ${!canRemove ? 'disabled' : ''} title="Remove Admin Permissions">
+                                    <i class="fa-solid fa-user-minus"></i>
+                                   </button>`
+                                : `<button class="action-btn btn-admin" data-action="make-admin" data-uid="${user.id}" data-username="${user.username || user.email}" title="Make Admin">
+                                    <i class="fa-solid fa-user-shield"></i>
+                                   </button>`
+                            }
                             <button class="action-btn btn-tag" data-action="set-tag" data-uid="${user.id}" data-username="${user.username || user.email}" title="Set Tag">
                                 <i class="fa-solid fa-tag"></i>
                             </button>
@@ -2060,19 +2137,18 @@
                     userToBan = { uid, username: btn.dataset.username };
                     openBanModal();
                 }
-            } else if (action === 'toggle-admin') {
+            } else if (action === 'make-admin') {
+                userToAdmin = { uid, username: btn.dataset.username };
+                openAdminModal();
+            } else if (action === 'remove-admin') {
                 const isAdmin = admins.has(uid);
-                if (confirm(`Are you sure you want to ${isAdmin ? 'remove' : 'grant'} admin privileges?`)) {
+                const isSub = subAdmins.has(uid);
+                const roleName = isAdmin ? 'Full Admin' : 'Sub-Admin';
+
+                if (confirm(`Are you sure you want to remove ${roleName} permissions from this user?`)) {
                     try {
-                         if (isAdmin) {
-                            await deleteDoc(doc(db, 'admins', uid));
-                        } else {
-                            await setDoc(doc(db, 'admins', uid), { 
-                                role: 'admin',
-                                promotedAt: new Date(),
-                                promotedBy: auth.currentUser.uid
-                            });
-                        }
+                        await deleteDoc(doc(db, 'admins', uid));
+                        showNotification(`${roleName} removed.`, 'fa-solid fa-user-minus', 'info');
                     } catch (err) { alert("Action failed: " + err.message); }
                 }
             } else if (action === 'delete-user') {
@@ -2087,20 +2163,45 @@
             }
         };
 
-        const openBanModal = () => {
-            document.getElementById('ban-user-target').textContent = `Target: ${userToBan.username} (${userToBan.uid})`;
-            document.getElementById('ban-reason').value = '';
-            document.getElementById('ban-link').value = '';
-            document.getElementById('ban-modal').classList.add('open');
+        const openAdminModal = () => {
+            document.getElementById('admin-user-target').textContent = `Target: ${userToAdmin.username} (${userToAdmin.uid})`;
+            document.getElementById('admin-modal').classList.add('open');
         };
 
-        const closeBanModal = () => {
-            document.getElementById('ban-modal').classList.remove('open');
-            userToBan = null;
+        const closeAdminModal = () => {
+            document.getElementById('admin-modal').classList.remove('open');
+            userToAdmin = null;
         };
 
-        document.getElementById('close-ban-modal').addEventListener('click', closeBanModal);
-        document.getElementById('cancel-ban').addEventListener('click', closeBanModal);
+        document.getElementById('close-admin-modal').addEventListener('click', closeAdminModal);
+        document.getElementById('cancel-admin').addEventListener('click', closeAdminModal);
+        
+        document.getElementById('confirm-admin').addEventListener('click', async () => {
+            if (!userToAdmin) return;
+            const adminType = document.querySelector('input[name="admin-type"]:checked').value;
+            
+            const btn = document.getElementById('confirm-admin');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Promoting...`;
+
+            try {
+                await setDoc(doc(db, 'admins', userToAdmin.uid), { 
+                    role: 'admin',
+                    type: adminType,
+                    promotedAt: new Date(),
+                    promotedBy: auth.currentUser.uid
+                });
+                showNotification(`Successfully promoted to ${adminType === 'full' ? 'Full Admin' : 'Sub-Admin'}.`, 'fa-solid fa-shield-check', 'success');
+                closeAdminModal();
+            } catch (err) {
+                console.error("Promotion failed:", err);
+                alert("Promotion failed: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
         
         document.querySelectorAll('.preset-chip').forEach(chip => {
             chip.addEventListener('click', () => {
