@@ -44,13 +44,13 @@ function getProxyUrl(url, size = null) {
     if (typeof url !== 'string') return url;
     if (url.startsWith('data:')) return url;
 
-    // Optimization for Saavn images
+    // Optimization for Saavn images - use appropriate sizes for performance
     if (url.includes('saavncdn.com')) {
         if (size) {
             url = url.replace(/_([0-9]+x[0-9]+|150|500)\.jpg/i, `_${size}.jpg`);
         } else {
-            // Default to a reasonable size for grid if none specified
-            url = url.replace(/_150x150\.jpg/i, `_250x250.jpg`);
+            // Default to 250x250 for balanced quality/speed on slower devices
+            url = url.replace(/_([0-9]+x[0-9]+|150|500)\.jpg/i, `_250x250.jpg`);
         }
     }
 
@@ -583,6 +583,78 @@ function switchView(viewName) {
     if (navItem) navItem.classList.add('active');
     if (viewName === 'favorites') renderFavorites();
     if (viewName === 'library') renderLibrary();
+    // Scroll to top when switching views
+    document.querySelector('.main-view')?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function loadArtistView(artistName) {
+    if (!artistName) return;
+    switchView('dynamic');
+    const container = document.getElementById('dynamicView');
+    
+    // Initial UI state
+    container.innerHTML = `
+        <div class="flex flex-col md:flex-row items-end gap-8 mb-10 animate-pulse">
+            <div class="w-56 h-56 bg-card-dark rounded-full flex items-center justify-center shadow-2xl relative overflow-hidden border border-brand-border">
+                <i class="fas fa-user text-gray-700 text-7xl"></i>
+            </div>
+            <div class="flex-1">
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Artist</span>
+                <h1 class="text-7xl font-black tracking-tighter mb-4">${escapeHtml(artistName)}</h1>
+                <div class="flex items-center gap-2"><span class="font-bold text-white">Loading tracks...</span></div>
+            </div>
+        </div>
+        <div id="dynamicList" class="space-y-2"></div>
+    `;
+
+    try {
+        // Optimization: For slower devices, we fetch artist-specific tracks by searching
+        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(artistName)}&limit=50`);
+        const data = await response.json();
+        
+        // Filter results to only include tracks by this exact artist (case-insensitive)
+        const artistTracks = (data.tracks || []).filter(t => 
+            (t.artist_name || '').toLowerCase() === artistName.toLowerCase() ||
+            (t.artist || '').toLowerCase() === artistName.toLowerCase()
+        );
+
+        if (artistTracks.length === 0 && data.tracks && data.tracks.length > 0) {
+            // Fallback: If no exact match, just use the top results from the search
+            artistTracks.push(...data.tracks.slice(0, 20));
+        }
+
+        const artwork = artistTracks.length > 0 ? (artistTracks[0].local_artwork || getProxyUrl(artistTracks[0].artwork_url)) : null;
+
+        container.innerHTML = `
+            <div class="flex flex-col md:flex-row items-end gap-8 mb-10">
+                <div class="w-56 h-56 bg-card-dark rounded-full flex items-center justify-center shadow-2xl relative overflow-hidden border border-brand-border">
+                    ${artwork ? `<img src="${artwork}" class="w-full h-full object-cover">` : `<i class="fas fa-user text-gray-700 text-7xl"></i>`}
+                </div>
+                <div class="flex-1">
+                    <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Artist</span>
+                    <h1 class="text-7xl font-black tracking-tighter mb-4">${escapeHtml(artistName)}</h1>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-white">${artistTracks.length} tracks found</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-6 mb-8 border-b border-brand-border pb-8">
+                <button class="w-16 h-16 bg-accent-indigo rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform" onclick="playAllFromDynamic()"><i class="fas fa-play text-white text-xl"></i></button>
+            </div>
+            <div id="dynamicList" class="space-y-2"></div>
+        `;
+
+        const list = document.getElementById('dynamicList');
+        if (artistTracks.length === 0) {
+            list.innerHTML = '<div class="py-20 text-center text-gray-500">No tracks found for this artist.</div>';
+        } else {
+            artistTracks.forEach((track, index) => list.appendChild(createTrackRow(track, index, artistTracks, true)));
+        }
+        currentDynamicPlaylist = artistTracks;
+    } catch (e) {
+        console.error("Error loading artist view:", e);
+        container.innerHTML = `<div class="py-20 text-center text-red-500">Failed to load artist data. Please check your connection.</div>`;
+    }
 }
 
 function setGreeting() {
@@ -737,7 +809,7 @@ function renderTrackGrid(tracks, container) {
             <!-- Bottom Blur Overlay -->
             <div class="absolute inset-x-0 bottom-0 h-1/3 bg-black/20 backdrop-blur-md border-t border-white/10 flex flex-col justify-center px-4 transition-transform duration-300 translate-y-2 group-hover:translate-y-0">
                 <div class="font-bold text-sm truncate text-white mb-0.5">${escapeHtml(track.title)}</div>
-                <div class="text-[10px] text-gray-300 truncate uppercase tracking-wider font-medium">${escapeHtml(track.artist_name)}</div>
+                <div class="text-[10px] text-gray-300 truncate uppercase tracking-wider font-medium hover:underline hover:text-white" onclick="event.stopPropagation(); loadArtistView('${escapeHtml(track.artist_name || '').replace(/'/g, "\\'")}')">${escapeHtml(track.artist_name)}</div>
             </div>
 
             <!-- Heart Button (Top Right) -->
@@ -851,7 +923,7 @@ function createTrackRow(track, index, trackList, hideEllipsis = false) {
         <img src="${track.local_artwork || getProxyUrl(track.artwork_url)}" class="w-12 h-12 rounded-lg object-cover">
         <div class="flex-1 min-w-0">
             <div class="text-sm font-bold text-white truncate">${escapeHtml(track.title)}</div>
-            <div class="text-xs text-gray-500 truncate">${escapeHtml(track.artist_name)}</div>
+            <div class="text-xs text-gray-500 truncate hover:underline hover:text-white" onclick="event.stopPropagation(); loadArtistView('${escapeHtml(track.artist_name || '').replace(/'/g, "\\'")}')">${escapeHtml(track.artist_name)}</div>
         </div>
         <div class="text-xs text-gray-500 font-mono hidden sm:block">${formatTime(durationSec)}</div>
         ${!hideEllipsis ? `<button class="ellipsis-btn text-gray-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 p-2"><i class="fas fa-ellipsis-h"></i></button>` : ''}
@@ -885,8 +957,8 @@ async function playTrack(index) {
     document.getElementById('currentTrackName').textContent = currentTrack.title;
     const artistNameEl = document.getElementById('currentArtistName');
     artistNameEl.textContent = currentTrack.artist_name;
-    artistNameEl.className = 'text-xs text-gray-500 truncate';
-    artistNameEl.onclick = null;
+    artistNameEl.className = 'text-xs text-gray-500 truncate hover:underline hover:text-white cursor-pointer';
+    artistNameEl.onclick = () => loadArtistView(currentTrack.artist_name);
 
     const artwork = document.getElementById('currentArtwork');
     artwork.src = currentTrack.local_artwork || getProxyUrl(currentTrack.artwork_url);
@@ -951,8 +1023,22 @@ function loadAudioPlayer(url) {
         audio.addEventListener('play', () => { isPlaying = true; updatePlayPauseUI(); startProgressUpdate(); });
         audio.addEventListener('pause', () => { isPlaying = false; updatePlayPauseUI(); stopProgressUpdate(); });
         audio.addEventListener('ended', () => playNext());
+        
+        let errorCount = 0;
         audio.addEventListener('error', async () => {
-            console.warn('Audio playback error, falling back to YouTube');
+            errorCount++;
+            console.warn(`Audio playback error (attempt ${errorCount}), falling back to YouTube`);
+            
+            // On slower devices, we give it one retry with the same URL before switching to YT
+            if (errorCount === 1) {
+                console.log("Retrying audio fetch...");
+                audio.load();
+                audio.play().catch(e => {
+                    if (e.name !== 'AbortError') console.warn("Retry play failed", e);
+                });
+                return;
+            }
+
             if (currentTrack) {
                 const query = `${currentTrack.title} ${currentTrack.artist_name} official audio`;
                 try {
@@ -962,6 +1048,7 @@ function loadAudioPlayer(url) {
                 } catch (e) { console.error('Fallback failed', e); }
             }
         });
+
         audio.addEventListener('timeupdate', () => {
             if (activeSource === 'audio' && audio.duration) {
                 const percent = (audio.currentTime / audio.duration) * 100;
@@ -975,8 +1062,20 @@ function loadAudioPlayer(url) {
             }
         });
     }
+
+    // Optimization: Reset error count and source on new URL
     audio.src = url; 
     audio.volume = volume / 100;
+    
+    // Safety check for slower devices: handle potential hangs
+    const loadTimeout = setTimeout(() => {
+        if (audio.readyState < 2 && activeSource === 'audio') {
+            console.warn("Audio loading timed out, triggering fallback...");
+            audio.dispatchEvent(new Event('error'));
+        }
+    }, 15000); // 15s timeout for slow connections
+
+    audio.oncanplay = () => clearTimeout(loadTimeout);
     
     // Properly handle play() promise to avoid AbortError
     const playPromise = audio.play();
