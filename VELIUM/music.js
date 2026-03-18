@@ -577,7 +577,13 @@ function closeFullscreenIfNoTrack() {
 function updateFullscreenUI() {
     if (!currentTrack) return;
     document.getElementById('fsTrackName').textContent = currentTrack.title;
-    document.getElementById('fsArtistName').textContent = currentTrack.artist_name;
+    const artistEl = document.getElementById('fsArtistName');
+    artistEl.textContent = currentTrack.artist_name;
+    artistEl.classList.add('hover:underline', 'cursor-pointer');
+    artistEl.onclick = () => {
+        window.toggleFullscreenPlayer();
+        loadArtistView(currentTrack.artist_name);
+    };
     const artworkUrl = currentTrack.local_artwork || getProxyUrl(currentTrack.artwork_url);
     document.getElementById('fsArtwork').src = artworkUrl;
     
@@ -929,9 +935,9 @@ function renderTrackGrid(tracks, container) {
             <img data-src="${artworkUrl}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
             
             <!-- Bottom Blur Overlay -->
-            <div class="absolute inset-x-0 bottom-0 h-1/3 bg-black/20 backdrop-blur-md border-t border-white/10 flex flex-col justify-center px-4 transition-transform duration-300 translate-y-2 group-hover:translate-y-0">
+            <div class="absolute inset-x-0 bottom-0 h-1/3 bg-black/20 backdrop-blur-md border-t border-white/10 flex flex-col justify-center px-4 transition-transform duration-300">
                 <div class="font-bold text-sm truncate text-white mb-0.5">${escapeHtml(track.title)}</div>
-                <div class="text-[10px] text-gray-300 truncate uppercase tracking-wider font-medium hover:underline hover:text-white" onclick="event.stopPropagation(); loadArtistView('${escapeHtml(track.artist_name || '').replace(/'/g, "\\'")}')">${escapeHtml(track.artist_name)}</div>
+                <div class="text-[10px] text-gray-300 truncate uppercase tracking-wider font-medium hover:underline hover:text-white cursor-pointer relative z-30" onclick="event.stopPropagation(); loadArtistView('${escapeHtml(track.artist_name || '').replace(/'/g, "\\'")}')">${escapeHtml(track.artist_name)}</div>
             </div>
 
             <!-- Heart Button (Top Right) -->
