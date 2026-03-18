@@ -188,7 +188,13 @@ async function handleRequest(event) {
                 try {
                     // Manually decode the target URL from the proxy URL
                     const prefix = configs[key].prefix;
-                    const encoded = url.split(prefix)[1];
+                    let encoded = "";
+                    if (url.includes(prefix)) {
+                        encoded = url.split(prefix)[1];
+                    } else if (url.includes('hvtrs8')) {
+                        encoded = 'hvtrs8' + url.split('hvtrs8')[1];
+                    }
+
                     if (encoded) {
                         const unroutedUrl = Ultraviolet.codec.xor.decode(encoded);
                         console.log("Root SW: Direct Media Fetch: " + unroutedUrl);

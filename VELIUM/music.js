@@ -182,6 +182,50 @@ async function preloadTracks() {
     await Promise.all(tasks);
 }
 
+async function preloadSingleTrack(index, type) {
+    const track = playlist[index];
+    if (!track) return;
+
+    const cache = type === 'next' ? preloadedNextTrack : preloadedPrevTrack;
+    if (cache && cache.index === index) return;
+
+    try {
+        if (track.youtube_id || track.videoId) {
+            const data = { index, source: 'youtube', videoId: track.youtube_id || track.videoId };
+            if (type === 'next') preloadedNextTrack = data; else preloadedPrevTrack = data;
+            return;
+        }
+
+        const directUrl = getDownloadUrl(track);
+        if (directUrl) {
+            const data = { index, source: 'audio', url: directUrl };
+            if (type === 'next') preloadedNextTrack = data; else preloadedPrevTrack = data;
+            
+            let preloadElId = type === 'next' ? 'preloadAudioNext' : 'preloadAudioPrev';
+            let preloadAudio = document.getElementById(preloadElId);
+            if (!preloadAudio) {
+                preloadAudio = document.createElement('audio');
+                preloadAudio.id = preloadElId;
+                preloadAudio.preload = 'auto';
+                preloadAudio.style.display = 'none';
+                document.body.appendChild(preloadAudio);
+            }
+            preloadAudio.src = directUrl;
+            preloadAudio.load();
+        } else {
+            const query = `${track.title} ${track.artist_name} official audio`;
+            const response = await fetch(`${API_BASE_URL}/youtube-search?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            if (data.videoId) {
+                track.youtube_id = data.videoId;
+                saveLibraryData();
+                const cacheData = { index, source: 'youtube', videoId: data.videoId };
+                if (type === 'next') preloadedNextTrack = cacheData; else preloadedPrevTrack = cacheData;
+            }
+        }
+    } catch (e) { console.warn(`Preload ${type} failed`, e); }
+}
+
 // --- Metadata Preloading ---
 async function silentPreloadDurations(tracks) {
     if (!tracks || tracks.length === 0) return;

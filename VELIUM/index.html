@@ -84,6 +84,7 @@
                                     sw.postMessage(msg, [swConn.port]);
                                 } catch (e) {
                                     // Fallback for environments where SharedWorker is restricted
+                                    sw.postMessage({ ...msg, type: 'baremuxinit' });
                                     sw.postMessage(msg);
                                 }
                             }
