@@ -141,12 +141,14 @@ async function handleRequest(event) {
         'sndcdn.com',
         'streamed.pk',
         'streamed.ad',
-        'strmd.link'
+        'strmd.link',
+        'fastly.net'
     ];
 
+    const isEncoded = url.includes('hvtrs8');
     const needsProxy = Object.values(configs).some(c => url.includes(c.prefix)) || 
                        autoProxyDomains.some(domain => url.includes(domain)) || 
-                       url.includes('hvtrs8%2F-');
+                       isEncoded;
 
     // If we need proxying but transport isn't ready, wait for up to 3 seconds
     if (needsProxy && !transportReady) {
@@ -157,7 +159,6 @@ async function handleRequest(event) {
         ]);
         
         // If still not ready after timeout, log it but let the fetch proceed 
-        // (which might fail or hang, but prevents complete worker deadlock)
         if (!transportReady) console.warn("Root SW: Transport wait timed out for " + url);
     }
 
@@ -168,24 +169,36 @@ async function handleRequest(event) {
         }
     }
 
-    if (autoProxyDomains.some(domain => url.includes(domain)) || url.includes('hvtrs8%2F-')) {
-        if (url.includes('hvtrs8%2F-') && !url.includes(configs.vora.prefix)) {
-            const encodedPart = url.split('hvtrs8%2F-')[1];
-            const fullProxyUrl = location.origin + configs.vora.prefix + 'hvtrs8%2F-' + encodedPart;
-            return await instances.vora.fetch({ ...event, request: new Request(fullProxyUrl, event.request) });
-        } else if (!url.includes(configs.vora.prefix)) {
+    // Fallback routing for encoded URLs or media domains missing prefixes
+    if (autoProxyDomains.some(domain => url.includes(domain)) || isEncoded) {
+        // Default to Vora (main proxy) for general unrouted traffic
+        // UNLESS it's clearly a Valo/Vern related request (detected by referrer or path if possible)
+        // For simplicity and safety, we use the main Vora instance as the universal catch-all.
+        let targetInstance = instances.vora;
+        let targetConfig = configs.vora;
+
+        // If referrer is Valo/Vern, use Valo instance
+        if (event.request.referrer && (event.request.referrer.includes('/VERN/') || event.request.referrer.includes('/logged-in/valo'))) {
+            targetInstance = instances.valo;
+            targetConfig = configs.valo;
+        }
+
+        if (isEncoded && !url.includes(targetConfig.prefix)) {
+            const encodedPart = url.split('hvtrs8')[1];
+            const fullProxyUrl = location.origin + targetConfig.prefix + 'hvtrs8' + encodedPart;
+            return await targetInstance.fetch({ ...event, request: new Request(fullProxyUrl, event.request) });
+        } else if (!url.includes(targetConfig.prefix)) {
             const encoded = Ultraviolet.codec.xor.encode(url);
-            const fullProxyUrl = location.origin + configs.vora.prefix + encoded;
-            return await instances.vora.fetch({ ...event, request: new Request(fullProxyUrl, event.request) });
+            const fullProxyUrl = location.origin + targetConfig.prefix + encoded;
+            return await targetInstance.fetch({ ...event, request: new Request(fullProxyUrl, event.request) });
         } else {
-            return await instances.vora.fetch(event);
+            return await targetInstance.fetch(event);
         }
     }
     
     try {
         return await fetch(event.request);
     } catch (err) {
-        // console.warn(`SW: Fallback fetch failed for ${url}`, err);
         return new Response(null, { status: 404, statusText: 'Not Found' });
     }
 }

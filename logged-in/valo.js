@@ -11,8 +11,15 @@
     // --- API Logic ---
     function getProxyUrl(url) {
         if (!url) return '';
+        if (typeof url !== 'string') return url;
+        if (url.startsWith('data:')) return url;
+        if (url.startsWith('//')) url = 'https:' + url;
+
         if (url.startsWith('http')) {
-            return location.origin + PROXY_PREFIX + Ultraviolet.codec.xor.encode(url);
+            const encoded = Ultraviolet.codec.xor.encode(url);
+            // Ensure prefix is only added once
+            if (encoded.startsWith(PROXY_PREFIX)) return encoded;
+            return location.origin + PROXY_PREFIX + encoded;
         }
         return url;
     }
