@@ -176,7 +176,35 @@ async function handleRequest(event) {
     // Find the matching instance based on prefix
     for (const key in configs) {
         if (url.includes(configs[key].prefix)) {
-            return await instances[key].fetch(event);
+            const instance = instances[key];
+            
+            // Optimization: Bypass heavy UV processing for media assets
+            // This allows direct streaming via Bare client for better performance
+            const isMedia = event.request.destination === 'image' || 
+                            event.request.destination === 'audio' ||
+                            url.match(/\.(mp3|wav|ogg|m4a|png|jpg|jpeg|webp|gif|svg)$/i);
+
+            if (isMedia && transportReady) {
+                try {
+                    // Manually decode the target URL from the proxy URL
+                    const prefix = configs[key].prefix;
+                    const encoded = url.split(prefix)[1];
+                    if (encoded) {
+                        const unroutedUrl = Ultraviolet.codec.xor.decode(encoded);
+                        console.log("Root SW: Direct Media Fetch: " + unroutedUrl);
+                        return await bareClient.fetch(unroutedUrl, {
+                            headers: event.request.headers,
+                            method: event.request.method,
+                            body: event.request.body,
+                            redirect: 'follow'
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Direct media fetch failed, falling back to full UV:", e);
+                }
+            }
+            
+            return await instance.fetch(event);
         }
     }
 

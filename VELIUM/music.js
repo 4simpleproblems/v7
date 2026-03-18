@@ -94,6 +94,29 @@ const popularArtists = [
     'Ariana Grande', 'Travis Scott', 'Olivia Rodrigo', 'Bad Bunny', 'SZA'
 ];
 
+// --- Virtualization / Lazy Loading ---
+const imageObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+        const img = entry.target;
+        if (entry.isIntersecting) {
+            if (img.dataset.src) {
+                img.src = img.dataset.src;
+                img.removeAttribute('data-src');
+                observer.unobserve(img);
+            }
+        }
+    });
+}, {
+    rootMargin: "300px 0px", 
+    threshold: 0.01
+});
+
+function observeImages(container) {
+    if (!container) return;
+    const images = container.querySelectorAll('img[data-src]');
+    images.forEach(img => imageObserver.observe(img));
+}
+
 // --- Helpers ---
 function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');
@@ -729,6 +752,7 @@ async function loadArtistView(artistName, append = false) {
             artistTracks.forEach((track, index) => {
                 list.appendChild(createTrackRow(track, startIdx + index, currentDynamicPlaylist, true));
             });
+            observeImages(list);
             // Auto-preload durations for the newly loaded tracks
             silentPreloadDurations(artistTracks);
         }
@@ -768,6 +792,7 @@ async function loadPopularTracks() {
         const data = await response.json();
         if (data.tracks) {
             renderTrackGrid(data.tracks.slice(0, 12), grid);
+            observeImages(grid);
             return data.tracks.slice(0, 12);
         }
     } catch (e) { console.error('Failed to load popular tracks', e); }
@@ -834,6 +859,7 @@ async function handleSearch(query, append = false, forcedOffset = null) {
                     tracksGrid.lastElementChild.dataset.uid = trackUid;
                 }
             });
+            observeImages(tracksGrid);
         } else if (!append && tracksGrid) {
             tracksGrid.innerHTML = '<div class="col-span-full py-20 text-center text-gray-500">No tracks found for this query.</div>';
         }
@@ -900,7 +926,7 @@ function renderTrackGrid(tracks, container) {
         const artworkUrl = track.local_artwork || getProxyUrl(track.artwork_url);
         
         card.innerHTML = `
-            <img src="${artworkUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
+            <img data-src="${artworkUrl}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
             
             <!-- Bottom Blur Overlay -->
             <div class="absolute inset-x-0 bottom-0 h-1/3 bg-black/20 backdrop-blur-md border-t border-white/10 flex flex-col justify-center px-4 transition-transform duration-300 translate-y-2 group-hover:translate-y-0">
@@ -940,6 +966,7 @@ function renderTrackGrid(tracks, container) {
         });
         container.appendChild(card);
     });
+    observeImages(container);
 }
 
 function renderPlaylistGrid(playlistsData, container) {
@@ -1002,6 +1029,7 @@ function renderFavorites() {
     }
     list.innerHTML = '';
     favorites.forEach((track, index) => list.appendChild(createTrackRow(track, index, favorites, true)));
+    observeImages(list);
 }
 
 function createTrackRow(track, index, trackList, hideEllipsis = false) {
@@ -1017,7 +1045,7 @@ function createTrackRow(track, index, trackList, hideEllipsis = false) {
     div.innerHTML = `
         <div class="w-10 text-center text-gray-500 font-bold group-hover:hidden">${index + 1}</div>
         <div class="w-10 text-center text-accent-indigo hidden group-hover:block"><i class="fas fa-play"></i></div>
-        <img src="${track.local_artwork || getProxyUrl(track.artwork_url)}" class="w-12 h-12 rounded-lg object-cover">
+        <img data-src="${track.local_artwork || getProxyUrl(track.artwork_url)}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="w-12 h-12 rounded-lg object-cover">
         <div class="flex-1 min-w-0">
             <div class="text-sm font-bold text-white truncate">${escapeHtml(track.title)}</div>
             <div class="text-xs text-gray-500 truncate hover:underline hover:text-white" onclick="event.stopPropagation(); loadArtistView('${escapeHtml(track.artist_name || '').replace(/'/g, "\\'")}')">${escapeHtml(track.artist_name)}</div>
@@ -1412,7 +1440,10 @@ async function loadPlaylistView(playlistId) {
     `;
     const list = document.getElementById('dynamicList');
     if (pl.tracks.length === 0) list.innerHTML = '<div class="py-20 text-center text-gray-500">This playlist is empty. Add some songs!</div>';
-    else pl.tracks.forEach((track, index) => list.appendChild(createTrackRow(track, index, pl.tracks, true)));
+    else {
+        pl.tracks.forEach((track, index) => list.appendChild(createTrackRow(track, index, pl.tracks, true)));
+        observeImages(list);
+    }
     currentDynamicPlaylist = pl.tracks;
 }
 
