@@ -159,48 +159,57 @@ async function preloadTracks() {
     await Promise.all(tasks);
 }
 
-async function preloadSingleTrack(index, type) {
-    const track = playlist[index];
-    if (!track) return;
+// --- Metadata Preloading ---
+async function silentPreloadDurations(tracks) {
+    if (!tracks || tracks.length === 0) return;
+    
+    // Only preload tracks that don't have duration yet
+    const tracksToLoad = tracks.filter(t => !t.duration || t.duration <= 0);
+    if (tracksToLoad.length === 0) return;
 
-    const cache = type === 'next' ? preloadedNextTrack : preloadedPrevTrack;
-    if (cache && cache.index === index) return;
+    let preloadAudio = document.getElementById('silentPreloadAudio');
+    if (!preloadAudio) {
+        preloadAudio = document.createElement('audio');
+        preloadAudio.id = 'silentPreloadAudio';
+        preloadAudio.style.display = 'none';
+        preloadAudio.muted = true;
+        document.body.appendChild(preloadAudio);
+    }
 
-    try {
-        if (track.youtube_id || track.videoId) {
-            const data = { index, source: 'youtube', videoId: track.youtube_id || track.videoId };
-            if (type === 'next') preloadedNextTrack = data; else preloadedPrevTrack = data;
-            return;
-        }
+    // Process in small batches to avoid network congestion
+    for (let i = 0; i < tracksToLoad.length; i++) {
+        const track = tracksToLoad[i];
+        const url = getDownloadUrl(track);
+        if (!url) continue;
 
-        const directUrl = getDownloadUrl(track);
-        if (directUrl) {
-            const data = { index, source: 'audio', url: directUrl };
-            if (type === 'next') preloadedNextTrack = data; else preloadedPrevTrack = data;
-            
-            let preloadElId = type === 'next' ? 'preloadAudioNext' : 'preloadAudioPrev';
-            let preloadAudio = document.getElementById(preloadElId);
-            if (!preloadAudio) {
-                preloadAudio = document.createElement('audio');
-                preloadAudio.id = preloadElId;
-                preloadAudio.preload = 'auto';
-                preloadAudio.style.display = 'none';
-                document.body.appendChild(preloadAudio);
-            }
-            preloadAudio.src = directUrl;
-            preloadAudio.load();
-        } else {
-            const query = `${track.title} ${track.artist_name} official audio`;
-            const response = await fetch(`${API_BASE_URL}/youtube-search?q=${encodeURIComponent(query)}`);
-            const data = await response.json();
-            if (data.videoId) {
-                track.youtube_id = data.videoId;
-                saveLibraryData();
-                const cacheData = { index, source: 'youtube', videoId: data.videoId };
-                if (type === 'next') preloadedNextTrack = cacheData; else preloadedPrevTrack = cacheData;
-            }
-        }
-    } catch (e) { console.warn(`Preload ${type} failed`, e); }
+        try {
+            await new Promise((resolve, reject) => {
+                preloadAudio.src = url;
+                const timeout = setTimeout(() => {
+                    preloadAudio.src = "";
+                    resolve(); // Move on if it takes too long
+                }, 10000);
+
+                preloadAudio.onloadedmetadata = () => {
+                    clearTimeout(timeout);
+                    if (preloadAudio.duration) {
+                        saveTrackDuration(track, preloadAudio.duration);
+                        // Refresh duration labels in UI if they are visible
+                        document.querySelectorAll(`[data-track-uid="${getTrackUid(track)}"] .duration-label`).forEach(el => {
+                            el.textContent = formatTime(preloadAudio.duration);
+                        });
+                    }
+                    resolve();
+                };
+                preloadAudio.onerror = () => {
+                    clearTimeout(timeout);
+                    resolve();
+                };
+            });
+            // Small delay between preloads
+            await new Promise(r => setTimeout(r, 500));
+        } catch (e) { console.warn("Silent preload failed for track", track.title, e); }
+    }
 }
 
 window.toggleLikeTrack = async function(track, btnEl) {
@@ -331,15 +340,22 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initApp() {
     if (isInitialized) return;
     isInitialized = true;
-    
+
     await loadLibraryData();
     setGreeting();
     setupEventListeners();
-    loadPopularTracks();
+    loadPopularTracks().then(tracks => {
+        if (tracks) silentPreloadDurations(tracks);
+    });
     renderSidebarPlaylists();
     renderLibrary();
     updateVolumeUI();
     initCropper();
+
+    // Auto-preload durations for liked songs
+    if (favorites.length > 0) {
+        silentPreloadDurations(favorites);
+    }
 
     // Admin Logic
     if (window.isAdmin) {
@@ -357,6 +373,28 @@ function setupEventListeners() {
         });
     });
 
+    // Infinite Scroll Implementation
+    const mainView = document.querySelector('.main-view');
+    if (mainView) {
+        mainView.addEventListener('scroll', () => {
+            const { scrollTop, scrollHeight, clientHeight } = mainView;
+            // If near bottom (within 200px)
+            if (scrollHeight - scrollTop - clientHeight < 200) {
+                // Case 1: Search Infinite Scroll
+                if (document.getElementById('searchView').classList.contains('active')) {
+                    if (searchState.query && !searchState.loading && searchState.hasMoreTracks) {
+                        handleSearch(searchState.query, true);
+                    }
+                }
+                // Case 2: Artist Page Infinite Scroll
+                else if (document.getElementById('dynamicView').classList.contains('active')) {
+                    if (artistSearchState.name && !artistSearchState.loading && artistSearchState.hasMore) {
+                        loadArtistView(artistSearchState.name, true);
+                    }
+                }
+            }
+        });
+    }
     // Search Input
     const searchInput = document.getElementById('searchInput');
     let searchTimeout;
@@ -587,73 +625,127 @@ function switchView(viewName) {
     document.querySelector('.main-view')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-async function loadArtistView(artistName) {
+let artistSearchState = { name: '', offset: 0, loading: false, hasMore: true, limit: 50 };
+
+async function loadArtistView(artistName, append = false) {
     if (!artistName) return;
-    switchView('dynamic');
-    const container = document.getElementById('dynamicView');
     
-    // Initial UI state
-    container.innerHTML = `
-        <div class="flex flex-col md:flex-row items-end gap-8 mb-10 animate-pulse">
-            <div class="w-56 h-56 bg-card-dark rounded-full flex items-center justify-center shadow-2xl relative overflow-hidden border border-brand-border">
-                <i class="fas fa-user text-gray-700 text-7xl"></i>
+    if (!append) {
+        switchView('dynamic');
+        artistSearchState = { name: artistName, offset: 0, loading: false, hasMore: true, limit: 50 };
+        const container = document.getElementById('dynamicView');
+        // Initial UI state with loading pulse
+        container.innerHTML = `
+            <div class="relative overflow-hidden rounded-3xl mb-10 min-h-[400px] flex items-end p-8 lg:p-12">
+                <div id="artistBackground" class="absolute inset-0 z-0 bg-card-dark opacity-40 transition-all duration-1000 scale-110 blur-3xl"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-[1]"></div>
+                
+                <div class="relative z-10 flex flex-col md:flex-row items-center md:items-end gap-8 w-full animate-pulse">
+                    <div class="w-48 h-48 lg:w-64 lg:h-64 bg-card-dark rounded-full flex items-center justify-center shadow-2xl relative overflow-hidden border border-white/10 shrink-0">
+                        <i class="fas fa-user text-gray-700 text-7xl"></i>
+                    </div>
+                    <div class="flex-1 text-center md:text-left">
+                        <span class="text-xs font-bold uppercase tracking-[0.2em] text-accent-indigo mb-3 block">Artist</span>
+                        <h1 class="text-5xl lg:text-8xl font-black tracking-tighter mb-4 text-white">${escapeHtml(artistName)}</h1>
+                        <div class="flex items-center justify-center md:justify-start gap-4">
+                            <div class="h-12 w-32 bg-white/10 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="flex-1">
-                <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Artist</span>
-                <h1 class="text-7xl font-black tracking-tighter mb-4">${escapeHtml(artistName)}</h1>
-                <div class="flex items-center gap-2"><span class="font-bold text-white">Loading tracks...</span></div>
+            <div id="dynamicList" class="space-y-1"></div>
+            <div id="artistLoader" class="py-10 text-center hidden">
+                <i class="fas fa-circle-notch fa-spin text-2xl text-accent-indigo"></i>
             </div>
-        </div>
-        <div id="dynamicList" class="space-y-2"></div>
-    `;
+        `;
+    }
+
+    if (artistSearchState.loading || !artistSearchState.hasMore) return;
+    artistSearchState.loading = true;
+    
+    const loader = document.getElementById('artistLoader');
+    if (loader) loader.classList.remove('hidden');
 
     try {
-        // Optimization: For slower devices, we fetch artist-specific tracks by searching
-        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(artistName)}&limit=50`);
+        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(artistName)}&limit=${artistSearchState.limit}&offset=${artistSearchState.offset}`);
         const data = await response.json();
         
+        const rawTracks = data.tracks || [];
         // Filter results to only include tracks by this exact artist (case-insensitive)
-        const artistTracks = (data.tracks || []).filter(t => 
+        let artistTracks = rawTracks.filter(t => 
             (t.artist_name || '').toLowerCase() === artistName.toLowerCase() ||
             (t.artist || '').toLowerCase() === artistName.toLowerCase()
         );
 
-        if (artistTracks.length === 0 && data.tracks && data.tracks.length > 0) {
-            // Fallback: If no exact match, just use the top results from the search
-            artistTracks.push(...data.tracks.slice(0, 20));
+        // If no exact match on first page, use top results
+        if (!append && artistTracks.length === 0 && rawTracks.length > 0) {
+            artistTracks = rawTracks.slice(0, 20);
+        }
+
+        if (rawTracks.length < artistSearchState.limit) {
+            artistSearchState.hasMore = false;
         }
 
         const artwork = artistTracks.length > 0 ? (artistTracks[0].local_artwork || getProxyUrl(artistTracks[0].artwork_url)) : null;
 
-        container.innerHTML = `
-            <div class="flex flex-col md:flex-row items-end gap-8 mb-10">
-                <div class="w-56 h-56 bg-card-dark rounded-full flex items-center justify-center shadow-2xl relative overflow-hidden border border-brand-border">
-                    ${artwork ? `<img src="${artwork}" class="w-full h-full object-cover">` : `<i class="fas fa-user text-gray-700 text-7xl"></i>`}
-                </div>
-                <div class="flex-1">
-                    <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Artist</span>
-                    <h1 class="text-7xl font-black tracking-tighter mb-4">${escapeHtml(artistName)}</h1>
-                    <div class="flex items-center gap-2">
-                        <span class="font-bold text-white">${artistTracks.length} tracks found</span>
+        if (!append) {
+            const container = document.getElementById('dynamicView');
+            container.innerHTML = `
+                <div class="relative overflow-hidden rounded-3xl mb-10 min-h-[400px] flex items-end p-8 lg:p-12">
+                    <div id="artistBackground" class="absolute inset-0 z-0 bg-cover bg-center opacity-40 transition-all duration-1000 scale-110 blur-3xl" style="background-image: url('${artwork || ''}')"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-[1]"></div>
+                    
+                    <div class="relative z-10 flex flex-col md:flex-row items-center md:items-end gap-8 w-full">
+                        <div class="w-48 h-48 lg:w-64 lg:h-64 bg-card-dark rounded-full flex items-center justify-center shadow-2xl relative overflow-hidden border border-white/10 shrink-0">
+                            ${artwork ? `<img src="${artwork}" class="w-full h-full object-cover">` : `<i class="fas fa-user text-gray-700 text-7xl"></i>`}
+                        </div>
+                        <div class="flex-1 text-center md:text-left">
+                            <span class="text-xs font-bold uppercase tracking-[0.2em] text-accent-indigo mb-3 block">Artist</span>
+                            <h1 class="text-5xl lg:text-8xl font-black tracking-tighter mb-4 text-white">${escapeHtml(artistName)}</h1>
+                            <div class="flex items-center justify-center md:justify-start gap-4">
+                                <button class="w-14 h-14 bg-white text-black rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform" onclick="playAllFromDynamic()">
+                                    <i class="fas fa-play text-xl ml-1"></i>
+                                </button>
+                                <span class="text-sm font-bold text-white/60" id="artistTrackCount">${artistTracks.length} tracks found</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="flex items-center gap-6 mb-8 border-b border-brand-border pb-8">
-                <button class="w-16 h-16 bg-accent-indigo rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform" onclick="playAllFromDynamic()"><i class="fas fa-play text-white text-xl"></i></button>
-            </div>
-            <div id="dynamicList" class="space-y-2"></div>
-        `;
+                <div id="dynamicList" class="space-y-1"></div>
+                <div id="artistLoader" class="py-10 text-center hidden">
+                    <i class="fas fa-circle-notch fa-spin text-2xl text-accent-indigo"></i>
+                </div>
+            `;
+            currentDynamicPlaylist = [];
+        }
 
         const list = document.getElementById('dynamicList');
-        if (artistTracks.length === 0) {
-            list.innerHTML = '<div class="py-20 text-center text-gray-500">No tracks found for this artist.</div>';
+        const startIdx = currentDynamicPlaylist.length;
+        currentDynamicPlaylist.push(...artistTracks);
+
+        if (artistTracks.length === 0 && !append) {
+            list.innerHTML = '<div class="py-20 text-center text-gray-500 font-medium">No tracks found for this artist.</div>';
         } else {
-            artistTracks.forEach((track, index) => list.appendChild(createTrackRow(track, index, artistTracks, true)));
+            artistTracks.forEach((track, index) => {
+                list.appendChild(createTrackRow(track, startIdx + index, currentDynamicPlaylist, true));
+            });
+            // Auto-preload durations for the newly loaded tracks
+            silentPreloadDurations(artistTracks);
         }
-        currentDynamicPlaylist = artistTracks;
+
+        const countEl = document.getElementById('artistTrackCount');
+        if (countEl) countEl.textContent = `${currentDynamicPlaylist.length} tracks found`;
+
+        artistSearchState.offset += artistSearchState.limit;
+        artistSearchState.loading = false;
+        if (loader) loader.classList.add('hidden');
     } catch (e) {
         console.error("Error loading artist view:", e);
-        container.innerHTML = `<div class="py-20 text-center text-red-500">Failed to load artist data. Please check your connection.</div>`;
+        artistSearchState.loading = false;
+        if (loader) loader.classList.add('hidden');
+        if (!append) {
+            document.getElementById('dynamicView').innerHTML = `<div class="py-20 text-center text-red-500 font-medium">Failed to load artist data. Please check your connection.</div>`;
+        }
     }
 }
 
@@ -669,13 +761,17 @@ function setGreeting() {
 // --- Data Fetching ---
 async function loadPopularTracks() {
     const grid = document.getElementById('popularTracks');
-    if (!grid) return;
+    if (!grid) return null;
     try {
         const query = "Travis Scott 2025";
         const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&limit=12`);
         const data = await response.json();
-        if (data.tracks) renderTrackGrid(data.tracks.slice(0, 12), grid);
+        if (data.tracks) {
+            renderTrackGrid(data.tracks.slice(0, 12), grid);
+            return data.tracks.slice(0, 12);
+        }
     } catch (e) { console.error('Failed to load popular tracks', e); }
+    return null;
 }
 
 let searchState = { query: '', tracksOffset: 0, loading: false, hasMoreTracks: true, limit: 24 };
@@ -911,7 +1007,8 @@ function renderFavorites() {
 function createTrackRow(track, index, trackList, hideEllipsis = false) {
     const div = document.createElement('div');
     div.className = 'flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 group cursor-pointer border border-transparent hover:border-brand-border transition-all';
-    
+    div.dataset.trackUid = getTrackUid(track);
+
     // Duration handling: API might return duration in ms, playlist might have it in seconds or ms
     let durationSec = 0;
     if (track.duration) durationSec = track.duration > 10000 ? track.duration / 1000 : track.duration;
@@ -925,7 +1022,7 @@ function createTrackRow(track, index, trackList, hideEllipsis = false) {
             <div class="text-sm font-bold text-white truncate">${escapeHtml(track.title)}</div>
             <div class="text-xs text-gray-500 truncate hover:underline hover:text-white" onclick="event.stopPropagation(); loadArtistView('${escapeHtml(track.artist_name || '').replace(/'/g, "\\'")}')">${escapeHtml(track.artist_name)}</div>
         </div>
-        <div class="text-xs text-gray-500 font-mono hidden sm:block">${formatTime(durationSec)}</div>
+        <div class="text-xs text-gray-500 font-mono hidden sm:block duration-label">${formatTime(durationSec)}</div>
         ${!hideEllipsis ? `<button class="ellipsis-btn text-gray-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 p-2"><i class="fas fa-ellipsis-h"></i></button>` : ''}
     `;
     
