@@ -16,7 +16,7 @@ window.switchView = function(view, clearHash = true) {
     
     const hasHash = !!window.location.hash;
 
-    // Update Sidebar UI
+    // 1. Sidebar UI Update (for old design)
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
         if (link.getAttribute('onclick')?.includes(`'${view}'`)) {
@@ -24,31 +24,28 @@ window.switchView = function(view, clearHash = true) {
         }
     });
 
-    // Update Headers
-    const title = document.querySelector('h2.text-2xl');
-    const subtitle = document.querySelector('p.text-gray-500');
-    const header = document.querySelector('header');
+    // 2. Navbar UI Update (for new design)
+    document.querySelectorAll('#navbar a').forEach(link => {
+        link.classList.remove('text-white');
+        link.classList.add('text-gray-400');
+        if (link.innerText.toLowerCase() === view.toLowerCase() || (view === 'index' && link.innerText.toLowerCase() === 'home')) {
+            link.classList.remove('text-gray-400');
+            link.classList.add('text-white');
+        }
+    });
 
-    if (view === 'index') {
-        if (title) title.innerText = 'Welcome back';
-        if (subtitle) subtitle.innerText = 'Find your next favorite media.';
-    } else if (view === 'movies') {
-        if (title) title.innerText = 'Movies';
-        if (subtitle) subtitle.innerText = 'Browse our extensive movie collection.';
-    } else if (view === 'series') {
-        if (title) title.innerText = 'Series';
-        if (subtitle) subtitle.innerText = 'Discover your next favorite series.';
-    }
-
-    // Toggle Sections
+    // Toggle Sections (Shared logic)
     const favorites = document.getElementById('favorites-section');
     const movies = document.getElementById('movies-section');
     const series = document.getElementById('series-section');
     const dynamic = document.getElementById('dynamic-section');
+    const searchResults = document.getElementById('search-results-section');
     const singleGrid = document.getElementById('videoGrid');
-    
+    const hero = document.getElementById('hero-banner');
+    const header = document.querySelector('header');
+
     // If player is active, keep everything hidden regardless of view switch
-    if (hasHash) {
+    if (hasHash && !document.getElementById('player-container')) {
         if (header) header.classList.add('hidden');
         if (favorites) favorites.classList.add('hidden');
         if (movies) movies.classList.add('hidden');
@@ -63,18 +60,33 @@ window.switchView = function(view, clearHash = true) {
         if (movies) movies.classList.remove('hidden');
         if (series) series.classList.remove('hidden');
         if (dynamic) dynamic.classList.add('hidden');
+        if (searchResults) searchResults.classList.add('hidden');
+        if (hero) hero.style.display = 'flex';
         
+        // Rows in new design
+        if (movies && movies.querySelector('.horizontal-scroll')) movies.style.display = 'block';
+        if (series && series.querySelector('.horizontal-scroll')) series.style.display = 'block';
+
         window.themoviedb(`trending/movie/week?language=${getTmdbLanguage()}&page=1`);
         window.themoviedb(`trending/tv/week?language=${getTmdbLanguage()}&page=1`);
     } else {
         if (header) header.classList.remove('hidden');
         if (favorites) favorites.classList.add('hidden');
-        if (movies) movies.classList.add('hidden');
-        if (series) series.classList.add('hidden');
         if (dynamic) dynamic.classList.remove('hidden');
+        if (searchResults) searchResults.classList.remove('hidden');
+        if (hero) hero.style.display = 'none';
+
+        // Hide rows in new design
+        if (movies && movies.querySelector('.horizontal-scroll')) movies.style.display = 'none';
+        if (series && series.querySelector('.horizontal-scroll')) series.style.display = 'none';
+        
+        // Old design hide
+        if (movies && !movies.querySelector('.horizontal-scroll')) movies.classList.add('hidden');
+        if (series && !series.querySelector('.horizontal-scroll')) series.classList.add('hidden');
+
         if (singleGrid) singleGrid.innerHTML = '<div class="text-center py-20 col-span-full text-white"><i class="fas fa-spinner fa-spin text-3xl text-purple-500"></i></div>';
         
-        const dynamicTitle = document.getElementById('dynamic-title');
+        const dynamicTitle = document.getElementById('dynamic-title') || (searchResults ? searchResults.querySelector('.category-title') : null);
         if (dynamicTitle) dynamicTitle.innerText = view === 'movies' ? 'Movies' : 'Series';
 
         if (view === 'movies') {
@@ -230,19 +242,36 @@ function createMediaCard(item) {
     const poster = proxyUrl(`https://image.tmdb.org/t/p/w500${item.poster_path}`);
     const effectiveType = isActuallyMovie ? 'movie' : 'tv';
     
-    // Improved SPA Check: More robust detection of VORA app context
+    // Improved SPA Check
     const isSPA = window.location.pathname.toLowerCase().includes('vora') || 
                   window.location.pathname.toLowerCase().includes('vora_plus') || 
                   !!document.getElementById('videoGrid') ||
                   !!document.getElementById('moviesGrid');
 
     const link = isSPA ? '' : (isActuallyMovie ? 'movies.html' : 'series.html');
-    
-    // Explicit Hash: Include type to avoid ID collisions between movies and TV
     const hashValue = isSPA ? `${effectiveType}/${item.id}` : item.id;
 
+    // Use specific card style based on layout
+    const isNewDesign = !!document.querySelector('.horizontal-scroll');
+    
+    if (isNewDesign && !isSearchActive && isIndexPage()) {
+        const card = document.createElement('div');
+        card.className = 'media-card';
+        card.innerHTML = `
+            <img src="${poster}" alt="${title}">
+            <div class="media-info-overlay">
+                <h3 class="font-bold text-sm truncate">${title}</h3>
+                <div class="flex items-center gap-2 text-[10px] opacity-80 mt-1">
+                    <span>${(item.release_date || item.first_air_date || '').split('-')[0]}</span>
+                    <span class="border border-white/40 px-1 rounded-sm">${item.vote_average?.toFixed(1) || 'N/A'}</span>
+                </div>
+            </div>
+        `;
+        card.onclick = () => window.location.hash = hashValue;
+        return card;
+    }
+
     const card = document.createElement('div');
-    // Added overflow-hidden and rounded-[22px] to match vora.html CSS exactly
     card.className = 'video-item group relative overflow-hidden rounded-[22px] border border-white/5 hover:border-purple-500/50 transition-all bg-white/5';
     const isFav = isLiked(item.id);
     const heartClass = isFav ? 'far text-purple-500 scale-110' : 'far opacity-40 group-hover:opacity-100';
@@ -321,13 +350,12 @@ async function renderTmdb(res, endpoint) {
         } else {
             grid = document.getElementById('videoGrid');
         }
-        if (!grid || !data.results || window.location.hash) return;
+        if (!grid || !data.results || (window.location.hash && !document.getElementById('player-container'))) return;
         
         // Only clear grid for the first page
         if (data.page === 1) {
             grid.innerHTML = '';
         } else {
-            // Remove 'View All' card if it exists to append more items
             const viewAll = grid.querySelector('.view-all-card');
             if (viewAll) viewAll.remove();
         }
@@ -338,27 +366,45 @@ async function renderTmdb(res, endpoint) {
             if (card) grid.appendChild(card);
         });
 
-        // Add 'View All' card ONLY on page 1 of index if we have enough items
-        if (isIndexPage() && !isSearchActive && data.page === 1 && data.results.length > 20) {
+        // Add 'View All' card ONLY on page 1 of index if we have enough items AND not new design
+        const isNewDesign = !!document.querySelector('.horizontal-scroll');
+        if (!isNewDesign && isIndexPage() && !isSearchActive && data.page === 1 && data.results.length > 20) {
             const viewAll = createViewAllCard(endpoint.includes('movie') ? 'movies.html' : 'series.html');
             viewAll.classList.add('view-all-card');
             grid.appendChild(viewAll);
         }
 
+        // Update Hero Banner for new design
+        if (isNewDesign && isIndexPage() && endpoint.includes('movie') && data.results.length > 0 && data.page === 1) {
+            updateHero(data.results[0]);
+        }
+
         isLoading = false;
-        if (data.page >= data.total_pages) hasMore = false;
+        if (data.page >= data.total_pages) paginationState.current.hasMore = false;
     } catch (e) {
         console.error("Error rendering TMDB:", e);
         isLoading = false;
     }
 }
 
+function updateHero(item) {
+    const banner = document.getElementById('hero-banner');
+    const title = document.getElementById('hero-title');
+    const desc = document.getElementById('hero-desc');
+    const playBtn = document.getElementById('hero-play-btn');
+    if (!banner || !title || !desc || !playBtn) return;
+    
+    banner.style.backgroundImage = `url(https://image.tmdb.org/t/p/original${item.backdrop_path})`;
+    title.textContent = item.title || item.name;
+    desc.textContent = item.overview;
+    playBtn.onclick = () => window.location.hash = `movie/${item.id}`;
+}
+
 // Pagination Logic
-// Track separate pages for movies and series on the index page
 let paginationState = {
     movie: { page: 1, hasMore: true, endpoint: 'trending/movie/week' },
     tv: { page: 1, hasMore: true, endpoint: 'trending/tv/week' },
-    current: { page: 1, hasMore: true, endpoint: '' } // For non-index views
+    current: { page: 1, hasMore: true, endpoint: '' } 
 };
 
 let isLoading = false;
@@ -373,7 +419,6 @@ window.addEventListener('scroll', () => {
     
     if (scrollTop + clientHeight >= scrollHeight - 1200) {
         if (isIndexPage() && !isSearchActive) {
-            // On index page, load more for BOTH if they have more
             if (paginationState.movie.hasMore) {
                 isLoading = true;
                 paginationState.movie.page++;
@@ -398,7 +443,6 @@ const originalThemoviedb = themoviedb;
 window.themoviedb = async function(a, e, retries = 5) {
     const isPage1 = e?.params?.page === 1 || !e?.params?.page;
     
-    // Update pagination state
     if (isIndexPage() && !isSearchActive) {
         const type = a.includes('movie') ? 'movie' : 'tv';
         if (isPage1) {
@@ -417,9 +461,7 @@ window.themoviedb = async function(a, e, retries = 5) {
     let lastError;
     for (let i = 0; i < retries; i++) {
         try {
-            // Ensure connection is stable before fetching
             if (window.checkBare) await window.checkBare();
-            
             const res = await originalThemoviedb(a, e);
             if (res && res.ok) {
                 if (res.clone) renderTmdb(res.clone(), a);
@@ -429,25 +471,10 @@ window.themoviedb = async function(a, e, retries = 5) {
         } catch (err) {
             lastError = err;
         }
-        
-        // Wait before retry
         await new Promise(r => setTimeout(r, 500 * (i + 1)));
-        console.warn(`Vora: Retrying TMDB fetch (${i + 1}/${retries}) for ${a}`);
     }
-
     console.error(`Vora: Failed to fetch TMDB after ${retries} attempts:`, lastError);
     isLoading = false;
-
-    // If it failed because of proxy/client setup, and we are on page 1, try again later
-    if (isPage1 && !window.location.hash) {
-        console.log("Vora: Scheduling container reload...");
-        setTimeout(() => {
-            if (typeof window.loadVoraContent === 'function') {
-                window.loadVoraContent();
-            }
-        }, 3000);
-    }
-
     return null;
 };
 
@@ -463,14 +490,18 @@ async function loadFromHash() {
     const movies = document.getElementById('movies-section');
     const series = document.getElementById('series-section');
     const dynamic = document.getElementById('dynamic-section');
+    const playerContainer = document.getElementById('player-container');
 
     if (!fullHash) {
+        if (playerContainer) {
+            playerContainer.style.display = 'none';
+            document.getElementById('player-frame').src = 'about:blank';
+            document.body.style.overflow = 'auto';
+        }
         const playerView = document.getElementById('player-view');
         if (playerView) playerView.remove();
         
-        // Restore visibility based on current view
         if (header) header.classList.remove('hidden');
-        
         if (isIndexPage()) {
             if (favorites) favorites.classList.remove('hidden');
             if (movies) movies.classList.remove('hidden');
@@ -482,7 +513,6 @@ async function loadFromHash() {
         return;
     };
 
-    // Parse hash: format is type/id (e.g. movie/123) or just id
     let type, id;
     if (fullHash.includes('/')) {
         const parts = fullHash.split('/');
@@ -493,7 +523,17 @@ async function loadFromHash() {
         id = fullHash;
     }
 
-    // Hide everything when player is active
+    // New Design Player
+    if (playerContainer) {
+        const frame = document.getElementById('player-frame');
+        const embedUrl = proxyUrl(getEmbedUrl(type, id));
+        frame.src = embedUrl;
+        playerContainer.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        return;
+    }
+
+    // Old Design Player
     if (header) header.classList.add('hidden');
     if (favorites) favorites.classList.add('hidden');
     if (movies) movies.classList.add('hidden');
@@ -519,7 +559,6 @@ async function loadFromHash() {
             const item = await res.json();
             renderPlayerUI(t, currentId, item);
         } catch (e) {
-            // Fallback only if we didn't have an explicit type in the hash
             if (!fullHash.includes('/') && t === 'movie' && !isSeriesPage()) tryLoad('tv', currentId);
             else playerView.innerHTML = `<div class="text-center py-20 text-white font-normal">Error loading media.</div>`;
         }
@@ -531,27 +570,19 @@ async function loadFromHash() {
 function proxyUrl(url) {
     if (!url) return url;
     if (url.startsWith('data:') || url.startsWith('blob:')) return url;
-    
     const prefix = "/VORA_PLUS/VERN_SYSTEM/uv/service/";
-    
-    // Check multiple possible locations for the encoder
     const encoder = (window.__uv$config && window.__uv$config.encodeUrl) ? window.__uv$config.encodeUrl : 
                     (typeof Ultraviolet !== 'undefined' ? Ultraviolet.codec.xor.encode : null);
-    
     if (encoder) {
         try {
             const encoded = encoder(url);
-            // Ensure encoded doesn't start with a slash if prefix ends with one
             const cleanEncoded = encoded.startsWith('/') ? encoded.substring(1) : encoded;
-            const result = prefix + cleanEncoded;
-            return result;
+            return prefix + cleanEncoded;
         } catch (e) {
             console.error("Vora Proxy Encoding Error:", e);
             return url;
         }
     }
-    
-    console.warn("Vora Proxy: No encoder found for URL", url);
     return url;
 }
 
@@ -561,6 +592,8 @@ function renderPlayerUI(type, id, item) {
     nextMedia = null;
 
     const playerView = document.getElementById('player-view');
+    if (!playerView) return; // Silent return if using new design player
+
     const title = item.title || item.name;
     const embedUrl = proxyUrl(getEmbedUrl(type, id));
     const isFav = isLiked(item.id);
@@ -639,8 +672,6 @@ function renderPlayerUI(type, id, item) {
                 </button>
             `).join('');
             findNextEpisode();
-            
-            // Highlight active if same season
             if (parseInt(seasonSelect.value) === currentMedia.s) {
                 document.querySelectorAll('.ep-btn').forEach(btn => {
                     if (parseInt(btn.getAttribute('data-ep')) === currentMedia.e) {
@@ -657,15 +688,10 @@ window.playEpisode = function(id, s, e) {
     currentMedia.s = parseInt(s);
     currentMedia.e = parseInt(e);
     preloadTriggered = false;
-    
     const player = document.getElementById('main-player');
-    player.src = proxyUrl(getEmbedUrl('tv', id, s, e));
-    
-    // Cleanup next player if exists
+    if (player) player.src = proxyUrl(getEmbedUrl('tv', id, s, e));
     const oldNext = document.getElementById('next-player');
     if (oldNext) oldNext.remove();
-
-    // Highlight active episode
     document.querySelectorAll('.ep-btn').forEach(btn => {
         if (parseInt(btn.getAttribute('data-ep')) === currentMedia.e) {
             btn.classList.add('border-purple-500', 'bg-purple-500/10');
@@ -673,27 +699,22 @@ window.playEpisode = function(id, s, e) {
             btn.classList.remove('border-purple-500', 'bg-purple-500/10');
         }
     });
-
     findNextEpisode();
 };
 
 async function findNextEpisode() {
     if (currentMedia.type !== 'tv') return;
     const { id, s, e, item } = currentMedia;
-    
     try {
         const seasonData = await fetchSeason(id, s);
         const nextEp = seasonData.episodes.find(ep => ep.episode_number === e + 1);
-        
         if (nextEp) {
             nextMedia = { id, s, e: e + 1 };
         } else {
-            // Find next season correctly even if numbers aren't perfectly sequential
             const sortedSeasons = [...(item.seasons || [])]
                 .filter(sea => sea.season_number > 0)
                 .sort((a, b) => a.season_number - b.season_number);
             const nextSeason = sortedSeasons.find(sea => sea.season_number > s);
-            
             if (nextSeason) {
                 nextMedia = { id, s: nextSeason.season_number, e: 1 };
             } else {
@@ -709,18 +730,14 @@ function preloadNext() {
     if (!nextMedia) return;
     const container = document.getElementById('video-container');
     if (!container) return;
-
     let nextPlayer = document.getElementById('next-player');
     if (nextPlayer) nextPlayer.remove();
-
     nextPlayer = document.createElement('iframe');
     nextPlayer.id = 'next-player';
     nextPlayer.className = 'w-full h-full border-none absolute top-0 left-0 hidden';
     nextPlayer.allowFullscreen = true;
     container.appendChild(nextPlayer);
-
     nextPlayer.src = proxyUrl(getEmbedUrl('tv', nextMedia.id, nextMedia.s, nextMedia.e));
-    
     nextPlayer.onload = () => {
         try {
             const doc = nextPlayer.contentDocument || nextPlayer.contentWindow.document;
@@ -728,7 +745,6 @@ function preloadNext() {
             if (video) {
                 video.muted = true;
                 video.play().catch(() => {});
-                // Apply buffer fix to preloaded player too
                 if (window.Hls) {
                     Hls.DefaultConfig.maxBufferLength = 60;
                     Hls.DefaultConfig.maxMaxBufferLength = 600;
@@ -742,13 +758,10 @@ function swapPlayers() {
     const main = document.getElementById('main-player');
     const next = document.getElementById('next-player');
     if (!main || !next || !next.src || next.src === 'about:blank') return;
-
     main.id = 'old-player';
     next.id = 'main-player';
-    
     main.classList.add('hidden');
     next.classList.remove('hidden');
-    
     try {
         const doc = next.contentDocument || next.contentWindow.document;
         const video = doc.querySelector('video');
@@ -757,43 +770,31 @@ function swapPlayers() {
             video.play().catch(() => {});
         }
     } catch (e) {}
-
-    // Update state
     currentMedia.s = nextMedia.s;
     currentMedia.e = nextMedia.e;
     preloadTriggered = false;
-    
-    setTimeout(() => main.remove(), 1000); // Graceful removal
+    setTimeout(() => main.remove(), 1000); 
     findNextEpisode();
 }
 
-// Monitor playback
 setInterval(() => {
     const main = document.getElementById('main-player');
     if (!main) return;
-
     try {
         const doc = main.contentDocument || main.contentWindow.document;
         const video = doc.querySelector('video');
-        
         if (video) {
-            // Buffering Fix - Inject config
             if (!video.hlsFixed && (window.Hls || doc.defaultView.Hls)) {
                 const HlsRef = window.Hls || doc.defaultView.Hls;
                 HlsRef.DefaultConfig.maxBufferLength = 60;
                 HlsRef.DefaultConfig.maxMaxBufferLength = 600;
                 video.hlsFixed = true;
             }
-
             const remaining = video.duration - video.currentTime;
-            
-            // Start preloading 10 seconds before end
             if (remaining <= 10 && remaining > 0 && !preloadTriggered && nextMedia) {
                 preloadTriggered = true;
                 preloadNext();
             }
-
-            // Swap when video ends or near end
             if (video.ended || (remaining < 0.5 && remaining > 0 && preloadTriggered)) {
                 swapPlayers();
             }
@@ -805,20 +806,25 @@ function performSearch() {
     const query = document.getElementById('searchInput').value.trim();
     if (!query) return;
     isSearchActive = true;
-    if (isIndexPage()) {
-        document.getElementById('moviesGrid')?.parentElement.classList.add('hidden');
-        document.getElementById('seriesGrid')?.parentElement.classList.add('hidden');
-        document.getElementById('favorites-section')?.classList.add('hidden');
-        document.getElementById('dynamic-section')?.classList.remove('hidden');
-    }
+    
+    // Hide all normal sections
+    document.getElementById('movies-section')?.classList.add('hidden');
+    document.getElementById('series-section')?.classList.add('hidden');
+    document.getElementById('favorites-section')?.classList.add('hidden');
+    document.getElementById('hero-banner') && (document.getElementById('hero-banner').style.display = 'none');
+    
+    // New design search section
+    const searchSection = document.getElementById('search-results-section');
+    if (searchSection) searchSection.classList.remove('hidden');
+
+    const dynamic = document.getElementById('dynamic-section');
+    if (dynamic) dynamic.classList.remove('hidden');
+
     const grid = document.getElementById('videoGrid');
     if (grid) grid.innerHTML = '<div class="text-center py-20 col-span-full text-white"><i class="fas fa-spinner fa-spin text-3xl text-purple-500"></i></div>';
     
-    // Only clear hash if NOT in SPA mode or if we explicitly want to close the player
-    const isSingleFileSPA = window.location.pathname.toLowerCase().includes('vora') || 
-                           window.location.pathname.toLowerCase().includes('vora_plus') || 
-                           window.location.pathname.includes('single_file.html');
-    if (!isSingleFileSPA) window.location.hash = ''; 
+    const isSPA = window.location.pathname.toLowerCase().includes('vora');
+    if (!isSPA) window.location.hash = ''; 
 
     let endpoint = isMoviePage() ? 'search/movie' : (isSeriesPage() ? 'search/tv' : 'search/multi');
     window.themoviedb(endpoint, { params: { query: query, language: 'en-US' } });
@@ -828,13 +834,16 @@ window.loadVoraContent = function() {
     if (window.location.hash) {
         loadFromHash();
     } else {
-        // Only auto-load if not in SPA mode (where switchView handles it)
-        const isSingleFileSPA = window.location.pathname.toLowerCase().includes('vora') || 
-                               window.location.pathname.toLowerCase().includes('vora_plus') || 
-                               window.location.pathname.includes('single_file.html');
-        if (isSingleFileSPA) return;
-
-        if (isIndexPage()) {
+        const isSPA = window.location.pathname.toLowerCase().includes('vora');
+        if (isSPA && isIndexPage() && !!document.querySelector('.horizontal-scroll')) {
+            // New design index - fetch trending
+            window.themoviedb(`trending/movie/week?language=${getTmdbLanguage()}&page=1`);
+            window.themoviedb(`trending/tv/week?language=${getTmdbLanguage()}&page=1`);
+            return;
+        }
+        if (isSPA && !isIndexPage()) {
+             // Let switchView or page logic handle it
+        } else if (isIndexPage()) {
             window.themoviedb(`trending/movie/week?language=${getTmdbLanguage()}&page=1`);
             window.themoviedb(`trending/tv/week?language=${getTmdbLanguage()}&page=1`);
         } else if (isMoviePage()) {
@@ -857,7 +866,6 @@ document.addEventListener('DOMContentLoaded', () => {
             searchIcon.onclick = performSearch;
         }
     }
-    
     window.loadVoraContent();
 });
 

@@ -75,7 +75,7 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vora - Series</title>
+    <title>Vora Plus - Series</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -90,9 +90,9 @@
                 extend: {
                     colors: {
                         'deep-black': '#000000',
-                        'card-dark': '#000000',
-                        'accent-red': '#4f46e5',
-                        'brand-border': '#333333',
+                        'card-dark': '#0d0d0d',
+                        'accent-purple': '#a855f7',
+                        'brand-border': '#1a1a1a',
                     },
                     fontFamily: {
                         sans: ['Geist', 'sans-serif'],
@@ -103,217 +103,180 @@
     </script>
 
     <style>
+        :root {
+            --bg-page: #050505;
+            --bg-card: #0d0d0d;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --accent-color: #a855f7;
+            --accent-glow: rgba(168, 85, 247, 0.4);
+            --border-main: #1a1a1a;
+        }
+
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: #000000; 
-            color: #c0c0c0; 
-            font-weight: 300; 
-            margin: 0;
-            display: flex;
-            min-height: 100vh;
-            padding-top: 64px;
+            background-color: var(--bg-page); 
+            color: var(--text-main);
+            overflow-x: hidden;
         }
 
-        /* Sidebar Styles */
-        .sidebar {
-            width: 260px;
-            background-color: #000000;
-            border-right: 1px solid #333;
-            height: calc(100vh - 64px);
+        ::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .nav-glass {
             position: fixed;
-            left: 0;
-            top: 64px;
-            display: flex;
-            flex-direction: column;
-            padding: 24px;
-            z-index: 100;
-        }
-
-        .main-content {
-            margin-left: 260px;
-            flex-grow: 1;
-            padding: 48px;
-            min-height: 100vh;
-            width: calc(100% - 260px);
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            color: #888;
-            text-decoration: none;
-            border-radius: 14px;
-            margin-bottom: 4px;
-            font-size: 14px;
-            transition: all 0.2s ease;
-        }
-
-        .nav-link:hover, .nav-link.active {
-            background-color: rgba(79, 70, 229, 0.1);
-            color: #4f46e5;
-            border: 1px solid #4f46e5;
-        }
-
-        .nav-link i {
-            font-size: 18px;
-            width: 24px;
-            text-align: center;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                display: none;
-            }
-            .main-content {
-                margin-left: 0;
-                padding: 24px;
-                width: 100%;
-            }
-        }
-
-        h1, h2, h3, .font-bold, .font-semibold, strong {
-            font-weight: 400 !important;
-        }
-
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .video-item {
-            background-color: #000000;
-            border: 1px solid #333;
-            border-radius: 1.25rem;
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .video-item:hover {
-            border-color: #4f46e5;
-            transform: translateY(-4px);
-            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.15);
-        }
-
-        .thumbnail-container {
-            position: relative;
-            width: 100%;
-            padding-bottom: 150%; 
-        }
-
-        .thumbnail-container img {
-            position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            right: 0;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            padding: 0 4rem;
+            z-index: 1000;
+            background: rgba(5, 5, 5, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-main);
         }
 
-        .play-overlay {
-            position: absolute;
+        .category-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            padding-left: 4rem;
+        }
+
+        /* Player Styles */
+        #player-container {
+            position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.4);
+            z-index: 2000;
+            background: black;
+            display: none;
+        }
+
+        #player-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .close-player {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            z-index: 2100;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: background 0.2s;
         }
 
-        .video-item:hover .play-overlay {
-            opacity: 1;
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #000000; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #444; }
-
-        .search-input {
-            background: #000000;
-            border: 1px solid #333;
-            color: white;
-            transition: all 0.3s ease;
-            border-radius: 14px;
-        }
-        .search-input:focus {
-            border-color: #4f46e5;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
-        }
-
-        button, a, .rounded-xl {
-            border-radius: 14px !important;
-            transition: all 0.2s ease;
+        .close-player:hover {
+            background: rgba(255,255,255,0.2);
         }
     </style>
-    
+</head>
+<body class="custom-scroll pt-32">
+    <!-- Navbar -->
+    <nav class="nav-glass" id="navbar">
+        <div class="flex items-center gap-8 w-full">
+            <div class="flex items-center gap-3">
+                <img src="./images/logo.png" class="w-10 h-10 object-contain navbar-logo">
+                <span class="text-2xl font-black tracking-tighter text-white">VORA<span class="text-accent-purple ml-1">PLUS</span></span>
+            </div>
+            <div class="flex items-center gap-6 ml-8">
+                <a href="index.html" class="text-sm font-medium text-gray-400 hover:text-gray-300 transition">Home</a>
+                <a href="movies.html" class="text-sm font-medium text-gray-400 hover:text-gray-300 transition">Movies</a>
+                <a href="series.html" class="text-sm font-medium text-white hover:text-gray-300 transition">Series</a>
+            </div>
+            <div class="ml-auto flex items-center gap-6">
+                <div class="relative">
+                    <i class="fas fa-search text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 text-xs"></i>
+                    <input type="text" id="searchInput" placeholder="Titles, people, genres" 
+                           class="bg-black/40 border border-white/20 rounded-full py-1.5 pl-9 pr-4 text-xs focus:outline-none focus:border-white/40 w-64 transition-all">
+                </div>
+                <i class="fas fa-bell text-white cursor-pointer opacity-80 hover:opacity-100"></i>
+                <div class="w-8 h-8 rounded bg-accent-purple flex items-center justify-center font-bold text-xs">A</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="relative z-20 pb-20">
+        <div id="series-section">
+            <h2 class="category-title">TV Shows</h2>
+            <div id="videoGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 px-16">
+                <!-- Data will be injected here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Video Player -->
+    <div id="player-container">
+        <div class="close-player" id="close-player">
+            <i class="fas fa-times"></i>
+        </div>
+        <iframe id="player-frame" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>
+    </div>
+
+    <!-- Scripts -->
     <script src="./cachedFetch.js"></script>
     <script src="./utils.js"></script>
     <script src="./load/embeds.js"></script>
     <script src="../navigation.js"></script>
     <script src="/injector.js"></script>
-</head>
-<body class="bg-deep-black text-white">
-    <nav class="sidebar">
-        <div class="logo flex items-center gap-3 mb-10 px-2">
-            <img src="./images/logo.png" class="w-8 h-8 object-contain" alt="4SP Logo">
-            <h1 class="text-xl tracking-tight text-white">VORA</h1>
-        </div>
-        
-        <div class="flex-grow">
-            <a href="index.html" class="nav-link">
-                <i class="fas fa-house"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="movies.html" class="nav-link">
-                <i class="fas fa-film"></i>
-                <span>Movies</span>
-            </a>
-            <a href="series.html" class="nav-link active">
-                <i class="fas fa-tv"></i>
-                <span>Series</span>
-            </a>
-        </div>
 
-        <div class="mt-auto pt-6 border-t border-brand-border">
-            <a href="https://discord.com/invite/zcADhddGQz" target="_blank" class="nav-link">
-                <i class="fab fa-discord"></i>
-                <span>Discord</span>
-            </a>
-        </div>
-    </nav>
+    <script>
+        // Initial setup for Series page
+        window.VORA_CONFIG = { currentView: 'series' };
 
-    <div class="main-content">
-        <header class="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
-            <div class="flex flex-col">
-                <h2 class="text-2xl text-white font-medium">Series</h2>
-                <p class="text-gray-500 text-sm">Discover your next favorite series.</p>
-            </div>
-            <div class="relative w-full md:w-96">
-                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="searchInput" placeholder="Search series..." class="search-input w-full pl-12 pr-4 py-3 rounded-[12px] text-sm">
-            </div>
-        </header>
+        // Link into embeds.js rendering
+        const originalRenderTmdb = window.renderTmdb;
+        window.renderTmdb = async function(res, endpoint) {
+            const data = await res.clone().json();
+            const grid = document.getElementById('videoGrid');
+            if (grid && data.results) {
+                if (data.page === 1) grid.innerHTML = '';
+                data.results.forEach(item => {
+                    const card = createMediaCard(item);
+                    if (card) grid.appendChild(card);
+                });
+                return;
+            }
+            return originalRenderTmdb(res, endpoint);
+        };
 
-        <main>
-            <div id="videoGrid" class="video-grid">
-                <!-- Series results will load here -->
-            </div>
-        </main>
+        window.playVideo = function(videoData) {
+            const id = videoData.id;
+            const type = videoData.media_type || 'tv';
+            window.location.hash = `${type}/${id}`;
+        };
 
-        <footer class="mt-24 pt-12 border-t border-brand-border text-center text-xs text-gray-600">
-            <p class="mb-4">Content provided by non-affiliated third parties. Modified by US5.</p>
-            <div class="flex justify-center gap-6">
-                <a href="https://discord.gg/VDA8Ngx38Z" class="hover:text-purple-500 transition-colors">Discord</a>
-                <a href="index.html" class="hover:text-purple-500 transition-colors text-white">Back to Home</a>
-            </div>
-        </footer>
-    </div>
+        document.getElementById('close-player').onclick = () => {
+            window.location.hash = '';
+            window.location.reload();
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.loadVoraContent();
+        });
+
+        // Handle search
+        document.getElementById('searchInput').onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                const query = e.target.value;
+                if (!query) return;
+                window.themoviedb(`search/tv`, { params: { query: query, page: 1 } });
+            }
+        };
+    </script>
 </body>
 </html>
 <!-- Made with ❤️ from 4SP -->
