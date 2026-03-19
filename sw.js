@@ -95,24 +95,27 @@ function updateTransport(path, port = null) {
     const hasNewPort = !!port;
 
     if (hasPathChanged || hasNewPort) {
+        // Prevent overwriting a valid port with a path-based search if the path is the same
+        if (connection.port && !hasNewPort && !hasPathChanged) {
+            return;
+        }
+
         if (hasPathChanged) {
             console.log("Root SW: Switching BareMux Worker to " + path);
             currentWorkerPath = path;
         }
         
         try {
-            // If we have a port, use it directly as the connection target
+            // Re-initialize connection. If port is provided, it's used directly.
             // Otherwise, use the path to create a new connection that will search for a port
             connection = new BareMux.WorkerConnection(port || currentWorkerPath);
             bareClient = new BareMux.BareClient(connection);
             
             // Re-inject the updated client into all active UV instances
-            let count = 0;
             for (const key in instances) {
                 instances[key].bareClient = bareClient;
-                count++;
             }
-            console.log(`Root SW: Transport updated. Injected into ${count} instances. Port source: ${hasNewPort ? 'Explicit' : 'Path-based'}. Connection Port: ${connection.port ? 'Valid' : 'None'}`);
+            console.log(`Root SW: Transport updated. Port source: ${hasNewPort ? 'Explicit (Message)' : 'Path-based'}. Connection Port Valid: ${!!connection.port}`);
         } catch (e) {
             console.error("Root SW: Failed to update transport:", e);
         }
@@ -245,8 +248,8 @@ async function handleRequest(event) {
                 } catch (e) {}
 
                 const response = await instance.fetch(event);
-                if (response.status === 500) {
-                    console.warn(`Root SW: Instance returned 500 for ${url} (Decoded: ${decodedUrl}). BareMux Port Status: ${connection.port ? 'Active' : 'Inactive'}`);
+                if (response.status === 500 || response.status === 404) {
+                    console.warn(`Root SW: Instance ${key} returned ${response.status} for ${url} (Decoded: ${decodedUrl}). BareMux Port Status: ${connection.port ? 'Active' : 'Inactive'}`);
                 }
                 return response;
             } catch (err) {
