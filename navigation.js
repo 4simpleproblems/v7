@@ -1063,6 +1063,7 @@ let db;
             const tabsHtml = Object.entries(pages || {})
                 .filter(([key, page]) => {
                     if (page.adminOnly && !isPrivilegedUser) return false;
+                    if (page.testerOnly && !(isPrivilegedUser || (userData && (userData.isTester || userData.tester)))) return false;
                     if (key === 'leaderboard' && !canSeeLeaderboard) return false;
                     return true;
                 }) 

@@ -108,5 +108,13 @@
         "url": "../logged-in/valo.html",
         "aliases": ["/logged-in/valo"],
         "adminOnly": true
+    },
+    "vora-plus": {
+        "name": "Vora Plus",
+        "icon": "fa-solid fa-circle-plus",
+        "url": "../logged-in/vora-plus.html",
+        "aliases": ["/logged-in/vora-plus"],
+        "adminOnly": true,
+        "testerOnly": true
     }
 }

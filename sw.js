@@ -23,6 +23,16 @@ const configs = {
         client: '/VORA/VERN_SYSTEM/uv/uv.client.js',
         worker: '/VORA/VERN_SYSTEM/baremux/worker.js'
     },
+    vora_plus: {
+        prefix: '/VORA_PLUS/VERN_SYSTEM/uv/service/',
+        bare: '/api/bare',
+        bundle: '/VORA_PLUS/VERN_SYSTEM/uv/uv.bundle.js',
+        config: '/VORA_PLUS/VERN_SYSTEM/uv/uv.config.js',
+        sw: '/VORA_PLUS/VERN_SYSTEM/uv/uv.sw.js',
+        handler: '/VORA_PLUS/VERN_SYSTEM/uv/uv.handler.js',
+        client: '/VORA_PLUS/VERN_SYSTEM/uv/uv.client.js',
+        worker: '/VORA_PLUS/VERN_SYSTEM/baremux/worker.js'
+    },
     vern: {
         prefix: '/VERN/uv/service/',
         bare: '/bare/',
@@ -158,6 +168,7 @@ async function handleRequest(event) {
 
     const isEncoded = url.includes('hvtrs8');
     const needsProxy = Object.values(configs).some(c => url.includes(c.prefix)) || 
+                       url.includes('/VORA_PLUS/') ||
                        autoProxyDomains.some(domain => url.includes(domain)) || 
                        isEncoded;
 
@@ -226,6 +237,12 @@ async function handleRequest(event) {
         if (event.request.referrer && (event.request.referrer.includes('/VERN/') || event.request.referrer.includes('/logged-in/valo'))) {
             targetInstance = instances.valo;
             targetConfig = configs.valo;
+        }
+
+        // If referrer is Vora Plus
+        if (event.request.referrer && (event.request.referrer.includes('/VORA_PLUS/') || event.request.referrer.includes('/logged-in/vora-plus.html'))) {
+            targetInstance = instances.vora_plus;
+            targetConfig = configs.vora_plus;
         }
 
         if (isEncoded && !url.includes(targetConfig.prefix)) {
