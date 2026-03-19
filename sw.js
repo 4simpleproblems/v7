@@ -249,12 +249,16 @@ async function handleRequest(event) {
                     if (encoded) decodedUrl = Ultraviolet.codec.xor.decode(encoded);
                 } catch (e) {}
 
-                // Create a request with a relative path to ensure it matches the prefix in the sub-SW instance
-                const relativeUrl = url.replace(location.origin, '');
-                const relativeRequest = new Request(relativeUrl, event.request);
-                const response = await instance.fetch({ ...event, request: relativeRequest });
+                // Ensure the URL starts with the origin for the sub-SW instance to match its prefix
+                let requestToFetch = event.request;
+                if (!url.startsWith(location.origin)) {
+                    const absoluteUrl = new URL(url, location.origin).href;
+                    requestToFetch = new Request(absoluteUrl, event.request);
+                }
+                
+                const response = await instance.fetch({ ...event, request: requestToFetch });
                 if (response.status === 500 || response.status === 404) {
-                    console.warn(`Root SW: Instance ${key} returned ${response.status} for ${url} (Decoded: ${decodedUrl}). BareMux Port Status: ${connection.port ? 'Active' : 'Inactive'}`);
+                    console.warn(`Root SW: Instance ${key} returned ${response.status} for ${url} (Origin: ${location.origin}, Decoded: ${decodedUrl}). BareMux Port Status: ${connection.port ? 'Active' : 'Inactive'}`);
                 }
                 return response;
             } catch (err) {
