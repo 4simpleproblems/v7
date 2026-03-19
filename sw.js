@@ -205,7 +205,7 @@ async function handleRequest(event) {
     for (const key in configs) {
         // console.log(`Checking prefix ${configs[key].prefix} against ${url}`);
         if (url.includes(configs[key].prefix)) {
-            console.log(`Root SW: Routing ${url} to instance ${key}`);
+            console.log(`Root SW: Routing ${url} to instance ${key}. Prefix: ${configs[key].prefix}`);
             const instance = instances[key];
             
             // Optimization: Bypass heavy UV processing for media assets
@@ -249,7 +249,10 @@ async function handleRequest(event) {
                     if (encoded) decodedUrl = Ultraviolet.codec.xor.decode(encoded);
                 } catch (e) {}
 
-                const response = await instance.fetch(event);
+                // Create a request with a relative path to ensure it matches the prefix in the sub-SW instance
+                const relativeUrl = url.replace(location.origin, '');
+                const relativeRequest = new Request(relativeUrl, event.request);
+                const response = await instance.fetch({ ...event, request: relativeRequest });
                 if (response.status === 500 || response.status === 404) {
                     console.warn(`Root SW: Instance ${key} returned ${response.status} for ${url} (Decoded: ${decodedUrl}). BareMux Port Status: ${connection.port ? 'Active' : 'Inactive'}`);
                 }
