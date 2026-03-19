@@ -169,11 +169,15 @@ var _initCachedFetch = function(n, c) {
         cacheManager(n, e, t, o));
         r = await s.select();
         return r ? (e = new Response(r),
-        Promise.resolve(e)) : fetch(t, a).then(e => {
-            var t;
-            return 200 <= e.status && e.status < 300 && (t = e.headers.get("Content-Type")) && (t.match(/application\/json/i) || t.match(/text\//i)) && e.clone().text().then(e => {
-                var t = hasProperty(a, "cacheTTL") ? a.cacheTTL : n.defaultTTL;
-                s.store(e, t)
+        Promise.resolve(e)) : fetch(t, a).then(async e => {
+            if (e.status === 500) {
+                const body = await e.clone().text();
+                console.error(`CachedFetch: 500 Error for ${t}. Response:`, body);
+            }
+            var t_res;
+            return 200 <= e.status && e.status < 300 && (t_res = e.headers.get("Content-Type")) && (t_res.match(/application\/json/i) || t_res.match(/text\//i)) && e.clone().text().then(e_text => {
+                var ttl = hasProperty(a, "cacheTTL") ? a.cacheTTL : n.defaultTTL;
+                s.store(e_text, ttl)
             }
             ),
             e
