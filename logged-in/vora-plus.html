@@ -43,6 +43,28 @@
                         ]);
                     }
                     console.log("Vora Plus: BareMux Transport Active");
+
+                    // Signal to all Service Workers (Root and local)
+                    const bc = new BroadcastChannel("bare-mux-sync");
+                    const signalReady = () => {
+                        const msg = { type: 'baremuxready', path: "/VORA_PLUS/VERN_SYSTEM/baremux/worker.js", port: connection.port };
+                        bc.postMessage(msg);
+                        
+                        navigator.serviceWorker.getRegistrations().then(registrations => {
+                            registrations.forEach(reg => {
+                                const sw = reg.active || reg.waiting || reg.installing;
+                                if (sw) {
+                                    if (connection.port) {
+                                        sw.postMessage(msg, [connection.port]);
+                                    } else {
+                                        sw.postMessage(msg);
+                                    }
+                                }
+                            });
+                        });
+                    };
+                    
+                    signalReady();
                     window.__4sp_bare_mux_connecting = false;
                     return; 
                 } catch (e) {

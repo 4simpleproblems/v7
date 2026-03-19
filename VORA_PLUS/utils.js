@@ -1,3 +1,25 @@
+function proxyUrl(url) {
+    if (!url) return url;
+    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+    
+    const prefix = "/VORA_PLUS/VERN_SYSTEM/uv/service/";
+    
+    const encoder = (window.__uv$config && window.__uv$config.encodeUrl) ? window.__uv$config.encodeUrl : 
+                    (typeof Ultraviolet !== 'undefined' ? Ultraviolet.codec.xor.encode : null);
+    
+    if (encoder) {
+        try {
+            const encoded = encoder(url);
+            const cleanEncoded = encoded.startsWith('/') ? encoded.substring(1) : encoded;
+            return prefix + cleanEncoded;
+        } catch (e) {
+            console.error("Vora Proxy Encoding Error:", e);
+            return url;
+        }
+    }
+    return url;
+}
+
 var themoviedb = ( () => {
     var a = new Headers;
     a.append("Accept", "application/json"),
@@ -17,7 +39,7 @@ var themoviedb = ( () => {
             i.searchParams.set(a, e)
         }
         ),
-        await t("tmdb-" + encodeURIComponent(a), i.toString())
+        await t("tmdb-" + encodeURIComponent(a), proxyUrl(i.toString()))
     }
 }
 )()
@@ -38,7 +60,7 @@ var themoviedb = ( () => {
             i.searchParams.set(a, e)
         }
         ),
-        await r("etv7-" + encodeURIComponent(a), i.toString(), e?.headers)
+        await r("etv7-" + encodeURIComponent(a), proxyUrl(i.toString()), e?.headers)
     }
 }
 )()
@@ -81,7 +103,7 @@ var themoviedb = ( () => {
             i.searchParams.set(a, e)
         }
         ),
-        await t("wyziesubs-" + encodeURIComponent(a), i.toString(), {
+        await t("wyziesubs-" + encodeURIComponent(a), proxyUrl(i.toString()), {
             signal: AbortSignal.timeout(5e3)
         })
     }

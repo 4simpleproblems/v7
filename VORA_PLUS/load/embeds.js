@@ -527,33 +527,7 @@ async function loadFromHash() {
     tryLoad(type, id);
 }
 
-// Proxy Helper
-function proxyUrl(url) {
-    if (!url) return url;
-    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
-    
-    const prefix = "/VORA_PLUS/VERN_SYSTEM/uv/service/";
-    
-    // Check multiple possible locations for the encoder
-    const encoder = (window.__uv$config && window.__uv$config.encodeUrl) ? window.__uv$config.encodeUrl : 
-                    (typeof Ultraviolet !== 'undefined' ? Ultraviolet.codec.xor.encode : null);
-    
-    if (encoder) {
-        try {
-            const encoded = encoder(url);
-            // Ensure encoded doesn't start with a slash if prefix ends with one
-            const cleanEncoded = encoded.startsWith('/') ? encoded.substring(1) : encoded;
-            const result = prefix + cleanEncoded;
-            return result;
-        } catch (e) {
-            console.error("Vora Proxy Encoding Error:", e);
-            return url;
-        }
-    }
-    
-    console.warn("Vora Proxy: No encoder found for URL", url);
-    return url;
-}
+// Proxy Helper used from utils.js
 
 function renderPlayerUI(type, id, item) {
     currentMedia = { type, id, s: 1, e: 1, item };
