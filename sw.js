@@ -236,7 +236,19 @@ async function handleRequest(event) {
             }
             
             try {
-                return await instance.fetch(event);
+                // Determine if we can log more details
+                const prefix = configs[key].prefix;
+                let decodedUrl = "unknown";
+                try {
+                    const encoded = url.split(prefix)[1];
+                    if (encoded) decodedUrl = Ultraviolet.codec.xor.decode(encoded);
+                } catch (e) {}
+
+                const response = await instance.fetch(event);
+                if (response.status === 500) {
+                    console.warn(`Root SW: Instance returned 500 for ${url} (Decoded: ${decodedUrl}). BareMux Port Status: ${connection.port ? 'Active' : 'Inactive'}`);
+                }
+                return response;
             } catch (err) {
                 console.error(`Root SW: Instance fetch error for ${url}:`, err);
                 return new Response(null, { status: 500, statusText: 'Instance Fetch Error' });
