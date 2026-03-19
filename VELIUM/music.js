@@ -282,8 +282,17 @@ async function silentPreloadDurations(tracks) {
 window.toggleLikeTrack = async function(track, btnEl) {
     const trackUid = getTrackUid(track);
     const index = favorites.findIndex(t => getTrackUid(t) === trackUid);
-    
-    if (index > -1) {
+    const isLiking = index === -1;
+
+    // Optimistic UI update
+    if (isLiking) {
+        favorites.push(track);
+        if (btnEl) {
+            btnEl.classList.add('active');
+            const icon = btnEl.querySelector('i');
+            if (icon) icon.className = 'fas text-red-500 fa-heart';
+        }
+    } else {
         favorites.splice(index, 1);
         if (btnEl) {
             btnEl.classList.remove('active');
@@ -291,23 +300,26 @@ window.toggleLikeTrack = async function(track, btnEl) {
             if (icon) icon.className = 'far fa-heart';
         }
     }
-    else {
-        // Fetch artwork as base64 before saving
-        if (track.artwork_url && !track.local_artwork) {
-            const b64 = await urlToBase64(track.artwork_url);
-            if (b64) track.local_artwork = b64;
-        }
-        
-        favorites.push(track);
-        if (btnEl) {
-            btnEl.classList.add('active');
-            const icon = btnEl.querySelector('i');
-            if (icon) icon.className = 'fas text-red-500 fa-heart';
-        }
-    }
-    await saveLibraryData();
-    updateLikeButtonStatus(); 
+
+    // Sync all heart buttons in UI instantly
+    updateLikeButtonStatus();
     if (document.getElementById('favoritesView').classList.contains('active')) renderFavorites();
+
+    try {
+        if (isLiking) {
+            // Fetch artwork as base64 in background if needed
+            if (track.artwork_url && !track.local_artwork) {
+                const b64 = await urlToBase64(track.artwork_url);
+                if (b64) {
+                    track.local_artwork = b64;
+                    // Update the entry in favorites with the base64 artwork
+                    const favIdx = favorites.findIndex(t => getTrackUid(t) === trackUid);
+                    if (favIdx > -1) favorites[favIdx].local_artwork = b64;
+                }
+            }
+        }
+        await saveLibraryData();
+    } catch (e) { console.error("Error saving like state", e); }
 };
 
 function escapeHtml(text) {
@@ -537,6 +549,7 @@ function setupEventListeners() {
     document.getElementById('fsPrev').addEventListener('click', playPrev);
     document.getElementById('fsShuffle').addEventListener('click', toggleShuffle);
     document.getElementById('fsRepeat').addEventListener('click', cycleRepeat);
+    document.getElementById('fsLike').addEventListener('click', toggleLike);
 
     const fsProgressTrack = document.getElementById('fsProgressTrack');
     if (fsProgressTrack) {
@@ -1419,28 +1432,26 @@ window.toggleLikeTrack = async function(track, btnEl) {
 
 async function toggleLike() {
     if (!currentTrack) return;
-    const trackUid = getTrackUid(currentTrack);
-    const index = favorites.findIndex(t => getTrackUid(t) === trackUid);
-    if (index > -1) favorites.splice(index, 1);
-    else {
-        // Fetch artwork as base64 before saving
-        if (currentTrack.artwork_url && !currentTrack.local_artwork) {
-            const b64 = await urlToBase64(currentTrack.artwork_url);
-            if (b64) currentTrack.local_artwork = b64;
-        }
-        favorites.push(currentTrack);
-    }
-    await saveLibraryData();
-    updateLikeButtonStatus();
-    if (document.getElementById('favoritesView').classList.contains('active')) renderFavorites();
+    const btn = document.getElementById('likeButton');
+    const fsBtn = document.getElementById('fsLike');
+    await window.toggleLikeTrack(currentTrack, btn);
 }
 
 function updateLikeButtonStatus() {
     if (!currentTrack) return;
     const trackUid = getTrackUid(currentTrack);
     const isLiked = favorites.some(t => getTrackUid(t) === trackUid);
+    
+    // Main player bar
     const btn = document.getElementById('likeButton');
     if (btn) btn.innerHTML = isLiked ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="far fa-heart"></i>';
+    
+    // Fullscreen player
+    const fsBtn = document.getElementById('fsLike');
+    if (fsBtn) {
+        fsBtn.innerHTML = isLiked ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="far fa-heart"></i>';
+        fsBtn.classList.toggle('active', isLiked);
+    }
 }
 
 // --- Playlists ---
