@@ -100,18 +100,22 @@ function updateTransport(path, port = null) {
             currentWorkerPath = path;
         }
         
-        // If we have a port, use it directly as the connection target
-        // Otherwise, use the path to create a new connection that will search for a port
-        connection = new BareMux.WorkerConnection(port || currentWorkerPath);
-        bareClient = new BareMux.BareClient(connection);
-        
-        // Re-inject the updated client into all active UV instances
-        let count = 0;
-        for (const key in instances) {
-            instances[key].bareClient = bareClient;
-            count++;
+        try {
+            // If we have a port, use it directly as the connection target
+            // Otherwise, use the path to create a new connection that will search for a port
+            connection = new BareMux.WorkerConnection(port || currentWorkerPath);
+            bareClient = new BareMux.BareClient(connection);
+            
+            // Re-inject the updated client into all active UV instances
+            let count = 0;
+            for (const key in instances) {
+                instances[key].bareClient = bareClient;
+                count++;
+            }
+            console.log(`Root SW: Transport updated. Injected into ${count} instances. Port source: ${hasNewPort ? 'Explicit' : 'Path-based'}. Connection Port: ${connection.port ? 'Valid' : 'None'}`);
+        } catch (e) {
+            console.error("Root SW: Failed to update transport:", e);
         }
-        console.log(`Root SW: Transport updated. Injected into ${count} instances. Port source: ${hasNewPort ? 'Explicit' : 'Path-based'}`);
     }
 
     if (!transportReady) {
