@@ -232,6 +232,10 @@
                     <span id="total-subadmins-count" class="text-4xl text-indigo-400 font-light">--</span>
                 </div>
                 <div class="stat-card">
+                    <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Testers</span>
+                    <span id="total-testers-count" class="text-4xl text-emerald-400 font-light">--</span>
+                </div>
+                <div class="stat-card">
                     <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Banned</span>
                     <span id="total-banned-count" class="text-4xl text-red-400 font-light">--</span>
                 </div>
@@ -648,6 +652,28 @@
                     </div>
                 </div>
 
+                 <div>
+                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3">Ban Scope</label>
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-red-500 transition-all group">
+                            <input type="radio" name="ban-scope" value="global" checked class="hidden peer">
+                            <i class="fa-solid fa-earth-americas text-lg text-gray-500 peer-checked:text-red-500 group-hover:text-gray-300"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-red-500">Global</span>
+                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-red-500 rounded-xl pointer-events-none"></div>
+                        </label>
+                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-orange-500 transition-all group">
+                            <input type="radio" name="ban-scope" value="page" class="hidden peer">
+                            <i class="fa-solid fa-file-circle-exclamation text-lg text-gray-500 peer-checked:text-orange-500 group-hover:text-gray-300"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-orange-500">Page Only</span>
+                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-orange-500 rounded-xl pointer-events-none"></div>
+                        </label>
+                    </div>
+                    <div id="page-scope-input" class="hidden">
+                        <input type="text" id="ban-pages" class="w-full bg-[#111] border border-[#333] rounded-xl p-3 text-sm text-white outline-none focus:border-orange-500" placeholder="e.g. /logged-in/valo.html,/VELIUM/">
+                        <p class="text-[10px] text-gray-500 mt-2 ml-1">Comma-separated relative paths</p>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Preset Reason</label>
                     <div class="flex">
@@ -688,20 +714,24 @@
                 
                 <div>
                     <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3">Permission Level</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <label class="relative flex flex-col items-center gap-2 p-4 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-blue-500 transition-all group">
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-blue-500 transition-all group">
                             <input type="radio" name="admin-type" value="full" checked class="hidden peer">
-                            <i class="fa-solid fa-user-shield text-xl text-gray-500 peer-checked:text-blue-500 group-hover:text-gray-300"></i>
-                            <span class="text-xs font-bold uppercase tracking-wider text-gray-500 peer-checked:text-blue-500">Full Admin</span>
-                            <p class="text-[9px] text-gray-600 text-center peer-checked:text-blue-400/60">Full management access</p>
+                            <i class="fa-solid fa-user-shield text-lg text-gray-500 peer-checked:text-blue-500 group-hover:text-gray-300"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-blue-500">Full</span>
                             <div class="absolute inset-0 border-2 border-transparent peer-checked:border-blue-500 rounded-xl pointer-events-none"></div>
                         </label>
-                        <label class="relative flex flex-col items-center gap-2 p-4 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-indigo-500 transition-all group">
+                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-indigo-500 transition-all group">
                             <input type="radio" name="admin-type" value="sub" class="hidden peer">
-                            <i class="fa-solid fa-user-check text-xl text-gray-500 peer-checked:text-indigo-500 group-hover:text-gray-300"></i>
-                            <span class="text-xs font-bold uppercase tracking-wider text-gray-500 peer-checked:text-indigo-500">Sub Admin</span>
-                            <p class="text-[9px] text-gray-600 text-center peer-checked:text-indigo-400/60">Limited monitoring access</p>
+                            <i class="fa-solid fa-user-check text-lg text-gray-500 peer-checked:text-indigo-500 group-hover:text-gray-300"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-indigo-500">Sub</span>
                             <div class="absolute inset-0 border-2 border-transparent peer-checked:border-indigo-500 rounded-xl pointer-events-none"></div>
+                        </label>
+                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-emerald-500 transition-all group">
+                            <input type="radio" name="admin-type" value="tester" class="hidden peer">
+                            <i class="fa-solid fa-vial text-lg text-gray-500 peer-checked:text-emerald-500 group-hover:text-gray-300"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-emerald-500">Tester</span>
+                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-emerald-500 rounded-xl pointer-events-none"></div>
                         </label>
                     </div>
                 </div>
@@ -844,6 +874,7 @@
         let allAuthUsers = [];  // From Cloud Function
         
         let subAdmins = new Set();
+        let testers = new Set();
         // Messenger Graph Data
         let messengerNodes = [];
         let messengerLinks = [];
@@ -1630,12 +1661,15 @@
 
             unsubscribeAdmins = onSnapshot(collection(db, 'admins'), (snapshot) => {
                 const adminsList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                admins = new Set(adminsList.filter(a => a.role === 'admin' && a.type !== 'sub').map(a => a.id));
+                admins = new Set(adminsList.filter(a => a.role === 'admin' && a.type === 'full').map(a => a.id));
                 subAdmins = new Set(adminsList.filter(a => a.role === 'admin' && a.type === 'sub').map(a => a.id));
+                testers = new Set(adminsList.filter(a => a.role === 'admin' && a.type === 'tester').map(a => a.id));
                 
                 document.getElementById('total-admins-count').textContent = admins.size;
                 const subCountEl = document.getElementById('total-subadmins-count');
                 if (subCountEl) subCountEl.textContent = subAdmins.size;
+                const testerCountEl = document.getElementById('total-testers-count');
+                if (testerCountEl) testerCountEl.textContent = testers.size;
                 
                 renderTable(getFilteredUsers()); 
             });
@@ -2021,6 +2055,7 @@
                 const tr = document.createElement('tr');
                 const isAdmin = admins.has(user.id);
                 const isSubAdmin = subAdmins.has(user.id);
+                const isTester = testers.has(user.id);
                 const isBanned = bannedUsers.has(user.id);
                 const isVerified = user.emailVerified === true;
                 
@@ -2029,6 +2064,8 @@
                     roleBadge = `<span class="bg-blue-900/30 text-blue-400 text-[10px] uppercase font-bold px-2 py-1 rounded border border-blue-500/30 tracking-wider">Admin</span>`;
                 } else if (isSubAdmin) {
                     roleBadge = `<span class="bg-indigo-900/30 text-indigo-400 text-[10px] uppercase font-bold px-2 py-1 rounded border border-indigo-500/30 tracking-wider">Sub-Admin</span>`;
+                } else if (isTester) {
+                    roleBadge = `<span class="bg-emerald-900/30 text-emerald-400 text-[10px] uppercase font-bold px-2 py-1 rounded border border-emerald-500/30 tracking-wider">Tester</span>`;
                 }
 
                 const statusBadge = isBanned
@@ -2044,8 +2081,8 @@
                 if (isSuperAdmin) {
                     canRemove = true; // Super can remove everyone
                 } else if (isFullAdmin) {
-                    // Full Admin can remove Sub-Admins but NOT other Full Admins
-                    canRemove = isSubAdmin;
+                    // Full Admin can remove Sub-Admins and Testers but NOT other Full Admins
+                    canRemove = isSubAdmin || isTester;
                 }
 
                 tr.innerHTML = `
@@ -2072,11 +2109,11 @@
                             <button class="action-btn ${isBanned ? 'btn-unblock' : 'btn-block'}" data-action="toggle-ban" data-uid="${user.id}" data-username="${user.username || user.email}" title="${isBanned ? 'Unban' : 'Ban'}">
                                 ${isBanned ? '<i class="fa-solid fa-unlock"></i>' : '<i class="fa-solid fa-ban"></i>'}
                             </button>
-                            ${(isAdmin || isSubAdmin) 
-                                ? `<button class="action-btn btn-remove-admin ${!canRemove ? 'opacity-30 cursor-not-allowed' : ''}" data-action="remove-admin" data-uid="${user.id}" ${!canRemove ? 'disabled' : ''} title="Remove Admin Permissions">
+                            ${(isAdmin || isSubAdmin || isTester) 
+                                ? `<button class="action-btn btn-remove-admin ${!canRemove ? 'opacity-30 cursor-not-allowed' : ''}" data-action="remove-admin" data-uid="${user.id}" ${!canRemove ? 'disabled' : ''} title="Remove Permissions">
                                     <i class="fa-solid fa-user-minus"></i>
                                    </button>`
-                                : `<button class="action-btn btn-admin" data-action="make-admin" data-uid="${user.id}" data-username="${user.username || user.email}" title="Make Admin">
+                                : `<button class="action-btn btn-admin" data-action="make-admin" data-uid="${user.id}" data-username="${user.username || user.email}" title="Grant Permissions">
                                     <i class="fa-solid fa-user-shield"></i>
                                    </button>`
                             }
@@ -2143,7 +2180,11 @@
             } else if (action === 'remove-admin') {
                 const isAdmin = admins.has(uid);
                 const isSub = subAdmins.has(uid);
-                const roleName = isAdmin ? 'Full Admin' : 'Sub-Admin';
+                const isTester = testers.has(uid);
+                let roleName = 'Permissions';
+                if (isAdmin) roleName = 'Full Admin';
+                else if (isSub) roleName = 'Sub-Admin';
+                else if (isTester) roleName = 'Tester';
 
                 if (confirm(`Are you sure you want to remove ${roleName} permissions from this user?`)) {
                     try {
@@ -2192,7 +2233,11 @@
                     promotedAt: new Date(),
                     promotedBy: auth.currentUser.uid
                 });
-                showNotification(`Successfully promoted to ${adminType === 'full' ? 'Full Admin' : 'Sub-Admin'}.`, 'fa-solid fa-shield-check', 'success');
+                let label = "Tester";
+                if (adminType === 'full') label = "Full Admin";
+                else if (adminType === 'sub') label = "Sub-Admin";
+                
+                showNotification(`Successfully promoted to ${label}.`, 'fa-solid fa-shield-check', 'success');
                 closeAdminModal();
             } catch (err) {
                 console.error("Promotion failed:", err);
@@ -2212,11 +2257,22 @@
             });
         });
 
+        document.querySelectorAll('input[name="ban-scope"]').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const pageInput = document.getElementById('page-scope-input');
+                if (e.target.value === 'page') pageInput.classList.remove('hidden');
+                else pageInput.classList.add('hidden');
+            });
+        });
+
         document.getElementById('confirm-ban').addEventListener('click', async () => {
             if (!userToBan) return;
             const reason = document.getElementById('ban-reason').value.trim() || 'Violation of Terms of Service';
             const link = document.getElementById('ban-link').value;
             const severity = document.querySelector('input[name="ban-severity"]:checked').value;
+            const scope = document.querySelector('input[name="ban-scope"]:checked').value;
+            const pagesRaw = document.getElementById('ban-pages').value.trim();
+            const pages = scope === 'page' ? pagesRaw.split(',').map(p => p.trim()).filter(p => p) : [];
 
             const btn = document.getElementById('confirm-ban');
             const originalText = btn.innerHTML;
@@ -2229,7 +2285,9 @@
                     bannedBy: auth.currentUser.uid,
                     reason: reason,
                     link: link || null,
-                    severity: severity
+                    severity: severity,
+                    scope: scope,
+                    pages: pages
                 };
 
                 const batch = writeBatch(db);

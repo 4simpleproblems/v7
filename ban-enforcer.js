@@ -313,28 +313,70 @@ function lockPageAsBanned(banData) {
 
     // B. Check Auth Status and Account Ban
     if (!path.includes('messenger-v2.html')) {
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                onSnapshot(doc(db, 'bans', user.uid), docSnap => {
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        if (!isExcludedPage) {
-                            lockPageAsBanned({ uid: user.uid, ...data });
-                        } else {
-                            currentBanData = { uid: user.uid, ...data };
-                        }
-                    } else {
-                        // If account is unbanned but hardware isn't, stay locked
-                        if (currentBanData && currentBanData.severity !== 'hardware') {
+        onAuthStateChanged(auth, async user => {
+            if (!user) {
+                // Restricted pages for signed-out users
+                const restrictedPages = ['/logged-in/valo.html', '/VERN/', '/VORA/'];
+                if (restrictedPages.some(p => path.includes(p))) {
+                    lockPageAsBanned({ 
+                        severity: 'account', 
+                        reason: 'This page is restricted to authorized Testers only. Please sign in.',
+                        link: '../authentication.html'
+                    });
+                }
+                return;
+            }
+
+            const uid = user.uid;
+
+            // 1. Role Check (Staff & Testers)
+            onSnapshot(doc(db, 'admins', uid), roleSnap => {
+                const roleData = roleSnap.exists() ? roleSnap.data() : null;
+                const isStaff = roleData && roleData.role === 'admin';
+                const isTester = isStaff || (roleData && roleData.type === 'tester');
+                const isSuper = user.email === '4simpleproblems@gmail.com';
+
+                window.isTester = isTester;
+                window.isAdmin = isStaff;
+                window.isSuperAdmin = isSuper;
+
+                const restrictedPages = ['/logged-in/valo.html', '/VERN/', '/VORA/'];
+                if (restrictedPages.some(p => path.includes(p)) && !isTester && !isSuper) {
+                    lockPageAsBanned({
+                        severity: 'account',
+                        reason: 'Access Denied: This experimental page is restricted to authorized Testers and Staff only.',
+                        link: '../logged-in/games.html'
+                    });
+                }
+            });
+
+            // 2. Account Ban Check
+            onSnapshot(doc(db, 'bans', uid), docSnap => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    // Page-Specific Logic
+                    if (data.scope === 'page' && data.pages && Array.isArray(data.pages)) {
+                        const isPageBanned = data.pages.some(p => path.includes(p));
+                        if (isPageBanned && !isExcludedPage) {
+                            lockPageAsBanned({ severity: 'account', ...data });
+                        } else if (!isPageBanned && currentBanData && currentBanData.severity === 'account') {
                             unlockPage();
                         }
+                    } else {
+                        // Global Ban
+                        if (!isExcludedPage) {
+                            lockPageAsBanned({ uid: uid, ...data });
+                        } else {
+                            currentBanData = { uid: uid, ...data };
+                        }
                     }
-                });
-            } else {
-                if (currentBanData && currentBanData.severity !== 'hardware') {
-                    unlockPage();
+                } else {
+                    if (currentBanData && currentBanData.severity === 'account') {
+                        unlockPage();
+                    }
                 }
-            }
+            });
         });
     }
 })();
