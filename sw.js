@@ -190,16 +190,18 @@ async function handleRequest(event) {
     // Improved local asset detection
     const urlObj = new URL(url);
     const isLocalOrigin = urlObj.origin === location.origin;
+    const isProxied = url.includes('/service/') || url.includes('hvtrs8');
     const isLocalAsset = isLocalOrigin && 
                          (url.includes('/baremux/') || 
                           url.includes('/uv/') || 
                           url.includes('/libcurl/') ||
-                          url.match(/\.(js|mjs|css|json|png|jpg|ico)$/));
+                          url.match(/\.(js|mjs|css|json|png|jpg|ico)$/)) &&
+                         !isProxied;
 
     const needsProxy = (hasPrefix || isAutoProxy || isEncoded) && !isLocalAsset;
 
-    if (isLocalOrigin && (url.includes('worker.js') || url.includes('index.mjs'))) {
-        console.log(`Root SW Debug: URL=${url}, hasPrefix=${hasPrefix}, isAutoProxy=${isAutoProxy}, isEncoded=${isEncoded}, isLocalAsset=${isLocalAsset}, needsProxy=${needsProxy}`);
+    if (isLocalOrigin && (url.includes('worker.js') || url.includes('index.mjs') || isProxied)) {
+        console.log(`Root SW Debug: URL=${url}, isProxied=${isProxied}, isLocalAsset=${isLocalAsset}, needsProxy=${needsProxy}`);
     }
 
     // If we need proxying but transport isn't ready, wait for up to 3 seconds
@@ -218,40 +220,8 @@ async function handleRequest(event) {
     for (const key in configs) {
         // console.log(`Checking prefix ${configs[key].prefix} against ${url}`);
         if (url.includes(configs[key].prefix)) {
-            console.log(`Root SW: Routing ${url} to instance ${key}. Prefix: ${configs[key].prefix}`);
+            // Find the matching instance based on prefix
             const instance = instances[key];
-            
-            // Optimization: Bypass heavy UV processing for media assets
-            // This allows direct streaming via Bare client for better performance
-            const isMedia = event.request.destination === 'image' || 
-                            event.request.destination === 'audio' ||
-                            url.match(/\.(mp3|wav|ogg|m4a|png|jpg|jpeg|webp|gif|svg)$/i);
-
-            if (isMedia && transportReady) {
-                try {
-                    // Manually decode the target URL from the proxy URL
-                    const prefix = configs[key].prefix;
-                    let encoded = "";
-                    if (url.includes(prefix)) {
-                        encoded = url.split(prefix)[1];
-                    } else if (url.includes('hvtrs8')) {
-                        encoded = 'hvtrs8' + url.split('hvtrs8')[1];
-                    }
-
-                    if (encoded) {
-                        const unroutedUrl = Ultraviolet.codec.xor.decode(encoded);
-                        console.log("Root SW: Direct Media Fetch: " + unroutedUrl);
-                        return await bareClient.fetch(unroutedUrl, {
-                            headers: event.request.headers,
-                            method: event.request.method,
-                            body: event.request.body,
-                            redirect: 'follow'
-                        });
-                    }
-                } catch (e) {
-                    console.warn("Direct media fetch failed, falling back to full UV:", e);
-                }
-            }
             
             try {
                 // Determine if we can log more details
@@ -272,7 +242,7 @@ async function handleRequest(event) {
                 // Bypass UVServiceWorker for specific high-performance domains or if UV is failing
                 const shouldBypass = autoProxyDomains.some(d => decodedUrl.includes(d));
 
-                if (decodedUrl !== "unknown" && transportReady && (shouldBypass || key === 'vora_plus')) {
+                if (decodedUrl !== "unknown" && transportReady && shouldBypass) {
                     console.log(`Root SW: Using optimized fetch for ${key}, fetching ${decodedUrl}`);
                     try {
                         const response = await bareClient.fetch(decodedUrl, {
