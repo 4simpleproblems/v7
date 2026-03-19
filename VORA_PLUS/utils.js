@@ -21,25 +21,31 @@ function proxyUrl(url) {
 }
 
 var themoviedb = ( () => {
-    var a = new Headers;
-    a.append("Accept", "application/json"),
-    a.append("Content-Type", "application/json"),
-    a.append("Authorization", "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyYmYwZmFlZWIzZjc3OWRhZDdkOWM3MjY4ZGM0NmNmNiIsIm5iZiI6MTcyMzkzMjM1MS4xNDEyNzIsInN1YiI6IjY2YzExZTJmOTk5ZmYwYTFjNTE2YWRhNCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.vwZW4D57fT-wlqLgHt_4vhnfTbuIwFOOrWE2DBlRHMQ");
+    const headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyYmYwZmFlZWIzZjc3OWRhZDdkOWM3MjY4ZGM0NmNmNiIsIm5iZiI6MTcyMzkzMjM1MS4xNDEyNzIsInN1YiI6IjY2YzExZTJmOTk5ZmYwYTFjNTE2YWRhNCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.vwZW4D57fT-wlqLgHt_4vhnfTbuIwFOOrWE2DBlRHMQ"
+    };
+    
     let t = _initCachedFetch({
         mode: "block",
         matchIn: ["://"],
         endsWith: [],
         defaultTTL: "1 hour"
-    }, a);
+    }, headers);
+
     return async function(a, e) {
-        let n = "https://api.themoviedb.org/3"
-          , i = (0 < n.length && n.endsWith("/") && a.startsWith("/") ? n += a.slice(1) : 0 < n.length && !n.endsWith("/") && !a.startsWith("/") ? n += "/" + a : n += a,
-        new URL(n));
-        return Object.entries(e?.params ?? {}).forEach( ([a,e]) => {
-            i.searchParams.set(a, e)
+        let n = "https://api.themoviedb.org/3";
+        let path = a.startsWith('/') ? a : '/' + a;
+        let url = new URL(n + path);
+        
+        if (e && e.params) {
+            Object.entries(e.params).forEach(([key, val]) => {
+                url.searchParams.set(key, val);
+            });
         }
-        ),
-        await t("tmdb-" + encodeURIComponent(a), proxyUrl(i.toString()))
+        
+        return await t("tmdb-" + encodeURIComponent(a), proxyUrl(url.toString()), e?.headers ? { headers: { ...headers, ...e.headers } } : undefined);
     }
 }
 )()
@@ -51,7 +57,7 @@ var themoviedb = ( () => {
         matchIn: ["://"],
         endsWith: [],
         defaultTTL: "10 minute"
-    }, new Headers);
+    }, {});
     return async function(a, e) {
         let n = t
           , i = (0 < n.length && n.endsWith("/") && a.startsWith("/") ? n += a.slice(1) : 0 < n.length && !n.endsWith("/") && !a.startsWith("/") ? n += "/" + a : n += a,
@@ -71,7 +77,7 @@ var themoviedb = ( () => {
         matchIn: ["://"],
         endsWith: [],
         defaultTTL: "30 minute"
-    }, new Headers);
+    }, {});
     return async function() {
         let n = await e("newsapi", a + "/en/data.json").then(a => a.json());
         return await e("newstorrentfreak", a + "/tf.json").then(a => a.json()).then(a => {
@@ -94,7 +100,7 @@ var themoviedb = ( () => {
         matchIn: ["://"],
         endsWith: [],
         defaultTTL: "10 minute"
-    }, new Headers);
+    }, {});
     return async function(a, e) {
         let n = "https://sub.wyzie.ru"
           , i = (0 < n.length && n.endsWith("/") && a.startsWith("/") ? n += a.slice(1) : 0 < n.length && !n.endsWith("/") && !a.startsWith("/") ? n += "/" + a : n += a,
