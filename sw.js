@@ -256,6 +256,23 @@ async function handleRequest(event) {
                     requestToFetch = new Request(absoluteUrl, event.request);
                 }
                 
+                // TEST: Bypass UVServiceWorker if we have a decoded URL and transport is ready
+                if (decodedUrl !== "unknown" && transportReady && key === 'vora_plus') {
+                    console.log(`Root SW: Bypassing UV for ${key}, fetching ${decodedUrl} via direct BareClient`);
+                    try {
+                        const response = await bareClient.fetch(decodedUrl, {
+                            headers: event.request.headers,
+                            method: event.request.method,
+                            body: event.request.body,
+                            redirect: 'follow'
+                        });
+                        console.log(`Root SW: Direct BareClient fetch for ${key} returned ${response.status}`);
+                        return response;
+                    } catch (e) {
+                        console.warn(`Root SW: Direct BareClient fetch failed for ${key}, falling back to UV:`, e);
+                    }
+                }
+
                 const response = await instance.fetch({ ...event, request: requestToFetch });
                 if (response.status === 500 || response.status === 404) {
                     console.warn(`Root SW: Instance ${key} returned ${response.status} for ${url} (Origin: ${location.origin}, Decoded: ${decodedUrl}). BareMux Port Status: ${connection.port ? 'Active' : 'Inactive'}`);
