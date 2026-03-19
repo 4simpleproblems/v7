@@ -20,23 +20,41 @@
     <script src="/VORA_PLUS/VERN_SYSTEM/baremux/index.js"></script>
     <script>
         window.checkBare = async () => {
-            const connection = new BareMux.BareMuxConnection("/VORA_PLUS/VERN_SYSTEM/baremux/worker.js");
+            const workerPath = "/VORA_PLUS/VERN_SYSTEM/baremux/worker.js";
+            const connection = new BareMux.BareMuxConnection(workerPath);
             const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VORA_PLUS/VERN_SYSTEM/libcurl/index.mjs";
             
             try {
-                const transport = await connection.getTransport();
-                if (!transport || transport.path !== transportPath) {
-                    await connection.setTransport(transportPath, [
-                        { websocket: wispUrl },
-                        { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                    ]);
-                }
-            } catch (e) {
                 await connection.setTransport(transportPath, [
                     { websocket: wispUrl },
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
+                console.log("Vora: BareMux Transport Active");
+
+                const signalReady = () => {
+                    const msg = { type: 'baremuxready', path: workerPath, port: connection.port };
+                    
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        registrations.forEach(reg => {
+                            const sw = reg.active || reg.waiting || reg.installing;
+                            if (sw) {
+                                if (connection.port) {
+                                    sw.postMessage(msg, [connection.port]);
+                                } else {
+                                    sw.postMessage(msg);
+                                }
+                            }
+                        });
+                    });
+
+                    const bc = new BroadcastChannel("bare-mux-sync");
+                    bc.postMessage(msg);
+                };
+                
+                signalReady();
+            } catch (e) {
+                console.error("Vora: BareMux Init Failed", e);
             }
         };
 
@@ -294,3 +312,4 @@
     </div>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->

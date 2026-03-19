@@ -18,7 +18,7 @@ uv.bareClient = bareClient;
 
 // Sync port from main thread if needed (though SharedWorker should be shared)
 self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'baremuxinit' && event.data.port) {
+    if (event.data && event.data.type === 'baremuxready' && event.data.port) {
         connection.port = event.data.port;
         console.log("VIRA SW: BareMux Port Synced");
     }
