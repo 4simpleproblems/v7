@@ -168,8 +168,12 @@ var _initCachedFetch = function(n, c) {
           , s = (hasProperty(a, "keep-cache") && (o = a["keep-cache"]),
         cacheManager(n, e, t, o));
         r = await s.select();
-        return r ? (e = new Response(r),
-        Promise.resolve(e)) : fetch(t, a).then(async e => {
+        if (r) {
+            return new Response(r);
+        }
+        
+        console.log(`CachedFetch Request: ${t}`, a);
+        return fetch(t, a).then(async e => {
             if (e.status === 500) {
                 const body = await e.clone().text();
                 console.error(`CachedFetch: 500 Error for ${t}. Response:`, body);

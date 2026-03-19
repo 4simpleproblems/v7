@@ -45,7 +45,9 @@ var themoviedb = ( () => {
             });
         }
         
-        return await t("tmdb-" + encodeURIComponent(a), proxyUrl(url.toString()), e?.headers ? { headers: { ...headers, ...e.headers } } : undefined);
+        const finalUrl = proxyUrl(url.toString());
+        console.log(`TMDB Fetch: ${a} -> ${finalUrl}`);
+        return await t("tmdb-" + encodeURIComponent(a), finalUrl, e?.headers ? { headers: { ...headers, ...e.headers } } : undefined);
     }
 }
 )()

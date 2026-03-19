@@ -425,6 +425,7 @@ window.themoviedb = async function(a, e, retries = 5) {
                 if (res.clone) renderTmdb(res.clone(), a);
                 return res;
             }
+            console.error(`Vora: TMDB fetch failed for ${a} with status: ${res?.status}`);
             lastError = new Error(`Status ${res?.status}`);
         } catch (err) {
             lastError = err;
