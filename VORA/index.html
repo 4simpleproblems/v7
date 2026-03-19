@@ -19,7 +19,10 @@
     </script>
     <script src="/VORA/VERN_SYSTEM/baremux/index.js"></script>
     <script>
+        let bareInitialized = false;
         window.checkBare = async () => {
+            if (bareInitialized) return;
+
             const workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
             const connection = new BareMux.BareMuxConnection(workerPath);
             const wispUrl = "wss://wisp.mercurywork.shop/";
@@ -31,6 +34,7 @@
                     { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                 ]);
                 console.log("Vora: BareMux Transport Active");
+                bareInitialized = true;
 
                 // Signal to all Service Workers (Root and local)
                 const bc = new BroadcastChannel("bare-mux-sync");

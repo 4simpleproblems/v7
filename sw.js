@@ -184,10 +184,15 @@ async function handleRequest(event) {
     ];
 
     const isEncoded = url.includes('hvtrs8');
-    const needsProxy = Object.values(configs).some(c => url.includes(c.prefix)) || 
-                       url.includes('/VORA_PLUS/') ||
-                       autoProxyDomains.some(domain => url.includes(domain)) || 
-                       isEncoded;
+    const hasPrefix = Object.values(configs).some(c => url.includes(c.prefix));
+    const isAutoProxy = autoProxyDomains.some(domain => url.includes(domain));
+    const isLocalAsset = url.startsWith(location.origin) && 
+                         (url.includes('/baremux/') || 
+                          url.includes('/uv/') || 
+                          url.includes('/libcurl/') ||
+                          url.match(/\.(js|mjs|css|json|png|jpg|ico)$/));
+
+    const needsProxy = (hasPrefix || isAutoProxy || isEncoded) && !isLocalAsset;
 
     // If we need proxying but transport isn't ready, wait for up to 3 seconds
     if (needsProxy && !transportReady) {
