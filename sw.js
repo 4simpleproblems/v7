@@ -203,7 +203,9 @@ async function handleRequest(event) {
 
     // Find the matching instance based on prefix
     for (const key in configs) {
+        // console.log(`Checking prefix ${configs[key].prefix} against ${url}`);
         if (url.includes(configs[key].prefix)) {
+            console.log(`Root SW: Routing ${url} to instance ${key}`);
             const instance = instances[key];
             
             // Optimization: Bypass heavy UV processing for media assets
