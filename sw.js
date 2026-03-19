@@ -186,13 +186,21 @@ async function handleRequest(event) {
     const isEncoded = url.includes('hvtrs8');
     const hasPrefix = Object.values(configs).some(c => url.includes(c.prefix));
     const isAutoProxy = autoProxyDomains.some(domain => url.includes(domain));
-    const isLocalAsset = url.startsWith(location.origin) && 
+    
+    // Improved local asset detection
+    const urlObj = new URL(url);
+    const isLocalOrigin = urlObj.origin === location.origin;
+    const isLocalAsset = isLocalOrigin && 
                          (url.includes('/baremux/') || 
                           url.includes('/uv/') || 
                           url.includes('/libcurl/') ||
                           url.match(/\.(js|mjs|css|json|png|jpg|ico)$/));
 
     const needsProxy = (hasPrefix || isAutoProxy || isEncoded) && !isLocalAsset;
+
+    if (isLocalOrigin && (url.includes('worker.js') || url.includes('index.mjs'))) {
+        console.log(`Root SW Debug: URL=${url}, hasPrefix=${hasPrefix}, isAutoProxy=${isAutoProxy}, isEncoded=${isEncoded}, isLocalAsset=${isLocalAsset}, needsProxy=${needsProxy}`);
+    }
 
     // If we need proxying but transport isn't ready, wait for up to 3 seconds
     if (needsProxy && !transportReady) {
@@ -262,14 +270,7 @@ async function handleRequest(event) {
                 }
                 
                 // Bypass UVServiceWorker for specific high-performance domains or if UV is failing
-                const bypassDomains = [
-                    'api.themoviedb.org',
-                    'image.tmdb.org',
-                    'embed-testing-v7.vercel.app',
-                    'sub.wyzie.ru'
-                ];
-                
-                const shouldBypass = bypassDomains.some(d => decodedUrl.includes(d));
+                const shouldBypass = autoProxyDomains.some(d => decodedUrl.includes(d));
 
                 if (decodedUrl !== "unknown" && transportReady && (shouldBypass || key === 'vora_plus')) {
                     console.log(`Root SW: Using optimized fetch for ${key}, fetching ${decodedUrl}`);

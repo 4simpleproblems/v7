@@ -45,7 +45,7 @@ var themoviedb = ( () => {
             });
         }
         
-        const finalUrl = proxyUrl(url.toString());
+        const finalUrl = url.toString();
         console.log(`TMDB Fetch: ${a} -> ${finalUrl}`);
         return await t("tmdb-" + encodeURIComponent(a), finalUrl, e?.headers ? { headers: { ...headers, ...e.headers } } : undefined);
     }
@@ -68,7 +68,7 @@ var themoviedb = ( () => {
             i.searchParams.set(a, e)
         }
         ),
-        await r("etv7-" + encodeURIComponent(a), proxyUrl(i.toString()), e?.headers)
+        await r("etv7-" + encodeURIComponent(a), i.toString(), e?.headers)
     }
 }
 )()
@@ -111,7 +111,7 @@ var themoviedb = ( () => {
             i.searchParams.set(a, e)
         }
         ),
-        await t("wyziesubs-" + encodeURIComponent(a), proxyUrl(i.toString()), {
+        await t("wyziesubs-" + encodeURIComponent(a), i.toString(), {
             signal: AbortSignal.timeout(5e3)
         })
     }
