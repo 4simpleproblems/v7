@@ -24,6 +24,7 @@
             if (window.__4sp_bare_mux_connecting) return;
             window.__4sp_bare_mux_connecting = true;
 
+            // Initialize with the true flag to allow responding to SW getPort requests
             const connection = new BareMux.BareMuxConnection("/VORA_PLUS/VERN_SYSTEM/baremux/worker.js");
             const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VORA_PLUS/VERN_SYSTEM/libcurl/index.mjs";
@@ -46,19 +47,36 @@
 
                     // Signal to all Service Workers (Root and local)
                     const bc = new BroadcastChannel("bare-mux-sync");
+                    const port = connection.getInnerPort();
+                    
                     const signalReady = () => {
-                        const msg = { type: 'baremuxready', path: "/VORA_PLUS/VERN_SYSTEM/baremux/worker.js", port: connection.port };
+                        const msg = { 
+                            type: 'baremuxready', 
+                            path: "/VORA_PLUS/VERN_SYSTEM/baremux/worker.js",
+                            // Don't put the port in the message body for BroadcastChannel as it won't clone
+                            hasPort: !!port 
+                        };
+                        
+                        // Broadcast for general awareness (no port)
                         bc.postMessage(msg);
                         
+                        // Direct message to SW with port transfer
+                        if (navigator.serviceWorker.controller) {
+                            if (port) {
+                                navigator.serviceWorker.controller.postMessage(msg, [port]);
+                            } else {
+                                navigator.serviceWorker.controller.postMessage(msg);
+                            }
+                        }
+
+                        // Also try all registrations as backup
                         navigator.serviceWorker.getRegistrations().then(registrations => {
                             registrations.forEach(reg => {
                                 const sw = reg.active || reg.waiting || reg.installing;
-                                if (sw) {
-                                    if (connection.port) {
-                                        sw.postMessage(msg, [connection.port]);
-                                    } else {
-                                        sw.postMessage(msg);
-                                    }
+                                if (sw && sw !== navigator.serviceWorker.controller) {
+                                    // We need a NEW port for each transfer if we were to send to multiple
+                                    // but usually controller is enough.
+                                    sw.postMessage(msg); 
                                 }
                             });
                         });

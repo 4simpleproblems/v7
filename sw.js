@@ -91,19 +91,29 @@ let connection = new BareMux.WorkerConnection(currentWorkerPath);
 let bareClient = new BareMux.BareClient(connection);
 
 function updateTransport(path, port = null) {
-    if (path && path !== currentWorkerPath) {
-        console.log("Root SW: Switching BareMux Worker to " + path);
-        currentWorkerPath = path;
-        connection = new BareMux.WorkerConnection(currentWorkerPath);
+    const hasPathChanged = path && path !== currentWorkerPath;
+    const hasNewPort = !!port;
+
+    if (hasPathChanged || hasNewPort) {
+        if (hasPathChanged) {
+            console.log("Root SW: Switching BareMux Worker to " + path);
+            currentWorkerPath = path;
+        }
+        
+        // If we have a port, use it directly as the connection target
+        // Otherwise, use the path to create a new connection that will search for a port
+        connection = new BareMux.WorkerConnection(port || currentWorkerPath);
         bareClient = new BareMux.BareClient(connection);
-        // Re-inject into all instances
+        
+        // Re-inject the updated client into all active UV instances
+        let count = 0;
         for (const key in instances) {
             instances[key].bareClient = bareClient;
+            count++;
         }
+        console.log(`Root SW: Transport updated. Injected into ${count} instances. Port source: ${hasNewPort ? 'Explicit' : 'Path-based'}`);
     }
-    if (port) {
-        connection.port = port;
-    }
+
     if (!transportReady) {
         transportReady = true;
         if (transportResolve) transportResolve();
@@ -221,7 +231,12 @@ async function handleRequest(event) {
                 }
             }
             
-            return await instance.fetch(event);
+            try {
+                return await instance.fetch(event);
+            } catch (err) {
+                console.error(`Root SW: Instance fetch error for ${url}:`, err);
+                return new Response(null, { status: 500, statusText: 'Instance Fetch Error' });
+            }
         }
     }
 
@@ -245,16 +260,21 @@ async function handleRequest(event) {
             targetConfig = configs.vora_plus;
         }
 
-        if (isEncoded && !url.includes(targetConfig.prefix)) {
-            const encodedPart = url.split('hvtrs8')[1];
-            const fullProxyUrl = location.origin + targetConfig.prefix + 'hvtrs8' + encodedPart;
-            return await targetInstance.fetch({ ...event, request: new Request(fullProxyUrl, event.request) });
-        } else if (!url.includes(targetConfig.prefix)) {
-            const encoded = Ultraviolet.codec.xor.encode(url);
-            const fullProxyUrl = location.origin + targetConfig.prefix + encoded;
-            return await targetInstance.fetch({ ...event, request: new Request(fullProxyUrl, event.request) });
-        } else {
-            return await targetInstance.fetch(event);
+        try {
+            if (isEncoded && !url.includes(targetConfig.prefix)) {
+                const encodedPart = url.split('hvtrs8')[1];
+                const fullProxyUrl = location.origin + targetConfig.prefix + 'hvtrs8' + encodedPart;
+                return await targetInstance.fetch({ ...event, request: new Request(fullProxyUrl, event.request) });
+            } else if (!url.includes(targetConfig.prefix)) {
+                const encoded = Ultraviolet.codec.xor.encode(url);
+                const fullProxyUrl = location.origin + targetConfig.prefix + encoded;
+                return await targetInstance.fetch({ ...event, request: new Request(fullProxyUrl, event.request) });
+            } else {
+                return await targetInstance.fetch(event);
+            }
+        } catch (err) {
+            console.error(`Root SW: Fallback fetch error for ${url}:`, err);
+            return new Response(null, { status: 500, statusText: 'Fallback Fetch Error' });
         }
     }
     
