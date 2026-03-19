@@ -383,12 +383,18 @@
         }
 
         .player-btn.active {
-            color: #a855f7 !important; /* Tailwind purple-500 */
+            color: #4f46e5 !important;
             opacity: 1;
         }
 
         .player-btn.active i {
-            color: #a855f7 !important;
+            color: #4f46e5 !important;
+        }
+
+        /* Heart buttons should always be red when active, overriding the theme color */
+        .player-btn.active i.fa-heart,
+        .player-btn.active .fa-heart.text-red-500 {
+            color: #ef4444 !important; /* Tailwind red-500 */
         }
 
         .progress-bar {
@@ -801,15 +807,15 @@
                             </div>
 
                             <div class="flex items-center justify-center lg:justify-start gap-10 lg:gap-16 w-full">
-                                <button class="player-btn text-2xl lg:text-3xl opacity-70 hover:opacity-100 transition-all" id="fsShuffle" style="color: #ffffff !important"><i class="fas fa-shuffle"></i></button>
-                                <button class="player-btn text-3xl lg:text-5xl hover:scale-110 transition-all" id="fsPrev" style="color: #ffffff !important"><i class="fas fa-step-backward"></i></button>
+                                <button class="player-btn text-2xl lg:text-3xl opacity-70 hover:opacity-100 transition-all" id="fsShuffle"><i class="fas fa-shuffle"></i></button>
+                                <button class="player-btn text-3xl lg:text-5xl hover:scale-110 transition-all" id="fsPrev"><i class="fas fa-step-backward"></i></button>
                                 <button class="w-20 h-20 lg:w-28 lg:h-28 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-xl" id="fsPlayPause">
                                     <i class="fas fa-play text-4xl lg:text-6xl ml-1 text-black"></i>
                                 </button>
-                                <button class="player-btn text-3xl lg:text-5xl hover:scale-110 transition-all" id="fsNext" style="color: #ffffff !important"><i class="fas fa-step-forward"></i></button>
+                                <button class="player-btn text-3xl lg:text-5xl hover:scale-110 transition-all" id="fsNext"><i class="fas fa-step-forward"></i></button>
                                 <div class="flex items-center gap-10 lg:gap-16">
-                                    <button class="player-btn text-2xl lg:text-3xl opacity-70 hover:opacity-100 transition-all" id="fsRepeat" style="color: #ffffff !important"><i class="fas fa-repeat"></i></button>
-                                    <button class="player-btn text-2xl lg:text-3xl opacity-70 hover:opacity-100 transition-all" id="fsLike" style="color: #ffffff !important"><i class="far fa-heart"></i></button>
+                                    <button class="player-btn text-2xl lg:text-3xl opacity-70 hover:opacity-100 transition-all" id="fsRepeat"><i class="fas fa-repeat"></i></button>
+                                    <button class="player-btn text-2xl lg:text-3xl opacity-70 hover:opacity-100 transition-all" id="fsLike"><i class="far fa-heart"></i></button>
                                 </div>
                             </div>
                         </div>

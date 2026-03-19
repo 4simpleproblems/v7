@@ -653,7 +653,7 @@ function updateFullscreenUI() {
     document.getElementById('fsShuffle').classList.toggle('active', isShuffle);
     const fsRepeat = document.getElementById('fsRepeat');
     fsRepeat.classList.toggle('active', repeatMode !== 'off');
-    fsRepeat.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat keep-white"></i><span class="absolute text-[8px] font-bold mt-1 ml-1 keep-white">1</span>' : '<i class="fas fa-repeat keep-white"></i>';
+    fsRepeat.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat"></i><span class="absolute text-[8px] font-bold mt-1 ml-1">1</span>' : '<i class="fas fa-repeat"></i>';
     const fsPlayBtn = document.getElementById('fsPlayPause');
     if (fsPlayBtn) fsPlayBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-4xl lg:text-6xl text-black"></i>' : '<i class="fas fa-play text-4xl lg:text-6xl ml-1 text-black"></i>';
 }
