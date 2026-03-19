@@ -232,7 +232,7 @@ function createMediaCard(item) {
     
     // Improved SPA Check: More robust detection of VORA app context
     const isSPA = window.location.pathname.toLowerCase().includes('vora') || 
-                  window.location.pathname.toLowerCase().includes('vora-plus') || 
+                  window.location.pathname.toLowerCase().includes('vora_plus') || 
                   !!document.getElementById('videoGrid') ||
                   !!document.getElementById('moviesGrid');
 
@@ -275,7 +275,7 @@ function createMediaCard(item) {
 
 function createViewAllCard(link) {
     const isSPA = window.location.pathname.toLowerCase().includes('vora') || 
-                  window.location.pathname.toLowerCase().includes('vora-plus') || 
+                  window.location.pathname.toLowerCase().includes('vora_plus') || 
                   !!document.getElementById('videoGrid') ||
                   !!document.getElementById('moviesGrid');
     const view = link.includes('movie') ? 'movies' : 'series';
@@ -425,7 +425,6 @@ window.themoviedb = async function(a, e, retries = 5) {
                 if (res.clone) renderTmdb(res.clone(), a);
                 return res;
             }
-            console.error(`Vora: TMDB fetch failed for ${a} with status: ${res?.status}`);
             lastError = new Error(`Status ${res?.status}`);
         } catch (err) {
             lastError = err;
@@ -528,7 +527,33 @@ async function loadFromHash() {
     tryLoad(type, id);
 }
 
-// Proxy Helper used from utils.js
+// Proxy Helper
+function proxyUrl(url) {
+    if (!url) return url;
+    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+    
+    const prefix = "/VORA_PLUS/VERN_SYSTEM/uv/service/";
+    
+    // Check multiple possible locations for the encoder
+    const encoder = (window.__uv$config && window.__uv$config.encodeUrl) ? window.__uv$config.encodeUrl : 
+                    (typeof Ultraviolet !== 'undefined' ? Ultraviolet.codec.xor.encode : null);
+    
+    if (encoder) {
+        try {
+            const encoded = encoder(url);
+            // Ensure encoded doesn't start with a slash if prefix ends with one
+            const cleanEncoded = encoded.startsWith('/') ? encoded.substring(1) : encoded;
+            const result = prefix + cleanEncoded;
+            return result;
+        } catch (e) {
+            console.error("Vora Proxy Encoding Error:", e);
+            return url;
+        }
+    }
+    
+    console.warn("Vora Proxy: No encoder found for URL", url);
+    return url;
+}
 
 function renderPlayerUI(type, id, item) {
     currentMedia = { type, id, s: 1, e: 1, item };
@@ -791,7 +816,7 @@ function performSearch() {
     
     // Only clear hash if NOT in SPA mode or if we explicitly want to close the player
     const isSingleFileSPA = window.location.pathname.toLowerCase().includes('vora') || 
-                           window.location.pathname.toLowerCase().includes('vora-plus') || 
+                           window.location.pathname.toLowerCase().includes('vora_plus') || 
                            window.location.pathname.includes('single_file.html');
     if (!isSingleFileSPA) window.location.hash = ''; 
 
@@ -805,6 +830,7 @@ window.loadVoraContent = function() {
     } else {
         // Only auto-load if not in SPA mode (where switchView handles it)
         const isSingleFileSPA = window.location.pathname.toLowerCase().includes('vora') || 
+                               window.location.pathname.toLowerCase().includes('vora_plus') || 
                                window.location.pathname.includes('single_file.html');
         if (isSingleFileSPA) return;
 

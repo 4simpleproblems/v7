@@ -1,53 +1,23 @@
-function proxyUrl(url) {
-    if (!url) return url;
-    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
-    
-    const prefix = "/VORA_PLUS/VERN_SYSTEM/uv/service/";
-    
-    const encoder = (window.__uv$config && window.__uv$config.encodeUrl) ? window.__uv$config.encodeUrl : 
-                    (typeof Ultraviolet !== 'undefined' ? Ultraviolet.codec.xor.encode : null);
-    
-    if (encoder) {
-        try {
-            const encoded = encoder(url);
-            const cleanEncoded = encoded.startsWith('/') ? encoded.substring(1) : encoded;
-            return prefix + cleanEncoded;
-        } catch (e) {
-            console.error("Vora Proxy Encoding Error:", e);
-            return url;
-        }
-    }
-    return url;
-}
-
 var themoviedb = ( () => {
-    const headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyYmYwZmFlZWIzZjc3OWRhZDdkOWM3MjY4ZGM0NmNmNiIsIm5iZiI6MTcyMzkzMjM1MS4xNDEyNzIsInN1YiI6IjY2YzExZTJmOTk5ZmYwYTFjNTE2YWRhNCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.vwZW4D57fT-wlqLgHt_4vhnfTbuIwFOOrWE2DBlRHMQ"
-    };
-    
+    var a = new Headers;
+    a.append("Accept", "application/json"),
+    a.append("Content-Type", "application/json"),
+    a.append("Authorization", "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyYmYwZmFlZWIzZjc3OWRhZDdkOWM3MjY4ZGM0NmNmNiIsIm5iZiI6MTcyMzkzMjM1MS4xNDEyNzIsInN1YiI6IjY2YzExZTJmOTk5ZmYwYTFjNTE2YWRhNCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.vwZW4D57fT-wlqLgHt_4vhnfTbuIwFOOrWE2DBlRHMQ");
     let t = _initCachedFetch({
         mode: "block",
         matchIn: ["://"],
         endsWith: [],
         defaultTTL: "1 hour"
-    }, headers);
-
+    }, a);
     return async function(a, e) {
-        let n = "https://api.themoviedb.org/3";
-        let path = a.startsWith('/') ? a : '/' + a;
-        let url = new URL(n + path);
-        
-        if (e && e.params) {
-            Object.entries(e.params).forEach(([key, val]) => {
-                url.searchParams.set(key, val);
-            });
+        let n = "https://api.themoviedb.org/3"
+          , i = (0 < n.length && n.endsWith("/") && a.startsWith("/") ? n += a.slice(1) : 0 < n.length && !n.endsWith("/") && !a.startsWith("/") ? n += "/" + a : n += a,
+        new URL(n));
+        return Object.entries(e?.params ?? {}).forEach( ([a,e]) => {
+            i.searchParams.set(a, e)
         }
-        
-        const finalUrl = url.toString();
-        console.log(`TMDB Fetch: ${a} -> ${finalUrl}`);
-        return await t("tmdb-" + encodeURIComponent(a), finalUrl, e?.headers ? { headers: { ...headers, ...e.headers } } : undefined);
+        ),
+        await t("tmdb-" + encodeURIComponent(a), i.toString())
     }
 }
 )()
@@ -59,7 +29,7 @@ var themoviedb = ( () => {
         matchIn: ["://"],
         endsWith: [],
         defaultTTL: "10 minute"
-    }, {});
+    }, new Headers);
     return async function(a, e) {
         let n = t
           , i = (0 < n.length && n.endsWith("/") && a.startsWith("/") ? n += a.slice(1) : 0 < n.length && !n.endsWith("/") && !a.startsWith("/") ? n += "/" + a : n += a,
@@ -79,7 +49,7 @@ var themoviedb = ( () => {
         matchIn: ["://"],
         endsWith: [],
         defaultTTL: "30 minute"
-    }, {});
+    }, new Headers);
     return async function() {
         let n = await e("newsapi", a + "/en/data.json").then(a => a.json());
         return await e("newstorrentfreak", a + "/tf.json").then(a => a.json()).then(a => {
@@ -102,7 +72,7 @@ var themoviedb = ( () => {
         matchIn: ["://"],
         endsWith: [],
         defaultTTL: "10 minute"
-    }, {});
+    }, new Headers);
     return async function(a, e) {
         let n = "https://sub.wyzie.ru"
           , i = (0 < n.length && n.endsWith("/") && a.startsWith("/") ? n += a.slice(1) : 0 < n.length && !n.endsWith("/") && !a.startsWith("/") ? n += "/" + a : n += a,
@@ -407,7 +377,7 @@ function(a, e) {
     "fr-ch": "French (Switzerland)",
     "fr-fr": "French (France)",
     "fr-lu": "French (Luxembourg)",
-    "fr-mc": "French (Monaco)",
+    "fr-mc": "Project Monaco",
     fur: "Friulian",
     fy: "Frisian",
     ga: "Irish",
