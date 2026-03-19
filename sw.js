@@ -256,9 +256,18 @@ async function handleRequest(event) {
                     requestToFetch = new Request(absoluteUrl, event.request);
                 }
                 
-                // TEST: Bypass UVServiceWorker if we have a decoded URL and transport is ready
-                if (decodedUrl !== "unknown" && transportReady && key === 'vora_plus') {
-                    console.log(`Root SW: Bypassing UV for ${key}, fetching ${decodedUrl} via direct BareClient`);
+                // Bypass UVServiceWorker for specific high-performance domains or if UV is failing
+                const bypassDomains = [
+                    'api.themoviedb.org',
+                    'image.tmdb.org',
+                    'embed-testing-v7.vercel.app',
+                    'sub.wyzie.ru'
+                ];
+                
+                const shouldBypass = bypassDomains.some(d => decodedUrl.includes(d));
+
+                if (decodedUrl !== "unknown" && transportReady && (shouldBypass || key === 'vora_plus')) {
+                    console.log(`Root SW: Using optimized fetch for ${key}, fetching ${decodedUrl}`);
                     try {
                         const response = await bareClient.fetch(decodedUrl, {
                             headers: event.request.headers,
@@ -266,10 +275,9 @@ async function handleRequest(event) {
                             body: event.request.body,
                             redirect: 'follow'
                         });
-                        console.log(`Root SW: Direct BareClient fetch for ${key} returned ${response.status}`);
                         return response;
                     } catch (e) {
-                        console.warn(`Root SW: Direct BareClient fetch failed for ${key}, falling back to UV:`, e);
+                        console.warn(`Root SW: Optimized fetch failed for ${key}, falling back to UV:`, e);
                     }
                 }
 
