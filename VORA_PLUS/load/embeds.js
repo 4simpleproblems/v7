@@ -137,20 +137,21 @@ function createMediaCard(item) {
     return card;
 }
 
-async function renderTmdb(res, endpoint) {
+async function renderTmdb(res, endpoint, params = {}) {
     try {
         const data = await res.json();
         let grid;
         if (isIndexPage() && !isSearchActive) {
+            const isAnime = params.with_genres == 16 || params.with_original_language == 'ja' || endpoint.includes('ja') || endpoint.includes('16');
             if (endpoint.includes('movie')) {
                 grid = document.getElementById('moviesGrid');
-            } else if (endpoint.includes('16') || endpoint.includes('ja')) {
+            } else if (isAnime) {
                 grid = document.getElementById('animeGrid');
             } else if (endpoint.includes('tv')) {
                 grid = document.getElementById('seriesGrid');
             }
         } else {
-            grid = document.getElementById('videoGrid');
+            grid = document.getElementById('videoGrid') || document.getElementById('videoGridSearch');
         }
         if (!grid || !data.results) return;
         if (data.page === 1) grid.innerHTML = '';
@@ -180,7 +181,7 @@ window.themoviedb = async function(a, e) {
         if (window.checkBare) await window.checkBare();
         const res = await originalThemoviedb(a, e);
         if (res && res.ok) {
-            renderTmdb(res.clone(), a);
+            renderTmdb(res.clone(), a, e?.params);
             return res;
         }
     } catch (err) { console.error("Vora TMDB Error", err); }
@@ -223,12 +224,32 @@ async function loadFromHash() {
     }
 }
 
+// Proxy Helper - EXACT match of Vora's implementation for reliability
 function proxyUrl(url) {
     if (!url) return url;
-    // Use the functional VORA prefix for images to match Vora's working state
+    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+    
     const prefix = "/VORA/VERN_SYSTEM/uv/service/";
-    const encoder = (window.__uv$config && window.__uv$config.encodeUrl) ? window.__uv$config.encodeUrl : Ultraviolet.codec.xor.encode;
-    return prefix + encoder(url);
+    
+    // Check multiple possible locations for the encoder
+    const encoder = (window.__uv$config && window.__uv$config.encodeUrl) ? window.__uv$config.encodeUrl : 
+                    (typeof Ultraviolet !== 'undefined' ? Ultraviolet.codec.xor.encode : null);
+    
+    if (encoder) {
+        try {
+            const encoded = encoder(url);
+            // Ensure encoded doesn't start with a slash if prefix ends with one
+            const cleanEncoded = encoded.startsWith('/') ? encoded.substring(1) : encoded;
+            const result = prefix + cleanEncoded;
+            return result;
+        } catch (e) {
+            console.error("Vora Proxy Encoding Error:", e);
+            return url;
+        }
+    }
+    
+    console.warn("Vora Proxy: No encoder found for URL", url);
+    return url;
 }
 
 function renderPlayerUI(type, id, item) {
