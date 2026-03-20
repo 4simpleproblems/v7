@@ -218,13 +218,10 @@ async function handleRequest(event) {
 
     // Find the matching instance based on prefix
     for (const key in configs) {
-        // console.log(`Checking prefix ${configs[key].prefix} against ${url}`);
         if (url.includes(configs[key].prefix)) {
-            // Find the matching instance based on prefix
             const instance = instances[key];
             
             try {
-                // Determine if we can log more details
                 const prefix = configs[key].prefix;
                 let decodedUrl = "unknown";
                 try {
@@ -232,17 +229,10 @@ async function handleRequest(event) {
                     if (encoded) decodedUrl = Ultraviolet.codec.xor.decode(encoded);
                 } catch (e) {}
 
-                // Ensure the URL starts with the origin for the sub-SW instance to match its prefix
-                let requestToFetch = event.request;
-                if (!url.startsWith(location.origin)) {
-                    const absoluteUrl = new URL(url, location.origin).href;
-                    requestToFetch = new Request(absoluteUrl, event.request);
-                }
-                
-                // Bypass UVServiceWorker for specific high-performance domains or if UV is failing
-                const shouldBypass = autoProxyDomains.some(d => decodedUrl.includes(d));
+                // High-performance domain check
+                const isHighPerformance = autoProxyDomains.some(d => decodedUrl.includes(d));
 
-                if (decodedUrl !== "unknown" && transportReady && shouldBypass) {
+                if (decodedUrl !== "unknown" && transportReady && isHighPerformance) {
                     console.log(`Root SW: Using optimized fetch for ${key}, fetching ${decodedUrl}`);
                     try {
                         const response = await bareClient.fetch(decodedUrl, {
@@ -257,36 +247,28 @@ async function handleRequest(event) {
                     }
                 }
 
+                // If specialized instance exists and prefix matches, use it
+                const requestToFetch = url.startsWith(location.origin) ? event.request : new Request(new URL(url, location.origin).href, event.request);
                 const response = await instance.fetch({ ...event, request: requestToFetch });
-                if (response.status === 500 || response.status === 404) {
-                    console.warn(`Root SW: Instance ${key} returned ${response.status} for ${url} (Origin: ${location.origin}, Decoded: ${decodedUrl}). BareMux Port Status: ${connection.port ? 'Active' : 'Inactive'}`);
-                }
                 return response;
             } catch (err) {
                 console.error(`Root SW: Instance fetch error for ${url}:`, err);
-                return new Response(null, { status: 500, statusText: 'Instance Fetch Error' });
             }
         }
     }
 
     // Fallback routing for encoded URLs or media domains missing prefixes
     if (autoProxyDomains.some(domain => url.includes(domain)) || isEncoded) {
-        // Default to Vora (main proxy) for general unrouted traffic
-        // UNLESS it's clearly a Valo/Vern related request (detected by referrer or path if possible)
-        // For simplicity and safety, we use the main Vora instance as the universal catch-all.
         let targetInstance = instances.vora;
         let targetConfig = configs.vora;
 
-        // If referrer is Valo/Vern, use Valo instance
-        if (event.request.referrer && (event.request.referrer.includes('/VERN/') || event.request.referrer.includes('/logged-in/valo'))) {
-            targetInstance = instances.valo;
-            targetConfig = configs.valo;
-        }
-
-        // If referrer is Vora Plus
-        if (event.request.referrer && (event.request.referrer.includes('/VORA_PLUS/') || event.request.referrer.includes('/logged-in/vora-plus.html'))) {
+        const referrer = event.request.referrer || "";
+        if (referrer.includes('/VORA_PLUS/') || referrer.includes('/logged-in/vora-plus.html')) {
             targetInstance = instances.vora_plus;
             targetConfig = configs.vora_plus;
+        } else if (referrer.includes('/VERN/') || referrer.includes('/logged-in/valo')) {
+            targetInstance = instances.valo;
+            targetConfig = configs.valo;
         }
 
         try {

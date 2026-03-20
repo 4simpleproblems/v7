@@ -18,41 +18,80 @@
         };
     </script>
     <script src="/VORA_PLUS/VERN_SYSTEM/baremux/index.js"></script>
-    <script>
-        let bareInitialized = false;
-        window.checkBare = async () => {
-            if (bareInitialized) return;
-            const workerPath = "/VORA_PLUS/VERN_SYSTEM/baremux/worker.js";
-            const connection = new BareMux.BareMuxConnection(workerPath);
+    <script type="module">
+        import * as libcurl from "/VORA_PLUS/VERN_SYSTEM/libcurl/index.mjs";
+
+        window.checkBare = async (retries = 5) => {
+            if (window.__4sp_bare_mux_connecting) return;
+            window.__4sp_bare_mux_connecting = true;
+
+            const connection = new BareMux.BareMuxConnection("/VORA_PLUS/VERN_SYSTEM/baremux/worker.js");
             const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VORA_PLUS/VERN_SYSTEM/libcurl/index.mjs";
-            try {
-                await connection.setTransport(transportPath, [
-                    { websocket: wispUrl },
-                    { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
-                ]);
-                bareInitialized = true;
-                const signalReady = () => {
-                    const msg = { type: 'baremuxready', path: workerPath, port: connection.port };
-                    navigator.serviceWorker.getRegistrations().then(registrations => {
-                        registrations.forEach(reg => {
-                            const sw = reg.active || reg.waiting || reg.installing;
-                            if (sw) {
-                                if (connection.port) sw.postMessage(msg, [connection.port]);
-                                else sw.postMessage(msg);
-                            }
-                        });
-                    });
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    if (libcurl && libcurl.load_wasm) {
+                        libcurl.load_wasm().catch(() => {});
+                    }
+
+                    const transport = await connection.getTransport();
+                    if (!transport || transport.path !== transportPath) {
+                        await connection.setTransport(transportPath, [
+                            { websocket: wispUrl },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" },
+                            { websocket: "wss://flow-works.me/wisp/" }
+                        ]);
+                    }
+                    console.log("Vora Plus: BareMux Transport Active");
+
                     const bc = new BroadcastChannel("bare-mux-sync");
-                    bc.postMessage(msg);
-                };
-                signalReady();
-            } catch (e) { console.error("Vora: BareMux Init Failed", e); }
+                    const port = connection.getInnerPort();
+                    
+                    const signalReady = () => {
+                        const msg = { 
+                            type: 'baremuxready', 
+                            path: "/VORA_PLUS/VERN_SYSTEM/baremux/worker.js",
+                            hasPort: !!port 
+                        };
+                        
+                        bc.postMessage(msg);
+                        
+                        if (navigator.serviceWorker.controller) {
+                            if (port) {
+                                navigator.serviceWorker.controller.postMessage(msg, [port]);
+                            } else {
+                                navigator.serviceWorker.controller.postMessage(msg);
+                            }
+                        }
+
+                        navigator.serviceWorker.getRegistrations().then(registrations => {
+                            registrations.forEach(reg => {
+                                const sw = reg.active || reg.waiting || reg.installing;
+                                if (sw && sw !== navigator.serviceWorker.controller) {
+                                    sw.postMessage(msg); 
+                                }
+                            });
+                        });
+                    };
+                    
+                    signalReady();
+                    window.__4sp_bare_mux_connecting = false;
+                    return; 
+                } catch (e) {
+                    if (i === retries - 1) console.error("Vora Plus: BareMux connection exhausted", e);
+                    await new Promise(r => setTimeout(r, 200));
+                }
+            }
+            window.__4sp_bare_mux_connecting = false;
         };
+
         (async () => {
             if ("serviceWorker" in navigator) {
                 try {
-                    await navigator.serviceWorker.register("/VORA_PLUS/VERN_SYSTEM/sw.js", { scope: "/VORA_PLUS/VERN_SYSTEM/" });
+                    await navigator.serviceWorker.register("/sw.js", {
+                        scope: "/"
+                    });
                 } catch (e) { console.error("VERN Proxy Error", e); }
             }
             await window.checkBare();

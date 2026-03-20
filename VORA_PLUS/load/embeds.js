@@ -10,6 +10,7 @@ const isIndexPage = () => window.VORA_CONFIG.currentView === 'index';
 
 window.switchView = function(view, clearHash = true) {
     window.VORA_CONFIG.currentView = view;
+    isSearchActive = false;
     if (clearHash) {
         window.location.hash = ''; 
     }
@@ -85,6 +86,7 @@ function getEmbedUrl(type, id, s = 1, e = 1) {
 let currentMedia = { type: null, id: null, s: null, e: null, item: null };
 let nextMedia = null;
 let preloadTriggered = false;
+let isSearchActive = false;
 
 // Aggressive CSS Blockers and DOM Scanner (Simplified for brevity, but kept in actual implementation)
 (function() {
