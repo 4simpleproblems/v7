@@ -24,75 +24,33 @@
         window.checkBare = async (retries = 5) => {
             if (window.__4sp_bare_mux_connecting) return;
             window.__4sp_bare_mux_connecting = true;
-
             const connection = new BareMux.BareMuxConnection("/VORA_PLUS/VERN_SYSTEM/baremux/worker.js");
-            const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VORA_PLUS/VERN_SYSTEM/libcurl/index.mjs";
-
             for (let i = 0; i < retries; i++) {
                 try {
-                    if (libcurl && libcurl.load_wasm) {
-                        libcurl.load_wasm().catch(() => {});
-                    }
-
+                    if (libcurl && libcurl.load_wasm) libcurl.load_wasm().catch(() => {});
                     const transport = await connection.getTransport();
                     if (!transport || transport.path !== transportPath) {
                         await connection.setTransport(transportPath, [
-                            { websocket: wispUrl },
-                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" },
-                            { websocket: "wss://flow-works.me/wisp/" }
+                            { websocket: "wss://wisp.mercurywork.shop/" },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
                         ]);
                     }
-                    console.log("Vora Plus: BareMux Transport Active");
-
                     const bc = new BroadcastChannel("bare-mux-sync");
                     const port = connection.getInnerPort();
-                    
-                    const signalReady = () => {
-                        const msg = { 
-                            type: 'baremuxready', 
-                            path: "/VORA_PLUS/VERN_SYSTEM/baremux/worker.js",
-                            hasPort: !!port 
-                        };
-                        
-                        bc.postMessage(msg);
-                        
-                        if (navigator.serviceWorker.controller) {
-                            if (port) {
-                                navigator.serviceWorker.controller.postMessage(msg, [port]);
-                            } else {
-                                navigator.serviceWorker.controller.postMessage(msg);
-                            }
-                        }
-
-                        navigator.serviceWorker.getRegistrations().then(registrations => {
-                            registrations.forEach(reg => {
-                                const sw = reg.active || reg.waiting || reg.installing;
-                                if (sw && sw !== navigator.serviceWorker.controller) {
-                                    sw.postMessage(msg); 
-                                }
-                            });
-                        });
-                    };
-                    
-                    signalReady();
+                    const msg = { type: 'baremuxready', path: "/VORA_PLUS/VERN_SYSTEM/baremux/worker.js", hasPort: !!port };
+                    bc.postMessage(msg);
+                    if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage(msg, port ? [port] : []);
                     window.__4sp_bare_mux_connecting = false;
                     return; 
-                } catch (e) {
-                    if (i === retries - 1) console.error("Vora Plus: BareMux connection exhausted", e);
-                    await new Promise(r => setTimeout(r, 200));
-                }
+                } catch (e) { await new Promise(r => setTimeout(r, 200)); }
             }
             window.__4sp_bare_mux_connecting = false;
         };
 
         (async () => {
             if ("serviceWorker" in navigator) {
-                try {
-                    await navigator.serviceWorker.register("/sw.js", {
-                        scope: "/"
-                    });
-                } catch (e) { console.error("VERN Proxy Error", e); }
+                try { await navigator.serviceWorker.register("/sw.js", { scope: "/" }); } catch (e) {}
             }
             await window.checkBare();
         })();
@@ -118,9 +76,7 @@
                         'accent-purple': '#a855f7',
                         'brand-border': '#1a1a1a',
                     },
-                    fontFamily: {
-                        sans: ['Geist', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Geist', 'sans-serif'] },
                 }
             }
         }
@@ -136,22 +92,18 @@
             --accent-glow: rgba(168, 85, 247, 0.4);
             --border-main: #1a1a1a;
         }
-
         body { 
             font-family: 'Geist', sans-serif; 
             background-color: var(--bg-page); 
             color: var(--text-main);
             overflow-x: hidden;
         }
-
         ::-webkit-scrollbar { display: none; }
         * { -ms-overflow-style: none; scrollbar-width: none; }
 
         .nav-glass {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
+            top: 0; left: 0; right: 0;
             height: 80px;
             display: flex;
             align-items: center;
@@ -162,49 +114,81 @@
             border-bottom: 1px solid var(--border-main);
         }
 
-        .category-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 2rem;
-            padding-left: 4rem;
-        }
+        .category-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 2rem; padding-left: 4rem; }
 
-        /* Player Styles */
-        #player-container {
+        .media-card {
+            aspect-ratio: 2/3;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+        }
+        .media-card:hover {
+            transform: scale(1.08);
+            z-index: 50;
+            border-color: var(--accent-color);
+            box-shadow: 0 10px 30px var(--accent-glow);
+        }
+        .media-card img { width: 100%; height: 100%; object-fit: cover; }
+        .media-info-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .media-card:hover .media-info-overlay { opacity: 1; }
+
+        /* Information Page UI */
+        #player-view {
             position: fixed;
             inset: 0;
-            z-index: 2000;
-            background: black;
-            display: none;
+            background: #050505;
+            z-index: 1500;
+            overflow-y: auto;
         }
-
-        #player-frame {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        .close-player {
+        .info-backdrop {
             position: absolute;
-            top: 2rem;
-            right: 2rem;
-            z-index: 2100;
-            background: rgba(255,255,255,0.1);
-            color: white;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            transition: background 0.2s;
+            top: 0; left: 0; right: 0;
+            height: 70vh;
+            background-size: cover;
+            background-position: center;
         }
-
-        .close-player:hover {
-            background: rgba(255,255,255,0.2);
+        .info-backdrop::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, #050505 0%, rgba(5,5,5,0.7) 50%, rgba(5,5,5,0.3) 100%);
         }
+        .info-container {
+            position: relative;
+            z-index: 10;
+            padding: 15vh 4rem 4rem 4rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .player-container-wrapper {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 3rem;
+        }
+        .ep-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+        .ep-btn:hover { background: rgba(168, 85, 247, 0.2); border-color: #a855f7; }
+        .ep-btn.active { background: #a855f7; color: white; border-color: #a855f7; }
     </style>
 </head>
 <body class="custom-scroll pt-32">
@@ -226,8 +210,7 @@
                     <input type="text" id="searchInput" placeholder="Titles, people, genres" 
                            class="bg-black/40 border border-white/20 rounded-full py-1.5 pl-9 pr-4 text-xs focus:outline-none focus:border-white/40 w-64 transition-all">
                 </div>
-                <i class="fas fa-bell text-white cursor-pointer opacity-80 hover:opacity-100"></i>
-                <div class="w-8 h-8 rounded bg-accent-purple flex items-center justify-center font-bold text-xs">A</div>
+                <div class="w-8 h-8 rounded bg-accent-purple flex items-center justify-center font-bold text-xs cursor-pointer">4SP</div>
             </div>
         </div>
     </nav>
@@ -240,66 +223,21 @@
                 <!-- Data will be injected here -->
             </div>
         </div>
-    </main>
-
-    <!-- Video Player -->
-    <div id="player-container">
-        <div class="close-player" id="close-player">
-            <i class="fas fa-times"></i>
+        <div id="search-results-section" class="hidden">
+            <h2 class="category-title">Search Results</h2>
+            <div id="videoGridSearch" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 px-16"></div>
         </div>
-        <iframe id="player-frame" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>
-    </div>
+    </main>
 
     <!-- Scripts -->
     <script src="./cachedFetch.js"></script>
     <script src="./utils.js"></script>
     <script src="./load/embeds.js"></script>
-    <script src="../navigation.js"></script>
-    <script src="/injector.js"></script>
-
     <script>
-        // Initial setup for Movies page
-        window.VORA_CONFIG = { currentView: 'movies' };
-
-        // Link into embeds.js rendering
-        const originalRenderTmdb = window.renderTmdb;
-        window.renderTmdb = async function(res, endpoint) {
-            const data = await res.clone().json();
-            const grid = document.getElementById('videoGrid');
-            if (grid && data.results) {
-                if (data.page === 1) grid.innerHTML = '';
-                data.results.forEach(item => {
-                    const card = createMediaCard(item);
-                    if (card) grid.appendChild(card);
-                });
-                return;
-            }
-            return originalRenderTmdb(res, endpoint);
-        };
-
-        window.playVideo = function(videoData) {
-            const id = videoData.id;
-            const type = videoData.media_type || 'movie';
-            window.location.hash = `${type}/${id}`;
-        };
-
-        document.getElementById('close-player').onclick = () => {
-            window.location.hash = '';
-            window.location.reload();
-        };
-
-        document.addEventListener('DOMContentLoaded', () => {
-            window.loadVoraContent();
+        // Ensure switchView is called for initial state
+        window.addEventListener('DOMContentLoaded', () => {
+            window.switchView('movies', false);
         });
-
-        // Handle search
-        document.getElementById('searchInput').onkeypress = (e) => {
-            if (e.key === 'Enter') {
-                const query = e.target.value;
-                if (!query) return;
-                window.themoviedb(`search/movie`, { params: { query: query, page: 1 } });
-            }
-        };
     </script>
 </body>
 </html>

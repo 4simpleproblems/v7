@@ -8,9 +8,11 @@ const isMoviePage = () => window.VORA_CONFIG.currentView === 'movies';
 const isSeriesPage = () => window.VORA_CONFIG.currentView === 'series';
 const isIndexPage = () => window.VORA_CONFIG.currentView === 'index';
 
+let isSearchActive = false;
+
 window.switchView = function(view, clearHash = true) {
     window.VORA_CONFIG.currentView = view;
-    isSearchActive = false;
+    isSearchActive = (view === 'search');
     if (clearHash) {
         window.location.hash = ''; 
     }
@@ -86,7 +88,6 @@ function getEmbedUrl(type, id, s = 1, e = 1) {
 let currentMedia = { type: null, id: null, s: null, e: null, item: null };
 let nextMedia = null;
 let preloadTriggered = false;
-let isSearchActive = false;
 
 // Aggressive CSS Blockers and DOM Scanner (Simplified for brevity, but kept in actual implementation)
 (function() {
@@ -142,8 +143,12 @@ async function renderTmdb(res, endpoint) {
         let grid;
         if (isIndexPage() && !isSearchActive) {
             if (endpoint.includes('movie')) grid = document.getElementById('moviesGrid');
-            else if (endpoint.includes('ja') || endpoint.includes('16')) grid = document.getElementById('animeGrid');
-            else grid = document.getElementById('seriesGrid');
+            else if (endpoint.includes('ja') || endpoint.includes('16') || endpoint.includes('discover/tv')) {
+                // Heuristic: If we are on index and it's not movie, and we have animeGrid, use it for ja/16
+                // But wait, trending/tv also goes here. Let's be more specific.
+                if (endpoint.includes('ja') || endpoint.includes('16')) grid = document.getElementById('animeGrid');
+                else grid = document.getElementById('seriesGrid');
+            }
         } else {
             grid = document.getElementById('videoGrid');
         }
@@ -220,7 +225,8 @@ async function loadFromHash() {
 
 function proxyUrl(url) {
     if (!url) return url;
-    const prefix = "/VORA_PLUS/VERN_SYSTEM/uv/service/";
+    // Use the functional VORA prefix for images to match Vora's working state
+    const prefix = "/VORA/VERN_SYSTEM/uv/service/";
     const encoder = (window.__uv$config && window.__uv$config.encodeUrl) ? window.__uv$config.encodeUrl : Ultraviolet.codec.xor.encode;
     return prefix + encoder(url);
 }
@@ -228,7 +234,7 @@ function proxyUrl(url) {
 function renderPlayerUI(type, id, item) {
     currentMedia = { type, id, s: 1, e: 1, item };
     const title = item.title || item.name;
-    const backdrop = `https://image.tmdb.org/t/p/original${item.backdrop_path}`;
+    const backdrop = proxyUrl(`https://image.tmdb.org/t/p/original${item.backdrop_path}`);
     const embedUrl = proxyUrl(getEmbedUrl(type, id));
     
     const playerView = document.getElementById('player-view');
@@ -245,7 +251,7 @@ function renderPlayerUI(type, id, item) {
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 <div class="lg:col-span-2">
-                    <h1 class="text-5xl font-black mb-4 tracking-tighter">${title}</h1>
+                    <h1 class="text-5xl font-black mb-4 tracking-tighter text-white">${title}</h1>
                     <div class="flex items-center gap-4 mb-6 text-sm text-white/60 font-medium">
                         <span class="text-purple-500 font-bold">${item.vote_average?.toFixed(1)} Rating</span>
                         <span>${(item.release_date || item.first_air_date || '').split('-')[0]}</span>
@@ -257,7 +263,7 @@ function renderPlayerUI(type, id, item) {
                         <label class="text-xs font-bold uppercase tracking-widest text-white/40">Server</label>
                         <div class="flex flex-wrap gap-2">
                             ${PROVIDERS.map((p, i) => `
-                                <button onclick="window.switchProvider(${i})" class="px-6 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500 transition text-sm ${i === currentProviderIndex ? 'border-purple-500 bg-purple-500/20' : ''}">
+                                <button onclick="window.switchProvider(${i})" class="px-6 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500 transition text-sm text-white ${i === currentProviderIndex ? 'border-purple-500 bg-purple-500/20' : ''}">
                                     ${p.name}
                                 </button>
                             `).join('')}
@@ -265,11 +271,11 @@ function renderPlayerUI(type, id, item) {
                     </div>
                 </div>
 
-                <div class="${type === 'tv' ? '' : 'hidden'}">
+                <div class="${type === 'tv' ? '' : 'hidden'} text-white">
                     <h3 class="text-xl font-bold mb-6">Episodes</h3>
                     <div class="flex flex-col gap-4">
-                        <select id="season-select" class="bg-white/5 border border-white/10 p-3 rounded-xl outline-none w-full mb-4">
-                            ${(item.seasons || []).map(s => `<option value="${s.season_number}">Season ${s.season_number}</option>`).join('')}
+                        <select id="season-select" class="bg-white/5 border border-white/10 p-3 rounded-xl outline-none w-full mb-4 text-white">
+                            ${(item.seasons || []).map(s => `<option value="${s.season_number}" class="bg-black">Season ${s.season_number}</option>`).join('')}
                         </select>
                         <div id="episode-list" class="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scroll">
                             <!-- Episodes load here -->
@@ -287,7 +293,7 @@ function renderPlayerUI(type, id, item) {
             const epList = document.getElementById('episode-list');
             epList.innerHTML = data.episodes.map(ep => `
                 <button onclick="playEpisode('${id}', ${seasonSelect.value}, ${ep.episode_number})" class="ep-btn w-full p-4 rounded-xl text-left flex items-center justify-between group" data-ep="${ep.episode_number}">
-                    <span class="truncate pr-4"><span class="text-white/40 mr-2">${ep.episode_number}.</span> ${ep.name}</span>
+                    <span class="truncate pr-4 text-white"><span class="text-white/40 mr-2">${ep.episode_number}.</span> ${ep.name}</span>
                     <i class="fas fa-play opacity-0 group-hover:opacity-100 transition text-purple-500"></i>
                 </button>
             `).join('');
