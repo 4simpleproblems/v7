@@ -262,13 +262,19 @@ async function handleRequest(event) {
         let targetInstance = instances.vora;
         let targetConfig = configs.vora;
 
-        const referrer = event.request.referrer || "";
-        if (referrer.includes('/VORA_PLUS/') || referrer.includes('/logged-in/vora-plus.html')) {
-            targetInstance = instances.vora_plus;
-            targetConfig = configs.vora_plus;
-        } else if (referrer.includes('/VERN/') || referrer.includes('/logged-in/valo')) {
-            targetInstance = instances.valo;
-            targetConfig = configs.valo;
+        // Force TMDB to use vora instance as it's the most stable for assets
+        if (url.includes('themoviedb.org') || url.includes('tmdb.org')) {
+            targetInstance = instances.vora;
+            targetConfig = configs.vora;
+        } else {
+            const referrer = event.request.referrer || "";
+            if (referrer.includes('/VORA_PLUS/') || referrer.includes('/logged-in/vora-plus.html')) {
+                targetInstance = instances.vora_plus;
+                targetConfig = configs.vora_plus;
+            } else if (referrer.includes('/VERN/') || referrer.includes('/logged-in/valo')) {
+                targetInstance = instances.valo;
+                targetConfig = configs.valo;
+            }
         }
 
         try {

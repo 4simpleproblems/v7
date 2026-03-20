@@ -143,12 +143,8 @@ async function renderTmdb(res, endpoint) {
         let grid;
         if (isIndexPage() && !isSearchActive) {
             if (endpoint.includes('movie')) grid = document.getElementById('moviesGrid');
-            else if (endpoint.includes('ja') || endpoint.includes('16') || endpoint.includes('discover/tv')) {
-                // Heuristic: If we are on index and it's not movie, and we have animeGrid, use it for ja/16
-                // But wait, trending/tv also goes here. Let's be more specific.
-                if (endpoint.includes('ja') || endpoint.includes('16')) grid = document.getElementById('animeGrid');
-                else grid = document.getElementById('seriesGrid');
-            }
+            else if (endpoint.includes('trending/tv')) grid = document.getElementById('seriesGrid');
+            else if (endpoint.includes('ja') || endpoint.includes('16') || endpoint.includes('discover/tv')) grid = document.getElementById('animeGrid');
         } else {
             grid = document.getElementById('videoGrid');
         }
