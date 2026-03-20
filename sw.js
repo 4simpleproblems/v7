@@ -263,7 +263,15 @@ async function handleRequest(event) {
         let targetConfig = configs.vora;
 
         // Force TMDB to use vora instance as it's the most stable for assets
-        if (url.includes('themoviedb.org') || url.includes('tmdb.org')) {
+        let decodedForCheck = "";
+        if (isEncoded) {
+            try {
+                const encodedPart = url.split('hvtrs8')[1];
+                if (encodedPart) decodedForCheck = Ultraviolet.codec.xor.decode('hvtrs8' + encodedPart);
+            } catch (e) {}
+        }
+
+        if (url.includes('themoviedb.org') || url.includes('tmdb.org') || decodedForCheck.includes('tmdb.org')) {
             targetInstance = instances.vora;
             targetConfig = configs.vora;
         } else {

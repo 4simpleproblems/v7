@@ -142,9 +142,13 @@ async function renderTmdb(res, endpoint) {
         const data = await res.json();
         let grid;
         if (isIndexPage() && !isSearchActive) {
-            if (endpoint.includes('movie')) grid = document.getElementById('moviesGrid');
-            else if (endpoint.includes('trending/tv')) grid = document.getElementById('seriesGrid');
-            else if (endpoint.includes('ja') || endpoint.includes('16') || endpoint.includes('discover/tv')) grid = document.getElementById('animeGrid');
+            if (endpoint.includes('movie')) {
+                grid = document.getElementById('moviesGrid');
+            } else if (endpoint.includes('16') || endpoint.includes('ja')) {
+                grid = document.getElementById('animeGrid');
+            } else if (endpoint.includes('tv')) {
+                grid = document.getElementById('seriesGrid');
+            }
         } else {
             grid = document.getElementById('videoGrid');
         }
