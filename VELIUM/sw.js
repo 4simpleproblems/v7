@@ -73,7 +73,7 @@ self.addEventListener('fetch', event => {
                         const response = await bareClient.fetch(unroutedUrl, {
                             headers: targetEvent.request.headers,
                             method: targetEvent.request.method,
-                            body: targetEvent.request.body,
+                            body: targetEvent.request.method === 'GET' || targetEvent.request.method === 'HEAD' ? null : await targetEvent.request.clone().arrayBuffer(),
                             redirect: 'follow'
                         });
                         return response;
@@ -82,7 +82,7 @@ self.addEventListener('fetch', event => {
                     }
                 }
 
-                return await uv.fetch(targetEvent);
+                return await uv.fetch({ request: targetEvent.request });
             }
             return await fetch(event.request);
         })()

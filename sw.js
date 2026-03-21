@@ -238,7 +238,7 @@ async function handleRequest(event) {
                         const response = await bareClient.fetch(decodedUrl, {
                             headers: event.request.headers,
                             method: event.request.method,
-                            body: event.request.body,
+                            body: event.request.method === 'GET' || event.request.method === 'HEAD' ? null : await event.request.clone().arrayBuffer(),
                             redirect: 'follow'
                         });
                         return response;
@@ -249,7 +249,7 @@ async function handleRequest(event) {
 
                 // If specialized instance exists and prefix matches, use it
                 const requestToFetch = url.startsWith(location.origin) ? event.request : new Request(new URL(url, location.origin).href, event.request);
-                const response = await instance.fetch({ ...event, request: requestToFetch });
+                const response = await instance.fetch({ request: requestToFetch });
                 return response;
             } catch (err) {
                 console.error(`Root SW: Instance fetch error for ${url}:`, err);
@@ -289,13 +289,13 @@ async function handleRequest(event) {
             if (isEncoded && !url.includes(targetConfig.prefix)) {
                 const encodedPart = url.split('hvtrs8')[1];
                 const fullProxyUrl = location.origin + targetConfig.prefix + 'hvtrs8' + encodedPart;
-                return await targetInstance.fetch({ ...event, request: new Request(fullProxyUrl, event.request) });
+                return await targetInstance.fetch({ request: new Request(fullProxyUrl, event.request) });
             } else if (!url.includes(targetConfig.prefix)) {
                 const encoded = Ultraviolet.codec.xor.encode(url);
                 const fullProxyUrl = location.origin + targetConfig.prefix + encoded;
-                return await targetInstance.fetch({ ...event, request: new Request(fullProxyUrl, event.request) });
+                return await targetInstance.fetch({ request: new Request(fullProxyUrl, event.request) });
             } else {
-                return await targetInstance.fetch(event);
+                return await targetInstance.fetch({ request: event.request });
             }
         } catch (err) {
             console.error(`Root SW: Fallback fetch error for ${url}:`, err);
