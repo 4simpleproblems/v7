@@ -50,12 +50,12 @@ self.addEventListener('fetch', event => {
                     encodedPart = url.split('hvtrs8')[1];
                     // Reconstruct with proper prefix
                     const fullProxyUrl = location.origin + prefix + 'hvtrs8' + encodedPart;
-                    targetEvent = { ...event, request: new Request(fullProxyUrl, event.request) };
+                    targetEvent = Object.assign(Object.create(event), { request: new Request(fullProxyUrl, event.request) });
                     shouldRoute = true;
                 } else if (isMediaDomain) {
                     const encoded = "hvtrs8" + Ultraviolet.codec.xor.encode(url).split('hvtrs8')[1];
                     const fullProxyUrl = location.origin + prefix + encoded;
-                    targetEvent = { ...event, request: new Request(fullProxyUrl, event.request) };
+                    targetEvent = Object.assign(Object.create(event), { request: new Request(fullProxyUrl, event.request) });
                     shouldRoute = true;
                 }
             }
@@ -70,8 +70,13 @@ self.addEventListener('fetch', event => {
 
                 if (isMedia) {
                     try {
+                        const headers = {};
+                        for (const [k, v] of targetEvent.request.headers.entries()) {
+                            headers[k] = v;
+                        }
+
                         const response = await bareClient.fetch(unroutedUrl, {
-                            headers: targetEvent.request.headers,
+                            headers,
                             method: targetEvent.request.method,
                             body: targetEvent.request.method === 'GET' || targetEvent.request.method === 'HEAD' ? null : await targetEvent.request.clone().arrayBuffer(),
                             redirect: 'follow'
@@ -82,7 +87,7 @@ self.addEventListener('fetch', event => {
                     }
                 }
 
-                return await uv.fetch({ request: targetEvent.request });
+                return await uv.fetch(targetEvent);
             }
             return await fetch(event.request);
         })()

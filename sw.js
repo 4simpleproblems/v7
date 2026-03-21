@@ -235,10 +235,16 @@ async function handleRequest(event) {
                 if (decodedUrl !== "unknown" && transportReady && isHighPerformance) {
                     console.log(`Root SW: Using optimized fetch for ${key}, fetching ${decodedUrl}`);
                     try {
+                        // Create a clean headers object
+                        const headers = {};
+                        for (const [k, v] of event.request.headers.entries()) {
+                            headers[k] = v;
+                        }
+
                         const response = await bareClient.fetch(decodedUrl, {
-                            headers: event.request.headers,
+                            headers,
                             method: event.request.method,
-                            body: event.request.method === 'GET' || event.request.method === 'HEAD' ? null : await event.request.clone().arrayBuffer(),
+                            body: (event.request.method === 'GET' || event.request.method === 'HEAD') ? null : await event.request.clone().arrayBuffer(),
                             redirect: 'follow'
                         });
                         return response;
@@ -248,9 +254,9 @@ async function handleRequest(event) {
                 }
 
                 // If specialized instance exists and prefix matches, use it
+                // Pass a new object that looks like a FetchEvent to ensure compatibility
                 const requestToFetch = url.startsWith(location.origin) ? event.request : new Request(new URL(url, location.origin).href, event.request);
-                const response = await instance.fetch({ request: requestToFetch });
-                return response;
+                return await instance.fetch(Object.assign(Object.create(event), { request: requestToFetch }));
             } catch (err) {
                 console.error(`Root SW: Instance fetch error for ${url}:`, err);
             }
@@ -289,13 +295,13 @@ async function handleRequest(event) {
             if (isEncoded && !url.includes(targetConfig.prefix)) {
                 const encodedPart = url.split('hvtrs8')[1];
                 const fullProxyUrl = location.origin + targetConfig.prefix + 'hvtrs8' + encodedPart;
-                return await targetInstance.fetch({ request: new Request(fullProxyUrl, event.request) });
+                return await targetInstance.fetch(Object.assign(Object.create(event), { request: new Request(fullProxyUrl, event.request) }));
             } else if (!url.includes(targetConfig.prefix)) {
                 const encoded = Ultraviolet.codec.xor.encode(url);
                 const fullProxyUrl = location.origin + targetConfig.prefix + encoded;
-                return await targetInstance.fetch({ request: new Request(fullProxyUrl, event.request) });
+                return await targetInstance.fetch(Object.assign(Object.create(event), { request: new Request(fullProxyUrl, event.request) }));
             } else {
-                return await targetInstance.fetch({ request: event.request });
+                return await targetInstance.fetch(event);
             }
         } catch (err) {
             console.error(`Root SW: Fallback fetch error for ${url}:`, err);
