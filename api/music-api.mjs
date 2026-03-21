@@ -233,17 +233,29 @@ export default async function handler(req, res) {
         const searchQuery = q || query;
         if (!searchQuery) return res.status(400).json({ error: 'Missing query' });
         
-        const yt = await getYoutube();
-        const searchResults = await yt.search(searchQuery, { type: 'video' });
-        
-        const formattedResults = (searchResults.results || searchResults.videos || []).map(item => ({
-            id: item.id,
-            title: item.title?.toString(),
-            author: item.author?.name,
-            thumbnails: item.thumbnails
-        }));
+        try {
+            const yt = await getYoutube();
+            const searchResults = await yt.search(searchQuery, { type: 'video' });
+            
+            const results = (searchResults.results || searchResults.videos || []).map(item => ({
+                videoId: item.id,
+                id: item.id,
+                title: item.title?.toString(),
+                author: item.author?.name,
+                thumbnails: item.thumbnails
+            }));
 
-        return res.status(200).json({ results: formattedResults });
+            // If we have results, return the first one's videoId directly for backward compatibility with some scripts
+            const firstVideoId = results.length > 0 ? results[0].videoId : null;
+
+            return res.status(200).json({ 
+                videoId: firstVideoId,
+                results: results 
+            });
+        } catch (e) {
+            console.error('YT Music search endpoint failed', e);
+            return res.status(500).json({ error: 'YouTube search failed', message: e.message });
+        }
     }
 
     return res.status(404).json({ error: 'Endpoint not found' });
