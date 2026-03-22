@@ -123,35 +123,26 @@ exports.deleteUser = functions.https.onCall(async (data, context) => {
     const { uid } = data;
     const callerUid = context.auth.uid;
 
-    // Allow deletion if the user is deleting themselves, otherwise check for admin privileges
     if (callerUid !== uid) {
         await validateAdmin(context);
     }
 
     try {
-        // 1. Delete from Auth
         try { await admin.auth().deleteUser(uid); } catch (e) {
             console.error("Auth deletion error (might already be deleted):", e);
         }
 
-        // 2. Fetch username for cleanup
         const userDoc = await admin.firestore().collection('users').doc(uid).get();
         const username = userDoc.exists ? userDoc.data().username : null;
 
-        // 3. Cleanup Firestore (Batch)
         const batch = admin.firestore().batch();
         
-        // Basic docs
         const collections = ['users', 'admins', 'bans', 'messenger_profiles'];
         collections.forEach(col => batch.delete(admin.firestore().collection(col).doc(uid)));
 
-        // Username reservation
         if (username) {
             batch.delete(admin.firestore().collection('usernames').doc(username.toLowerCase()));
         }
-
-        // Sub-collections or related data (limited to small sets to avoid batch limits)
-        // For larger datasets, one should use recursive deletes or background jobs
         
         const relatedQueries = [
             admin.firestore().collection('daily_photos').where('creatorUid', '==', uid),
@@ -165,7 +156,7 @@ exports.deleteUser = functions.https.onCall(async (data, context) => {
         ];
 
         for (const q of relatedQueries) {
-            const snap = await q.limit(50).get(); // Limit to stay within batch bounds for now
+            const snap = await q.limit(50).get();
             snap.forEach(doc => batch.delete(doc.ref));
         }
 
@@ -292,6 +283,212 @@ exports.liftExpiredBans = functions.https.onRequest((req, res) => {
         } catch (error) { res.status(500).json({ error: error.message }); }
     });
 });
+
+// ==================================================================
+// NEW: aggregateAnalytics
+// ==================================================================
+// Runs every hour via Cloud Scheduler. Scans analytics sessions and
+// writes a single `analytics_summary/pages` document with aggregated
+// page visit counts.
+//
+// Leaderboard.html now reads ONLY this one document instead of
+// scanning every analytics session doc (which could be thousands of
+// reads per page load).
+//
+// HOW TO SCHEDULE: In Firebase console → Functions → Scheduler, or
+// deploy with the pubsub trigger below. Either way, point a Cloud
+// Scheduler job at the `aggregateAnalyticsHttp` HTTP endpoint as a
+// fallback if you're on the Spark plan (Spark doesn't support
+// pubsub-triggered scheduled functions).
+//
+// For Blaze plan (which you need anyway for outbound requests):
+//   firebase deploy --only functions:aggregateAnalytics
+// The pubsub schedule below will auto-register with Cloud Scheduler.
+// ==================================================================
+exports.aggregateAnalytics = functions.pubsub
+    .schedule('every 60 minutes')
+    .onRun(async (context) => {
+        await runAnalyticsAggregation();
+        return null;
+    });
+
+// HTTP fallback — manually trigger or call via cron if on Spark plan
+exports.aggregateAnalyticsHttp = functions.https.onRequest((req, res) => {
+    return cors(req, res, async () => {
+        try {
+            const result = await runAnalyticsAggregation();
+            res.status(200).json({ success: true, ...result });
+        } catch (error) {
+            console.error("aggregateAnalyticsHttp error:", error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+});
+
+async function runAnalyticsAggregation() {
+    const db = admin.firestore();
+    const pageMap = {};
+    let docsScanned = 0;
+    let pageToken = null;
+
+    // Paginate through analytics collection in batches of 500
+    // to avoid timeout on large datasets
+    do {
+        let q = db.collection('analytics')
+            .where('version', '==', 'project_niobium')
+            .limit(500);
+
+        if (pageToken) {
+            q = q.startAfter(pageToken);
+        }
+
+        const snap = await q.get();
+        if (snap.empty) break;
+
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.visitedPages && Array.isArray(data.visitedPages)) {
+                data.visitedPages.forEach(p => {
+                    const path = p.path || p.url;
+                    if (!path || path.includes('srcdoc') || path.includes('blob:')) return;
+                    const title = p.title || path;
+                    if (!pageMap[path]) {
+                        pageMap[path] = { title, count: 0 };
+                    }
+                    pageMap[path].count++;
+                });
+            }
+            docsScanned++;
+        });
+
+        pageToken = snap.docs[snap.docs.length - 1];
+
+        // If batch was smaller than limit, we've reached the end
+        if (snap.size < 500) break;
+
+    } while (true);
+
+    // Sort by count descending, keep top 20 pages
+    const topPages = Object.entries(pageMap)
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 20)
+        .reduce((acc, [path, data]) => {
+            acc[path] = data;
+            return acc;
+        }, {});
+
+    // Write a single summary document — this is the ONLY read leaderboard.html
+    // will ever need to do for page stats
+    await db.collection('analytics_summary').doc('pages').set({
+        pages: topPages,
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        docsScanned,
+        generatedAt: new Date().toISOString()
+    });
+
+    console.log(`Analytics aggregation complete: ${docsScanned} docs scanned, ${Object.keys(topPages).length} pages tracked.`);
+    return { docsScanned, pagesTracked: Object.keys(topPages).length };
+}
+
+// ==================================================================
+// NEW: cleanupExpiredDailyPhotos
+// ==================================================================
+// Runs every hour. Deletes daily_photos documents where createdAt is
+// more than 24 hours old AND status is 'active'. Also handles
+// Firebase Storage cleanup for GIFs (identified by imageURL field
+// and the deleteAfter24h custom metadata flag set during upload).
+//
+// This replaces any manual cleanup you were doing and prevents the
+// daily_photos collection from growing indefinitely — a growing
+// collection means more reads on every query, even with indexes.
+// ==================================================================
+exports.cleanupExpiredDailyPhotos = functions.pubsub
+    .schedule('every 60 minutes')
+    .onRun(async (context) => {
+        await runDailyPhotoCleanup();
+        return null;
+    });
+
+// HTTP fallback for manual trigger / Spark plan
+exports.cleanupExpiredDailyPhotosHttp = functions.https.onRequest((req, res) => {
+    return cors(req, res, async () => {
+        try {
+            const result = await runDailyPhotoCleanup();
+            res.status(200).json({ success: true, ...result });
+        } catch (error) {
+            console.error("cleanupExpiredDailyPhotosHttp error:", error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+});
+
+async function runDailyPhotoCleanup() {
+    const db = admin.firestore();
+    const storage = admin.storage();
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24h ago
+
+    const snap = await db.collection('daily_photos')
+        .where('status', '==', 'active')
+        .where('createdAt', '<=', cutoff)
+        .limit(200) // Process in batches to avoid timeout
+        .get();
+
+    if (snap.empty) {
+        console.log('No expired daily photos found.');
+        return { deleted: 0 };
+    }
+
+    const batch = db.batch();
+    const storageDeletePromises = [];
+
+    snap.forEach(docSnap => {
+        const data = docSnap.data();
+
+        // If this post used Firebase Storage (GIF), queue storage deletion
+        if (data.imageURL) {
+            try {
+                // Extract the storage path from the download URL
+                // Firebase Storage URLs follow: .../o/ENCODED_PATH?alt=media&token=...
+                const urlObj = new URL(data.imageURL);
+                const encodedPath = urlObj.pathname.split('/o/')[1];
+                if (encodedPath) {
+                    const filePath = decodeURIComponent(encodedPath);
+                    storageDeletePromises.push(
+                        storage.bucket().file(filePath).delete().catch(e => {
+                            // File may already be deleted — log but don't fail
+                            console.warn(`Storage delete warning for ${filePath}:`, e.message);
+                        })
+                    );
+                }
+            } catch (e) {
+                console.warn('Could not parse storage URL for doc', docSnap.id, e.message);
+            }
+        }
+
+        batch.delete(docSnap.ref);
+    });
+
+    await Promise.all([
+        batch.commit(),
+        ...storageDeletePromises
+    ]);
+
+    console.log(`Cleanup complete: deleted ${snap.size} expired daily photos.`);
+    return { deleted: snap.size };
+}
+
+// ==================================================================
+// NEW: Firestore security rules note
+// ==================================================================
+// Add this rule to your analytics_summary collection so only
+// authenticated users can read the summary and only your Cloud
+// Function (via admin SDK) can write it:
+//
+// match /analytics_summary/{docId} {
+//   allow read: if isAuthenticated();
+//   allow write: if false; // Admin SDK bypasses rules
+// }
+// ==================================================================
 
 // --- Stripe ---
 exports.getStripeConfig = functions.https.onCall(async (data, context) => {

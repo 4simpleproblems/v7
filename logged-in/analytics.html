@@ -2137,6 +2137,42 @@
             });
         };
 
+        const openBanModal = () => {
+            document.getElementById('ban-user-target').textContent = `Target: ${userToBan.username} (${userToBan.uid})`;
+            document.getElementById('ban-reason').value = '';
+            document.getElementById('ban-link').value = '';
+            document.getElementById('ban-modal').classList.add('open');
+        };
+
+        const closeBanModal = () => {
+            document.getElementById('ban-modal').classList.remove('open');
+            userToBan = null;
+        };
+
+        const openTagModal = (existingTag) => {
+            document.getElementById('tag-user-target').textContent = `Target: ${userToTag.username}`;
+            const textInput = document.getElementById('tag-text');
+            const colorInput = document.getElementById('tag-color');
+            const hexInput = document.getElementById('tag-color-hex');
+            
+            if (existingTag) {
+                textInput.value = existingTag.text || '';
+                colorInput.value = existingTag.color || '#3b82f6';
+                hexInput.value = existingTag.color || '#3b82f6';
+            } else {
+                textInput.value = '';
+                colorInput.value = '#3b82f6';
+                hexInput.value = '#3b82f6';
+            }
+            
+            document.getElementById('tag-modal').classList.add('open');
+        };
+
+        const closeTagModal = () => {
+            document.getElementById('tag-modal').classList.remove('open');
+            userToTag = null;
+        };
+
         const handleAction = async (e) => {
             const btn = e.currentTarget;
             const action = btn.dataset.action;
