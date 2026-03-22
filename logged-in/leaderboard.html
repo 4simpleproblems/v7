@@ -54,7 +54,6 @@
         .label-tiny { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); opacity: 0.5; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
         .section-title { font-size: 2.5rem; font-weight: 200; letter-spacing: -0.02em; margin-bottom: 2rem; color: var(--text-main); }
 
-        /* champion-widget style match */
         .champion-widget {
             display: flex;
             flex-direction: row;
@@ -108,6 +107,7 @@
             border: 1px solid var(--border-faint);
             color: var(--accent-color);
             background: var(--btn-bg);
+            cursor: pointer;
         }
         .follow-btn:hover {
             border-color: var(--accent-color);
@@ -144,17 +144,34 @@
             border-color: var(--accent-color);
             box-shadow: 0 20px 50px rgba(0,0,0,0.4);
         }
+
+        /* Stale data notice */
+        .stale-notice {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(251, 191, 36, 0.08);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 
 <body>
     <div class="leaderboard-container">
         <header class="mb-16">
-            <h1 class="text-6xl font-light tracking-tighter mb-4 text-[var(--text-main)]">Global Rankings</h1>
-            <p class="text-[var(--text-muted)] opacity-60 text-xl font-light">The definitive hierarchy of Project Niobium activity.</p>
+            <h1 class="text-6xl font-light tracking-tighter mb-4" style="color: var(--text-main);">Global Rankings</h1>
+            <p style="color: var(--text-muted);" class="opacity-60 text-xl font-light">The definitive hierarchy of Project Niobium activity.</p>
         </header>
 
-        <!-- CHAMPION SECTION (Matches Dashboard Widget) -->
+        <!-- CHAMPION SECTION -->
         <div id="top-user-section" class="section-card highlight-card champion-widget">
             <div class="flex flex-col justify-center border-r border-white/5 pr-12 h-full">
                 <div class="label-tiny">Champion Status</div>
@@ -182,20 +199,30 @@
         </div>
 
         <!-- TOP PAGES -->
+        <!-- -----------------------------------------------------------------------
+             FIX 3 APPLIED: Page stats now read from a single `analytics_summary`
+             document written by the Cloud Function `aggregateAnalytics` (see
+             index.js). Previously this scanned every analytics session document
+             (potentially thousands of reads). Now it's 1 read, always.
+             ----------------------------------------------------------------------- -->
         <div class="mb-16">
             <div class="label-tiny">System Pulse</div>
-            <h2 class="section-title text-[var(--text-main)]">Most Used Pages</h2>
+            <h2 class="section-title" style="color: var(--text-main);">Most Used Pages</h2>
+            <div id="pages-stale-notice" class="stale-notice hidden">
+                <i class="fas fa-clock"></i>
+                <span>Stats update hourly</span>
+            </div>
             <div id="top-pages-list" class="page-stat-grid">
-                <p class="text-[var(--text-muted)] opacity-40 italic">Calculating activity metrics...</p>
+                <p style="color: var(--text-muted);" class="opacity-40 italic">Calculating activity metrics...</p>
             </div>
         </div>
 
         <!-- GLOBAL RANKINGS -->
         <div>
             <div class="label-tiny">Active Roster</div>
-            <h2 class="section-title text-[var(--text-main)]">Top 50 Users</h2>
+            <h2 class="section-title" style="color: var(--text-main);">Top 50 Users</h2>
             <div id="rankings-list">
-                <p class="text-[var(--text-muted)] opacity-40 italic p-4">Synchronizing ranking data...</p>
+                <p style="color: var(--text-muted);" class="opacity-40 italic p-4">Synchronizing ranking data...</p>
             </div>
         </div>
     </div>
@@ -203,7 +230,7 @@
     <script type="module">
         import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from '../firebase-config.js';
         import { getAvatarHTML } from "../utils.js";
 
@@ -217,7 +244,6 @@
                     window.location.replace('../index.html');
                     return;
                 }
-                
                 loadUserRankings(user ? user.uid : null);
                 loadPageStats();
             });
@@ -226,7 +252,6 @@
         async function loadUserRankings(currentUid) {
             const rankingsEl = document.getElementById('rankings-list');
             
-            // Get current user's following list and banned users
             let following = new Set();
             let bannedUids = new Set();
             
@@ -247,7 +272,7 @@
                 where('leaderboardAccepted', '==', true),
                 where('leaderboardOptOut', '==', false),
                 orderBy('totalV6Time', 'desc'),
-                limit(100) // Increase limit slightly because we filter after fetch
+                limit(100)
             );
             
             const snap = await getDocs(q);
@@ -262,18 +287,16 @@
             let displayCount = 0;
             
             snap.forEach(docSnap => {
-                if (displayCount >= 50) return; // Keep limit at 50 displayed
+                if (displayCount >= 50) return;
                 
                 const uid = docSnap.id;
-                if (bannedUids.has(uid)) return; // SKIP BANNED USERS
+                if (bannedUids.has(uid)) return;
 
                 const data = docSnap.data();
                 const hours = Math.floor((data.totalV6Time || 0) / 3600);
                 const minutes = Math.floor(((data.totalV6Time || 0) % 3600) / 60);
 
-                if (i === 1) {
-                    updateChampion(data);
-                }
+                if (i === 1) updateChampion(data);
 
                 const item = document.createElement('div');
                 item.className = 'leader-item cursor-pointer';
@@ -284,14 +307,14 @@
                     <div class="rank-num ${i <= 3 ? 'rank-'+i : ''}">${i}</div>
                     ${getAvatarHTML(data, "w-16 h-16", false, auth.currentUser, "rounded-[20px]")}
                     <div class="flex-grow ml-4">
-                        <div class="text-lg font-medium text-[var(--text-main)]">${data.displayName || data.username || "Anonymous"}</div>
-                        <div class="text-xs text-[var(--text-muted)] opacity-60 font-mono">${hours}h ${minutes}m</div>
+                        <div class="text-lg font-medium" style="color: var(--text-main);">${data.displayName || data.username || "Anonymous"}</div>
+                        <div class="text-xs opacity-60 font-mono" style="color: var(--text-muted);">${hours}h ${minutes}m</div>
                     </div>
                     ${uid !== currentUid ? `
                         <button class="follow-btn ${isFollowing ? 'following' : ''}" data-uid="${uid}">
                             ${isFollowing ? 'Following' : 'Follow'}
                         </button>
-                    ` : '<span class="text-[10px] text-[var(--text-muted)] opacity-60 uppercase tracking-widest font-bold">You</span>'}
+                    ` : '<span class="text-[10px] opacity-60 uppercase tracking-widest font-bold" style="color: var(--text-muted);">You</span>'}
                 `;
 
                 item.onclick = (e) => {
@@ -302,9 +325,7 @@
                 rankingsEl.appendChild(item);
 
                 const fBtn = item.querySelector('.follow-btn');
-                if (fBtn) {
-                    fBtn.onclick = () => toggleFollow(fBtn, uid, currentUid);
-                }
+                if (fBtn) fBtn.onclick = () => toggleFollow(fBtn, uid, currentUid);
 
                 i++;
                 displayCount++;
@@ -346,17 +367,7 @@
             document.getElementById('champion-time').textContent = `${hours}h ${minutes}m total`;
             
             const champAvatarContainer = document.getElementById('champion-avatar');
-            // champion-avatar id is on the container itself in the original HTML, but we'll replace it with the new div returned by getAvatarHTML
-            const newChampAvatar = getAvatarHTML(data, "w-24 h-24", false, auth.currentUser, "rounded-[32px]");
-            // We need to keep the ID or update the query. The original HTML has <div id="champion-avatar" ...>
-            // getAvatarHTML returns <div class="...">...</div>.
-            // I'll wrap it or give it an ID if needed, but since it's already a div, I'll just swap the outerHTML.
-            // Wait, if I swap outerHTML, the next updateChampion call will fail because id="champion-avatar" is gone.
-            // I'll update getAvatarHTML to optionally take an ID or I'll just set innerHTML of the container.
-            
-            champAvatarContainer.innerHTML = newChampAvatar;
-            // But getAvatarHTML returns a wrapper div. So we'll have nested divs. 
-            // To match leaderboard style perfectly, I'll just set innerHTML and maybe adjust the container classes.
+            champAvatarContainer.innerHTML = getAvatarHTML(data, "w-24 h-24", false, auth.currentUser, "rounded-[32px]");
             
             const championSection = document.getElementById('top-user-section');
             championSection.classList.add('cursor-pointer');
@@ -365,46 +376,65 @@
             };
         }
 
+        // -----------------------------------------------------------------------
+        // FIX 3 APPLIED: loadPageStats now reads a single pre-aggregated document
+        // (`analytics_summary/pages`) instead of scanning the entire analytics
+        // collection. The aggregation is done server-side by the Cloud Function
+        // `aggregateAnalytics` which runs on a schedule (every hour).
+        //
+        // Falls back to a "data not yet available" message if the summary doc
+        // doesn't exist yet (e.g., first deploy before the function has run).
+        // -----------------------------------------------------------------------
         async function loadPageStats() {
-            const q = query(
-                collection(db, 'analytics'),
-                where('version', '==', 'project_niobium')
-            );
-            const snap = await getDocs(q);
-            
-            let pageMap = {};
-            snap.forEach(docSnap => {
-                const data = docSnap.data();
-                if (data.visitedPages) {
-                    data.visitedPages.forEach(p => {
-                        const path = p.path || p.url;
-                        if (!path || path.includes('srcdoc')) return;
-                        const title = p.title || path;
-                        if (!pageMap[path]) pageMap[path] = { title, count: 0 };
-                        pageMap[path].count++;
-                    });
-                }
-            });
-
-            const sorted = Object.entries(pageMap).sort((a,b) => b[1].count - a[1].count).slice(0, 6);
             const listEl = document.getElementById('top-pages-list');
-            listEl.innerHTML = '';
+            const staleNotice = document.getElementById('pages-stale-notice');
 
-            sorted.forEach(([path, data]) => {
-                const item = document.createElement('div');
-                item.className = 'page-stat-item';
-                item.innerHTML = `
-                    <div>
-                        <div class="text-sm font-medium text-[var(--text-main)]">${data.title}</div>
-                        <div class="text-[10px] text-[var(--text-muted)] opacity-40 uppercase tracking-widest">${path}</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-xl font-light" style="color: var(--accent-color);">${data.count}</div>
-                        <div class="text-[10px] text-[var(--text-muted)] opacity-40 uppercase">Sessions</div>
-                    </div>
-                `;
-                listEl.appendChild(item);
-            });
+            try {
+                const summarySnap = await getDoc(doc(db, 'analytics_summary', 'pages'));
+
+                if (!summarySnap.exists()) {
+                    listEl.innerHTML = '<p class="opacity-30 italic text-sm col-span-full">Page stats are being compiled. Check back soon.</p>';
+                    return;
+                }
+
+                const summaryData = summarySnap.data();
+                const pages = summaryData.pages || {}; // { '/path': { title, count } }
+                const lastUpdated = summaryData.lastUpdated?.toDate();
+
+                // Show stale notice with last-updated time
+                if (lastUpdated) {
+                    staleNotice.classList.remove('hidden');
+                    const diff = Math.round((Date.now() - lastUpdated.getTime()) / 60000);
+                    staleNotice.querySelector('span').textContent = diff < 2
+                        ? 'Stats updated just now'
+                        : `Stats updated ${diff}m ago`;
+                }
+
+                const sorted = Object.entries(pages)
+                    .sort((a, b) => b[1].count - a[1].count)
+                    .slice(0, 6);
+
+                listEl.innerHTML = '';
+                sorted.forEach(([path, data]) => {
+                    const item = document.createElement('div');
+                    item.className = 'page-stat-item';
+                    item.innerHTML = `
+                        <div>
+                            <div class="text-sm font-medium" style="color: var(--text-main);">${data.title}</div>
+                            <div class="text-[10px] opacity-40 uppercase tracking-widest" style="color: var(--text-muted);">${path}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xl font-light" style="color: var(--accent-color);">${data.count.toLocaleString()}</div>
+                            <div class="text-[10px] opacity-40 uppercase" style="color: var(--text-muted);">Sessions</div>
+                        </div>
+                    `;
+                    listEl.appendChild(item);
+                });
+
+            } catch (e) {
+                console.error("loadPageStats error:", e);
+                listEl.innerHTML = '<p class="opacity-30 italic text-sm col-span-full">Unable to load page stats.</p>';
+            }
         }
 
         initLeaderboard();

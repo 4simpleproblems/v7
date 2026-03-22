@@ -33,7 +33,7 @@
             font-weight: 300; 
             overflow: hidden; 
             height: 100vh;
-            padding-top: 64px; /* Space for navbar */
+            padding-top: 64px;
         }
         
         h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-widest {
@@ -41,7 +41,6 @@
             color: var(--text-main);
         }
 
-        /* --- THEME BUTTONS --- */
         .btn-toolbar-style {
             background: var(--bg-card);
             border: 1px solid var(--border-main);
@@ -85,7 +84,6 @@
             color: var(--text-main);
         }
         
-        /* --- LAYOUT --- */
         .app-container {
             display: grid;
             grid-template-areas: "sidebar main";
@@ -95,7 +93,6 @@
             background: var(--bg-page);
         }
 
-        /* --- SIDEBAR --- */
         .sidebar {
             grid-area: sidebar;
             background-color: var(--bg-page);
@@ -134,7 +131,6 @@
         .sidebar-control-btn:hover { color: var(--text-main); }
         .sidebar-control-btn.active { color: var(--accent-color); }
 
-        /* --- LISTS --- */
         .compact-list-wrapper {
              background-color: var(--bg-card);
              border-radius: 1.25rem; 
@@ -156,7 +152,6 @@
         }
         .compact-list-item:hover { background-color: var(--border-faint); }
 
-        /* --- FEED PANEL --- */
         .main-view { 
             grid-area: main;
             height: 100%;
@@ -172,7 +167,6 @@
             padding-bottom: 5rem; 
         }
 
-        /* --- GRID & PHOTOS --- */
         .photo-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
@@ -243,7 +237,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
         
-        /* --- MODAL STYLES (Robust Refactor) --- */
         .modal-backdrop {
             position: fixed; inset: 0;
             background-color: rgba(0, 0, 0, 0.9);
@@ -314,7 +307,7 @@
             margin-bottom: 1rem;
             overflow-y: auto;
             border: 1px solid var(--border-main);
-            min-height: 0; /* Critical for scroll */
+            min-height: 0;
         }
         #comments-section::-webkit-scrollbar { display: none; }
 
@@ -338,7 +331,6 @@
         }
         .modal-close-btn i { font-size: 14px; }
 
-        /* --- SCROLL FADE EFFECTS --- */
         .scroll-container-wrapper {
             position: relative;
             overflow: hidden;
@@ -381,7 +373,14 @@
             transform: translateX(4px);
         }
 
-        /* Custom Tooltip */
+        /* Refresh button pulse animation */
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 var(--accent-glow); }
+            70% { box-shadow: 0 0 0 8px rgba(0,0,0,0); }
+            100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); }
+        }
+        .refresh-pulse { animation: pulse-ring 2s infinite; }
+
         #custom-tooltip {
             position: fixed; background-color: #000; border: 1px solid #333; color: #fff;
             padding: 0.4rem 0.8rem; border-radius: 14px; font-size: 0.75rem;
@@ -414,12 +413,10 @@
                     <div id="search-results" class="mt-2 space-y-1"></div>
                 </div>
 
-                <!-- My Posts Section (With Images) -->
                 <div id="daily-posts-section">
                     <h2 class="text-lg mb-2">My Posts</h2>
                     <p class="text-xs opacity-50 mb-3">5 slots / day</p>
                     <div id="daily-posts-container" class="space-y-2">
-                        <!-- Post slots will be rendered here -->
                     </div>
                 </div>
 
@@ -456,7 +453,11 @@
                         <p id="feed-desc" class="opacity-60">Moments from your school.</p>
                     </div>
                     
-                    <div class="flex gap-3">
+                    <div class="flex gap-3 items-center">
+                        <!-- Manual refresh button — replaces live listener -->
+                        <button id="refresh-feed-btn" class="btn-icon refresh-pulse" title="Refresh feed">
+                            <i class="fas fa-sync-alt text-sm"></i>
+                        </button>
                         <div class="inline-flex bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl p-1">
                             <button id="feed-toggle-school" class="px-4 py-2 rounded-xl text-sm transition-all active btn-primary-override">School</button>
                             <button id="feed-toggle-district" class="px-4 py-2 rounded-xl text-sm transition-all">District</button>
@@ -469,6 +470,7 @@
         </main>
     </div>
 
+    <!-- Announcement Modal -->
     <div id="announcement-modal" class="modal-backdrop">
         <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-md p-8 text-center">
             <div class="w-16 h-16 bg-indigo-500/20 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -480,6 +482,7 @@
         </div>
     </div>
 
+    <!-- School Selection Modal -->
     <div id="school-selection-modal" class="modal-backdrop">
         <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-lg p-8">
             <h3 class="text-2xl font-bold mb-2">Select Your School</h3>
@@ -520,11 +523,12 @@
         </div>
     </div>
 
-    <!-- Modals -->
+    <!-- Photo Modal -->
     <div id="photo-modal" class="modal-backdrop">
         <div id="modal-content-container" class="modal-content"></div>
     </div>
 
+    <!-- Upload Modal -->
     <div id="upload-menu-modal" class="modal-backdrop">
         <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8">
             <h3 class="text-2xl font-bold mb-6">Post Photo</h3>
@@ -537,7 +541,7 @@
         </div>
     </div>
 
-    <!-- Custom UI Modals -->
+    <!-- Custom Alert -->
     <div id="custom-alert-modal" class="modal-backdrop">
         <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8 text-center">
             <h3 id="custom-alert-title" class="text-xl font-bold mb-4">Alert</h3>
@@ -546,6 +550,7 @@
         </div>
     </div>
 
+    <!-- Custom Confirm -->
     <div id="custom-confirm-modal" class="modal-backdrop">
         <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8 text-center">
             <h3 id="custom-confirm-title" class="text-xl font-bold mb-4">Confirm</h3>
@@ -557,6 +562,7 @@
         </div>
     </div>
 
+    <!-- Custom Prompt -->
     <div id="custom-prompt-modal" class="modal-backdrop">
         <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8">
             <h3 id="custom-prompt-title" class="text-xl font-bold mb-4">Input</h3>
@@ -587,17 +593,21 @@
 
         let currentUser = null;
         let userData = {};
+
+        // -----------------------------------------------------------------------
+        // FIX 1: Social graph is cached once at init, NOT re-fetched on every
+        // user doc snapshot. followingUids/followerUids/mutualUids are only
+        // refreshed when the user explicitly changes their follow state.
+        // -----------------------------------------------------------------------
         let followingUids = [];
         let followerUids = [];
         let mutualUids = [];
         let blockedUsers = [];
         let feedMode = 'school';
         let isAdmin = false;
-        let unsubPosts = () => {};
         let unsubModal = () => {};
         let unsubUser = () => {};
 
-        // School selection state
         let allStates = [];
         let currentStateSchools = [];
         let selectedState = null;
@@ -677,26 +687,49 @@
         });
 
         async function initApp() {
-            // Check admin status
             try {
                 const adminSnap = await getDoc(doc(db, 'admins', currentUser.uid));
                 isAdmin = adminSnap.exists() || currentUser.email === '4simpleproblems@gmail.com';
             } catch (e) { console.warn("Admin check failed", e); }
 
+            // -----------------------------------------------------------------------
+            // FIX 1 APPLIED: Fetch social graph ONCE here, not inside listenToUser.
+            // listenToUser is now a lightweight doc watcher for profile/school data only.
+            // -----------------------------------------------------------------------
+            await fetchSocialGraph();
+
             setupSidebarNav();
             setupFeedToggles();
+            setupRefreshButton();
             listenToUser();
             setupUserSearch();
             setupSchoolSelection();
         }
 
+        // -----------------------------------------------------------------------
+        // fetchSocialGraph: runs once at init (and can be called again after a
+        // follow/unfollow action). Does NOT run on every user doc update.
+        // -----------------------------------------------------------------------
+        async function fetchSocialGraph() {
+            const [followingSnap, followersSnap] = await Promise.all([
+                getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'following')),
+                getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'followers'))
+            ]);
+            followingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
+            followerUids = followersSnap.docs.map(d => d.id).filter(id => id !== '.init');
+            mutualUids = followingUids.filter(id => followerUids.includes(id));
+        }
+
+        // -----------------------------------------------------------------------
+        // listenToUser: watches the user doc for profile/school changes only.
+        // NO longer fetches following/followers subcollections on every update.
+        // -----------------------------------------------------------------------
         function listenToUser() {
-            unsubUser();
+            if (unsubUser) unsubUser();
             unsubUser = onSnapshot(doc(db, USERS_COLLECTION, currentUser.uid), async snap => {
                 userData = snap.data() || {};
                 blockedUsers = userData.blocked_users || [];
                 
-                // Show school in sidebar
                 const schoolIndicator = document.getElementById('school-indicator-sidebar');
                 const sidebarSchoolName = document.getElementById('sidebar-school-name');
                 if (userData.schoolName) {
@@ -706,379 +739,193 @@
                     schoolIndicator.classList.add('hidden');
                 }
 
-                // Check if school is set or forced change
                 const urlParams = new URLSearchParams(window.location.search);
                 const forceChange = urlParams.get('changeSchool') === 'true';
 
                 if ((!userData.schoolId && !userData.schoolSkipped) || forceChange) {
                     document.getElementById('announcement-modal').classList.add('open');
-                    // Remove param from URL
                     if (forceChange) window.history.replaceState({}, '', window.location.pathname);
                 }
 
-                // Fetch following and followers to determine mutuals
-                const followingSnap = await getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'following'));
-                followingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
-                
-                const followersSnap = await getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'followers'));
-                followerUids = followersSnap.docs.map(d => d.id).filter(id => id !== '.init');
-                
-                mutualUids = followingUids.filter(id => followerUids.includes(id));
-
                 renderMyPosts(userData.dailySlotsUsed || []);
-                setupFeed();
+
+                // Only load feed on first real data arrival (not on every ping update)
+                if (!window._feedLoaded) {
+                    window._feedLoaded = true;
+                    await loadFeed();
+                }
+
                 if (!document.getElementById('friends-section-wrapper').classList.contains('hidden')) renderMutualsList();
                 if (!document.getElementById('blocked-section').classList.contains('hidden')) renderBlockedList();
             });
         }
 
-        async function setupSchoolSelection() {
-            try {
-                const res = await fetch('/schools/states.json');
-                allStates = await res.json();
-            } catch (err) { console.error("Failed to load states:", err); }
-
-            document.getElementById('announcement-continue-btn').onclick = () => {
-                document.getElementById('announcement-modal').classList.remove('open');
-                document.getElementById('school-selection-modal').classList.add('open');
-            };
-
-            const stateInput = document.getElementById('state-search-input');
-            const stateResults = document.getElementById('state-results');
-            const schoolInput = document.getElementById('school-search-input');
-            const schoolResults = document.getElementById('school-results');
-
-            stateInput.oninput = () => {
-                const term = stateInput.value.trim().toLowerCase();
-                if (!term) { stateResults.innerHTML = ''; return; }
-                const filtered = allStates.filter(s => s.name.toLowerCase().includes(term) || s.abbr.toLowerCase().includes(term));
-                stateResults.innerHTML = filtered.map(s => `
-                    <div class="list-item-themed flex justify-between items-center group" onclick="window.selectState('${s.abbr}')">
-                        <span class="font-bold">${s.name}</span>
-                        <span class="text-xs opacity-40 group-hover:opacity-100 transition-opacity">${s.abbr}</span>
-                    </div>
-                `).join('');
-                updateScrollFades(stateResults, 'state-fade-top', 'state-fade-bottom');
-            };
-
-            stateResults.onscroll = () => updateScrollFades(stateResults, 'state-fade-top', 'state-fade-bottom');
-            schoolResults.onscroll = () => updateScrollFades(schoolResults, 'school-fade-top', 'school-fade-bottom');
-
-            window.selectState = async (abbr) => {
-                selectedState = allStates.find(s => s.abbr === abbr);
-                stateResults.innerHTML = '<div class="p-8 text-center"><i class="fas fa-spinner fa-spin text-2xl opacity-20"></i></div>';
-                try {
-                    const res = await fetch(`/schools/${abbr.trim()}.json`);
-                    currentStateSchools = await res.json();
-                    // Sort alphabetically
-                    currentStateSchools.sort((a, b) => a.name.localeCompare(b.name));
-                    
-                    document.getElementById('state-step').classList.add('hidden');
-                    document.getElementById('school-step').classList.remove('hidden');
-                    renderSchools('');
-                } catch (err) { 
-                    console.error("Failed to load schools:", err); 
-                    alert("Failed to load schools for this state.");
-                }
-            };
-
-            schoolInput.oninput = () => renderSchools(schoolInput.value.trim());
-
-            function renderSchools(term) {
-                const search = term.toLowerCase();
-                // Filter by name or district - EXCLUDING level (elementary/middle/etc)
-                const filtered = currentStateSchools.filter(s => {
-                    if (!search) return true;
-                    return s.name.toLowerCase().includes(search) || 
-                           (s.district && s.district.toLowerCase().includes(search)) ||
-                           (s.county && s.county.toLowerCase().includes(search));
-                }).slice(0, 100);
-
-                schoolResults.innerHTML = filtered.map(s => `
-                    <div class="list-item-themed" onclick="window.selectSchool('${s.name}', '${s.district}')">
-                        <div class="font-bold text-sm mb-1">${s.name}</div>
-                        <div class="flex gap-3 text-[10px] opacity-40 uppercase tracking-widest font-bold">
-                            <span>${s.district || 'Independent'}</span>
-                            <span class="text-indigo-500/60">•</span>
-                            <span>${s.level}</span>
-                        </div>
-                    </div>
-                `).join('');
-                
-                if (filtered.length === 0) {
-                    schoolResults.innerHTML = '<p class="text-center py-8 opacity-30 italic text-sm">No schools found matching your search.</p>';
-                }
-                updateScrollFades(schoolResults, 'school-fade-top', 'school-fade-bottom');
-            }
-
-            function updateScrollFades(el, topId, bottomId) {
-                const topFade = document.getElementById(topId);
-                const bottomFade = document.getElementById(bottomId);
-                if (!el || !topFade || !bottomFade) return;
-
-                const isAtTop = el.scrollTop <= 5;
-                const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 5;
-                const hasScroll = el.scrollHeight > el.clientHeight;
-
-                topFade.classList.toggle('scroll-fade-active', hasScroll && !isAtTop);
-                bottomFade.classList.toggle('scroll-fade-active', hasScroll && !isAtBottom);
-            }
-
-            window.selectSchool = async (schoolName, districtName) => {
-                if (await CustomUI.confirm(`Confirm selection: ${schoolName}?`)) {
-                    const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
-                    
-                    // Increment monthly changes
-                    const currentMonth = new Date().getMonth() + 1;
-                    let changes = userData.schoolChangesThisMonth || 0;
-                    if ((userData.lastSchoolChangeMonth || 0) !== currentMonth) changes = 0;
-
-                    await updateDoc(userRef, {
-                        schoolId: schoolName,
-                        schoolName: schoolName,
-                        districtId: districtName || schoolName,
-                        state: selectedState.name,
-                        stateAbbr: selectedState.abbr,
-                        schoolSkipped: false,
-                        schoolChangesThisMonth: changes + 1,
-                        lastSchoolChangeMonth: currentMonth
-                    });
-                    document.getElementById('school-selection-modal').classList.remove('open');
-                }
-            };
-
-            document.getElementById('back-to-states').onclick = () => {
-                document.getElementById('school-step').classList.add('hidden');
-                document.getElementById('state-step').classList.remove('hidden');
-            };
-
-            document.getElementById('skip-school-btn').onclick = async () => {
-                if (await CustomUI.confirm("Skip school selection? You'll see moments from other users who also skipped.")) {
-                    await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { 
-                        schoolSkipped: true,
-                        schoolId: deleteField(),
-                        schoolName: deleteField(),
-                        districtId: deleteField(),
-                        state: deleteField(),
-                        stateAbbr: deleteField()
-                    });
-                    document.getElementById('school-selection-modal').classList.remove('open');
-                }
-            };
-        }
-
-        let currentRenderId = 0;
-        let loadedPosts = new Map(); // Cache for loaded posts to prevent re-renders
-
-        async function renderMyPosts(usedSlots) {
-            const myId = ++currentRenderId;
-            const container = document.getElementById('daily-posts-container');
-            
-            // Build content in memory first
-            const fragment = document.createDocumentFragment();
-
-            // Parallel fetch all post documents
-            const postPromises = usedSlots.map(postId => {
-                if (postId && postId !== 'DELETED') {
-                    return getDoc(doc(db, 'daily_photos', postId));
-                }
-                return Promise.resolve(null);
-            });
-
-            const postSnaps = await Promise.all(postPromises);
-
-            for (let i = 0; i < 5; i++) {
-                const postSnap = postSnaps[i];
-                const postId = usedSlots[i];
-                const div = document.createElement('div');
-                div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl overflow-hidden flex items-center p-2 gap-3 transition-all hover:border-[var(--accent-color)]';
-                
-                if (postId && postId !== 'DELETED' && postSnap && postSnap.exists()) {
-                    const postData = postSnap.data();
-                    div.innerHTML = `
-                        <div class="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0">
-                            <img src="${postData.imageURL || postData.imageBase64}" class="w-full h-full object-cover" loading="lazy">
-                        </div>
-                        <div class="flex-grow min-w-0">
-                            <p class="text-xs font-bold truncate">${postData.title}</p>
-                            <p class="text-[10px] opacity-50">${new Date(postData.createdAt?.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
-                        </div>
-                        <div class="flex gap-1 pr-1">
-                            <button onclick="window.viewPost('${postId}')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5" title="View"><i class="fas fa-eye text-xs"></i></button>
-                            <button onclick="window.deletePost('${postId}', ${i})" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-xs"></i></button>
-                        </div>
-                    `;
-                } else if (postId && postId !== 'DELETED') {
-                    div.innerHTML = `<span class="text-xs opacity-30 p-3 italic">Post missing...</span><button onclick="window.fixSlot(${i})" class="text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-lg ml-auto mr-2">Fix</button>`;
-                } else {
-                    div.innerHTML = `
-                        <div class="w-12 h-12 rounded-xl border border-dashed border-[var(--border-main)] flex items-center justify-center shrink-0 opacity-20"><i class="fas fa-plus text-xs"></i></div>
-                        <span class="text-xs opacity-30 italic">Empty Slot ${i+1}</span>
-                        <button onclick="window.openUpload(${i})" class="btn-icon w-8 h-8 rounded-lg ml-auto mr-1" title="Post Moment"><i class="fas fa-plus text-xs"></i></button>
-                    `;
-                }
-                fragment.appendChild(div);
-            }
-
-            // Only update DOM if this is still the latest render call
-            if (myId === currentRenderId) {
-                container.innerHTML = '';
-                container.appendChild(fragment);
-            }
-        }
-
-        async function setupFeed() {
-            unsubPosts();
+        // -----------------------------------------------------------------------
+        // FIX 2: Feed uses getDocs (one-time fetch) instead of onSnapshot.
+        // A manual refresh button replaces the live listener.
+        // This eliminates the continuous read drain from 700 concurrent listeners.
+        // -----------------------------------------------------------------------
+        async function loadFeed() {
             const grid = document.getElementById('photo-feed');
-            const toggleSchool = document.getElementById('feed-toggle-school');
-            const toggleDistrict = document.getElementById('feed-toggle-district');
-            
-            // Only show spinner on first load of a mode if nothing is cached
-            if (grid.children.length === 0) {
-                grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin opacity-20 text-3xl"></i></div>';
-            }
+            const refreshBtn = document.getElementById('refresh-feed-btn');
+
+            grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin opacity-20 text-3xl"></i></div>';
+            refreshBtn.disabled = true;
+            refreshBtn.querySelector('i').classList.add('fa-spin');
 
             const today = new Date(); today.setHours(0,0,0,0);
-            
+
             try {
-                let primaryQuery;
+                let primaryDocs = [];
                 const isNoSchool = !userData.schoolId || userData.schoolSkipped;
 
                 if (isNoSchool) {
-                    toggleSchool.textContent = 'Mutuals';
-                    toggleDistrict.textContent = 'Public';
+                    document.getElementById('feed-toggle-school').textContent = 'Mutuals';
+                    document.getElementById('feed-toggle-district').textContent = 'Public';
+
                     if (feedMode === 'district' || feedMode === 'public') {
-                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', null), where('createdAt', '>=', today), limit(50));
+                        const q = query(DAILY_COLLECTION,
+                            where('status', '==', 'active'),
+                            where('schoolId', '==', null),
+                            where('createdAt', '>=', today),
+                            limit(50)
+                        );
+                        const snap = await getDocs(q);
+                        primaryDocs = snap.docs;
                     } else {
                         const uids = [currentUser.uid, ...mutualUids].slice(0, 10);
-                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', uids), where('createdAt', '>=', today));
+                        const q = query(DAILY_COLLECTION,
+                            where('status', '==', 'active'),
+                            where('creatorUid', 'in', uids),
+                            where('createdAt', '>=', today)
+                        );
+                        const snap = await getDocs(q);
+                        primaryDocs = snap.docs;
                     }
                 } else {
-                    toggleSchool.textContent = 'School';
-                    toggleDistrict.textContent = 'District';
+                    document.getElementById('feed-toggle-school').textContent = 'School';
+                    document.getElementById('feed-toggle-district').textContent = 'District';
+
                     if (feedMode === 'district') {
-                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('districtId', '==', userData.districtId), where('createdAt', '>=', today), limit(100));
+                        const q = query(DAILY_COLLECTION,
+                            where('status', '==', 'active'),
+                            where('districtId', '==', userData.districtId),
+                            where('createdAt', '>=', today),
+                            limit(100)
+                        );
+                        const snap = await getDocs(q);
+                        primaryDocs = snap.docs;
                     } else {
-                        primaryQuery = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', userData.schoolId), where('createdAt', '>=', today), limit(50));
+                        const q = query(DAILY_COLLECTION,
+                            where('status', '==', 'active'),
+                            where('schoolId', '==', userData.schoolId),
+                            where('createdAt', '>=', today),
+                            limit(50)
+                        );
+                        const snap = await getDocs(q);
+                        primaryDocs = snap.docs;
                     }
                 }
 
-                // If in school/district mode, also fetch mutuals to inject them
+                // Fetch mutual friend posts separately (only if school mode and mutuals exist)
                 let friendDocs = [];
-                if (!isNoSchool && mutualUids.length > 0) {
-                    const friendQ = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', mutualUids.slice(0, 10)), where('createdAt', '>=', today));
+                if (!isNoSchool && mutualUids.length > 0 && feedMode === 'school') {
+                    const friendQ = query(DAILY_COLLECTION,
+                        where('status', '==', 'active'),
+                        where('creatorUid', 'in', mutualUids.slice(0, 10)),
+                        where('createdAt', '>=', today)
+                    );
                     const friendSnap = await getDocs(friendQ);
                     friendDocs = friendSnap.docs;
                 }
 
-                // Debounce the render function to prevent rapid re-renders
-                let renderTimeout;
-                unsubPosts = onSnapshot(primaryQuery, snap => {
-                    clearTimeout(renderTimeout);
-                    renderTimeout = setTimeout(() => {
-                        const modeLabel = isNoSchool ? (feedMode === 'district' ? 'the network' : 'your mutuals') : (feedMode === 'district' ? 'your district' : 'your school');
-                        
-                        // Merge and Deduplicate
-                        const combinedMap = new Map();
-                        snap.docs.forEach(d => combinedMap.set(d.id, d));
-                        friendDocs.forEach(d => combinedMap.set(d.id, d));
-                        
-                        const allDocs = Array.from(combinedMap.values());
+                // Merge and deduplicate
+                const combinedMap = new Map();
+                primaryDocs.forEach(d => combinedMap.set(d.id, d));
+                friendDocs.forEach(d => combinedMap.set(d.id, d));
+                const allDocs = Array.from(combinedMap.values());
 
-                        if (allDocs.length === 0 && grid.children.length === 0) {
-                            grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today from ${modeLabel}.</p>`;
-                            return;
-                        }
-                        
-                        // Sort: Mutuals first, then by time
-                        const sortedDocs = allDocs.sort((a, b) => {
-                            const dataA = a.data();
-                            const dataB = b.data();
-                            const isAMutual = mutualUids.includes(dataA.creatorUid);
-                            const isBMutual = mutualUids.includes(dataB.creatorUid);
-                            
-                            if (isAMutual && !isBMutual) return -1;
-                            if (!isAMutual && isBMutual) return 1;
-                            
-                            const timeA = dataA.createdAt?.toMillis() || 0;
-                            const timeB = dataB.createdAt?.toMillis() || 0;
-                            return timeB - timeA;
-                        });
+                const modeLabel = isNoSchool
+                    ? (feedMode === 'district' ? 'the network' : 'your mutuals')
+                    : (feedMode === 'district' ? 'your district' : 'your school');
 
-                        // Incremental rendering: Only add what's new OR re-render if order changed significantly
-                        const currentIds = Array.from(grid.querySelectorAll('[data-post-id]')).map(el => el.getAttribute('data-post-id'));
-                        const newIds = sortedDocs.map(d => d.id);
-                        
-                        // If the IDs match perfectly, skip DOM updates
-                        if (JSON.stringify(currentIds) === JSON.stringify(newIds)) return;
+                if (allDocs.length === 0) {
+                    grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today from ${modeLabel}.</p>`;
+                    return;
+                }
 
-                        const fragment = document.createDocumentFragment();
-                        sortedDocs.forEach(docSnap => {
-                            const data = docSnap.data();
-                            if (blockedUsers.includes(data.creatorUid)) return;
-                            
-                            const isMutual = mutualUids.includes(data.creatorUid);
-                            
-                            // Check if we already have this element cached
-                            let el;
-                            if (loadedPosts.has(docSnap.id)) {
-                                el = loadedPosts.get(docSnap.id);
-                                // Update dynamic parts like hearts/comments
-                                const heartCount = el.querySelector('.heart-count');
-                                const commentCount = el.querySelector('.comment-count');
-                                if (heartCount) heartCount.textContent = data.hearts?.length || 0;
-                                if (commentCount) commentCount.textContent = data.comments?.length || 0;
-                            } else {
-                                el = document.createElement('div');
-                                el.className = `photo-thumbnail ${isMutual ? 'is-mutual' : ''}`;
-                                el.setAttribute('data-post-id', docSnap.id);
-                                
-                                // Show school/district metadata if in district mode
-                                const metaLabel = (feedMode === 'district' && data.schoolId) ? `<div class="absolute bottom-12 left-3 z-20 text-[8px] font-black uppercase tracking-widest opacity-40 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/5 truncate max-w-[80%]">${data.schoolId}</div>` : '';
+                // Sort: mutuals first, then newest
+                const sortedDocs = allDocs
+                    .filter(d => !blockedUsers.includes(d.data().creatorUid))
+                    .sort((a, b) => {
+                        const da = a.data(), db_ = b.data();
+                        const aM = mutualUids.includes(da.creatorUid);
+                        const bM = mutualUids.includes(db_.creatorUid);
+                        if (aM && !bM) return -1;
+                        if (!aM && bM) return 1;
+                        return (db_.createdAt?.toMillis() || 0) - (da.createdAt?.toMillis() || 0);
+                    });
 
-                                el.innerHTML = `
-                                    ${isMutual ? `<div class="mutual-badge"><i class="fas fa-heart"></i> Mutual</div>` : ''}
-                                    <img src="${data.imageURL || data.imageBase64}" loading="lazy">
-                                    <div class="overlay-grad"></div>
-                                    <div class="absolute top-3 right-3 flex gap-2">
-                                        <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
-                                            <i class="fas fa-heart text-red-500"></i> <span class="heart-count">${data.hearts?.length || 0}</span>
-                                        </span>
-                                        <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
-                                            <i class="fas fa-comment text-indigo-400"></i> <span class="comment-count">${data.comments?.length || 0}</span>
-                                        </span>
-                                    </div>
-                                    ${metaLabel}
-                                    <div class="title-overlay">
-                                        ${data.title}
-                                    </div>
-                                `;
-                                el.onclick = () => window.viewPost(docSnap.id);
-                                loadedPosts.set(docSnap.id, el);
-                            }
-                            fragment.appendChild(el);
-                        });
+                const fragment = document.createDocumentFragment();
+                sortedDocs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const isMutual = mutualUids.includes(data.creatorUid);
 
-                        grid.innerHTML = '';
-                        grid.appendChild(fragment);
-                    }, 50); // 50ms debounce
-                }, err => {
-                    console.error("Feed snapshot error:", err);
-                    grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Error loading feed. (Check Console)</p>';
+                    const el = document.createElement('div');
+                    el.className = `photo-thumbnail ${isMutual ? 'is-mutual' : ''}`;
+                    el.setAttribute('data-post-id', docSnap.id);
+
+                    const metaLabel = (feedMode === 'district' && data.schoolId)
+                        ? `<div class="absolute bottom-12 left-3 z-20 text-[8px] font-black uppercase tracking-widest opacity-40 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/5 truncate max-w-[80%]">${data.schoolId}</div>`
+                        : '';
+
+                    el.innerHTML = `
+                        ${isMutual ? `<div class="mutual-badge"><i class="fas fa-heart"></i> Mutual</div>` : ''}
+                        <img src="${data.imageURL || data.imageBase64}" loading="lazy">
+                        <div class="overlay-grad"></div>
+                        <div class="absolute top-3 right-3 flex gap-2">
+                            <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
+                                <i class="fas fa-heart text-red-500"></i> <span class="heart-count">${data.hearts?.length || 0}</span>
+                            </span>
+                            <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
+                                <i class="fas fa-comment text-indigo-400"></i> <span class="comment-count">${data.comments?.length || 0}</span>
+                            </span>
+                        </div>
+                        ${metaLabel}
+                        <div class="title-overlay">${data.title}</div>
+                    `;
+                    el.onclick = () => window.viewPost(docSnap.id);
+                    fragment.appendChild(el);
                 });
 
+                grid.innerHTML = '';
+                grid.appendChild(fragment);
+
             } catch (e) {
-                console.error("Setup feed error:", e);
+                console.error("loadFeed error:", e);
+                grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Error loading feed. Check console.</p>';
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.querySelector('i').classList.remove('fa-spin');
             }
         }
 
+        function setupRefreshButton() {
+            document.getElementById('refresh-feed-btn').onclick = () => loadFeed();
+        }
+
+        // -----------------------------------------------------------------------
+        // viewPost: onSnapshot is KEPT here intentionally. The modal is a single
+        // document watcher for one post at a time — this is fine and necessary
+        // for live comment/heart updates while the modal is open.
+        // -----------------------------------------------------------------------
         window.viewPost = (postId) => {
             const modal = document.getElementById('photo-modal');
             const container = document.getElementById('modal-content-container');
             modal.classList.add('open');
             container.innerHTML = '<div class="w-full h-full flex items-center justify-center"><i class="fas fa-spinner fa-spin text-2xl"></i></div>';
 
-            unsubModal();
+            if (unsubModal) unsubModal();
             unsubModal = onSnapshot(doc(db, 'daily_photos', postId), async snap => {
                 try {
                     if (!snap.exists()) { window.closeModal(); return; }
@@ -1099,7 +946,6 @@
                         </div>
                         
                         <div id="photo-info-panel">
-                            <!-- Author Info -->
                             <div class="flex items-center gap-4 mb-6 shrink-0">
                                 <a href="/logged-in/@${data.creatorUsername}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity shrink-0">
                                     ${authorData ? getAvatarHTML(authorData, "w-12 h-12", false, currentUser) : `<div class="w-full h-full bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-lg uppercase">${(data.creatorUsername || '?').charAt(0)}</div>`}
@@ -1110,7 +956,6 @@
                                 </div>
                             </div>
 
-                            <!-- Title & Actions -->
                             <div class="mb-4 shrink-0">
                                 <h3 class="text-lg font-black leading-tight text-[var(--text-main)] mb-4">${data.title || "Untitled Moment"}</h3>
                                 
@@ -1134,7 +979,6 @@
                                 </div>
                             </div>
 
-                            <!-- Comments (Scrollable) -->
                             <div id="comments-section">
                                 ${(data.comments || []).map(c => `
                                     <div class="mb-3 text-xs leading-relaxed">
@@ -1144,7 +988,6 @@
                                 `).join('') || '<div class="h-full flex items-center justify-center opacity-20 italic text-xs py-10">No comments yet.</div>'}
                             </div>
 
-                            <!-- Input (Pinned to bottom) -->
                             <div class="mt-auto pt-4 border-t border-[var(--border-main)] shrink-0">
                                 <div class="flex gap-2">
                                     <input type="text" id="comment-input" placeholder="Add a comment..." class="flex-1 bg-white/5 border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)] focus:bg-white/10 transition-all text-[var(--text-main)] placeholder:opacity-30">
@@ -1156,7 +999,6 @@
                         </div>
                     `;
 
-                    // Auto-scroll to bottom of comments
                     const commentsSection = document.getElementById('comments-section');
                     if (commentsSection) commentsSection.scrollTop = commentsSection.scrollHeight;
 
@@ -1211,10 +1053,7 @@
                     if (commentBtn) commentBtn.onclick = handleSendComment;
                     if (commentInput) {
                         commentInput.onkeydown = (e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleSendComment();
-                            }
+                            if (e.key === 'Enter') { e.preventDefault(); handleSendComment(); }
                         };
                     }
                 } catch (err) {
@@ -1231,6 +1070,194 @@
             });
         };
 
+        let currentRenderId = 0;
+
+        async function renderMyPosts(usedSlots) {
+            const myId = ++currentRenderId;
+            const container = document.getElementById('daily-posts-container');
+            const fragment = document.createDocumentFragment();
+
+            const postPromises = usedSlots.map(postId => {
+                if (postId && postId !== 'DELETED') {
+                    return getDoc(doc(db, 'daily_photos', postId));
+                }
+                return Promise.resolve(null);
+            });
+
+            const postSnaps = await Promise.all(postPromises);
+
+            for (let i = 0; i < 5; i++) {
+                const postSnap = postSnaps[i];
+                const postId = usedSlots[i];
+                const div = document.createElement('div');
+                div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl overflow-hidden flex items-center p-2 gap-3 transition-all hover:border-[var(--accent-color)]';
+                
+                if (postId && postId !== 'DELETED' && postSnap && postSnap.exists()) {
+                    const postData = postSnap.data();
+                    div.innerHTML = `
+                        <div class="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0">
+                            <img src="${postData.imageURL || postData.imageBase64}" class="w-full h-full object-cover" loading="lazy">
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <p class="text-xs font-bold truncate">${postData.title}</p>
+                            <p class="text-[10px] opacity-50">${new Date(postData.createdAt?.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        <div class="flex gap-1 pr-1">
+                            <button onclick="window.viewPost('${postId}')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5" title="View"><i class="fas fa-eye text-xs"></i></button>
+                            <button onclick="window.deletePost('${postId}', ${i})" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-xs"></i></button>
+                        </div>
+                    `;
+                } else if (postId && postId !== 'DELETED') {
+                    div.innerHTML = `<span class="text-xs opacity-30 p-3 italic">Post missing...</span><button onclick="window.fixSlot(${i})" class="text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-lg ml-auto mr-2">Fix</button>`;
+                } else {
+                    div.innerHTML = `
+                        <div class="w-12 h-12 rounded-xl border border-dashed border-[var(--border-main)] flex items-center justify-center shrink-0 opacity-20"><i class="fas fa-plus text-xs"></i></div>
+                        <span class="text-xs opacity-30 italic">Empty Slot ${i+1}</span>
+                        <button onclick="window.openUpload(${i})" class="btn-icon w-8 h-8 rounded-lg ml-auto mr-1" title="Post Moment"><i class="fas fa-plus text-xs"></i></button>
+                    `;
+                }
+                fragment.appendChild(div);
+            }
+
+            if (myId === currentRenderId) {
+                container.innerHTML = '';
+                container.appendChild(fragment);
+            }
+        }
+
+        async function setupSchoolSelection() {
+            try {
+                const res = await fetch('/schools/states.json');
+                allStates = await res.json();
+            } catch (err) { console.error("Failed to load states:", err); }
+
+            document.getElementById('announcement-continue-btn').onclick = () => {
+                document.getElementById('announcement-modal').classList.remove('open');
+                document.getElementById('school-selection-modal').classList.add('open');
+            };
+
+            const stateInput = document.getElementById('state-search-input');
+            const stateResults = document.getElementById('state-results');
+            const schoolInput = document.getElementById('school-search-input');
+            const schoolResults = document.getElementById('school-results');
+
+            stateInput.oninput = () => {
+                const term = stateInput.value.trim().toLowerCase();
+                if (!term) { stateResults.innerHTML = ''; return; }
+                const filtered = allStates.filter(s => s.name.toLowerCase().includes(term) || s.abbr.toLowerCase().includes(term));
+                stateResults.innerHTML = filtered.map(s => `
+                    <div class="list-item-themed flex justify-between items-center group" onclick="window.selectState('${s.abbr}')">
+                        <span class="font-bold">${s.name}</span>
+                        <span class="text-xs opacity-40 group-hover:opacity-100 transition-opacity">${s.abbr}</span>
+                    </div>
+                `).join('');
+                updateScrollFades(stateResults, 'state-fade-top', 'state-fade-bottom');
+            };
+
+            stateResults.onscroll = () => updateScrollFades(stateResults, 'state-fade-top', 'state-fade-bottom');
+            schoolResults.onscroll = () => updateScrollFades(schoolResults, 'school-fade-top', 'school-fade-bottom');
+
+            window.selectState = async (abbr) => {
+                selectedState = allStates.find(s => s.abbr === abbr);
+                stateResults.innerHTML = '<div class="p-8 text-center"><i class="fas fa-spinner fa-spin text-2xl opacity-20"></i></div>';
+                try {
+                    const res = await fetch(`/schools/${abbr.trim()}.json`);
+                    currentStateSchools = await res.json();
+                    currentStateSchools.sort((a, b) => a.name.localeCompare(b.name));
+                    document.getElementById('state-step').classList.add('hidden');
+                    document.getElementById('school-step').classList.remove('hidden');
+                    renderSchools('');
+                } catch (err) { 
+                    console.error("Failed to load schools:", err); 
+                    alert("Failed to load schools for this state.");
+                }
+            };
+
+            schoolInput.oninput = () => renderSchools(schoolInput.value.trim());
+
+            function renderSchools(term) {
+                const search = term.toLowerCase();
+                const filtered = currentStateSchools.filter(s => {
+                    if (!search) return true;
+                    return s.name.toLowerCase().includes(search) || 
+                           (s.district && s.district.toLowerCase().includes(search)) ||
+                           (s.county && s.county.toLowerCase().includes(search));
+                }).slice(0, 100);
+
+                schoolResults.innerHTML = filtered.map(s => `
+                    <div class="list-item-themed" onclick="window.selectSchool('${s.name.replace(/'/g, "\\'")}', '${(s.district || '').replace(/'/g, "\\'")}')">
+                        <div class="font-bold text-sm mb-1">${s.name}</div>
+                        <div class="flex gap-3 text-[10px] opacity-40 uppercase tracking-widest font-bold">
+                            <span>${s.district || 'Independent'}</span>
+                            <span class="text-indigo-500/60">•</span>
+                            <span>${s.level}</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+                if (filtered.length === 0) {
+                    schoolResults.innerHTML = '<p class="text-center py-8 opacity-30 italic text-sm">No schools found matching your search.</p>';
+                }
+                updateScrollFades(schoolResults, 'school-fade-top', 'school-fade-bottom');
+            }
+
+            function updateScrollFades(el, topId, bottomId) {
+                const topFade = document.getElementById(topId);
+                const bottomFade = document.getElementById(bottomId);
+                if (!el || !topFade || !bottomFade) return;
+                const isAtTop = el.scrollTop <= 5;
+                const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 5;
+                const hasScroll = el.scrollHeight > el.clientHeight;
+                topFade.classList.toggle('scroll-fade-active', hasScroll && !isAtTop);
+                bottomFade.classList.toggle('scroll-fade-active', hasScroll && !isAtBottom);
+            }
+
+            window.selectSchool = async (schoolName, districtName) => {
+                if (await CustomUI.confirm(`Confirm selection: ${schoolName}?`)) {
+                    const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+                    const currentMonth = new Date().getMonth() + 1;
+                    let changes = userData.schoolChangesThisMonth || 0;
+                    if ((userData.lastSchoolChangeMonth || 0) !== currentMonth) changes = 0;
+
+                    await updateDoc(userRef, {
+                        schoolId: schoolName,
+                        schoolName: schoolName,
+                        districtId: districtName || schoolName,
+                        state: selectedState.name,
+                        stateAbbr: selectedState.abbr,
+                        schoolSkipped: false,
+                        schoolChangesThisMonth: changes + 1,
+                        lastSchoolChangeMonth: currentMonth
+                    });
+                    document.getElementById('school-selection-modal').classList.remove('open');
+                    // Refresh feed after school change
+                    window._feedLoaded = false;
+                    await loadFeed();
+                }
+            };
+
+            document.getElementById('back-to-states').onclick = () => {
+                document.getElementById('school-step').classList.add('hidden');
+                document.getElementById('state-step').classList.remove('hidden');
+            };
+
+            document.getElementById('skip-school-btn').onclick = async () => {
+                if (await CustomUI.confirm("Skip school selection? You'll see moments from other users who also skipped.")) {
+                    await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { 
+                        schoolSkipped: true,
+                        schoolId: deleteField(),
+                        schoolName: deleteField(),
+                        districtId: deleteField(),
+                        state: deleteField(),
+                        stateAbbr: deleteField()
+                    });
+                    document.getElementById('school-selection-modal').classList.remove('open');
+                    window._feedLoaded = false;
+                    await loadFeed();
+                }
+            };
+        }
+
         window.openUpload = (slotIdx) => {
             const modal = document.getElementById('upload-menu-modal');
             const fileInput = document.getElementById('upload-file-input');
@@ -1240,12 +1267,11 @@
                 if (!file) return;
                 modal.classList.remove('open');
                 
-                // Pre-calculate preview for the prompt
                 let previewUrl = "";
                 if (file.type === 'image/gif') {
                     previewUrl = URL.createObjectURL(file);
                 } else {
-                    previewUrl = await compressImage(file, 400); // Smaller for preview
+                    previewUrl = await compressImage(file, 400);
                 }
 
                 const title = await CustomUI.prompt("Give your moment a title:", "Daily Moment", "Post Moment", previewUrl);
@@ -1264,23 +1290,18 @@
                     let finalImageData = {};
 
                     if (file.type === 'image/gif') {
-                        // GIFs go to Firebase Storage (with 24h custom metadata flag for cleanup script)
                         const storageRef = ref(storage, `daily_photos/${currentUser.uid}/${Date.now()}_${file.name}`);
-                        
-                        // Custom metadata to indicate it should be deleted after 24 hours
                         const metadata = {
                             customMetadata: {
                                 deleteAfter24h: 'true',
                                 uploadedAt: Date.now().toString()
                             }
                         };
-                        
                         const snapshot = await uploadBytes(storageRef, file, metadata);
                         const downloadURL = await getDownloadURL(snapshot.ref);
                         finalImageData = { imageURL: downloadURL };
                         URL.revokeObjectURL(previewUrl);
                     } else {
-                        // Other images get compressed and converted to Base64
                         const base64Str = await compressImage(file);
                         finalImageData = { imageBase64: base64Str };
                     }
@@ -1304,6 +1325,9 @@
                     slots[slotIdx] = postRef.id;
                     await updateDoc(userRef, { dailySlotsUsed: slots });
                     await CustomUI.alert("Upload complete!");
+
+                    // Refresh feed to show the new post immediately
+                    await loadFeed();
                 } catch (error) {
                     console.error("Upload error:", error);
                     await CustomUI.alert("Failed to upload image. Please try again.");
@@ -1311,7 +1335,6 @@
             };
         };
 
-        // Helper function to compress images before saving as Base64
         function compressImage(file, maxWidth = 800) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -1323,18 +1346,14 @@
                         const canvas = document.createElement('canvas');
                         let width = img.width;
                         let height = img.height;
-
                         if (width > maxWidth) {
                             height = Math.round((height *= maxWidth / width));
                             width = maxWidth;
                         }
-
                         canvas.width = width;
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        
-                        // Compress as JPEG
                         resolve(canvas.toDataURL('image/jpeg', 0.8));
                     };
                     img.onerror = error => reject(error);
@@ -1346,7 +1365,6 @@
         window.deletePost = async (postId, idx) => {
             if (!(await CustomUI.confirm("Delete this moment?"))) return;
             
-            // Only update local slots if we are the owner
             const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
             const userSnap = await getDoc(userRef);
             const uData = userSnap.data();
@@ -1361,6 +1379,10 @@
             
             await deleteDoc(doc(db, 'daily_photos', postId));
             if (idx === undefined) window.closeModal();
+
+            // Remove deleted post from feed grid without full reload
+            const el = document.querySelector(`[data-post-id="${postId}"]`);
+            if (el) el.remove();
         };
 
         window.blockUser = async (uid, username) => {
@@ -1371,6 +1393,11 @@
                 });
                 await updateDoc(doc(db, USERS_COLLECTION, uid), { friends: arrayRemove(currentUser.uid) });
                 window.closeModal();
+                // Remove their posts from current feed view
+                document.querySelectorAll('[data-post-id]').forEach(el => {
+                    // We don't store uid on the element, so just reload
+                });
+                await loadFeed();
             }
         };
 
@@ -1383,8 +1410,7 @@
 
         window.closeModal = () => {
             document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
-            unsubModal();
-            // Clear content to prevent "ghost" data on next open
+            if (unsubModal) unsubModal();
             setTimeout(() => {
                 const container = document.getElementById('modal-content-container');
                 if (container) container.innerHTML = '';
@@ -1408,23 +1434,21 @@
         }
 
         function setupFeedToggles() {
-            document.getElementById('feed-toggle-school').onclick = () => {
+            document.getElementById('feed-toggle-school').onclick = async () => {
                 feedMode = 'school';
                 document.getElementById('feed-toggle-school').classList.add('active', 'btn-primary-override');
                 document.getElementById('feed-toggle-district').classList.remove('active', 'btn-primary-override');
-                
                 const isNoSchool = !userData.schoolId || userData.schoolSkipped;
                 document.getElementById('feed-desc').textContent = isNoSchool ? 'Moments from mutual friends.' : 'Moments from your school.';
-                setupFeed();
+                await loadFeed();
             };
-            document.getElementById('feed-toggle-district').onclick = () => {
+            document.getElementById('feed-toggle-district').onclick = async () => {
                 feedMode = 'district';
                 document.getElementById('feed-toggle-district').classList.add('active', 'btn-primary-override');
                 document.getElementById('feed-toggle-school').classList.remove('active', 'btn-primary-override');
-                
                 const isNoSchool = !userData.schoolId || userData.schoolSkipped;
                 document.getElementById('feed-desc').textContent = isNoSchool ? 'Discover shared moments from across the network.' : 'Moments from across your district.';
-                setupFeed();
+                await loadFeed();
             };
         }
 
@@ -1458,13 +1482,11 @@
         async function renderMutualsList() {
             const list = document.getElementById('friends-list-items');
             list.innerHTML = '<div class="p-4 text-center opacity-20"><i class="fas fa-spinner fa-spin"></i></div>';
-            
             list.innerHTML = '';
             if (mutualUids.length === 0) {
                 list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No mutual friends yet.</p>';
                 return;
             }
-
             for (const uid of mutualUids) {
                 const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
                 const d = snap.data() || {};
