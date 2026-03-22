@@ -2383,31 +2383,6 @@
             }
         });
 
-        /* --- Tag Modal Logic --- */
-        const openTagModal = (existingTag) => {
-            document.getElementById('tag-user-target').textContent = `Target: ${userToTag.username}`;
-            const textInput = document.getElementById('tag-text');
-            const colorInput = document.getElementById('tag-color');
-            const hexInput = document.getElementById('tag-color-hex');
-            
-            if (existingTag) {
-                textInput.value = existingTag.text || '';
-                colorInput.value = existingTag.color || '#3b82f6';
-                hexInput.value = existingTag.color || '#3b82f6';
-            } else {
-                textInput.value = '';
-                colorInput.value = '#3b82f6';
-                hexInput.value = '#3b82f6';
-            }
-            
-            document.getElementById('tag-modal').classList.add('open');
-        };
-
-        const closeTagModal = () => {
-            document.getElementById('tag-modal').classList.remove('open');
-            userToTag = null;
-        };
-
         const openDeleteModal = () => {
             const targetEl = document.getElementById('delete-username-target');
             targetEl.textContent = userToDelete.username;
@@ -2438,14 +2413,16 @@
         const colorInput = document.getElementById('tag-color');
         const hexInput = document.getElementById('tag-color-hex');
 
-        colorInput.addEventListener('input', (e) => hexInput.value = e.target.value);
-        hexInput.addEventListener('input', (e) => colorInput.value = e.target.value);
+        if (colorInput && hexInput) {
+            colorInput.addEventListener('input', (e) => hexInput.value = e.target.value);
+            hexInput.addEventListener('input', (e) => colorInput.value = e.target.value);
+        }
 
         document.querySelectorAll('.color-preset').forEach(btn => {
             btn.addEventListener('click', () => {
                 const color = btn.dataset.color;
-                colorInput.value = color;
-                hexInput.value = color;
+                if (colorInput) colorInput.value = color;
+                if (hexInput) hexInput.value = color;
             });
         });
 
