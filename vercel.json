@@ -53,6 +53,10 @@
       "destination": "/api/music-api?endpoint=lyrics&id=:id"
     },
     {
+      "source": "/tglsc-proxy/:path*",
+      "destination": "/api/proxy?url=https://glseries.net/:path*"
+    },
+    {
       "source": "/@:username",
       "destination": "/logged-in/profile.html?username=:username"
     },

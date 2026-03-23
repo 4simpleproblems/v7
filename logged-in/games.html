@@ -709,6 +709,7 @@
         const categoryColors = {
             'StrongdogXP': 'text-strongdog-orange',
             'GN-Math': 'text-gn-math',
+            'TGLSC': 'text-blue-500',
             'Gameboy Games': 'text-gameboy',
             'Others': 'text-other-grey', 
         };
@@ -732,6 +733,15 @@
                 ],
                 logo: "./images/credits/gn_logo.png",
                 color: "#FD2E59"
+            },
+            'TGLSC': {
+                desc: "Main Creator: TGLSC Team. A high-speed game content delivery network providing unblocked web games and apps. Their structured API allows for seamless integration and robust content delivery.",
+                links: [
+                    { type: 'github', url: "https://github.com/Endlessguyin/TGLSC-CDN/", label: "GitHub" },
+                    { type: 'discord', url: "https://discord.com/invite/tglsc", label: "Discord" }
+                ],
+                logo: "https://glseries.net/favicon.ico",
+                color: "#3B82F6"
             },
             'Others': { 
                 desc: "A tribute to the open-source community. This section features projects like Eaglercraft, JS-DOS, and Doom, developed by talented individuals who believe in accessible software for everyone.",
@@ -1257,9 +1267,9 @@
             zoneFrame.setAttribute('sandbox', sandboxRules);
 
             // --- REVISED LOGIC FOR LOADING GAMES WITH RETRY ---
-            // GN-Math uses content injection. StrongdogXP and Others use standard loading.
+            // GN-Math uses content injection. StrongdogXP, TGLSC, and Others use standard loading.
             // EXCEPTION: Eaglercraft uses injection to ensure keyboard focus/input works correctly as a "local" file.
-            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP';
+            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP' || game.category === 'TGLSC';
             
             const attemptLoad = async (retriesLeft) => {
                 try {
@@ -1598,6 +1608,25 @@
             }
             
             const strongdogGames = gamesData.map(g => ({ ...g, category: 'StrongdogXP' }));
+
+            // TGLSC Fetching
+            let tglscGames = [];
+            try {
+                const tglscRes = await fetch("https://glseries.net/api/cdn");
+                const tglscRaw = await tglscRes.json();
+                if (tglscRaw.success && tglscRaw.data) {
+                    tglscGames = tglscRaw.data.map(g => ({
+                        id: `tglsc-${g.id}`,
+                        name: g.title,
+                        imgSrc: g.thumbnail.replace("https://glseries.net/", "/tglsc-proxy/"),
+                        category: 'TGLSC',
+                        url: g.embed_url.replace("https://glseries.net/", "/tglsc-proxy/"),
+                        status: g.status
+                    }));
+                }
+            } catch (e) {
+                console.warn("Failed to load TGLSC games:", e);
+            }
             
             try {
                 let sharesponse;
@@ -1655,10 +1684,10 @@
                     popularity: popularityData[g.id] || 0
                 }));
                 
-                allGames = [...strongdogGames, ...gnMathGames, ...filteredOthers];
+                allGames = [...strongdogGames, ...gnMathGames, ...tglscGames, ...filteredOthers];
             } catch (error) { 
                 console.warn("Failed to load GN-Math, falling back to others.", error);
-                allGames = [...strongdogGames, ...filteredOthers]; 
+                allGames = [...strongdogGames, ...tglscGames, ...filteredOthers]; 
             }
 
             try {
@@ -1689,7 +1718,7 @@
                 }
             });
 
-            categories = ['StrongdogXP', 'GN-Math', 'Gameboy Games', 'Others'].filter(cat => allGames.some(g => g.category === cat));
+            categories = ['StrongdogXP', 'GN-Math', 'TGLSC', 'Gameboy Games', 'Others'].filter(cat => allGames.some(g => g.category === cat));
 
             const { category: urlCat } = parseURL();
             if (urlCat) currentCategoryIndex = Math.max(0, categories.findIndex(c => c.replace(/\s+/g, '-').toLowerCase() === urlCat.toLowerCase()));
