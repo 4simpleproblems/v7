@@ -1,5 +1,5 @@
 importScripts('/VELIUM/uv/uv.bundle.js');
-importScripts('/VELIUM/baremux/index.js');
+importScripts('/logged-in/baremux/index.js');
 
 // Unified Proxy Configuration
 const configs = {
@@ -11,7 +11,7 @@ const configs = {
         sw: '/VELIUM/uv/uv.sw.js',
         handler: '/VELIUM/uv/uv.handler.js',
         client: '/VELIUM/uv/uv.client.js',
-        worker: '/VELIUM/baremux/worker.js'
+        worker: '/logged-in/baremux/worker.js'
     },
     vora: {
         prefix: '/VORA/VERN_SYSTEM/uv/service/',
@@ -21,7 +21,7 @@ const configs = {
         sw: '/VORA/VERN_SYSTEM/uv/uv.sw.js',
         handler: '/VORA/VERN_SYSTEM/uv/uv.handler.js',
         client: '/VORA/VERN_SYSTEM/uv/uv.client.js',
-        worker: '/VORA/VERN_SYSTEM/baremux/worker.js'
+        worker: '/logged-in/baremux/worker.js'
     },
     vora_plus: {
         prefix: '/VORA_PLUS/VERN_SYSTEM/uv/service/',
@@ -31,7 +31,7 @@ const configs = {
         sw: '/VORA_PLUS/VERN_SYSTEM/uv/uv.sw.js',
         handler: '/VORA_PLUS/VERN_SYSTEM/uv/uv.handler.js',
         client: '/VORA_PLUS/VERN_SYSTEM/uv/uv.client.js',
-        worker: '/VORA_PLUS/VERN_SYSTEM/baremux/worker.js'
+        worker: '/logged-in/baremux/worker.js'
     },
     vern: {
         prefix: '/VERN/uv/service/',
@@ -41,7 +41,7 @@ const configs = {
         sw: '/VERN/uv/uv.sw.js',
         handler: '/VERN/uv/uv.handler.js',
         client: '/VERN/uv/uv.client.js',
-        worker: '/VERN/baremux/worker.js'
+        worker: '/logged-in/baremux/worker.js'
     },
     vana: {
         prefix: '/logged-in/uv/service/',
@@ -61,7 +61,7 @@ const configs = {
         sw: '/GAMES/uv/uv.sw.js',
         handler: '/GAMES/uv/uv.handler.js',
         client: '/GAMES/uv/uv.client.js',
-        worker: '/GAMES/baremux/worker.js'
+        worker: '/logged-in/baremux/worker.js'
     },
     valo: {
         prefix: '/VERN/uv/service/',
@@ -71,7 +71,7 @@ const configs = {
         sw: '/VERN/uv/uv.sw.js',
         handler: '/VERN/uv/uv.handler.js',
         client: '/VERN/uv/uv.client.js',
-        worker: '/VERN/baremux/worker.js'
+        worker: '/logged-in/baremux/worker.js'
     }
 };
 
@@ -86,8 +86,8 @@ const transportPromise = new Promise(resolve => {
 });
 
 // Default worker path
-let currentWorkerPath = location.origin + configs.vora.worker;
-let connection = new BareMux.WorkerConnection(currentWorkerPath);
+let currentWorkerPath = location.origin + '/logged-in/baremux/worker.js';
+let connection = new BareMux.BareMuxConnection(currentWorkerPath);
 let bareClient = new BareMux.BareClient(connection);
 
 function updateTransport(path, port = null) {
@@ -108,7 +108,7 @@ function updateTransport(path, port = null) {
         try {
             // Re-initialize connection. If port is provided, it's used directly.
             // Otherwise, use the path to create a new connection that will search for a port
-            connection = new BareMux.WorkerConnection(port || currentWorkerPath);
+            connection = new BareMux.BareMuxConnection(port || currentWorkerPath);
             bareClient = new BareMux.BareClient(connection);
             
             // Re-inject the updated client into all active UV instances

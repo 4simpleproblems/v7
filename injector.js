@@ -19,14 +19,8 @@
             if (event.data && event.data.type === 'getPort' && event.data.port) {
                 try {
                     if (!bareWorker) {
-                        let workerPath = "/VELIUM/baremux/worker.js";
-                        const pathname = window.location.pathname.toLowerCase();
-                        if (pathname.includes('vora')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
-                        else if (pathname.includes('/vora/')) workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
-                        else if (pathname.includes('/vern/')) workerPath = "/VERN/baremux/worker.js";
-                        else if (pathname.includes('/games/')) workerPath = "/GAMES/baremux/worker.js";
-                        else if (pathname.includes('/logged-in/')) workerPath = "/logged-in/baremux/worker.js";
-
+                        // Consistently use v2.1.6 to match sw.js and bundled UV
+                        let workerPath = "/logged-in/baremux/worker.js";
                         bareWorker = new SharedWorker(workerPath, "bare-mux-worker");
                     }
 
