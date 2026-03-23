@@ -735,12 +735,12 @@
                 color: "#FD2E59"
             },
             'TGLSC': {
-                desc: "Main Creator: TGLSC Team. A high-speed game content delivery network providing unblocked web games and apps. Their structured API allows for seamless integration and robust content delivery.",
+                desc: "Main Creator: TGLSC Team. A high-speed content delivery network providing 170+ unblocked web games and apps across genres like .io, FPS, Horror, Sandbox, and Racing. Their structured API ensures robust delivery and seamless integration. (Last updated: March 23, 2026)",
                 links: [
                     { type: 'github', url: "https://github.com/Endlessguyin/TGLSC-CDN/", label: "GitHub" },
                     { type: 'discord', url: "https://discord.com/invite/tglsc", label: "Discord" }
                 ],
-                logo: "https://glseries.net/favicon.ico",
+                logo: "/tglsc-proxy/favicon.ico",
                 color: "#3B82F6"
             },
             'Others': { 
@@ -1435,7 +1435,11 @@
 
         const handleSearch = debounce(() => {
             const text = searchInput.value.toLowerCase().trim();
-            const filteredDropdown = text ? searchableGames.filter(g => g.name.toLowerCase().includes(text)).slice(0, 5) : [];
+            const filteredDropdown = text ? searchableGames.filter(g => 
+                g.name.toLowerCase().includes(text) || 
+                (g.category && g.category.toLowerCase().includes(text)) || 
+                (g.originalCategory && g.originalCategory.toLowerCase().includes(text))
+            ).slice(0, 5) : [];
             
             searchResults.innerHTML = "";
             
@@ -1467,14 +1471,18 @@
                 linkEl.dataset.gameId = game.id;
                 let isFavorite = favorites.includes(String(game.id));
 
-                const catLabel = game.category === 'StrongdogXP' ? 'StrongdogXP' : (game.category === 'GN-Math' ? 'GN-Math' : (game.category === 'TGLSC' ? 'TGLSC' : 'Others'));
+                const catLabel = game.category === 'StrongdogXP' ? 'StrongdogXP' : (game.category === 'GN-Math' ? 'GN-Math' : (game.category === 'TGLSC' ? `TGLSC • ${game.originalCategory || 'General'}` : 'Others'));
                 const catColor = game.category === 'StrongdogXP' ? 'text-strongdog-orange' : (game.category === 'GN-Math' ? 'text-gn-math' : (game.category === 'TGLSC' ? 'text-blue-500' : 'text-gray-400'));
 
                 const smartTextClass = getSmartTextColor();
-                
+                const statusBadge = game.status ? `<span class="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] px-1 py-0.5 rounded-full font-bold uppercase z-10 shadow-sm border border-white/20">${game.status}</span>` : '';
+
                 linkEl.innerHTML = `
                     <div class="flex items-center truncate min-w-0">
-                        <img src="${imgSrc}" alt="${game.name}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
+                        <div class="relative flex-shrink-0">
+                            <img src="${imgSrc}" alt="${game.name}" class="w-10 h-10 rounded-lg object-cover">
+                            ${statusBadge}
+                        </div>
                         <div class="flex flex-col ml-3 truncate min-w-0">
                             <span class="font-medium truncate ${smartTextClass}" title="${game.name}">${game.name}</span>
                             <span class="category-badge w-fit ${catColor}">${catLabel}</span>
@@ -1618,10 +1626,12 @@
                     tglscGames = tglscRaw.data.map(g => ({
                         id: `tglsc-${g.id}`,
                         name: g.title,
-                        imgSrc: g.thumbnail.replace("https://glseries.net/", "/tglsc-proxy/"),
+                        imgSrc: g.thumbnail.replace(/^https?:\/\/(www\.)?glseries\.net\//, "/tglsc-proxy/"),
                         category: 'TGLSC',
-                        url: g.embed_url.replace("https://glseries.net/", "/tglsc-proxy/"),
-                        status: g.status
+                        originalCategory: g.category,
+                        url: g.embed_url.replace(/^https?:\/\/(www\.)?glseries\.net\//, "/tglsc-proxy/"),
+                        status: g.status,
+                        type: g.type
                     }));
                 }
             } catch (e) {

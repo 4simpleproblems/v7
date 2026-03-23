@@ -1,15 +1,21 @@
 // api/proxy.mjs
-// Simple proxy for TGLSC content
+// Enhanced proxy for TGLSC content with URL rewriting
 
 export default async function handler(req, res) {
-  const { url } = req.query;
+  const { url, ...params } = req.query;
 
   if (!url) {
     return res.status(400).json({ error: 'Missing "url" parameter' });
   }
 
   try {
-    const decodedUrl = decodeURIComponent(url);
+    let decodedUrl = decodeURIComponent(url);
+    
+    // Reconstruct query string if there were other parameters
+    const queryParams = new URLSearchParams(params).toString();
+    if (queryParams) {
+      decodedUrl += (decodedUrl.includes('?') ? '&' : '?') + queryParams;
+    }
 
     // Only allow glseries.net for security
     if (!decodedUrl.includes('glseries.net')) {
@@ -20,10 +26,9 @@ export default async function handler(req, res) {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Referer': 'https://glseries.net/',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept': '*/*',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
+        'Connection': 'keep-alive'
       }
     };
 
@@ -40,18 +45,43 @@ export default async function handler(req, res) {
     }
 
     // Forward relevant headers
-    const contentType = response.headers.get('content-type');
-    if (contentType) {
-      res.setHeader('Content-Type', contentType);
+    const contentType = response.headers.get('content-type') || '';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const contentLength = response.headers.get('content-length');
+    if (contentLength && !contentType.includes('text/html')) { // Don't forward length if we might rewrite
+      res.setHeader('Content-Length', contentLength);
     }
 
     // Optimization: Cache images for 24h
-    if (contentType && contentType.startsWith('image/')) {
+    if (contentType.startsWith('image/')) {
         res.setHeader('Cache-Control', 'public, max-age=86400');
     }
 
-    const buffer = await response.arrayBuffer();
-    res.send(Buffer.from(buffer));
+    // URL Rewriting for text-based content
+    if (contentType.includes('text/html') || contentType.includes('application/javascript') || contentType.includes('text/css')) {
+        let text = await response.text();
+        
+        // Replace absolute URLs
+        text = text.replace(/https?:\/\/(www\.)?glseries\.net\//g, '/tglsc-proxy/');
+        
+        // Replace root-relative URLs (only those that look like they point to assets/ or similar)
+        // We match URLs starting with / that are followed by typical glseries directories
+        text = text.replace(/(src|href|url)\s*=\s*["']\/(assets|js|css|img|images|lib)\//g, (match, p1, p2) => {
+            return `${p1}="/tglsc-proxy/${p2}/`;
+        });
+        
+        // Handle root-relative URLs in scripts (e.g. fetch('/assets/...'))
+        text = text.replace(/["']\/(assets|js|css|img|images|lib)\//g, (match, p1) => {
+            return `"/tglsc-proxy/${p1}/`;
+        });
+
+        res.send(text);
+    } else {
+        const buffer = await response.arrayBuffer();
+        res.send(Buffer.from(buffer));
+    }
   } catch (error) {
     console.error('Proxy error:', error);
     res.status(500).json({ error: 'Internal Server Error', message: error.message });
