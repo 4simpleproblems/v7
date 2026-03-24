@@ -195,6 +195,7 @@ async function handleRequest(event) {
                          (url.includes('/baremux/') || 
                           url.includes('/uv/') || 
                           url.includes('/libcurl/') ||
+                          url.includes('/tglsc-proxy/') ||
                           url.match(/\.(js|mjs|css|json|png|jpg|ico)$/)) &&
                          !isProxied;
 

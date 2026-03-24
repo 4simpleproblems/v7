@@ -1169,6 +1169,15 @@
         async function openZone(game) {
             if (!game || !game.url) return;
 
+            // Ensure TGLSC URLs are properly proxied if not already
+            if (game.category === 'TGLSC' && !game.url.startsWith('/tglsc-proxy/')) {
+                game.url = game.url.replace(/^https?:\/\/(www\.)?glseries\.net\//, "/tglsc-proxy/");
+                if (!game.url.startsWith('/tglsc-proxy/')) {
+                    // Fallback for relative URLs or if regex missed
+                    game.url = "/tglsc-proxy/" + game.url.replace(/^\//, "");
+                }
+            }
+
             // Auto-replace legacy GN-Math URLs
             if (game.category === 'GN-Math' && game.url.includes('raw.githack.com/gn-math/html/main/')) {
                 game.url = game.url.replace('raw.githack.com/gn-math/html/main/', 'cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/');
@@ -1274,8 +1283,12 @@
             const attemptLoad = async (retriesLeft) => {
                 try {
                     // Pre-check URL validity
+                    console.log(`Attempting to load: ${game.url}`);
                     const check = await fetch(game.url, { method: 'HEAD' });
-                    if (!check.ok) throw new Error(`HTTP ${check.status}`);
+                    if (!check.ok) {
+                        console.error(`HEAD check failed for ${game.url} with status ${check.status}`);
+                        throw new Error(`HTTP ${check.status}`);
+                    }
                     
                     // If successful, set src
                     if (isStandardURLGame) {
@@ -1623,16 +1636,27 @@
                 const tglscRes = await fetch("https://glseries.net/api/cdn");
                 const tglscRaw = await tglscRes.json();
                 if (tglscRaw.success && tglscRaw.data) {
-                    tglscGames = tglscRaw.data.map(g => ({
-                        id: `tglsc-${g.id}`,
-                        name: g.title,
-                        imgSrc: g.thumbnail.replace(/^https?:\/\/(www\.)?glseries\.net\//, "/tglsc-proxy/"),
-                        category: 'TGLSC',
-                        originalCategory: g.category,
-                        url: g.embed_url.replace(/^https?:\/\/(www\.)?glseries\.net\//, "/tglsc-proxy/"),
-                        status: g.status,
-                        type: g.type
-                    }));
+                    tglscGames = tglscRaw.data.map(g => {
+                        let gameUrl = g.embed_url;
+                        if (gameUrl.startsWith('https://glseries.net/')) {
+                            gameUrl = gameUrl.replace('https://glseries.net/', '/tglsc-proxy/');
+                        } else if (gameUrl.startsWith('/')) {
+                            gameUrl = '/tglsc-proxy' + gameUrl;
+                        } else {
+                            gameUrl = '/tglsc-proxy/assets/applications/content/' + gameUrl;
+                        }
+
+                        return {
+                            id: `tglsc-${g.id}`,
+                            name: g.title,
+                            imgSrc: g.thumbnail.replace(/^https?:\/\/(www\.)?glseries\.net\//, "/tglsc-proxy/"),
+                            category: 'TGLSC',
+                            originalCategory: g.category,
+                            url: gameUrl,
+                            status: g.status,
+                            type: g.type
+                        };
+                    });
                 }
             } catch (e) {
                 console.warn("Failed to load TGLSC games:", e);
