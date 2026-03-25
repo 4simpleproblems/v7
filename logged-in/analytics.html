@@ -189,10 +189,11 @@
             </div>
             <div class="flex gap-4 border-b border-[#1a1a1a] w-full sm:w-auto overflow-x-auto">
                 <button class="tab-btn active whitespace-nowrap" data-tab="users">User Management</button>
+                <button class="tab-btn whitespace-nowrap" data-tab="ban-requests">Ban Requests</button>
+                <button class="tab-btn whitespace-nowrap" data-tab="admin-abilities">Admin Only Abilities</button>
                 <button class="tab-btn whitespace-nowrap" data-tab="traffic">Site Traffic</button>
                 <button class="tab-btn whitespace-nowrap" data-tab="health">System Health</button>
                 <button class="tab-btn whitespace-nowrap" data-tab="data-analytics">Data and Analytics</button>
-                <button class="tab-btn whitespace-nowrap" data-tab="messenger-web">Messenger Web</button>
             </div>
         </header>
 
@@ -219,27 +220,23 @@
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                <div class="stat-card">
+                <div class="stat-card cursor-pointer hover:bg-[#1a1a1a] transition-all" data-filter="all">
                     <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Total Users</span>
                     <span id="total-users-count" class="text-4xl text-white font-light">--</span>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card cursor-pointer hover:bg-[#1a1a1a] transition-all" data-filter="admins">
                     <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Admins</span>
                     <span id="total-admins-count" class="text-4xl text-blue-400 font-light">--</span>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card cursor-pointer hover:bg-[#1a1a1a] transition-all" data-filter="subadmins">
                     <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Sub-Admins</span>
                     <span id="total-subadmins-count" class="text-4xl text-indigo-400 font-light">--</span>
                 </div>
-                <div class="stat-card">
-                    <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Testers</span>
-                    <span id="total-testers-count" class="text-4xl text-emerald-400 font-light">--</span>
-                </div>
-                <div class="stat-card">
+                <div class="stat-card cursor-pointer hover:bg-[#1a1a1a] transition-all" data-filter="banned">
                     <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Banned</span>
                     <span id="total-banned-count" class="text-4xl text-red-400 font-light">--</span>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card cursor-pointer hover:bg-[#1a1a1a] transition-all" data-filter="verified">
                     <span class="text-gray-400 text-sm mb-2 uppercase tracking-wide">Verified Emails</span>
                     <span id="total-verified-count" class="text-4xl text-green-400 font-light">--</span>
                 </div>
@@ -280,8 +277,10 @@
                         <select id="user-sort" class="bg-[#1a1a1a] text-gray-300 border border-[#333] rounded-[14px] px-3 py-2 text-sm focus:outline-none">
                             <option value="newest">Newest First</option>
                             <option value="oldest">Oldest First</option>
-                            <option value="admin">Admins First</option>
-                            <option value="verified">Verified First</option>
+                            <option value="admin">Admins Only</option>
+                            <option value="subadmin">Sub-Admins Only</option>
+                            <option value="verified">Verified Only</option>
+                            <option value="banned">Banned Only</option>
                         </select>
                     </div>
                 </div>
@@ -291,6 +290,7 @@
                         <thead>
                             <tr>
                                 <th>Identity</th>
+                                <th>Tags</th>
                                 <th>Auth Method</th>
                                 <th>Joined</th>
                                 <th>Verification</th>
@@ -303,6 +303,112 @@
                 </div>
                 <div id="loading-users" class="p-8 text-center text-gray-500">
                     <i class="fa-solid fa-circle-notch fa-spin mr-2 text-blue-500"></i> Connecting to live user feed...
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-ban-requests" class="tab-content hidden">
+            <div class="bg-[#0d0d0d] border border-[#1a1a1a] rounded-[1.25rem] overflow-hidden">
+                <div class="p-4 border-b border-[#1a1a1a] bg-[#0a0a0a] flex justify-between items-center">
+                    <div>
+                        <h3 class="text-white text-lg">Ban Requests</h3>
+                        <p class="text-sm text-gray-500">Requests submitted by sub-admins for review.</p>
+                    </div>
+                    <div id="admin-only-ban-actions" class="hidden">
+                        <button id="clear-denied-requests" class="text-xs text-gray-500 hover:text-white transition">Clear Processed</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="analytics-table">
+                        <thead>
+                            <tr>
+                                <th>Target User</th>
+                                <th>Requested By</th>
+                                <th>Reason</th>
+                                <th>Severity/Scope</th>
+                                <th>Time</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ban-requests-body">
+                            <tr><td colspan="6" class="text-center text-gray-600 py-8">No pending ban requests.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-admin-abilities" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-[#0d0d0d] border border-[#1a1a1a] rounded-[1.25rem] p-6">
+                        <h3 class="text-white text-lg mb-4">Tag Management</h3>
+                        <p class="text-sm text-gray-500 mb-6">Create and apply custom tags to users across the platform.</p>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Target User (UID or Username)</label>
+                                <div class="relative">
+                                    <input type="text" id="tag-ability-search" placeholder="Search user..." class="w-full bg-[#1a1a1a] text-white border border-[#333] rounded-[14px] px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+                                    <div id="tag-ability-results" class="absolute top-full left-0 right-0 bg-[#0d0d0d] border border-[#333] mt-2 rounded-[14px] overflow-hidden hidden z-50 shadow-2xl"></div>
+                                </div>
+                            </div>
+                            
+                            <div id="selected-tag-user" class="hidden bg-blue-900/10 border border-blue-500/20 rounded-[14px] p-3 flex justify-between items-center">
+                                <div class="flex items-center gap-3">
+                                    <div id="tag-user-pfp" class="w-8 h-8 rounded-full bg-blue-600"></div>
+                                    <div class="flex flex-col">
+                                        <span id="tag-user-name" class="text-sm text-white font-medium">--</span>
+                                        <span id="tag-user-uid" class="text-[10px] text-gray-500 font-mono">--</span>
+                                    </div>
+                                </div>
+                                <button id="deselect-tag-user" class="text-gray-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Tag Text</label>
+                                <input type="text" id="tag-ability-text" class="w-full bg-[#1a1a1a] text-white border border-[#333] rounded-[14px] px-4 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="e.g. Verified OG">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Tag Color</label>
+                                <div class="flex gap-2">
+                                    <input type="color" id="tag-ability-color" class="h-10 w-14 bg-transparent border border-[#333] rounded cursor-pointer" value="#3b82f6">
+                                    <input type="text" id="tag-ability-color-hex" class="flex-1 bg-[#1a1a1a] text-white border border-[#333] rounded-[14px] px-4 py-2 text-sm font-mono uppercase" value="#3b82f6">
+                                </div>
+                            </div>
+
+                            <button id="apply-tag-btn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-[14px] font-medium transition shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Apply/Update Tag
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <div class="bg-[#0d0d0d] border border-[#1a1a1a] rounded-[1.25rem] overflow-hidden h-full flex flex-col">
+                        <div class="p-4 border-b border-[#1a1a1a] bg-[#0a0a0a] flex justify-between items-center">
+                            <h3 class="text-white text-lg">Active User Tags</h3>
+                            <div class="relative">
+                                <input type="text" id="active-tags-search" placeholder="Filter tags..." class="bg-[#1a1a1a] text-white border border-[#333] rounded-[14px] px-4 py-1.5 text-xs focus:outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+                        <div class="overflow-y-auto flex-1">
+                            <table class="analytics-table">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Tag Display</th>
+                                        <th>Color Hex</th>
+                                        <th class="text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="active-tags-body">
+                                    <tr><td colspan="4" class="text-center text-gray-600 py-8">No tagged users found.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -727,12 +833,6 @@
                             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-indigo-500">Sub</span>
                             <div class="absolute inset-0 border-2 border-transparent peer-checked:border-indigo-500 rounded-xl pointer-events-none"></div>
                         </label>
-                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-emerald-500 transition-all group">
-                            <input type="radio" name="admin-type" value="tester" class="hidden peer">
-                            <i class="fa-solid fa-vial text-lg text-gray-500 peer-checked:text-emerald-500 group-hover:text-gray-300"></i>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-emerald-500">Tester</span>
-                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-emerald-500 rounded-xl pointer-events-none"></div>
-                        </label>
                     </div>
                 </div>
 
@@ -837,6 +937,7 @@
             doc, 
             getDoc, 
             setDoc, 
+            addDoc,
             deleteDoc,
             updateDoc,
             query,
@@ -1364,7 +1465,15 @@
                     const isSuperAdmin = user.email === '4simpleproblems@gmail.com';
                     
                     if (adminDoc.exists() || isSuperAdmin) {
+                        if (isSuperAdmin) {
+                            currentUserRole = 'admin';
+                        } else {
+                            currentUserRole = adminDoc.data().type === 'full' ? 'admin' : 'sub';
+                        }
+                        
+                        applyRoleRestrictions();
                         subscribeToData();
+                        subscribeToBanRequests();
                         loadTrafficData(); 
                     } else {
                         window.location.href = '../logged-in/dashboard.html';
@@ -1375,8 +1484,236 @@
             });
             
             setupTabs();
+            setupStatCardFilters();
+            setupTagAbilityLogic();
             // Attach CSV Export listener
             document.getElementById('export-csv-btn').addEventListener('click', exportToCSV);
+        };
+
+        const applyRoleRestrictions = () => {
+            if (currentUserRole === 'sub') {
+                document.getElementById('admin-only-ban-actions')?.classList.add('hidden');
+            } else if (currentUserRole === 'admin') {
+                document.getElementById('admin-only-ban-actions')?.classList.remove('hidden');
+            }
+        };
+
+        const setupStatCardFilters = () => {
+            document.querySelectorAll('.stat-card[data-filter]').forEach(card => {
+                card.addEventListener('click', () => {
+                    const filter = card.dataset.filter;
+                    const sortSelect = document.getElementById('user-sort');
+                    
+                    if (filter === 'all') sortSelect.value = 'newest';
+                    else if (filter === 'admins') sortSelect.value = 'admin';
+                    else if (filter === 'subadmins') sortSelect.value = 'subadmin';
+                    else if (filter === 'banned') sortSelect.value = 'banned';
+                    else if (filter === 'verified') sortSelect.value = 'verified';
+                    
+                    renderTable(getFilteredUsers());
+                });
+            });
+        };
+
+        const subscribeToBanRequests = () => {
+            onSnapshot(collection(db, 'ban_requests'), (snapshot) => {
+                const requests = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderBanRequests(requests);
+            });
+        };
+
+        const renderBanRequests = (requests) => {
+            const tbody = document.getElementById('ban-requests-body');
+            if (!tbody) return;
+            if (requests.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-600 py-8">No pending ban requests.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = requests.sort((a, b) => (b.requestedAt?.toDate() || 0) - (a.requestedAt?.toDate() || 0)).map(req => {
+                const target = allUsers.find(u => u.id === req.targetUid) || { username: 'Unknown', email: req.targetUid };
+                const requester = allUsers.find(u => u.id === req.requestedBy) || { username: 'Admin', email: req.requestedBy };
+                
+                return `
+                    <tr class="${req.status === 'denied' ? 'opacity-50' : ''}">
+                        <td>
+                            <div class="flex flex-col">
+                                <span class="text-white font-medium">${target.username || 'Unknown'}</span>
+                                <span class="text-[10px] text-gray-500 font-mono">${req.targetUid}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="flex flex-col">
+                                <span class="text-gray-300">${requester.username || 'Admin'}</span>
+                                <span class="text-[10px] text-gray-500 font-mono">${req.requestedBy.substring(0,8)}</span>
+                            </div>
+                        </td>
+                        <td class="max-w-xs truncate text-gray-400 text-sm" title="${req.reason}">${req.reason}</td>
+                        <td>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-[10px] uppercase font-bold text-orange-400">${req.severity}</span>
+                                <span class="text-[10px] text-gray-500 uppercase">${req.scope}</span>
+                            </div>
+                        </td>
+                        <td class="text-xs text-gray-500">${formatTimeAgo(req.requestedAt)}</td>
+                        <td>
+                            ${currentUserRole === 'admin' && req.status !== 'denied' ? \`
+                                <div class="flex gap-2">
+                                    <button class="action-btn btn-unblock btn-accept-ban" data-id="\${req.id}" title="Accept & Ban">
+                                        <i class="fa-solid fa-check"></i>
+                                    </button>
+                                    <button class="action-btn btn-block btn-deny-ban" data-id="\${req.id}" title="Deny Request">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                            \` : \`
+                                <span class="text-xs \${req.status === 'denied' ? 'text-red-500' : 'text-gray-500 italic'}">\${req.status || 'Pending'}</span>
+                            \`}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            tbody.querySelectorAll('.btn-accept-ban').forEach(btn => {
+                btn.onclick = () => processBanRequest(btn.dataset.id, true);
+            });
+            tbody.querySelectorAll('.btn-deny-ban').forEach(btn => {
+                btn.onclick = () => processBanRequest(btn.dataset.id, false);
+            });
+        };
+
+        const processBanRequest = async (requestId, accept) => {
+            if (currentUserRole !== 'admin') {
+                showNotification("Only admins can process requests", 'fa-solid fa-shield-halved', 'warning');
+                return;
+            }
+
+            const reqDoc = await getDoc(doc(db, 'ban_requests', requestId));
+            if (!reqDoc.exists()) return;
+            const data = reqDoc.data();
+
+            try {
+                if (accept) {
+                    const banData = { 
+                        bannedAt: new Date(),
+                        bannedBy: auth.currentUser.uid,
+                        reason: data.reason,
+                        link: data.link || null,
+                        severity: data.severity,
+                        scope: data.scope,
+                        pages: data.pages || []
+                    };
+
+                    const batch = writeBatch(db);
+                    batch.set(doc(db, 'bans', data.targetUid), banData);
+                    batch.delete(doc(db, 'ban_requests', requestId));
+                    
+                    if (data.severity === 'email') {
+                        const targetUser = allUsers.find(u => u.id === data.targetUid);
+                        if (targetUser && targetUser.email) {
+                            batch.set(doc(db, 'email_bans', targetUser.email.toLowerCase()), {
+                                bannedAt: new Date(),
+                                bannedBy: auth.currentUser.uid,
+                                originalUid: data.targetUid
+                            });
+                        }
+                    }
+
+                    await batch.commit();
+                    showNotification("Ban request accepted and enforced.", 'fa-solid fa-check', 'success');
+                } else {
+                    await updateDoc(doc(db, 'ban_requests', requestId), { status: 'denied', processedAt: new Date() });
+                    showNotification("Ban request denied.", 'fa-solid fa-xmark', 'info');
+                }
+            } catch (err) {
+                alert("Failed to process request: " + err.message);
+            }
+        };
+
+        const setupTagAbilityLogic = () => {
+            const searchInput = document.getElementById('tag-ability-search');
+            const results = document.getElementById('tag-ability-results');
+            if (!searchInput) return;
+            let selectedUid = null;
+
+            searchInput.addEventListener('input', () => {
+                const term = searchInput.value.toLowerCase();
+                if (term.length < 2) {
+                    results.classList.add('hidden');
+                    return;
+                }
+
+                const matches = allUsers.filter(u => 
+                    (u.username && u.username.toLowerCase().includes(term)) ||
+                    (u.email && u.email.toLowerCase().includes(term)) ||
+                    u.id.toLowerCase().includes(term)
+                ).slice(0, 5);
+
+                results.innerHTML = matches.map(u => \`
+                    <div class="p-3 border-b border-[#1a1a1a] hover:bg-[#1a1a1a] cursor-pointer flex items-center gap-3" data-uid="\${u.id}">
+                        <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs text-white font-bold">
+                            \${(u.username || '?').charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-sm text-white">\${u.username || 'Unknown'}</span>
+                            <span class="text-[10px] text-gray-500">\${u.id.substring(0,12)}...</span>
+                        </div>
+                    </div>
+                \`).join('');
+                results.classList.remove('hidden');
+
+                results.querySelectorAll('[data-uid]').forEach(el => {
+                    el.onclick = () => {
+                        const uid = el.dataset.uid;
+                        const user = allUsers.find(u => u.id === uid);
+                        selectUserForTag(user);
+                        results.classList.add('hidden');
+                        searchInput.value = '';
+                    };
+                });
+            });
+
+            const selectUserForTag = (user) => {
+                selectedUid = user.id;
+                document.getElementById('selected-tag-user').classList.remove('hidden');
+                document.getElementById('tag-user-name').textContent = user.username || 'Unknown';
+                document.getElementById('tag-user-uid').textContent = user.id;
+                
+                if (user.userTag) {
+                    document.getElementById('tag-ability-text').value = user.userTag.text;
+                    document.getElementById('tag-ability-color').value = user.userTag.color;
+                    document.getElementById('tag-ability-color-hex').value = user.userTag.color;
+                }
+            };
+
+            document.getElementById('deselect-tag-user').onclick = () => {
+                selectedUid = null;
+                document.getElementById('selected-tag-user').classList.add('hidden');
+            };
+
+            document.getElementById('tag-ability-color').oninput = (e) => {
+                document.getElementById('tag-ability-color-hex').value = e.target.value;
+            };
+
+            document.getElementById('apply-tag-btn').onclick = async () => {
+                if (currentUserRole !== 'admin') {
+                    showNotification("Only admins can manage tags", 'fa-solid fa-shield-halved', 'warning');
+                    return;
+                }
+                if (!selectedUid) return;
+                
+                const text = document.getElementById('tag-ability-text').value.trim();
+                const color = document.getElementById('tag-ability-color').value;
+
+                try {
+                    await updateDoc(doc(db, 'users', selectedUid), {
+                        userTag: { text, color }
+                    });
+                    showNotification("Tag applied successfully", 'fa-solid fa-tag', 'success');
+                } catch (err) {
+                    alert("Failed to apply tag: " + err.message);
+                }
+            };
         };
 
         /* --- CSV Export Function --- */
@@ -1436,6 +1773,73 @@
             document.body.removeChild(link);
         };
 
+        const refreshTagsTable = () => {
+            const tbody = document.getElementById('active-tags-body');
+            if (!tbody) return;
+            const searchInput = document.getElementById('active-tags-search');
+            const term = searchInput ? searchInput.value.toLowerCase() : '';
+            
+            const taggedUsers = allUsers.filter(u => u.userTag && (
+                (u.username && u.username.toLowerCase().includes(term)) || 
+                (u.userTag.text && u.userTag.text.toLowerCase().includes(term))
+            ));
+
+            if (taggedUsers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-600 py-8">No tagged users found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = taggedUsers.map(u => `
+                <tr>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <span class="text-white text-sm">${u.username || 'Unknown'}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded border tracking-wider" style="color: ${u.userTag.color}; border-color: ${u.userTag.color}40; background-color: ${u.userTag.color}10;">
+                            ${u.userTag.text}
+                        </span>
+                    </td>
+                    <td class="font-mono text-xs text-gray-500">${u.userTag.color}</td>
+                    <td class="text-right">
+                        <div class="flex justify-end gap-1">
+                            <button class="action-btn btn-tag edit-tag-btn" data-uid="${u.id}" title="Edit Tag">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button class="action-btn btn-delete remove-tag-btn" data-uid="${u.id}" title="Remove Tag">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            tbody.querySelectorAll('.edit-tag-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const user = allUsers.find(u => u.id === btn.dataset.uid);
+                    const tagSearch = document.getElementById('tag-ability-search');
+                    if (tagSearch) {
+                        tagSearch.value = user.username || user.id;
+                        tagSearch.dispatchEvent(new Event('input'));
+                    }
+                };
+            });
+
+            tbody.querySelectorAll('.remove-tag-btn').forEach(btn => {
+                btn.onclick = async () => {
+                    if (currentUserRole !== 'admin') {
+                        showNotification("Only admins can manage tags", 'fa-solid fa-shield-halved', 'warning');
+                        return;
+                    }
+                    if (confirm(`Remove tag from ${allUsers.find(u => u.id === btn.dataset.uid).username}?`)) {
+                        await updateDoc(doc(db, 'users', btn.dataset.uid), { userTag: deleteField() });
+                        showNotification("Tag removed", 'fa-solid fa-tag', 'info');
+                    }
+                };
+            });
+        };
+
         const setupTabs = () => {
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
@@ -1459,25 +1863,19 @@
                     if(tabId === 'data-analytics') {
                         checkReAuthStatus();
                     }
-                    if(tabId === 'messenger-web') {
-                        if(!isGraphInitialized) {
-                            initMessengerGraph();
-                        }
+                    if(tabId === 'admin-abilities') {
+                        refreshTagsTable();
                     }
                 });
             });
 
-            document.getElementById('refresh-graph-btn').addEventListener('click', () => {
-                initMessengerGraph();
-            });
-
-            document.getElementById('graph-mode').addEventListener('change', () => {
-                renderMessengerGraph();
-            });
-
-            document.getElementById('messenger-graph-search').addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                highlightGraphNode(term);
+            document.getElementById('admin-only-ban-actions')?.addEventListener('click', async () => {
+                const q = query(collection(db, 'ban_requests'), where('status', '==', 'denied'));
+                const snap = await getDocs(q);
+                const batch = writeBatch(db);
+                snap.forEach(d => batch.delete(d.ref));
+                await batch.commit();
+                showNotification("Cleared processed requests", 'fa-solid fa-broom');
             });
 
             document.getElementById('reauth-btn').addEventListener('click', async () => {
@@ -1663,13 +2061,10 @@
                 const adminsList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 admins = new Set(adminsList.filter(a => a.role === 'admin' && a.type === 'full').map(a => a.id));
                 subAdmins = new Set(adminsList.filter(a => a.role === 'admin' && a.type === 'sub').map(a => a.id));
-                testers = new Set(adminsList.filter(a => a.role === 'admin' && a.type === 'tester').map(a => a.id));
                 
                 document.getElementById('total-admins-count').textContent = admins.size;
                 const subCountEl = document.getElementById('total-subadmins-count');
                 if (subCountEl) subCountEl.textContent = subAdmins.size;
-                const testerCountEl = document.getElementById('total-testers-count');
-                if (testerCountEl) testerCountEl.textContent = testers.size;
                 
                 renderTable(getFilteredUsers()); 
             });
@@ -2043,7 +2438,7 @@
             tbody.innerHTML = '';
 
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 py-8">No users found matching your criteria.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 py-8">No users found matching your criteria.</td></tr>';
                 return;
             }
 
@@ -2055,7 +2450,6 @@
                 const tr = document.createElement('tr');
                 const isAdmin = admins.has(user.id);
                 const isSubAdmin = subAdmins.has(user.id);
-                const isTester = testers.has(user.id);
                 const isBanned = bannedUsers.has(user.id);
                 const isVerified = user.emailVerified === true;
                 
@@ -2064,8 +2458,6 @@
                     roleBadge = `<span class="bg-blue-900/30 text-blue-400 text-[10px] uppercase font-bold px-2 py-1 rounded border border-blue-500/30 tracking-wider">Admin</span>`;
                 } else if (isSubAdmin) {
                     roleBadge = `<span class="bg-indigo-900/30 text-indigo-400 text-[10px] uppercase font-bold px-2 py-1 rounded border border-indigo-500/30 tracking-wider">Sub-Admin</span>`;
-                } else if (isTester) {
-                    roleBadge = `<span class="bg-emerald-900/30 text-emerald-400 text-[10px] uppercase font-bold px-2 py-1 rounded border border-emerald-500/30 tracking-wider">Tester</span>`;
                 }
 
                 const statusBadge = isBanned
@@ -2081,54 +2473,61 @@
                 if (isSuperAdmin) {
                     canRemove = true; // Super can remove everyone
                 } else if (isFullAdmin) {
-                    // Full Admin can remove Sub-Admins and Testers but NOT other Full Admins
-                    canRemove = isSubAdmin || isTester;
+                    // Full Admin can remove Sub-Admins but NOT other Full Admins
+                    canRemove = isSubAdmin;
                 }
 
-                tr.innerHTML = `
+                const tagHtml = user.userTag ? \`
+                    <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded border tracking-wider" style="color: \${user.userTag.color}; border-color: \${user.userTag.color}40; background-color: \${user.userTag.color}10;">
+                        \${user.userTag.text}
+                    </span>
+                \` : '<span class="text-gray-700">-</span>';
+
+                tr.innerHTML = \`
                     <td>
                         <div class="flex items-center gap-3">
                              <div class="w-8 h-8 rounded-full bg-[#1a1a1a] flex items-center justify-center text-xs font-bold text-gray-400 border border-[#333]">
-                                ${(user.username || user.email || '?').charAt(0).toUpperCase()}
+                                \${(user.username || user.email || '?').charAt(0).toUpperCase()}
                             </div>
                             <div class="flex flex-col">
                                 <span class="text-white font-medium text-sm flex items-center gap-2">
-                                    ${user.username || 'Unknown'}
-                                    ${roleBadge}
+                                    \${user.username || 'Unknown'}
+                                    \${roleBadge}
                                 </span>
-                                <span class="text-xs text-gray-500 font-mono">${user.email || user.id}</span>
+                                <span class="text-xs text-gray-500 font-mono">\${user.email || user.id}</span>
                             </div>
                         </div>
                     </td>
-                    <td>${getProviderHtml(user.authMethod)}</td>
-                    <td class="text-gray-400 text-xs">${formatDate(user.createdAt)}</td>
-                    <td class="text-center text-sm">${verifiedIcon}</td>
-                    <td>${statusBadge}</td>
+                    <td>\${tagHtml}</td>
+                    <td>\${getProviderHtml(user.authMethod)}</td>
+                    <td class="text-gray-400 text-xs">\${formatDate(user.createdAt)}</td>
+                    <td class="text-center text-sm">\${verifiedIcon}</td>
+                    <td>\${statusBadge}</td>
                     <td>
                         <div class="flex items-center">
-                            <button class="action-btn ${isBanned ? 'btn-unblock' : 'btn-block'}" data-action="toggle-ban" data-uid="${user.id}" data-username="${user.username || user.email}" title="${isBanned ? 'Unban' : 'Ban'}">
-                                ${isBanned ? '<i class="fa-solid fa-unlock"></i>' : '<i class="fa-solid fa-ban"></i>'}
+                            <button class="action-btn \${isBanned ? 'btn-unblock' : 'btn-block'}" data-action="toggle-ban" data-uid="\${user.id}" data-username="\${user.username || user.email}" title="\${isBanned ? 'Unban' : 'Ban'}">
+                                \${isBanned ? '<i class="fa-solid fa-unlock"></i>' : '<i class="fa-solid fa-ban"></i>'}
                             </button>
-                            ${(isAdmin || isSubAdmin || isTester) 
-                                ? `<button class="action-btn btn-remove-admin ${!canRemove ? 'opacity-30 cursor-not-allowed' : ''}" data-action="remove-admin" data-uid="${user.id}" ${!canRemove ? 'disabled' : ''} title="Remove Permissions">
+                            \${(isAdmin || isSubAdmin) 
+                                ? \`<button class="action-btn btn-remove-admin \${!canRemove ? 'opacity-30 cursor-not-allowed' : ''}" data-action="remove-admin" data-uid="\${user.id}" \${!canRemove ? 'disabled' : ''} title="Remove Permissions">
                                     <i class="fa-solid fa-user-minus"></i>
-                                   </button>`
-                                : `<button class="action-btn btn-admin" data-action="make-admin" data-uid="${user.id}" data-username="${user.username || user.email}" title="Grant Permissions">
+                                   </button>\`
+                                : \`<button class="action-btn btn-admin" data-action="make-admin" data-uid="\${user.id}" data-username="\${user.username || user.email}" title="Grant Permissions">
                                     <i class="fa-solid fa-user-shield"></i>
-                                   </button>`
+                                   </button>\`
                             }
-                            <button class="action-btn btn-tag" data-action="set-tag" data-uid="${user.id}" data-username="${user.username || user.email}" title="Set Tag">
+                            <button class="action-btn btn-tag \${currentUserRole === 'sub' ? 'opacity-30 cursor-not-allowed' : ''}" data-action="set-tag" data-uid="\${user.id}" data-username="\${user.username || user.email}" title="Set Tag">
                                 <i class="fa-solid fa-tag"></i>
                             </button>
-                            <button class="action-btn text-red-500 hover:text-white hover:bg-red-900/40" data-action="delete-user" data-uid="${user.id}" data-username="${user.username || user.email}" title="Delete User">
+                            <button class="action-btn text-red-500 hover:text-white hover:bg-red-900/40 \${currentUserRole === 'sub' ? 'opacity-30 cursor-not-allowed' : ''}" data-action="delete-user" data-uid="\${user.id}" data-username="\${user.username || user.email}" title="Delete User">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
-                            <button class="action-btn text-gray-400 hover:text-white hover:bg-white/10" data-action="view-details" data-uid="${user.id}" title="View Details">
+                            <button class="action-btn text-gray-400 hover:text-white hover:bg-white/10" data-action="view-details" data-uid="\${user.id}" title="View Details">
                                 <i class="fa-solid fa-eye"></i>
                             </button>
                         </div>
                     </td>
-                `;
+                \`;
                 tbody.appendChild(tr);
             });
 
@@ -2178,6 +2577,14 @@
             const action = btn.dataset.action;
             const uid = btn.dataset.uid;
             
+            // Role-based restriction checks
+            if (currentUserRole === 'sub') {
+                if (action === 'delete-user' || action === 'set-tag') {
+                    showNotification("This feature is only for admins", 'fa-solid fa-shield-halved', 'warning');
+                    return;
+                }
+            }
+
             if (action === 'toggle-ban') {
                 const isBanned = bannedUsers.has(uid);
                 if (isBanned) {
@@ -2207,8 +2614,29 @@
                         }
                     }
                 } else {
-                    userToBan = { uid, username: btn.dataset.username };
-                    openBanModal();
+                    if (currentUserRole === 'sub') {
+                        // Sub-admins create requests instead of banning directly
+                        const reason = prompt("Reason for ban request:");
+                        if (!reason) return;
+                        
+                        try {
+                            await addDoc(collection(db, 'ban_requests'), {
+                                targetUid: uid,
+                                requestedBy: auth.currentUser.uid,
+                                reason: reason,
+                                severity: 'standard', // Default for requests
+                                scope: 'global',
+                                requestedAt: new Date(),
+                                status: 'pending'
+                            });
+                            showNotification("Ban request submitted to admins.", 'fa-solid fa-paper-plane', 'success');
+                        } catch (err) {
+                            alert("Failed to submit request: " + err.message);
+                        }
+                    } else {
+                        userToBan = { uid, username: btn.dataset.username };
+                        openBanModal();
+                    }
                 }
             } else if (action === 'make-admin') {
                 userToAdmin = { uid, username: btn.dataset.username };
@@ -2544,23 +2972,19 @@
                 u.id.includes(searchTerm)
             );
 
+            // Filtering
+            if (sortVal === 'admin') filtered = filtered.filter(u => admins.has(u.id));
+            if (sortVal === 'subadmin') filtered = filtered.filter(u => subAdmins.has(u.id));
+            if (sortVal === 'verified') filtered = filtered.filter(u => u.emailVerified);
+            if (sortVal === 'banned') filtered = filtered.filter(u => bannedUsers.has(u.id));
+
             filtered.sort((a, b) => {
                 const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : new Date(0);
                 const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : new Date(0);
 
-                if (sortVal === 'newest') return dateB - dateA;
                 if (sortVal === 'oldest') return dateA - dateB;
-                if (sortVal === 'admin') {
-                    const isAdminA = admins.has(a.id) ? 1 : 0;
-                    const isAdminB = admins.has(b.id) ? 1 : 0;
-                    return isAdminB - isAdminA || dateB - dateA;
-                }
-                if (sortVal === 'verified') {
-                    const vA = a.emailVerified ? 1 : 0;
-                    const vB = b.emailVerified ? 1 : 0;
-                    return vB - vA || dateB - dateA;
-                }
-                return 0;
+                // Default to newest first
+                return dateB - dateA;
             });
 
             return filtered;
