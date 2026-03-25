@@ -2477,57 +2477,57 @@
                     canRemove = isSubAdmin;
                 }
 
-                const tagHtml = user.userTag ? \`
-                    <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded border tracking-wider" style="color: \${user.userTag.color}; border-color: \${user.userTag.color}40; background-color: \${user.userTag.color}10;">
-                        \${user.userTag.text}
+                const tagHtml = user.userTag ? `
+                    <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded border tracking-wider" style="color: ${user.userTag.color}; border-color: ${user.userTag.color}40; background-color: ${user.userTag.color}10;">
+                        ${user.userTag.text}
                     </span>
-                \` : '<span class="text-gray-700">-</span>';
+                ` : '<span class="text-gray-700">-</span>';
 
-                tr.innerHTML = \`
+                tr.innerHTML = `
                     <td>
                         <div class="flex items-center gap-3">
                              <div class="w-8 h-8 rounded-full bg-[#1a1a1a] flex items-center justify-center text-xs font-bold text-gray-400 border border-[#333]">
-                                \${(user.username || user.email || '?').charAt(0).toUpperCase()}
+                                ${(user.username || user.email || '?').charAt(0).toUpperCase()}
                             </div>
                             <div class="flex flex-col">
                                 <span class="text-white font-medium text-sm flex items-center gap-2">
-                                    \${user.username || 'Unknown'}
-                                    \${roleBadge}
+                                    ${user.username || 'Unknown'}
+                                    ${roleBadge}
                                 </span>
-                                <span class="text-xs text-gray-500 font-mono">\${user.email || user.id}</span>
+                                <span class="text-xs text-gray-500 font-mono">${user.email || user.id}</span>
                             </div>
                         </div>
                     </td>
-                    <td>\${tagHtml}</td>
-                    <td>\${getProviderHtml(user.authMethod)}</td>
-                    <td class="text-gray-400 text-xs">\${formatDate(user.createdAt)}</td>
-                    <td class="text-center text-sm">\${verifiedIcon}</td>
-                    <td>\${statusBadge}</td>
+                    <td>${tagHtml}</td>
+                    <td>${getProviderHtml(user.authMethod)}</td>
+                    <td class="text-gray-400 text-xs">${formatDate(user.createdAt)}</td>
+                    <td class="text-center text-sm">${verifiedIcon}</td>
+                    <td>${statusBadge}</td>
                     <td>
                         <div class="flex items-center">
-                            <button class="action-btn \${isBanned ? 'btn-unblock' : 'btn-block'}" data-action="toggle-ban" data-uid="\${user.id}" data-username="\${user.username || user.email}" title="\${isBanned ? 'Unban' : 'Ban'}">
-                                \${isBanned ? '<i class="fa-solid fa-unlock"></i>' : '<i class="fa-solid fa-ban"></i>'}
+                            <button class="action-btn ${isBanned ? 'btn-unblock' : 'btn-block'}" data-action="toggle-ban" data-uid="${user.id}" data-username="${user.username || user.email}" title="${isBanned ? 'Unban' : 'Ban'}">
+                                ${isBanned ? '<i class="fa-solid fa-unlock"></i>' : '<i class="fa-solid fa-ban"></i>'}
                             </button>
-                            \${(isAdmin || isSubAdmin) 
-                                ? \`<button class="action-btn btn-remove-admin \${!canRemove ? 'opacity-30 cursor-not-allowed' : ''}" data-action="remove-admin" data-uid="\${user.id}" \${!canRemove ? 'disabled' : ''} title="Remove Permissions">
+                            ${(isAdmin || isSubAdmin) 
+                                ? `<button class="action-btn btn-remove-admin ${!canRemove ? 'opacity-30 cursor-not-allowed' : ''}" data-action="remove-admin" data-uid="${user.id}" ${!canRemove ? 'disabled' : ''} title="Remove Permissions">
                                     <i class="fa-solid fa-user-minus"></i>
-                                   </button>\`
-                                : \`<button class="action-btn btn-admin" data-action="make-admin" data-uid="\${user.id}" data-username="\${user.username || user.email}" title="Grant Permissions">
+                                   </button>`
+                                : `<button class="action-btn btn-admin" data-action="make-admin" data-uid="${user.id}" data-username="${user.username || user.email}" title="Grant Permissions">
                                     <i class="fa-solid fa-user-shield"></i>
-                                   </button>\`
+                                   </button>`
                             }
-                            <button class="action-btn btn-tag \${currentUserRole === 'sub' ? 'opacity-30 cursor-not-allowed' : ''}" data-action="set-tag" data-uid="\${user.id}" data-username="\${user.username || user.email}" title="Set Tag">
+                            <button class="action-btn btn-tag ${currentUserRole === 'sub' ? 'opacity-30 cursor-not-allowed' : ''}" data-action="set-tag" data-uid="${user.id}" data-username="${user.username || user.email}" title="Set Tag">
                                 <i class="fa-solid fa-tag"></i>
                             </button>
-                            <button class="action-btn text-red-500 hover:text-white hover:bg-red-900/40 \${currentUserRole === 'sub' ? 'opacity-30 cursor-not-allowed' : ''}" data-action="delete-user" data-uid="\${user.id}" data-username="\${user.username || user.email}" title="Delete User">
+                            <button class="action-btn text-red-500 hover:text-white hover:bg-red-900/40 ${currentUserRole === 'sub' ? 'opacity-30 cursor-not-allowed' : ''}" data-action="delete-user" data-uid="${user.id}" data-username="${user.username || user.email}" title="Delete User">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
-                            <button class="action-btn text-gray-400 hover:text-white hover:bg-white/10" data-action="view-details" data-uid="\${user.id}" title="View Details">
+                            <button class="action-btn text-gray-400 hover:text-white hover:bg-white/10" data-action="view-details" data-uid="${user.id}" title="View Details">
                                 <i class="fa-solid fa-eye"></i>
                             </button>
                         </div>
                     </td>
-                \`;
+                `;
                 tbody.appendChild(tr);
             });
 
