@@ -53,6 +53,10 @@
       "destination": "/api/music-api?endpoint=lyrics&id=:id"
     },
     {
+      "source": "/games/:slug",
+      "destination": "/api/game?slug=:slug"
+    },
+    {
       "source": "/tglsc-proxy/:path*",
       "destination": "/api/proxy?url=https://glseries.net/:path*"
     },
