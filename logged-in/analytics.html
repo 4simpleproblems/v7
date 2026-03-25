@@ -796,6 +796,8 @@
         const db = getFirestore(app);
         const functions = getFunctions(app);
 
+        let currentUserRole = 'user';
+
         // --- Messenger Project Config ---
         let allUsers = [];      // From Firestore
         let allAuthUsers = [];  // From Cloud Function
