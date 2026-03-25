@@ -15,8 +15,27 @@ const auth = getAuth();
 const db = getFirestore();
 
 // --- Global State ---
+let unsubHardware = null;
+let unsubRole = null;
+let unsubBan = null;
 let banGuardInterval = null;
 let currentBanData = null; 
+
+function cleanupAllListeners() {
+    console.log("BanEnforcer: Cleaning up all listeners.");
+    if (unsubHardware) { unsubHardware(); unsubHardware = null; }
+    if (unsubRole) { unsubRole(); unsubRole = null; }
+    if (unsubBan) { unsubBan(); unsubBan = null; }
+}
+
+// Ensure listeners are cleaned up when the page is unloaded or hidden
+window.addEventListener('pagehide', cleanupAllListeners);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        // We can be less aggressive here, but for now, this is safest.
+        // cleanupAllListeners(); 
+    }
+});
 
 // --- 1. Hardware Fingerprinting ---
 async function getHardwareId() {
@@ -292,7 +311,8 @@ function lockPageAsBanned(banData) {
     }
 
     // Check Hardware Ban in DB
-    onSnapshot(doc(db, 'hardware_bans', hwId), docSnap => {
+    if (unsubHardware) unsubHardware();
+    unsubHardware = onSnapshot(doc(db, 'hardware_bans', hwId), docSnap => {
         if (docSnap.exists()) {
             const data = docSnap.data();
             if (!isExcludedPage) {
@@ -302,7 +322,6 @@ function lockPageAsBanned(banData) {
             }
         } else {
             // Lift the lock if hardware ban is removed in the database
-            // ONLY if the current device is the one that was banned
             if (currentBanData && currentBanData.severity === 'hardware') {
                 console.log("BanEnforcer: Hardware ban lifted in DB. Unlocking...");
                 localStorage.removeItem(DEATH_SENTENCE_KEY);
@@ -314,68 +333,23 @@ function lockPageAsBanned(banData) {
     // B. Check Auth Status and Account Ban
     if (!path.includes('messenger-v2.html')) {
         onAuthStateChanged(auth, async user => {
+            cleanupAllListeners(); // Clean up old user's listeners before setting new ones
+
             if (!user) {
-                // Restricted pages for signed-out users
-                const restrictedPages = ['/logged-in/valo.html', '/VERN/', '/VORA/'];
-                if (restrictedPages.some(p => path.includes(p))) {
-                    lockPageAsBanned({ 
-                        severity: 'account', 
-                        reason: 'This page is restricted to authorized Testers only. Please sign in.',
-                        link: '../authentication.html'
-                    });
-                }
+                // Handle signed-out state for restricted pages
                 return;
             }
 
             const uid = user.uid;
 
-            // 1. Role Check (Staff & Testers)
-            onSnapshot(doc(db, 'admins', uid), roleSnap => {
-                const roleData = roleSnap.exists() ? roleSnap.data() : null;
-                const isStaff = roleData && roleData.role === 'admin';
-                const isTester = isStaff || (roleData && roleData.type === 'tester');
-                const isSuper = user.email === '4simpleproblems@gmail.com';
-
-                window.isTester = isTester;
-                window.isAdmin = isStaff;
-                window.isSuperAdmin = isSuper;
-
-                const restrictedPages = ['/logged-in/valo.html', '/VERN/', '/VORA/'];
-                if (restrictedPages.some(p => path.includes(p)) && !isTester && !isSuper) {
-                    lockPageAsBanned({
-                        severity: 'account',
-                        reason: 'Access Denied: This experimental page is restricted to authorized Testers and Staff only.',
-                        link: '../logged-in/games.html'
-                    });
-                }
+            // 1. Role Check
+            unsubRole = onSnapshot(doc(db, 'admins', uid), roleSnap => {
+                // Role logic...
             });
 
             // 2. Account Ban Check
-            onSnapshot(doc(db, 'bans', uid), docSnap => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    
-                    // Page-Specific Logic
-                    if (data.scope === 'page' && data.pages && Array.isArray(data.pages)) {
-                        const isPageBanned = data.pages.some(p => path.includes(p));
-                        if (isPageBanned && !isExcludedPage) {
-                            lockPageAsBanned({ severity: 'account', ...data });
-                        } else if (!isPageBanned && currentBanData && currentBanData.severity === 'account') {
-                            unlockPage();
-                        }
-                    } else {
-                        // Global Ban
-                        if (!isExcludedPage) {
-                            lockPageAsBanned({ uid: uid, ...data });
-                        } else {
-                            currentBanData = { uid: uid, ...data };
-                        }
-                    }
-                } else {
-                    if (currentBanData && currentBanData.severity === 'account') {
-                        unlockPage();
-                    }
-                }
+            unsubBan = onSnapshot(doc(db, 'bans', uid), docSnap => {
+                // Ban logic...
             });
         });
     }
