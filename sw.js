@@ -196,8 +196,10 @@ async function handleRequest(event) {
                           url.includes('/uv/') || 
                           url.includes('/libcurl/') ||
                           url.includes('/tglsc-proxy/') ||
-                          url.includes('/games/api/') ||
-                          url.includes('/games/assets/') ||
+                          url.includes('/assets/') ||
+                          url.includes('/js/') ||
+                          url.includes('/var/') ||
+                          url.includes('/api/') ||
                           url.match(/\.(js|mjs|css|json|png|jpg|ico)$/)) &&
                          !isProxied;
 

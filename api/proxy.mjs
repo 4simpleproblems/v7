@@ -48,6 +48,10 @@ export default async function handler(req, res) {
     const contentType = response.headers.get('content-type') || '';
     res.setHeader('Content-Type', contentType);
     res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    // Remove anti-frame headers to ensure games load
+    res.removeHeader('X-Frame-Options');
+    res.removeHeader('Content-Security-Policy');
 
     const contentLength = response.headers.get('content-length');
     if (contentLength && !contentType.includes('text/html')) { // Don't forward length if we might rewrite
@@ -65,14 +69,14 @@ export default async function handler(req, res) {
         
         // Replace root-relative URLs in HTML/CSS/JS
         // Handle src="/assets/...", href="/assets/...", url("/assets/...") and url(/assets/...)
-        text = text.replace(/(src|href|url)\s*(?:=|\()\s*["']?\/(assets|js|css|img|images|lib|var|glb|fonts)\//g, (match, p1, p2) => {
+        text = text.replace(/(src|href|url)\s*(?:=|\()\s*["']?\/(assets|js|css|img|images|lib|var|glb|fonts|api)\//g, (match, p1, p2) => {
             const separator = match.includes('=') ? '=' : '(';
             const quote = (match.includes('"') ? '"' : (match.includes("'") ? "'" : ""));
             return `${p1}${separator}${quote}/tglsc-proxy/${p2}/`;
         });
         
         // Handle root-relative URLs in scripts (e.g. fetch('/assets/...'))
-        text = text.replace(/["']\/(assets|js|css|img|images|lib|var|glb|fonts)\//g, (match, p1) => {
+        text = text.replace(/["']\/(assets|js|css|img|images|lib|var|glb|fonts|api)\//g, (match, p1) => {
             const quote = match.charAt(0);
             return `${quote}/tglsc-proxy/${p1}/`;
         });

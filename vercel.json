@@ -69,6 +69,22 @@
       "destination": "/injector.js"
     },
     {
+      "source": "/assets/:path*",
+      "destination": "/api/proxy?url=https://glseries.net/assets/:path*"
+    },
+    {
+      "source": "/js/:path*",
+      "destination": "/api/proxy?url=https://glseries.net/js/:path*"
+    },
+    {
+      "source": "/var/:path*",
+      "destination": "/api/proxy?url=https://glseries.net/var/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/proxy?url=https://glseries.net/api/:path*"
+    },
+    {
       "source": "/tglsc-proxy/:path*",
       "destination": "/api/proxy?url=https://glseries.net/:path*"
     },
