@@ -61,6 +61,10 @@
       "destination": "/api/proxy?url=https://glseries.net/assets/:path*"
     },
     {
+      "source": "/games/:slug/:path*",
+      "destination": "/api/proxy?url=https://glseries.net/assets/applications/content/:path*"
+    },
+    {
       "source": "/games/:slug",
       "destination": "/api/game?slug=:slug"
     },
