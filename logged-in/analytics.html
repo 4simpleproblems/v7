@@ -1557,18 +1557,18 @@
                         </td>
                         <td class="text-xs text-gray-500">${formatTimeAgo(req.requestedAt)}</td>
                         <td>
-                            ${currentUserRole === 'admin' && req.status !== 'denied' ? \`
+                            ${currentUserRole === 'admin' && req.status !== 'denied' ? `
                                 <div class="flex gap-2">
-                                    <button class="action-btn btn-unblock btn-accept-ban" data-id="\${req.id}" title="Accept & Ban">
+                                    <button class="action-btn btn-unblock btn-accept-ban" data-id="${req.id}" title="Accept & Ban">
                                         <i class="fa-solid fa-check"></i>
                                     </button>
-                                    <button class="action-btn btn-block btn-deny-ban" data-id="\${req.id}" title="Deny Request">
+                                    <button class="action-btn btn-block btn-deny-ban" data-id="${req.id}" title="Deny Request">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </div>
-                            \` : \`
-                                <span class="text-xs \${req.status === 'denied' ? 'text-red-500' : 'text-gray-500 italic'}">\${req.status || 'Pending'}</span>
-                            \`}
+                            ` : `
+                                <span class="text-xs ${req.status === 'denied' ? 'text-red-500' : 'text-gray-500 italic'}">${req.status || 'Pending'}</span>
+                            `}
                         </td>
                     </tr>
                 `;
@@ -1649,17 +1649,17 @@
                     u.id.toLowerCase().includes(term)
                 ).slice(0, 5);
 
-                results.innerHTML = matches.map(u => \`
-                    <div class="p-3 border-b border-[#1a1a1a] hover:bg-[#1a1a1a] cursor-pointer flex items-center gap-3" data-uid="\${u.id}">
+                results.innerHTML = matches.map(u => `
+                    <div class="p-3 border-b border-[#1a1a1a] hover:bg-[#1a1a1a] cursor-pointer flex items-center gap-3" data-uid="${u.id}">
                         <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs text-white font-bold">
-                            \${(u.username || '?').charAt(0).toUpperCase()}
+                            ${(u.username || '?').charAt(0).toUpperCase()}
                         </div>
                         <div class="flex flex-col">
-                            <span class="text-sm text-white">\${u.username || 'Unknown'}</span>
-                            <span class="text-[10px] text-gray-500">\${u.id.substring(0,12)}...</span>
+                            <span class="text-sm text-white">${u.username || 'Unknown'}</span>
+                            <span class="text-[10px] text-gray-500">${u.id.substring(0,12)}...</span>
                         </div>
                     </div>
-                \`).join('');
+                `).join('');
                 results.classList.remove('hidden');
 
                 results.querySelectorAll('[data-uid]').forEach(el => {
