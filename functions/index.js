@@ -391,106 +391,147 @@ async function runAnalyticsAggregation() {
 }
 
 // ==================================================================
-// NEW: cleanupExpiredDailyPhotos
+// NEW: Analytics Aggregator
 // ==================================================================
-// Runs every hour. Deletes daily_photos documents where createdAt is
-// more than 24 hours old AND status is 'active'. Also handles
-// Firebase Storage cleanup for GIFs (identified by imageURL field
-// and the deleteAfter24h custom metadata flag set during upload).
-//
-// This replaces any manual cleanup you were doing and prevents the
-// daily_photos collection from growing indefinitely — a growing
-// collection means more reads on every query, even with indexes.
-// ==================================================================
-exports.cleanupExpiredDailyPhotos = functions.pubsub
-    .schedule('every 60 minutes')
+exports.aggregatePlatformAnalytics = functions.pubsub
+    .schedule('every 10 minutes')
     .onRun(async (context) => {
-        await runDailyPhotoCleanup();
-        return null;
-    });
-
-// HTTP fallback for manual trigger / Spark plan
-exports.cleanupExpiredDailyPhotosHttp = functions.https.onRequest((req, res) => {
-    return cors(req, res, async () => {
+        console.log("Running scheduled analytics aggregation...");
         try {
-            const result = await runDailyPhotoCleanup();
-            res.status(200).json({ success: true, ...result });
-        } catch (error) {
-            console.error("cleanupExpiredDailyPhotosHttp error:", error);
-            res.status(500).json({ error: error.message });
-        }
-    });
-});
+            const db = admin.firestore();
+            const summaryRef = db.collection('analytics_summary').doc('latest');
 
-async function runDailyPhotoCleanup() {
-    const db = admin.firestore();
-    const storage = admin.storage();
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24h ago
+            // 1. Fetch all raw data in parallel
+            const [
+                usersSnap,
+                adminsSnap,
+                bansSnap,
+                sessionsSnap
+            ] = await Promise.all([
+                db.collection('users').get(),
+                db.collection('admins').get(),
+                db.collection('bans').get(),
+                db.collection('analytics').orderBy('lastActive', 'desc').limit(5000).get() // Limit to recent sessions for performance
+            ]);
 
-    const snap = await db.collection('daily_photos')
-        .where('status', '==', 'active')
-        .where('createdAt', '<=', cutoff)
-        .limit(200) // Process in batches to avoid timeout
-        .get();
+            // 2. Process Admins and Bans
+            const adminIds = new Set();
+            const subAdminIds = new Set();
+            adminsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.type === 'full') adminIds.add(doc.id);
+                else if (data.type === 'sub') subAdminIds.add(doc.id);
+            });
+            const bannedIds = new Set(bansSnap.docs.map(d => d.id));
 
-    if (snap.empty) {
-        console.log('No expired daily photos found.');
-        return { deleted: 0 };
-    }
-
-    const batch = db.batch();
-    const storageDeletePromises = [];
-
-    snap.forEach(docSnap => {
-        const data = docSnap.data();
-
-        // If this post used Firebase Storage (GIF), queue storage deletion
-        if (data.imageURL) {
-            try {
-                // Extract the storage path from the download URL
-                // Firebase Storage URLs follow: .../o/ENCODED_PATH?alt=media&token=...
-                const urlObj = new URL(data.imageURL);
-                const encodedPath = urlObj.pathname.split('/o/')[1];
-                if (encodedPath) {
-                    const filePath = decodeURIComponent(encodedPath);
-                    storageDeletePromises.push(
-                        storage.bucket().file(filePath).delete().catch(e => {
-                            // File may already be deleted — log but don't fail
-                            console.warn(`Storage delete warning for ${filePath}:`, e.message);
-                        })
-                    );
-                }
-            } catch (e) {
-                console.warn('Could not parse storage URL for doc', docSnap.id, e.message);
+            // 3. Process Users and User Growth
+            const allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const dailyGrowth = {};
+            for (let i = 0; i < 30; i++) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                dailyGrowth[d.toISOString().split('T')[0]] = 0;
             }
-        }
 
-        batch.delete(docSnap.ref);
+            allUsers.forEach(user => {
+                const createdAt = user.createdAt?.toDate ? user.createdAt.toDate() : null;
+                if (createdAt && createdAt >= thirtyDaysAgo) {
+                    const key = createdAt.toISOString().split('T')[0];
+                    if (dailyGrowth[key] !== undefined) {
+                        dailyGrowth[key]++;
+                    }
+                }
+            });
+            
+            // 4. Process Sessions for Traffic Analytics
+            const pageCounts = {};
+            const browsers = {};
+            const os = {};
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
+            let active24h = 0;
+
+            sessionsSnap.forEach(sDoc => {
+                const s = sDoc.data();
+                if (s.visitedPages && Array.isArray(s.visitedPages)) {
+                    s.visitedPages.forEach(p => {
+                        const path = p.path || p.url || 'unknown';
+                        if (!path.startsWith('/')) return;
+                        pageCounts[path] = (pageCounts[path] || 0) + 1;
+                    });
+                }
+                if (s.userAgent) {
+                    const ua = parseUserAgent(s.userAgent); // Assumes parseUserAgent is defined below
+                    browsers[ua.browser] = (browsers[ua.browser] || 0) + 1;
+                    os[ua.os] = (os[ua.os] || 0) + 1;
+                }
+                const lastActive = s.lastActive?.toDate ? s.lastActive.toDate().getTime() : 0;
+                if (now - lastActive < oneDay) active24h++;
+            });
+
+            const topPages = Object.entries(pageCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .reduce((acc, [path, count]) => ({ ...acc, [path]: count }), {});
+
+            // 5. Assemble final summary object
+            const summary = {
+                // Counts
+                totalUsers: allUsers.length,
+                totalAdmins: adminIds.size,
+                totalSubAdmins: subAdminIds.size,
+                totalBanned: bannedIds.size,
+                totalVerified: allUsers.filter(u => u.emailVerified).length,
+                
+                // Growth Data
+                userGrowth: dailyGrowth,
+
+                // Traffic Data
+                traffic: {
+                    topPages,
+                    browsers,
+                    os,
+                    active24h,
+                    recentSessionsCount: sessionsSnap.size
+                },
+                
+                // Last Updated
+                lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+            };
+            
+            // 6. Write summary to Firestore
+            await summaryRef.set(summary);
+            console.log("Successfully generated and saved analytics summary.");
+            return null;
+
+        } catch (error) {
+            console.error("Error aggregating platform analytics:", error);
+            return null;
+        }
     });
 
-    await Promise.all([
-        batch.commit(),
-        ...storageDeletePromises
-    ]);
-
-    console.log(`Cleanup complete: deleted ${snap.size} expired daily photos.`);
-    return { deleted: snap.size };
+function parseUserAgent(ua) {
+    let browser = 'Unknown', os = 'Unknown';
+    if (!ua) return { browser, os };
+    if (ua.includes('Firefox')) browser = 'Firefox';
+    else if (ua.includes('Edg')) browser = 'Edge'; // Edg for chromium edge
+    else if (ua.includes('Chrome')) browser = 'Chrome';
+    else if (ua.includes('Safari')) browser = 'Safari';
+    
+    if (ua.includes('Windows')) os = 'Windows';
+    else if (ua.includes('Macintosh')) os = 'macOS';
+    else if (ua.includes('Linux')) os = 'Linux';
+    else if (ua.includes('Android')) os = 'Android';
+    else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+    return { browser, os };
 }
 
 // ==================================================================
-// NEW: Firestore security rules note
+// Stripe
 // ==================================================================
-// Add this rule to your analytics_summary collection so only
-// authenticated users can read the summary and only your Cloud
-// Function (via admin SDK) can write it:
-//
-// match /analytics_summary/{docId} {
-//   allow read: if isAuthenticated();
-//   allow write: if false; // Admin SDK bypasses rules
-// }
-// ==================================================================
-
-// --- Stripe ---
 exports.getStripeConfig = functions.https.onCall(async (data, context) => {
     return { publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || "YOUR_STRIPE_PUBLISHABLE_KEY" };
 });

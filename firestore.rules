@@ -221,7 +221,7 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------------------
-    // XII. Analytics Collection (`analytics`)
+    // XIII. Analytics & Summaries
     // ----------------------------------------------------------------------------------
     match /analytics/{sessionId} {
       allow read, write: if isAdmin();
@@ -230,13 +230,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /analytics_summary/{docId} {
+      allow read: if isAtLeastSubAdmin();
+      allow write: if false; // Only backend can write
+    }
+
     match /analytics_sessions/{sessionId} {
       allow read, list, delete: if isAdmin();
       allow create, update: if true; 
     }
 
     // ----------------------------------------------------------------------------------
-    // XIII. Reports, Feedback, Leaderboard, Access Codes
+    // XIV. Reports, Feedback, Leaderboard, Access Codes
     // ----------------------------------------------------------------------------------
     match /reports/{reportId} {
       allow create: if isAuthenticated();
