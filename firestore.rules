@@ -95,13 +95,19 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------------------
-    // V. Admin Status Collection (`admins`)
+    // V. Admin & Presence
     // ----------------------------------------------------------------------------------
     match /admins/{userId} {
       allow read: if isOwner(userId) || isAtLeastSubAdmin();
       allow list: if isAtLeastSubAdmin(); 
       allow create, update, delete: if isAdmin(); 
     }
+
+    match /user_presence/{userId} {
+        allow read: if isAtLeastSubAdmin();
+        allow write: if isOwner(userId);
+    }
+
 
     // ----------------------------------------------------------------------------------
     // VI. Ban Requests
@@ -238,6 +244,11 @@ service cloud.firestore {
     match /analytics_sessions/{sessionId} {
       allow read, list, delete: if isAdmin();
       allow create, update: if true; 
+    }
+
+    match /leaderboard/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only backend can write
     }
 
     // ----------------------------------------------------------------------------------

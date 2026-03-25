@@ -530,6 +530,42 @@ function parseUserAgent(ua) {
 }
 
 // ==================================================================
+// NEW: Leaderboard Aggregator
+// ==================================================================
+exports.updateLeaderboard = functions.pubsub
+    .schedule('every 15 minutes')
+    .onRun(async (context) => {
+        console.log("Running scheduled leaderboard aggregation...");
+        try {
+            const db = admin.firestore();
+            const usersQuery = db.collection('users')
+                .where('leaderboardAccepted', '==', true)
+                .where('leaderboardOptOut', '==', false)
+                .orderBy('totalV6Time', 'desc')
+                .limit(100);
+
+            const usersSnap = await usersQuery.get();
+            
+            const leaderboardData = usersSnap.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            await db.collection('leaderboard').doc('snapshot').set({
+                users: leaderboardData,
+                lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            console.log(`Leaderboard updated successfully with ${leaderboardData.length} users.`);
+            return null;
+        } catch (error) {
+            console.error("Error updating leaderboard:", error);
+            return null;
+        }
+    });
+
+
+// ==================================================================
 // Stripe
 // ==================================================================
 exports.getStripeConfig = functions.https.onCall(async (data, context) => {

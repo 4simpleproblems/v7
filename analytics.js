@@ -1,282 +1,167 @@
 (async function() {
-    console.log("Analytics: Initializing...")
+    console.log("Analytics: Initializing v2 (Efficient)");
 
+    // --- Configuration ---
+    const DEBOUNCE_INTERVAL = 120000; // 2 minutes
+
+    // --- Local State ---
+    let db, auth, currentUser = 'anonymous', hardwareId = null, sessionId = null;
+    let isTracking = false;
+    let lastSync = 0;
+    let pageViews = [];
+    let activeDuration = 0;
+    let activityInterval, syncInterval;
+
+    // --- Core Functions ---
     function getSessionId() {
-        let sid = sessionStorage.getItem('analytics_session_id')
-        if (!sid) {
-            sid = 'sess_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now()
-            sessionStorage.setItem('analytics_session_id', sid)
+        if (!sessionId) {
+            sessionId = sessionStorage.getItem('analytics_session_id') || 'sess_' + Date.now() + Math.random().toString(36).substring(2, 9);
+            sessionStorage.setItem('analytics_session_id', sessionId);
         }
-        return sid
+        return sessionId;
     }
 
     async function getHardwareId() {
-        const components = [
-            navigator.userAgent,
-            screen.width,
-            screen.height,
-            navigator.language,
-            navigator.hardwareConcurrency || 'unknown',
-            navigator.deviceMemory || 'unknown',
-            new Date().getTimezoneOffset()
-        ]
-        const data = components.join('|')
-        let hash = 0
+        if (hardwareId) return hardwareId;
+        const components = [navigator.userAgent, screen.width, screen.height, navigator.language, navigator.hardwareConcurrency, new Date().getTimezoneOffset()];
+        const data = components.join('|');
+        let hash = 0;
         for (let i = 0; i < data.length; i++) {
-            const char = data.charCodeAt(i)
-            hash = ((hash << 5) - hash) + char
-            hash |= 0
+            hash = ((hash << 5) - hash) + data.charCodeAt(i);
+            hash |= 0;
         }
-        const fingerprint = 'HW-' + Math.abs(hash).toString(16).toUpperCase()
-        const persistentId = localStorage.getItem('__4sp_hw_id') || fingerprint
-        if (!localStorage.getItem('__4sp_hw_id')) {
-            localStorage.setItem('__4sp_hw_id', fingerprint)
-        }
-        return persistentId
+        hardwareId = 'HW-' + Math.abs(hash).toString(16).toUpperCase();
+        return hardwareId;
     }
-
-    const sessionId = getSessionId()
-    let hardwareId = null
-    getHardwareId().then(id => { hardwareId = id })
-    let db = null
-    let auth = null
-    let currentUser = 'anonymous'
-    let isExcluded = false
-    let isTracking = false
-    let pendingTime = 0
-
+    
     function waitForFirebase() {
-        if (window.firebase && window.firebase.apps.length > 0) {
-            initAnalytics()
-        } else {
-            setTimeout(waitForFirebase, 500)
-        }
+        if (window.firebase?.apps.length > 0) initAnalytics();
+        else setTimeout(waitForFirebase, 500);
     }
 
     function initAnalytics() {
-        if (isTracking) return
-        isTracking = true
-        console.log("Analytics: Firebase found. Starting tracking.")
+        if (isTracking) return;
+        isTracking = true;
+        console.log("Analytics: Firebase found. Starting efficient tracking.");
         
-        const app = window.firebase.app()
-        db = app.firestore()
-        auth = app.auth()
+        const app = window.firebase.app();
+        db = app.firestore();
+        auth = app.auth();
 
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                currentUser = user.uid
-                try {
-                    const isSuperAdmin = user.email === '4simpleproblems@gmail.com'
-                    let isAdmin = false
-                    
-                    if (!isSuperAdmin) {
-                        const adminDoc = await db.collection('admins').doc(user.uid).get()
-                        isAdmin = adminDoc.exists
-                    }
+        getSessionId();
+        getHardwareId();
 
-                    if (isSuperAdmin || isAdmin) {
-                        sessionStorage.setItem('analytics_is_admin', 'true')
-                    } else {
-                        sessionStorage.removeItem('analytics_is_admin')
-                    }
-
-                    const userRef = db.collection('users').doc(user.uid)
-                    const userDoc = await userRef.get()
-                    if (userDoc.exists && userDoc.data().totalV6Time === undefined) {
-                        await userRef.update({ totalV6Time: 0 })
-                    }
-                } catch (e) {
-                    console.error("Analytics: Error checking admin status", e)
-                }
-            } else {
-                currentUser = 'anonymous'
-                sessionStorage.removeItem('analytics_is_admin')
+        auth.onAuthStateChanged(user => {
+            currentUser = user ? user.uid : 'anonymous';
+            if (user?.email === '4simpleproblems@gmail.com') {
+                 sessionStorage.setItem('analytics_is_admin', 'true')
             }
-            updateSession()
-        })
+        });
 
-        if (!sessionStorage.getItem('analytics_start_time')) {
-            sessionStorage.setItem('analytics_start_time', Date.now())
-        }
-        if (!sessionStorage.getItem('analytics_active_duration')) {
-            sessionStorage.setItem('analytics_active_duration', '0')
-        }
+        // Restore state from sessionStorage
+        pageViews = JSON.parse(sessionStorage.getItem('analytics_pageviews') || '[]');
+        activeDuration = parseInt(sessionStorage.getItem('analytics_active_duration') || '0');
 
-        trackPageView()
-        trackActivity()
-
-        setInterval(() => {
+        trackPageView(); 
+        
+        // Start tracking intervals
+        activityInterval = setInterval(() => {
             if (document.visibilityState === 'visible') {
-                let activeSecs = parseInt(sessionStorage.getItem('analytics_active_duration') || '0')
-                activeSecs += 10
-                sessionStorage.setItem('analytics_active_duration', activeSecs.toString())
-                pendingTime += 10
+                activeDuration += 5; // 5 seconds
             }
-        }, 10000)
+        }, 5000);
 
-        setInterval(() => {
-            syncDataToFirebase()
-        }, 60000)
+        syncInterval = setInterval(syncDataToFirebase, DEBOUNCE_INTERVAL);
 
+        // Sync when user leaves
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                syncDataToFirebase()
-                clearActivity()
-            } else {
-                trackActivity()
-            }
-        })
-        
+            if (document.visibilityState === 'hidden') syncDataToFirebase();
+        });
         window.addEventListener('beforeunload', () => {
-             syncDataToFirebase()
-             clearActivity()
-        })
-    }
-
-    function syncDataToFirebase() {
-        if (pendingTime > 0 && currentUser !== 'anonymous') {
-            db.collection('users').doc(currentUser).update({
-                totalV6Time: window.firebase.firestore.FieldValue.increment(pendingTime)
-            }).catch(() => {})
-            pendingTime = 0
-        }
-        updateSession()
-        trackActivity()
-    }
-
-    async function trackActivity() {
-        if (!auth || !auth.currentUser || !db) return
-        const user = auth.currentUser
-        
-        try {
-            const userDoc = await db.collection('users').doc(user.uid).get()
-            const userData = userDoc.exists ? userDoc.data() : {}
-            
-            if (userData.showOffline) {
-                await db.collection('users').doc(user.uid).update({
-                    isOnline: false,
-                    currentActivity: null
-                })
-                return
-            }
-
-            let activity = getCleanTitle(window.location.pathname, document.title)
-            
-            const isGamesPage = window.location.pathname.includes('games.html')
-            if (isGamesPage || window.location.pathname.includes('/GAMES/')) {
-                if (userData.disableActivityTracking) {
-                    activity = "Games"
-                } else {
-                    let gameName = ""
-                    if (isGamesPage && window.location.hash) {
-                        const hash = window.location.hash.substring(1)
-                        if (hash.includes('id=')) {
-                            gameName = hash.split('id=')[1].split('&')[0]
-                        } else {
-                            gameName = hash.split('?')[0]
-                        }
-                    } else {
-                        gameName = window.location.pathname.split('/').filter(p => p).pop().replace('.html', '')
-                    }
-                    
-                    if (gameName) {
-                        activity = `Playing ${decodeURIComponent(gameName).replace(/-/g, ' ').charAt(0).toUpperCase() + decodeURIComponent(gameName).replace(/-/g, ' ').slice(1)}`
-                    } else {
-                        activity = "Games"
-                    }
-                }
-            }
-
-            await db.collection('users').doc(user.uid).update({
-                isOnline: true,
-                currentActivity: activity,
-                lastActive: window.firebase.firestore.FieldValue.serverTimestamp()
-            })
-        } catch (e) { console.error("Analytics: Activity track failed", e) }
-    }
-
-    function clearActivity() {
-        if (!auth || !auth.currentUser || !db) return
-        db.collection('users').doc(auth.currentUser.uid).update({
-            isOnline: false,
-            currentActivity: null
-        }).catch(() => {})
-    }
-
-    const PAGE_NAME_LOOKUP = {
-        'dashboard.html': 'Dashboard',
-        'soundboard.html': 'Soundboard',
-        'notes.html': 'Notes',
-        'dailyphoto.html': 'Dailyphoto',
-        'dictionary.html': 'Dictionary',
-        'schedule.html': 'Schedule',
-        'messenger-tutorial.html': 'Messenger',
-        'games.html': 'Games',
-        'vana.html': 'Vana',
-        'vora.html': 'Vora',
-        'vern.html': 'Vern',
-        'velium.html': 'Velium',
-        'securly-tester.html': 'Securly Tester',
-        'settings.html': 'Settings',
-        'index.html': 'Home'
-    }
-
-    const getCleanTitle = (path, originalTitle) => {
-        if (path.includes('/VELIUM/')) return 'Velium'
-        if (path.includes('/VORA/')) return 'Vora'
-        if (path.includes('/VERN/')) return 'Vern'
-        
-        const fileName = path.split('/').pop().split('?')[0]
-        if (PAGE_NAME_LOOKUP[fileName]) return PAGE_NAME_LOOKUP[fileName]
-        if (originalTitle && !originalTitle.includes('VERSION 5 CLIENT')) return originalTitle
-        return fileName.replace('.html', '').charAt(0).toUpperCase() + fileName.replace('.html', '').slice(1)
+            clearInterval(activityInterval);
+            clearInterval(syncInterval);
+            syncDataToFirebase(false); // Perform a synchronous final write if possible
+        });
     }
 
     function trackPageView() {
-        if (isExcluded || !db) return
-        const path = window.location.protocol === 'file:' ? window.location.href : window.location.pathname
+        const path = window.location.protocol === 'file:' ? window.location.href : window.location.pathname;
+        if (path.includes('srcdoc') || path.includes('javascript:')) return;
         
-        if (path.includes('srcdoc') || path.includes('javascript:')) return
+        const pageName = getCleanTitle(window.location.pathname, document.title);
+        pageViews.push({ path, title: pageName, timestamp: Date.now() });
+        sessionStorage.setItem('analytics_pageviews', JSON.stringify(pageViews));
+    }
 
-        const pageName = getCleanTitle(window.location.pathname, document.title)
+    function syncDataToFirebase(async = true) {
+        if (!db || !hardwareId || !sessionId) return;
         
-        const docRef = db.collection('analytics').doc(sessionId)
+        const now = Date.now();
+        if (!async) { // This is a best-effort for beforeunload
+            if (pageViews.length === 0 && activeDuration === parseInt(sessionStorage.getItem('analytics_active_duration') || '0')) return;
+        } else {
+            if (now - lastSync < DEBOUNCE_INTERVAL / 2) return;
+        }
         
-        docRef.set({
+        console.log(`Analytics: Syncing data. ${pageViews.length} pageviews. Active for ${activeDuration}s.`);
+        lastSync = now;
+
+        const FieldValue = window.firebase.firestore.FieldValue;
+        const batch = db.batch();
+
+        // 1. Update analytics session document
+        const analyticsRef = db.collection('analytics').doc(sessionId);
+        const analyticsData = {
             sessionId: sessionId,
             hardwareId: hardwareId,
-            userAgent: navigator.userAgent,
-            version: 'project_niobium', 
-            lastActive: window.firebase.firestore.FieldValue.serverTimestamp(),
-            visitedPages: window.firebase.firestore.FieldValue.arrayUnion({
-                path: path,
-                title: pageName,
-                timestamp: Date.now()
-            }),
-            pageCount: window.firebase.firestore.FieldValue.increment(1)
-        }, { merge: true }).catch(err => console.error("Analytics Error:", err))
-    }
-
-    function updateSession() {
-        if (isExcluded || !db) return
-        
-        const docRef = db.collection('analytics').doc(sessionId)
-        
-        let startTime = parseInt(sessionStorage.getItem('analytics_start_time') || Date.now())
-        const duration = parseInt(sessionStorage.getItem('analytics_active_duration') || '0')
-        const isAdmin = sessionStorage.getItem('analytics_is_admin') === 'true'
-
-        docRef.set({
             userId: currentUser,
-            hardwareId: hardwareId,
-            version: 'project_niobium', 
-            lastActive: window.firebase.firestore.FieldValue.serverTimestamp(),
-            duration: duration,
-            startTime: startTime,
-            isAdmin: isAdmin
-        }, { merge: true })
+            userAgent: navigator.userAgent,
+            version: 'project_niobium_v2',
+            lastActive: FieldValue.serverTimestamp(),
+            duration: activeDuration,
+            isAdmin: sessionStorage.getItem('analytics_is_admin') === 'true'
+        };
+        if (pageViews.length > 0) {
+            analyticsData.visitedPages = FieldValue.arrayUnion(...pageViews);
+        }
+        batch.set(analyticsRef, analyticsData, { merge: true });
+
+        // 2. Update user presence document (if logged in)
+        if (currentUser !== 'anonymous') {
+            const presenceRef = db.collection('user_presence').doc(currentUser);
+            const activity = getCleanTitle(window.location.pathname, document.title);
+            batch.set(presenceRef, {
+                isOnline: true,
+                currentActivity: activity,
+                lastActive: FieldValue.serverTimestamp()
+            }, { merge: true });
+        }
+
+        // Commit the batch
+        batch.commit().then(() => {
+            // Clear local cache on successful write
+            pageViews = [];
+            sessionStorage.setItem('analytics_pageviews', '[]');
+            sessionStorage.setItem('analytics_active_duration', activeDuration.toString());
+        }).catch(err => {
+            console.error("Analytics: Batch sync failed.", err);
+        });
     }
 
-    waitForFirebase()
+    const PAGE_NAME_LOOKUP = {
+        'dashboard.html': 'Dashboard', 'soundboard.html': 'Soundboard', 'notes.html': 'Notes',
+        'dailyphoto.html': 'Dailyphoto', 'dictionary.html': 'Dictionary', 'schedule.html': 'Schedule',
+        'games.html': 'Games', 'settings.html': 'Settings', 'index.html': 'Home'
+    };
 
-})()
+    const getCleanTitle = (path, originalTitle) => {
+        const pathSegments = path.split('/');
+        if (path.includes('/VELIUM/')) return 'Velium';
+        if (path.includes('/VORA/')) return 'Vora';
+        if (path.includes('/VERN/')) return 'Vern';
+        const fileName = pathSegments.pop().split('?')[0];
+        return PAGE_NAME_LOOKUP[fileName] || originalTitle || 'Unknown Page';
+    };
+
+    waitForFirebase();
+})();

@@ -252,9 +252,28 @@
         async function loadUserRankings(currentUid) {
             const rankingsEl = document.getElementById('rankings-list');
             
+            // --- OPTIMIZATION ---
+            // Removed live query on 'users' collection.
+            // Now reads a single pre-aggregated document.
+            // Cost reduced from 100+ reads to 1 read.
+            const leaderboardSnap = await getDoc(doc(db, 'leaderboard', 'snapshot'));
+
+            if (!leaderboardSnap.exists()) {
+                rankingsEl.innerHTML = '<p class="text-gray-600 italic p-4">Leaderboard data is being generated. Please check back in a few minutes.</p>';
+                return;
+            }
+
+            const { users: rankedUsers, lastUpdated } = leaderboardSnap.data();
+
+            if (!rankedUsers || rankedUsers.length === 0) {
+                rankingsEl.innerHTML = '<p class="text-gray-600 italic p-4">No users have joined the leaderboard yet.</p>';
+                return;
+            }
+            
+            // Fetch current user's following list and all banned users in parallel
             let following = new Set();
             let bannedUids = new Set();
-            
+
             if (currentUid) {
                 const [followSnap, banSnap] = await Promise.all([
                     getDocs(collection(db, 'users', currentUid, 'following')),
@@ -263,36 +282,20 @@
                 followSnap.forEach(docSnap => following.add(docSnap.id));
                 banSnap.forEach(docSnap => bannedUids.add(docSnap.id));
             } else {
-                const banSnap = await getDocs(collection(db, 'bans'));
-                banSnap.forEach(docSnap => bannedUids.add(docSnap.id));
-            }
-
-            const q = query(
-                collection(db, 'users'),
-                where('leaderboardAccepted', '==', true),
-                where('leaderboardOptOut', '==', false),
-                orderBy('totalV6Time', 'desc'),
-                limit(100)
-            );
-            
-            const snap = await getDocs(q);
-            
-            if (snap.empty) {
-                rankingsEl.innerHTML = '<p class="text-gray-600 italic p-4">No users have joined the leaderboard yet.</p>';
-                return;
+                 const banSnap = await getDocs(collection(db, 'bans'));
+                 banSnap.forEach(docSnap => bannedUids.add(docSnap.id));
             }
 
             rankingsEl.innerHTML = '';
-            let i = 1;
             let displayCount = 0;
             
-            snap.forEach(docSnap => {
+            rankedUsers.forEach((data, index) => {
                 if (displayCount >= 50) return;
                 
-                const uid = docSnap.id;
+                const uid = data.id;
                 if (bannedUids.has(uid)) return;
 
-                const data = docSnap.data();
+                const i = index + 1;
                 const hours = Math.floor((data.totalV6Time || 0) / 3600);
                 const minutes = Math.floor(((data.totalV6Time || 0) % 3600) / 60);
 
@@ -326,8 +329,7 @@
 
                 const fBtn = item.querySelector('.follow-btn');
                 if (fBtn) fBtn.onclick = () => toggleFollow(fBtn, uid, currentUid);
-
-                i++;
+                
                 displayCount++;
             });
         }
