@@ -23,6 +23,7 @@ export default async function handler(req, res) {
     }
 
     let embedUrl = game.embed_url;
+    // Normalize embed URL to use local proxy
     if (/^https?:\/\/(www\.)?glseries\.net\//.test(embedUrl)) {
         embedUrl = embedUrl.replace(/^https?:\/\/(www\.)?glseries\.net\//, "/tglsc-proxy/");
     } else if (embedUrl.startsWith('/')) {
@@ -33,6 +34,7 @@ export default async function handler(req, res) {
 
     const thumbnailUrl = game.thumbnail.replace(/^https?:\/\/(www\.)?glseries\.net\//, "/tglsc-proxy/");
 
+    // EXACT HTML from user prompt, with dynamic injections and compatibility fixes
     const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -41,18 +43,25 @@ export default async function handler(req, res) {
     <meta property="og:url" content="https://glseries.net">
     <meta property="og:type" content="website">
     <meta property="og:title" content="TGLSC Density 4 - ${game.title}">
-    <meta property="og:description" content="${game.title} - Play Now On TGLSC Density 4 For Free!">
+    <meta property="og:description" content="${game.title} works by allowing players to combine two words to create new ones, with an AI providing the resulting word.  Play Now On TGLSC Density 4 For Free!">
     <meta property="og:image" content="${thumbnailUrl}">
     <meta name="theme-color" content="#000000"/>
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="/tglsc-proxy/manifest.json" />
     <meta name="robots" content="noindex, nofollow" />
     <title>TGLSC Density 4 - ${game.title}</title>
     
+    <!-- Use local proxy for all TGLSC core assets -->
     <link rel="stylesheet" href="/tglsc-proxy/assets/var/css/main.css" />
     <link rel="stylesheet" href="/tglsc-proxy/assets/var/css/content.css" />
     <link rel="stylesheet" href="/tglsc-proxy/assets/var/css/search.css" />
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    
+    <script>
+      // Compatibility globals for TGLSC scripts
+      window.showImportantPopup = function(callback) { if(callback) callback(); };
+      window.showImportantText = function() {};
+    </script>
     
     <script src="/tglsc-proxy/assets/var/js/analytics.js"></script>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
@@ -252,6 +261,7 @@ export default async function handler(req, res) {
     <div class="modal-content"><button class="close-btn" id="inbox-close-btn">&times;</button><iframe src="" class="settings-iframe" id="inbox-iframe"></iframe></div>
   </div>
 
+    <!-- Proxy all relative paths from main.js back to TGLSC -->
     <script src="/tglsc-proxy/assets/var/js/preferences.js" defer></script>
     <script src="/tglsc-proxy/assets/var/js/bugfix.js" defer></script>
     <script src="/tglsc-proxy/assets/var/js/search.js" defer></script>

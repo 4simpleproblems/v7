@@ -196,6 +196,8 @@ async function handleRequest(event) {
                           url.includes('/uv/') || 
                           url.includes('/libcurl/') ||
                           url.includes('/tglsc-proxy/') ||
+                          url.includes('/games/api/') ||
+                          url.includes('/games/assets/') ||
                           url.match(/\.(js|mjs|css|json|png|jpg|ico)$/)) &&
                          !isProxied;
 
@@ -296,11 +298,15 @@ async function handleRequest(event) {
             if (isEncoded && !url.includes(targetConfig.prefix)) {
                 const encodedPart = url.split('hvtrs8')[1];
                 const fullProxyUrl = location.origin + targetConfig.prefix + 'hvtrs8' + encodedPart;
-                return await targetInstance.fetch(Object.assign(Object.create(event), { request: new Request(fullProxyUrl, event.request) }));
+                const newEvent = Object.create(event);
+                Object.defineProperty(newEvent, 'request', { value: new Request(fullProxyUrl, event.request) });
+                return await targetInstance.fetch(newEvent);
             } else if (!url.includes(targetConfig.prefix)) {
                 const encoded = Ultraviolet.codec.xor.encode(url);
                 const fullProxyUrl = location.origin + targetConfig.prefix + encoded;
-                return await targetInstance.fetch(Object.assign(Object.create(event), { request: new Request(fullProxyUrl, event.request) }));
+                const newEvent = Object.create(event);
+                Object.defineProperty(newEvent, 'request', { value: new Request(fullProxyUrl, event.request) });
+                return await targetInstance.fetch(newEvent);
             } else {
                 return await targetInstance.fetch(event);
             }
