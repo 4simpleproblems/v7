@@ -65,6 +65,10 @@
       "destination": "/api/game?slug=:slug"
     },
     {
+      "source": "/tglsc-proxy/assets/applications/content/:path*/injector.js",
+      "destination": "/injector.js"
+    },
+    {
       "source": "/tglsc-proxy/:path*",
       "destination": "/api/proxy?url=https://glseries.net/:path*"
     },

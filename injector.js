@@ -18,14 +18,12 @@
         navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'getPort' && event.data.port) {
                 try {
-                    if (!bareWorker) {
-                        // Consistently use v2.1.6 to match sw.js and bundled UV
-                        let workerPath = "/logged-in/baremux/worker.js";
-                        bareWorker = new SharedWorker(workerPath, "bare-mux-worker");
-                    }
-
+                    // Create a fresh connection for every request to ensure a unique, un-neutered port
+                    let workerPath = "/logged-in/baremux/worker.js";
+                    let tempWorker = new SharedWorker(workerPath, "bare-mux-worker");
+                    
                     const messagePort = event.data.port;
-                    messagePort.postMessage(bareWorker.port, [bareWorker.port]);
+                    messagePort.postMessage(tempWorker.port, [tempWorker.port]);
                 } catch (e) {
                     console.error("Injector: Failed to provide BareMux port:", e);
                 }

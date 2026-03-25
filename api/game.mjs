@@ -40,6 +40,11 @@ export default async function handler(req, res) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Early compatibility stubs for TGLSC scripts
+      window.showImportantPopup = window.showImportantPopup || function(callback) { if(typeof callback === 'function') callback(); };
+      window.showImportantText = window.showImportantText || function() {};
+    </script>
     <meta property="og:url" content="https://glseries.net">
     <meta property="og:type" content="website">
     <meta property="og:title" content="TGLSC Density 4 - ${game.title}">
@@ -57,14 +62,7 @@ export default async function handler(req, res) {
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
     
-    <script>
-      // Compatibility globals for TGLSC scripts
-      window.showImportantPopup = function(callback) { if(callback) callback(); };
-      window.showImportantText = function() {};
-    </script>
-    
     <script src="/tglsc-proxy/assets/var/js/analytics.js"></script>
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
     <script type="module" src="/tglsc-proxy/assets/var/js/localtglscmodel.js"></script>
   </head>
   <body>

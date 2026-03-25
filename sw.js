@@ -259,7 +259,9 @@ async function handleRequest(event) {
                 // If specialized instance exists and prefix matches, use it
                 // Pass a new object that looks like a FetchEvent to ensure compatibility
                 const requestToFetch = url.startsWith(location.origin) ? event.request : new Request(new URL(url, location.origin).href, event.request);
-                return await instance.fetch(Object.assign(Object.create(event), { request: requestToFetch }));
+                const newEvent = Object.create(event);
+                Object.defineProperty(newEvent, 'request', { value: requestToFetch });
+                return await instance.fetch(newEvent);
             } catch (err) {
                 console.error(`Root SW: Instance fetch error for ${url}:`, err);
             }
