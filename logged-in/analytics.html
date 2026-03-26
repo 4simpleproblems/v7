@@ -174,6 +174,89 @@
             width: 8px; height: 8px; background: #22c55e; border-radius: 50%;
             display: inline-block; margin-right: 6px; animation: pulse-green 2s infinite;
         }
+        /* --- Ban Overlay (VORA PLUS Inspired) --- */
+        .ban-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(4, 4, 4, 0.8); backdrop-filter: blur(20px);
+            z-index: 3000; opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
+        }
+        .ban-overlay.open { opacity: 1; pointer-events: auto; }
+        
+        .ban-sidebar {
+            width: 280px; border-right: 1px solid rgba(255,255,255,0.05);
+            padding: 2rem 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;
+        }
+        .ban-tab {
+            padding: 0.75rem 1rem; border-radius: 12px; color: #707070;
+            display: flex; align-items: center; gap: 0.75rem; transition: all 0.2s;
+            cursor: pointer; border: 1px solid transparent;
+        }
+        .ban-tab:hover { background: rgba(168, 85, 247, 0.05); color: #ccc; }
+        .ban-tab.active { 
+            background: rgba(168, 85, 247, 0.1); color: #a855f7; 
+            border-color: rgba(168, 85, 247, 0.3); font-weight: 500;
+        }
+
+        .ban-content-area {
+            flex: 1; padding: 3rem; overflow-y: auto;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .ban-form-container {
+            max-width: 800px; width: 100%;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px; padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .ban-input {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 14px; padding: 0.75rem 1rem;
+            color: white; width: 100%; transition: all 0.2s;
+        }
+        .ban-input:focus {
+            border-color: #a855f7; outline: none; background: rgba(255, 255, 255, 0.05);
+        }
+
+        .ban-btn-primary {
+            background: #a855f7; color: white; padding: 0.75rem 1.5rem;
+            border-radius: 14px; font-weight: 600; transition: all 0.2s;
+            box-shadow: 0 10px 15px -3px rgba(168, 85, 247, 0.4);
+        }
+        .ban-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgba(168, 85, 247, 0.5); }
+        .ban-btn-primary:active { transform: translateY(0); }
+
+        .exit-overlay-btn {
+            position: absolute; top: 2rem; right: 2rem;
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; cursor: pointer; z-index: 3100;
+        }
+        .exit-overlay-btn:hover { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #ef4444; }
+
+        .schedule-chip {
+            padding: 0.5rem 1rem; border-radius: 10px; background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05); color: #707070; font-size: 0.875rem;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .schedule-chip:hover { border-color: #a855f7; color: white; }
+        .schedule-chip.active { background: rgba(168, 85, 247, 0.1); border-color: #a855f7; color: white; }
+
+        /* Custom scrollbar for overlay */
+        .ban-content-area::-webkit-scrollbar { width: 6px; }
+        .ban-content-area::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.2); border-radius: 3px; }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in-scale { animation: fadeInScale 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
     </style>
 </head>
 <body class="min-h-screen pb-10">
@@ -302,34 +385,6 @@
                 </div>
                 <div id="loading-users" class="p-8 text-center text-gray-500">
                     <i class="fa-solid fa-circle-notch fa-spin mr-2 text-blue-500"></i> Connecting to live user feed...
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-ban-requests" class="tab-content hidden">
-            <div class="bg-[#0d0d0d] border border-[#1a1a1a] rounded-[1.25rem] overflow-hidden">
-                <div class="p-6 border-b border-[#1a1a1a] bg-[#0a0a0a] flex justify-between items-center">
-                    <div>
-                        <h3 class="text-white text-xl font-bold">Pending Ban Requests</h3>
-                        <p class="text-sm text-gray-500">Requests submitted by sub-admins for administrative review.</p>
-                    </div>
-                    <div id="admin-only-ban-actions" class="hidden">
-                        <button id="clear-denied-requests" class="bg-[#1a1a1a] hover:bg-[#252525] text-gray-400 hover:text-white border border-[#333] px-4 py-2 rounded-[14px] text-xs transition">
-                            <i class="fa-solid fa-broom mr-2"></i> Clear Processed
-                        </button>
-                    </div>
-                </div>
-                
-                <div id="ban-requests-grid" class="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    <!-- Cards will be injected here -->
-                </div>
-                
-                <div id="no-ban-requests" class="p-20 text-center hidden">
-                    <div class="w-16 h-16 bg-green-900/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fa-solid fa-check-double text-2xl"></i>
-                    </div>
-                    <h4 class="text-white font-medium">All caught up!</h4>
-                    <p class="text-gray-500 text-sm mt-1">No pending ban requests at this time.</p>
                 </div>
             </div>
         </div>
@@ -556,89 +611,154 @@
         </div>
     </div>
 
-    <div id="ban-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="flex justify-between items-start mb-6 border-b border-[#333] pb-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-red-900/20 flex items-center justify-center text-red-500">
-                        <i class="fa-solid fa-gavel"></i>
-                    </div>
-                    <h3 class="text-xl text-white font-light">Enforce Ban</h3>
+    <div id="ban-overlay" class="ban-overlay">
+        <button id="exit-ban-overlay" class="exit-overlay-btn" title="Exit Overlay">
+            <i class="fa-solid fa-xmark fa-lg"></i>
+        </button>
+
+        <div class="flex h-full">
+            <!-- Sidebar -->
+            <div class="ban-sidebar">
+                <div class="mb-10 px-2">
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Ban <span class="text-purple-500">System</span></h2>
+                    <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest">Administrative Control</p>
                 </div>
-                <button id="close-ban-modal" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark fa-lg"></i></button>
+
+                <div class="ban-tab active" data-ban-tab="form">
+                    <i class="fa-solid fa-gavel"></i>
+                    <span>Enforcement Form</span>
+                </div>
+                <div class="ban-tab" data-ban-tab="requests">
+                    <i class="fa-solid fa-envelope-open-text"></i>
+                    <span>Ban Requests</span>
+                    <span id="ban-request-count-badge" class="ml-auto bg-purple-500 text-white text-[10px] px-1.5 py-0.5 rounded-full hidden">0</span>
+                </div>
+                <div class="mt-auto p-4 bg-purple-900/10 border border-purple-500/20 rounded-2xl">
+                    <p class="text-[10px] text-purple-300 font-medium uppercase mb-2">Notice</p>
+                    <p class="text-[10px] text-gray-400 leading-relaxed">All enforcement actions are logged and audited. Misuse of authority may lead to demotion.</p>
+                </div>
             </div>
-            <div class="space-y-6">
-                <p class="text-gray-300 text-sm bg-[#111] p-3 rounded border border-[#333]" id="ban-user-target">Target: ...</p>
-                
-                <div>
-                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3">Ban Severity</label>
-                    <div class="grid grid-cols-3 gap-3">
-                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-blue-500 transition-all group">
-                            <input type="radio" name="ban-severity" value="email" class="hidden peer">
-                            <i class="fa-solid fa-envelope text-lg text-gray-500 peer-checked:text-blue-500 group-hover:text-gray-300"></i>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-blue-500">Email</span>
-                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-blue-500 rounded-xl pointer-events-none"></div>
-                        </label>
-                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-orange-500 transition-all group">
-                            <input type="radio" name="ban-severity" value="account" checked class="hidden peer">
-                            <i class="fa-solid fa-user-xmark text-lg text-gray-500 peer-checked:text-orange-500 group-hover:text-gray-300"></i>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-orange-500">Account</span>
-                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-orange-500 rounded-xl pointer-events-none"></div>
-                        </label>
-                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-red-600 transition-all group">
-                            <input type="radio" name="ban-severity" value="hardware" class="hidden peer">
-                            <i class="fa-solid fa-microchip text-lg text-gray-500 peer-checked:text-red-600 group-hover:text-gray-300"></i>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-red-600">Hardware</span>
-                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-red-600 rounded-xl pointer-events-none"></div>
-                        </label>
+
+            <!-- Content Area -->
+            <div class="ban-content-area">
+                <div id="ban-tab-form" class="ban-form-container animate-fade-in-scale">
+                    <div class="mb-8">
+                        <h3 class="text-3xl text-white font-bold mb-2">Ban User</h3>
+                        <p class="text-gray-400">Configure the severity, scope, and duration of the enforcement.</p>
+                    </div>
+
+                    <div class="glass-panel space-y-8">
+                        <div class="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5">
+                            <div id="ban-target-pfp" class="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-xl font-bold">?</div>
+                            <div>
+                                <h4 id="ban-target-name" class="text-white font-semibold">Select a user to begin</h4>
+                                <p id="ban-target-uid" class="text-xs text-gray-500 font-mono">---</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <label class="block text-xs text-gray-500 uppercase tracking-widest mb-4">Severity Level</label>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <label class="relative flex flex-col items-center gap-2 p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:border-purple-500 transition-all group">
+                                        <input type="radio" name="ban-severity" value="email" class="hidden peer">
+                                        <i class="fa-solid fa-envelope text-xl text-gray-500 peer-checked:text-purple-500"></i>
+                                        <span class="text-[10px] font-bold uppercase text-gray-500 peer-checked:text-purple-500">Email</span>
+                                        <div class="absolute inset-0 border-2 border-transparent peer-checked:border-purple-500 rounded-2xl pointer-events-none"></div>
+                                    </label>
+                                    <label class="relative flex flex-col items-center gap-2 p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:border-purple-500 transition-all group">
+                                        <input type="radio" name="ban-severity" value="account" checked class="hidden peer">
+                                        <i class="fa-solid fa-user-xmark text-xl text-gray-500 peer-checked:text-purple-500"></i>
+                                        <span class="text-[10px] font-bold uppercase text-gray-500 peer-checked:text-purple-500">Account</span>
+                                        <div class="absolute inset-0 border-2 border-transparent peer-checked:border-purple-500 rounded-2xl pointer-events-none"></div>
+                                    </label>
+                                    <label class="relative flex flex-col items-center gap-2 p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:border-purple-500 transition-all group">
+                                        <input type="radio" name="ban-severity" value="hardware" class="hidden peer">
+                                        <i class="fa-solid fa-microchip text-xl text-gray-500 peer-checked:text-purple-500"></i>
+                                        <span class="text-[10px] font-bold uppercase text-gray-500 peer-checked:text-purple-500">Hardware</span>
+                                        <div class="absolute inset-0 border-2 border-transparent peer-checked:border-purple-500 rounded-2xl pointer-events-none"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-gray-500 uppercase tracking-widest mb-4">Enforcement Scope</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="relative flex flex-col items-center gap-2 p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:border-purple-500 transition-all group">
+                                        <input type="radio" name="ban-scope" value="global" checked class="hidden peer">
+                                        <i class="fa-solid fa-earth-americas text-xl text-gray-500 peer-checked:text-purple-500"></i>
+                                        <span class="text-[10px] font-bold uppercase text-gray-500 peer-checked:text-purple-500">Global</span>
+                                        <div class="absolute inset-0 border-2 border-transparent peer-checked:border-purple-500 rounded-2xl pointer-events-none"></div>
+                                    </label>
+                                    <label class="relative flex flex-col items-center gap-2 p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:border-purple-500 transition-all group">
+                                        <input type="radio" name="ban-scope" value="page" class="hidden peer">
+                                        <i class="fa-solid fa-file-circle-exclamation text-xl text-gray-500 peer-checked:text-purple-500"></i>
+                                        <span class="text-[10px] font-bold uppercase text-gray-500 peer-checked:text-purple-500">Page Only</span>
+                                        <div class="absolute inset-0 border-2 border-transparent peer-checked:border-purple-500 rounded-2xl pointer-events-none"></div>
+                                    </label>
+                                </div>
+                                <div id="overlay-page-scope-input" class="hidden mt-4">
+                                    <input type="text" id="overlay-ban-pages" class="ban-input text-sm" placeholder="e.g. /logged-in/valo.html, /VELIUM/">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 uppercase tracking-widest mb-4">Banning Schedule (Expiration)</label>
+                            <div class="flex flex-wrap gap-3 mb-4">
+                                <button class="schedule-chip" data-duration="1">24 Hours</button>
+                                <button class="schedule-chip" data-duration="7">7 Days</button>
+                                <button class="schedule-chip" data-duration="30">30 Days</button>
+                                <button class="schedule-chip" data-duration="permanent">Permanent</button>
+                                <button class="schedule-chip" id="custom-schedule-btn">Custom Date</button>
+                            </div>
+                            <div id="custom-date-input" class="hidden">
+                                <input type="datetime-local" id="ban-expires-at" class="ban-input">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 uppercase tracking-widest mb-4">Detailed Reason</label>
+                            <textarea id="overlay-ban-reason" class="ban-input min-h-[120px] resize-none" placeholder="Explain the violation in detail..."></textarea>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <button class="text-[10px] px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-gray-400 transition preset-reason-btn" data-reason="Violation of Terms of Service">TOS Violation</button>
+                                <button class="text-[10px] px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-gray-400 transition preset-reason-btn" data-reason="Harassment or Offensive Behavior">Harassment</button>
+                                <button class="text-[10px] px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-gray-400 transition preset-reason-btn" data-reason="Exploiting System Vulnerabilities">Exploiting</button>
+                                <button class="text-[10px] px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-gray-400 transition preset-reason-btn" data-reason="Inappropriate Content Distribution">Inappropriate Content</button>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-4">
+                            <button id="overlay-confirm-ban" class="ban-btn-primary flex items-center gap-2">
+                                <i class="fa-solid fa-shield-check"></i>
+                                <span>Confirm Enforcement</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                 <div>
-                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3">Ban Scope</label>
-                    <div class="grid grid-cols-2 gap-3 mb-4">
-                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-red-500 transition-all group">
-                            <input type="radio" name="ban-scope" value="global" checked class="hidden peer">
-                            <i class="fa-solid fa-earth-americas text-lg text-gray-500 peer-checked:text-red-500 group-hover:text-gray-300"></i>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-red-500">Global</span>
-                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-red-500 rounded-xl pointer-events-none"></div>
-                        </label>
-                        <label class="relative flex flex-col items-center gap-2 p-3 bg-[#111] border border-[#333] rounded-xl cursor-pointer hover:border-orange-500 transition-all group">
-                            <input type="radio" name="ban-scope" value="page" class="hidden peer">
-                            <i class="fa-solid fa-file-circle-exclamation text-lg text-gray-500 peer-checked:text-orange-500 group-hover:text-gray-300"></i>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 peer-checked:text-orange-500">Page Only</span>
-                            <div class="absolute inset-0 border-2 border-transparent peer-checked:border-orange-500 rounded-xl pointer-events-none"></div>
-                        </label>
+                <div id="ban-tab-requests" class="ban-form-container hidden animate-fade-in-scale">
+                    <div class="mb-8">
+                        <h3 class="text-3xl text-white font-bold mb-2">Ban Requests</h3>
+                        <p class="text-gray-400">Review and process enforcement requests from sub-administrators.</p>
                     </div>
-                    <div id="page-scope-input" class="hidden">
-                        <input type="text" id="ban-pages" class="w-full bg-[#111] border border-[#333] rounded-xl p-3 text-sm text-white outline-none focus:border-orange-500" placeholder="e.g. /logged-in/valo.html,/VELIUM/">
-                        <p class="text-[10px] text-gray-500 mt-2 ml-1">Comma-separated relative paths</p>
+
+                    <div id="overlay-ban-requests-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Requests will be injected here -->
                     </div>
-                </div>
 
-                <div>
-                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Preset Reason</label>
-                    <div class="flex">
-                        <button class="preset-chip w-full py-2 border-indigo-500/30 text-indigo-400 bg-indigo-900/10 hover:bg-indigo-900/20" data-reason="Violation of Terms of Service" data-link="../legal.html">Violation of Terms of Service</button>
+                    <div id="overlay-no-ban-requests" class="glass-panel text-center py-20 hidden">
+                        <div class="w-16 h-16 bg-purple-500/10 text-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fa-solid fa-check-double text-2xl"></i>
+                        </div>
+                        <h4 class="text-xl text-white font-semibold">Queue Empty</h4>
+                        <p class="text-gray-500 mt-2">There are no pending ban requests to review.</p>
                     </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">Detailed Reason (Optional)</label>
-                    <textarea id="ban-reason" class="w-full bg-[#111] text-white border border-[#333] rounded-[14px] p-3 text-sm focus:outline-none focus:border-red-500 min-h-[80px]" placeholder="Explain the violation..."></textarea>
-                </div>
-                
-                <input type="hidden" id="ban-link" value="">
-                <input type="hidden" id="current-request-id" value="">
-
-                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#333]">
-                    <button id="cancel-ban" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
-                    <button id="confirm-ban" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-[14px] text-sm transition font-medium shadow-lg shadow-red-900/20">
-                        Confirm Enforcement
-                    </button>
                 </div>
             </div>
         </div>
+        
+        <input type="hidden" id="overlay-current-request-id" value="">
     </div>
 
     <div id="admin-modal" class="modal-overlay">
@@ -1196,9 +1316,11 @@
                 btn.addEventListener('click', async () => {
                     const tabId = btn.dataset.tab;
 
-                    if (tabId === 'data-analytics' && !isAdminReAuthenticated) {
-                        // Keep current tab active if not re-authenticated
-                        // return; 
+                    if (tabId === 'ban-requests') {
+                        // Open the new overlay instead of showing the dashboard tab
+                        document.getElementById('ban-overlay').classList.add('open');
+                        document.querySelector('.ban-tab[data-ban-tab="requests"]').click();
+                        return;
                     }
 
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1726,57 +1848,216 @@
         };
 
         const openBanModal = (existingData = null) => {
-            document.getElementById('ban-user-target').textContent = `Target: ${userToBan.username} (${userToBan.uid})`;
+            document.getElementById('ban-target-name').textContent = userToBan.username;
+            document.getElementById('ban-target-uid').textContent = userToBan.uid;
+            document.getElementById('ban-target-pfp').textContent = (userToBan.username || '?').charAt(0).toUpperCase();
             
             // UI Adjustment for Sub-Admins
-            const confirmBtn = document.getElementById('confirm-ban');
+            const confirmBtn = document.getElementById('overlay-confirm-ban');
             if (currentUserRole === 'sub') {
-                confirmBtn.innerHTML = 'Submit Ban Request';
+                confirmBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Ban Request';
                 confirmBtn.classList.add('bg-indigo-600');
-                confirmBtn.classList.remove('bg-red-600');
+                confirmBtn.classList.remove('ban-btn-primary');
             } else {
-                confirmBtn.innerHTML = existingData ? 'Update & Enforce Ban' : 'Confirm Enforcement';
-                confirmBtn.classList.add('bg-red-600');
+                confirmBtn.innerHTML = existingData ? '<i class="fa-solid fa-shield-check"></i> Update & Enforce' : '<i class="fa-solid fa-shield-check"></i> Confirm Enforcement';
                 confirmBtn.classList.remove('bg-indigo-600');
+                confirmBtn.classList.add('ban-btn-primary');
             }
 
             if (existingData) {
-                // Pre-fill modal for editing a request
                 if (existingData.severity) {
-                    const sevInput = document.querySelector(`input[name="ban-severity"][value="${existingData.severity}"]`);
+                    const sevInput = document.querySelector(`.ban-overlay input[name="ban-severity"][value="${existingData.severity}"]`);
                     if (sevInput) sevInput.checked = true;
                 }
                 if (existingData.scope) {
-                    const scopeInput = document.querySelector(`input[name="ban-scope"][value="${existingData.scope}"]`);
+                    const scopeInput = document.querySelector(`.ban-overlay input[name="ban-scope"][value="${existingData.scope}"]`);
                     if (scopeInput) {
                         scopeInput.checked = true;
                         if (existingData.scope === 'page') {
-                            document.getElementById('page-scope-input').classList.remove('hidden');
-                            document.getElementById('ban-pages').value = existingData.pages ? existingData.pages.join(', ') : '';
+                            document.getElementById('overlay-page-scope-input').classList.remove('hidden');
+                            document.getElementById('overlay-ban-pages').value = existingData.pages ? existingData.pages.join(', ') : '';
                         } else {
-                            document.getElementById('page-scope-input').classList.add('hidden');
+                            document.getElementById('overlay-page-scope-input').classList.add('hidden');
                         }
                     }
                 }
-                document.getElementById('ban-reason').value = existingData.reason || '';
-                document.getElementById('current-request-id').value = existingData.requestId || '';
+                document.getElementById('overlay-ban-reason').value = existingData.reason || '';
+                document.getElementById('overlay-current-request-id').value = existingData.requestId || '';
             } else {
-                // Default reset
-                document.querySelector('input[name="ban-severity"][value="account"]').checked = true;
-                document.querySelector('input[name="ban-scope"][value="global"]').checked = true;
-                document.getElementById('page-scope-input').classList.add('hidden');
-                document.getElementById('ban-pages').value = '';
-                document.getElementById('ban-reason').value = '';
-                document.getElementById('current-request-id').value = '';
+                document.querySelector('.ban-overlay input[name="ban-severity"][value="account"]').checked = true;
+                document.querySelector('.ban-overlay input[name="ban-scope"][value="global"]').checked = true;
+                document.getElementById('overlay-page-scope-input').classList.add('hidden');
+                document.getElementById('overlay-ban-pages').value = '';
+                document.getElementById('overlay-ban-reason').value = '';
+                document.getElementById('overlay-current-request-id').value = '';
+                document.getElementById('ban-expires-at').value = '';
+                document.getElementById('custom-date-input').classList.add('hidden');
+                document.querySelectorAll('.schedule-chip').forEach(c => c.classList.remove('active'));
+                document.querySelector('.schedule-chip[data-duration="permanent"]')?.classList.add('active');
             }
 
-            document.getElementById('ban-modal').classList.add('open');
+            // Switch to form tab
+            document.querySelector('.ban-tab[data-ban-tab="form"]').click();
+            document.getElementById('ban-overlay').classList.add('open');
         };
 
-        const closeBanModal = () => {
-            document.getElementById('ban-modal').classList.remove('open');
+        const closeBanOverlay = () => {
+            document.getElementById('ban-overlay').classList.remove('open');
             userToBan = null;
         };
+
+        // Tab Switching in Overlay
+        document.querySelectorAll('.ban-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.dataset.banTab;
+                document.querySelectorAll('.ban-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                document.getElementById('ban-tab-form').classList.add('hidden');
+                document.getElementById('ban-tab-requests').classList.add('hidden');
+                document.getElementById(`ban-tab-${target}`).classList.remove('hidden');
+            });
+        });
+
+        document.getElementById('exit-ban-overlay').onclick = closeBanOverlay;
+
+        // Schedule Logic
+        document.querySelectorAll('.schedule-chip[data-duration]').forEach(chip => {
+            chip.onclick = () => {
+                document.querySelectorAll('.schedule-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                document.getElementById('custom-date-input').classList.add('hidden');
+            };
+        });
+
+        document.getElementById('custom-schedule-btn').onclick = () => {
+            document.querySelectorAll('.schedule-chip').forEach(c => c.classList.remove('active'));
+            document.getElementById('custom-schedule-btn').classList.add('active');
+            document.getElementById('custom-date-input').classList.remove('hidden');
+        };
+
+        document.querySelectorAll('.preset-reason-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.getElementById('overlay-ban-reason').value = btn.dataset.reason;
+            };
+        });
+
+
+
+        const processBanRequest = async (requestId, accept) => {
+            if (currentUserRole !== 'admin') {
+                showNotification("Only admins can process requests", 'fa-solid fa-shield-halved', 'warning');
+                return;
+            }
+
+            const reqDoc = await getDoc(doc(db, 'ban_requests', requestId));
+            if (!reqDoc.exists()) return;
+            const data = reqDoc.data();
+
+            if (accept) {
+                const targetUser = allUsers.find(u => u.id === data.targetUid) || { username: 'Unknown', id: data.targetUid };
+                userToBan = { uid: targetUser.id, username: targetUser.username };
+                openBanModal({ ...data, requestId });
+            } else {
+                if (confirm("Deny this ban request?")) {
+                    await updateDoc(doc(db, 'ban_requests', requestId), { status: 'denied', processedAt: new Date() });
+                    showNotification("Ban request denied.", 'fa-solid fa-xmark', 'info');
+                }
+            }
+        };
+
+        document.getElementById('overlay-confirm-ban').onclick = async () => {
+            if (!userToBan) return;
+            
+            const reason = document.getElementById('overlay-ban-reason').value.trim();
+            const severity = document.querySelector('.ban-overlay input[name="ban-severity"]:checked').value;
+            const scope = document.querySelector('.ban-overlay input[name="ban-scope"]:checked').value;
+            const pagesRaw = document.getElementById('overlay-ban-pages').value.trim();
+            const pages = scope === 'page' ? pagesRaw.split(',').map(p => p.trim()).filter(p => p) : [];
+            const requestId = document.getElementById('overlay-current-request-id').value;
+            
+            let expiresAt = null;
+            const customChip = document.getElementById('custom-schedule-btn');
+            if (customChip.classList.contains('active')) {
+                const val = document.getElementById('ban-expires-at').value;
+                if (!val) {
+                    alert("Please select an expiration date.");
+                    return;
+                }
+                expiresAt = new Date(val);
+            } else {
+                const activeChip = document.querySelector('.schedule-chip[data-duration].active');
+                if (activeChip && activeChip.dataset.duration !== 'permanent') {
+                    const days = parseInt(activeChip.dataset.duration);
+                    expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+                }
+            }
+
+            if (!reason) {
+                alert("Please provide a reason.");
+                return;
+            }
+
+            const btn = document.getElementById('overlay-confirm-ban');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Processing...`;
+
+            try {
+                if (currentUserRole === 'sub') {
+                    await addDoc(collection(db, 'ban_requests'), {
+                        targetUid: userToBan.uid,
+                        requestedBy: auth.currentUser.uid,
+                        reason: reason,
+                        severity: severity,
+                        scope: scope,
+                        pages: pages,
+                        requestedAt: new Date(),
+                        status: 'pending',
+                        expiresAt: expiresAt ? expiresAt.toISOString() : null
+                    });
+                    showNotification("Detailed ban request submitted.", 'fa-solid fa-paper-plane', 'success');
+                } else {
+                    const banUserFn = httpsCallable(functions, 'banUser');
+                    await banUserFn({
+                        uid: userToBan.uid,
+                        reason: reason,
+                        severity: severity,
+                        scope: scope,
+                        pages: pages,
+                        expiresAt: expiresAt ? expiresAt.toISOString() : null
+                    });
+
+                    if (requestId) await updateDoc(doc(db, 'ban_requests', requestId), { status: 'processed', processedAt: new Date() });
+
+                    // Extra hardware ban logic (if needed, though Cloud Function could handle it too)
+                    if (severity === 'hardware') {
+                        const q = query(collection(db, 'analytics'), where('userId', '==', userToBan.uid), limit(50));
+                        const snap = await getDocs(q);
+                        const batch = writeBatch(db);
+                        snap.forEach(d => { if (d.data().hardwareId) batch.set(doc(db, 'hardware_bans', d.data().hardwareId), { bannedAt: new Date(), bannedBy: auth.currentUser.uid, originalUid: userToBan.uid, reason: reason }); });
+                        await batch.commit();
+                    }
+
+                    showNotification(`User successfully banned until ${expiresAt ? formatDate(expiresAt) : 'Forever'}.`, 'fa-solid fa-gavel', 'success');
+                }
+                closeBanOverlay();
+            } catch (err) {
+                console.error("Ban failed:", err);
+                alert("Ban failed: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        };
+
+        document.querySelectorAll('.ban-overlay input[name="ban-scope"]').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const pageInput = document.getElementById('overlay-page-scope-input');
+                if (e.target.value === 'page') pageInput.classList.remove('hidden');
+                else pageInput.classList.add('hidden');
+            });
+        });
 
         const openTagModal = (existingTag) => {
             document.getElementById('tag-user-target').textContent = `Target: ${userToTag.username}`;
@@ -2035,9 +2316,6 @@
             document.getElementById('delete-user-modal').classList.remove('open');
             userToDelete = null;
         };
-
-        document.getElementById('close-ban-modal').addEventListener('click', closeBanModal);
-        document.getElementById('cancel-ban').addEventListener('click', closeBanModal);
 
         document.getElementById('close-tag-modal').addEventListener('click', closeTagModal);
         document.getElementById('cancel-tag').addEventListener('click', closeTagModal);

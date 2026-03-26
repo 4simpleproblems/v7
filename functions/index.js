@@ -203,18 +203,93 @@ exports.addAdmin = functions.https.onCall(async (data, context) => {
 
 exports.banUser = functions.https.onCall(async (data, context) => {
     await validateAdmin(context);
-    const { uid, reason, durationDays } = data;
+    const { uid, reason, durationDays, expiresAt, severity, scope, pages } = data;
     try {
-        const bannedUntil = durationDays ? new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000) : null;
-        await admin.firestore().collection('bans').doc(uid).set({
-            reason, bannedUntil, bannedAt: admin.firestore.FieldValue.serverTimestamp(), bannedBy: context.auth.uid
-        });
+        let bannedUntil = null;
+        if (expiresAt) {
+            bannedUntil = new Date(expiresAt);
+        } else if (durationDays) {
+            bannedUntil = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+        }
+
+        const banData = {
+            reason,
+            bannedUntil,
+            bannedAt: admin.firestore.FieldValue.serverTimestamp(),
+            bannedBy: context.auth.uid,
+            severity: severity || 'account',
+            scope: scope || 'global',
+            pages: pages || []
+        };
+
+        await admin.firestore().collection('bans').doc(uid).set(banData);
         await admin.firestore().collection('users').doc(uid).update({ isBanned: true });
+        
+        // Handle Email Ban if severity is 'email'
+        if (severity === 'email') {
+            const userDoc = await admin.firestore().collection('users').doc(uid).get();
+            if (userDoc.exists && userDoc.data().email) {
+                await admin.firestore().collection('email_bans').doc(userDoc.data().email.toLowerCase()).set({
+                    bannedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    bannedBy: context.auth.uid,
+                    originalUid: uid,
+                    bannedUntil: bannedUntil
+                });
+            }
+        }
+
         return { success: true };
     } catch (error) {
+        console.error("banUser Error:", error);
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
+
+/**
+ * Scheduled function to automatically lift expired bans.
+ * Runs every 30 minutes.
+ */
+exports.checkExpiredBans = functions.pubsub
+    .schedule('every 30 minutes')
+    .onRun(async (context) => {
+        const db = admin.firestore();
+        const now = admin.firestore.Timestamp.now();
+        
+        try {
+            const expiredBansSnap = await db.collection('bans')
+                .where('bannedUntil', '<=', now)
+                .get();
+                
+            if (expiredBansSnap.empty) {
+                console.log("No expired bans to lift.");
+                return null;
+            }
+            
+            const batch = db.batch();
+            
+            for (const doc of expiredBansSnap.docs) {
+                const uid = doc.id;
+                batch.delete(doc.ref);
+                batch.update(db.collection('users').doc(uid), { isBanned: false });
+                
+                // Also lift associated email bans if they exist
+                const userDoc = await db.collection('users').doc(uid).get();
+                if (userDoc.exists && userDoc.data().email) {
+                    batch.delete(db.collection('email_bans').doc(userDoc.data().email.toLowerCase()));
+                }
+                
+                // Hardware bans are usually permanent or handled differently, 
+                // but if they are linked to the ban doc, we could handle them here.
+            }
+            
+            await batch.commit();
+            console.log(`Successfully lifted ${expiredBansSnap.size} expired bans.`);
+            return null;
+        } catch (error) {
+            console.error("Error in checkExpiredBans:", error);
+            return null;
+        }
+    });
 
 exports.unbanUser = functions.https.onCall(async (data, context) => {
     await validateAdmin(context);

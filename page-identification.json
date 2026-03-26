@@ -116,5 +116,12 @@
         "aliases": ["/logged-in/vora-plus"],
         "adminOnly": true,
         "testerOnly": true
+    },
+    "velium-plus": {
+        "name": "Velium Plus",
+        "icon": "fa-solid fa-music",
+        "url": "../VELIUM_PLUS/index.html",
+        "aliases": ["/VELIUM_PLUS/", "/VELIUM_PLUS/index.html"],
+        "adminOnly": true
     }
 }
