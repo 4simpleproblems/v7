@@ -306,10 +306,6 @@ function lockPageAsBanned(banData) {
     if (!hwId) return;
 
     const checkHardwareEnforcement = () => {
-        if (isUserAdmin) {
-            unlockPage();
-            return;
-        }
         if (!currentBanData || currentBanData.severity !== 'hardware') return;
         
         const user = auth.currentUser;
@@ -381,6 +377,13 @@ function lockPageAsBanned(banData) {
                 } else {
                     if (!currentBanData || currentBanData.severity !== 'hardware') {
                         unlockPage();
+                    }
+                }
+            });
+        });
+    }
+})();
+               unlockPage();
                     }
                 }
             });

@@ -1681,7 +1681,11 @@
 
                 // --- NEW: Ban Restriction Logic ---
                 const isTargetFullAdmin = isAdmin && !isSubAdmin;
-                const isBanDisabled = isTargetFullAdmin;
+                const isTargetSuperAdmin = user.email === '4simpleproblems@gmail.com';
+                const isProtected = isTargetFullAdmin || isTargetSuperAdmin;
+                
+                const isBanDisabled = isProtected;
+                const banBtnTitle = isBanned ? 'Unban' : (isProtected ? 'Bypassed' : (currentUserRole === 'sub' ? 'Request Ban' : 'Ban'));
 
                 const tagHtml = user.userTag ? `
                     <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded border tracking-wider" style="color: ${user.userTag.color}; border-color: ${user.userTag.color}40; background-color: ${user.userTag.color}10;">
@@ -1714,7 +1718,7 @@
                             <button class="action-btn ${isBanned ? 'btn-unblock' : 'btn-block'} ${isBanDisabled ? 'opacity-20 cursor-not-allowed' : ''}" 
                                     data-action="toggle-ban" data-uid="${user.id}" data-username="${user.username || user.email}" 
                                     ${isBanDisabled ? 'disabled' : ''}
-                                    title="${isBanned ? 'Unban' : (currentUserRole === 'sub' ? 'Request Ban' : 'Ban')}">
+                                    title="${banBtnTitle}">
                                 ${isBanned ? '<i class="fa-solid fa-unlock"></i>' : '<i class="fa-solid fa-ban"></i>'}
                             </button>
                             ${(isAdmin || isSubAdmin) 
