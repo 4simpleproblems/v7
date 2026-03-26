@@ -629,6 +629,7 @@
                 </div>
                 
                 <input type="hidden" id="ban-link" value="">
+                <input type="hidden" id="current-request-id" value="">
 
                 <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#333]">
                     <button id="cancel-ban" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
@@ -967,41 +968,16 @@
             if (!reqDoc.exists()) return;
             const data = reqDoc.data();
 
-            try {
-                if (accept) {
-                    const banData = { 
-                        bannedAt: new Date(),
-                        bannedBy: auth.currentUser.uid,
-                        reason: data.reason,
-                        link: data.link || null,
-                        severity: data.severity,
-                        scope: data.scope,
-                        pages: data.pages || []
-                    };
-
-                    const batch = writeBatch(db);
-                    batch.set(doc(db, 'bans', data.targetUid), banData);
-                    batch.delete(doc(db, 'ban_requests', requestId));
-                    
-                    if (data.severity === 'email') {
-                        const targetUser = allUsers.find(u => u.id === data.targetUid);
-                        if (targetUser && targetUser.email) {
-                            batch.set(doc(db, 'email_bans', targetUser.email.toLowerCase()), {
-                                bannedAt: new Date(),
-                                bannedBy: auth.currentUser.uid,
-                                originalUid: data.targetUid
-                            });
-                        }
-                    }
-
-                    await batch.commit();
-                    showNotification("Ban request accepted and enforced.", 'fa-solid fa-check', 'success');
-                } else {
+            if (accept) {
+                // Open modal pre-filled with request data for admin review/edit
+                const targetUser = allUsers.find(u => u.id === data.targetUid) || { username: 'Unknown', id: data.targetUid };
+                userToBan = { uid: targetUser.id, username: targetUser.username };
+                openBanModal({ ...data, requestId });
+            } else {
+                if (confirm("Deny this ban request?")) {
                     await updateDoc(doc(db, 'ban_requests', requestId), { status: 'denied', processedAt: new Date() });
                     showNotification("Ban request denied.", 'fa-solid fa-xmark', 'info');
                 }
-            } catch (err) {
-                alert("Failed to process request: " + err.message);
             }
         };
 
@@ -1749,10 +1725,51 @@
             });
         };
 
-        const openBanModal = () => {
+        const openBanModal = (existingData = null) => {
             document.getElementById('ban-user-target').textContent = `Target: ${userToBan.username} (${userToBan.uid})`;
-            document.getElementById('ban-reason').value = '';
-            document.getElementById('ban-link').value = '';
+            
+            // UI Adjustment for Sub-Admins
+            const confirmBtn = document.getElementById('confirm-ban');
+            if (currentUserRole === 'sub') {
+                confirmBtn.innerHTML = 'Submit Ban Request';
+                confirmBtn.classList.add('bg-indigo-600');
+                confirmBtn.classList.remove('bg-red-600');
+            } else {
+                confirmBtn.innerHTML = existingData ? 'Update & Enforce Ban' : 'Confirm Enforcement';
+                confirmBtn.classList.add('bg-red-600');
+                confirmBtn.classList.remove('bg-indigo-600');
+            }
+
+            if (existingData) {
+                // Pre-fill modal for editing a request
+                if (existingData.severity) {
+                    const sevInput = document.querySelector(`input[name="ban-severity"][value="${existingData.severity}"]`);
+                    if (sevInput) sevInput.checked = true;
+                }
+                if (existingData.scope) {
+                    const scopeInput = document.querySelector(`input[name="ban-scope"][value="${existingData.scope}"]`);
+                    if (scopeInput) {
+                        scopeInput.checked = true;
+                        if (existingData.scope === 'page') {
+                            document.getElementById('page-scope-input').classList.remove('hidden');
+                            document.getElementById('ban-pages').value = existingData.pages ? existingData.pages.join(', ') : '';
+                        } else {
+                            document.getElementById('page-scope-input').classList.add('hidden');
+                        }
+                    }
+                }
+                document.getElementById('ban-reason').value = existingData.reason || '';
+                document.getElementById('current-request-id').value = existingData.requestId || '';
+            } else {
+                // Default reset
+                document.querySelector('input[name="ban-severity"][value="account"]').checked = true;
+                document.querySelector('input[name="ban-scope"][value="global"]').checked = true;
+                document.getElementById('page-scope-input').classList.add('hidden');
+                document.getElementById('ban-pages').value = '';
+                document.getElementById('ban-reason').value = '';
+                document.getElementById('current-request-id').value = '';
+            }
+
             document.getElementById('ban-modal').classList.add('open');
         };
 
@@ -1790,35 +1807,18 @@
             const action = btn.dataset.action;
             const uid = btn.dataset.uid;
             
-            // Role-based restriction checks
-            if (currentUserRole === 'sub') {
-                if (action === 'delete-user' || action === 'set-tag') {
-                    showNotification("This feature is only for admins", 'fa-solid fa-shield-halved', 'warning');
-                    return;
-                }
-            }
-
             if (action === 'toggle-ban') {
                 const isBanned = bannedUsers.has(uid);
                 if (isBanned) {
                     if (confirm(`Are you sure you want to unban this user? This will also lift any associated hardware or email blocks.`)) {
                         try {
                             const batch = writeBatch(db);
-                            
-                            // 1. Remove main ban record
                             batch.delete(doc(db, 'bans', uid));
-                            
-                            // 2. Clear email bans
                             const user = allUsers.find(u => u.id === uid);
-                            if (user && user.email) {
-                                batch.delete(doc(db, 'email_bans', user.email.toLowerCase()));
-                            }
-                            
-                            // 3. Clear hardware bans associated with this UID
+                            if (user && user.email) batch.delete(doc(db, 'email_bans', user.email.toLowerCase()));
                             const hwQuery = query(collection(db, 'hardware_bans'), where('originalUid', '==', uid));
                             const hwSnap = await getDocs(hwQuery);
                             hwSnap.forEach(d => batch.delete(d.ref));
-                            
                             await batch.commit();
                             showNotification("User and associated hardware/email unbanned.", 'fa-solid fa-unlock', 'success');
                         } catch (err) { 
@@ -1827,29 +1827,8 @@
                         }
                     }
                 } else {
-                    if (currentUserRole === 'sub') {
-                        // Sub-admins create requests instead of banning directly
-                        const reason = prompt("Reason for ban request:");
-                        if (!reason) return;
-                        
-                        try {
-                            await addDoc(collection(db, 'ban_requests'), {
-                                targetUid: uid,
-                                requestedBy: auth.currentUser.uid,
-                                reason: reason,
-                                severity: 'standard', // Default for requests
-                                scope: 'global',
-                                requestedAt: new Date(),
-                                status: 'pending'
-                            });
-                            showNotification("Ban request submitted to admins.", 'fa-solid fa-paper-plane', 'success');
-                        } catch (err) {
-                            alert("Failed to submit request: " + err.message);
-                        }
-                    } else {
-                        userToBan = { uid, username: btn.dataset.username };
-                        openBanModal();
-                    }
+                    userToBan = { uid, username: btn.dataset.username };
+                    openBanModal();
                 }
             } else if (action === 'make-admin') {
                 userToAdmin = { uid, username: btn.dataset.username };
@@ -1944,80 +1923,90 @@
 
         document.getElementById('confirm-ban').addEventListener('click', async () => {
             if (!userToBan) return;
-            const reason = document.getElementById('ban-reason').value.trim() || 'Violation of Terms of Service';
-            const link = document.getElementById('ban-link').value;
+            
+            const reason = document.getElementById('ban-reason').value.trim();
             const severity = document.querySelector('input[name="ban-severity"]:checked').value;
             const scope = document.querySelector('input[name="ban-scope"]:checked').value;
             const pagesRaw = document.getElementById('ban-pages').value.trim();
             const pages = scope === 'page' ? pagesRaw.split(',').map(p => p.trim()).filter(p => p) : [];
+            const requestId = document.getElementById('current-request-id').value;
+
+            if (!reason) {
+                alert("Please provide a reason.");
+                return;
+            }
 
             const btn = document.getElementById('confirm-ban');
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Enforcing...`;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Processing...`;
 
             try {
-                const banData = { 
-                    bannedAt: new Date(),
-                    bannedBy: auth.currentUser.uid,
-                    reason: reason,
-                    link: link || null,
-                    severity: severity,
-                    scope: scope,
-                    pages: pages
-                };
-
-                const batch = writeBatch(db);
-                
-                // 1. Always create the main ban record
-                batch.set(doc(db, 'bans', userToBan.uid), banData);
-
-                // 2. Severity specific actions
-                if (severity === 'email') {
-                    const user = allUsers.find(u => u.id === userToBan.uid);
-                    if (user && user.email) {
-                        batch.set(doc(db, 'email_bans', user.email.toLowerCase()), {
-                            bannedAt: new Date(),
-                            bannedBy: auth.currentUser.uid,
-                            originalUid: userToBan.uid
-                        });
-                    }
-                } else if (severity === 'hardware') {
-                    // Fetch hardware IDs from analytics
-                    const q = query(collection(db, 'analytics'), where('userId', '==', userToBan.uid), limit(50));
-                    const snap = await getDocs(q);
-                    const hwIds = new Set();
-                    snap.forEach(d => {
-                        const data = d.data();
-                        if (data.hardwareId) hwIds.add(data.hardwareId);
+                if (currentUserRole === 'sub') {
+                    // Sub-admin: Create/Submit a detailed ban request
+                    await addDoc(collection(db, 'ban_requests'), {
+                        targetUid: userToBan.uid,
+                        requestedBy: auth.currentUser.uid,
+                        reason: reason,
+                        severity: severity,
+                        scope: scope,
+                        pages: pages,
+                        requestedAt: new Date(),
+                        status: 'pending'
                     });
+                    showNotification("Detailed ban request submitted.", 'fa-solid fa-paper-plane', 'success');
+                } else {
+                    // Full Admin: Direct Enforcement
+                    const banData = { 
+                        bannedAt: new Date(),
+                        bannedBy: auth.currentUser.uid,
+                        reason: reason,
+                        severity: severity,
+                        scope: scope,
+                        pages: pages
+                    };
 
-                    hwIds.forEach(hwId => {
-                        batch.set(doc(db, 'hardware_bans', hwId), {
-                            bannedAt: new Date(),
-                            bannedBy: auth.currentUser.uid,
-                            originalUid: userToBan.uid,
-                            reason: reason
-                        });
-                    });
+                    const batch = writeBatch(db);
                     
-                    // Also store the email to be safe
-                    const user = allUsers.find(u => u.id === userToBan.uid);
-                    if (user && user.email) {
-                        batch.set(doc(db, 'email_bans', user.email.toLowerCase()), {
-                            bannedAt: new Date(),
-                            bannedBy: auth.currentUser.uid,
-                            originalUid: userToBan.uid
+                    // 1. Set/Update main ban document
+                    batch.set(doc(db, 'bans', userToBan.uid), banData);
+
+                    // 2. Clear the original request if this was an acceptance
+                    if (requestId) batch.delete(doc(db, 'ban_requests', requestId));
+
+                    // 3. Handle extra severity actions
+                    if (severity === 'email') {
+                        const user = allUsers.find(u => u.id === userToBan.uid);
+                        if (user && user.email) {
+                            batch.set(doc(db, 'email_bans', user.email.toLowerCase()), {
+                                bannedAt: new Date(),
+                                bannedBy: auth.currentUser.uid,
+                                originalUid: userToBan.uid
+                            });
+                        }
+                    } else if (severity === 'hardware') {
+                        // Gather hardware IDs from historical sessions
+                        const q = query(collection(db, 'analytics'), where('userId', '==', userToBan.uid), limit(50));
+                        const snap = await getDocs(q);
+                        const hwIds = new Set();
+                        snap.forEach(d => { if (d.data().hardwareId) hwIds.add(d.data().hardwareId); });
+                        hwIds.forEach(hwId => {
+                            batch.set(doc(db, 'hardware_bans', hwId), {
+                                bannedAt: new Date(),
+                                bannedBy: auth.currentUser.uid,
+                                originalUid: userToBan.uid,
+                                reason: reason
+                            });
                         });
                     }
-                }
 
-                await batch.commit();
-                showNotification(`Successfully enforced ${severity} ban.`, 'fa-solid fa-gavel', 'success');
+                    await batch.commit();
+                    showNotification(`User successfully banned (${scope} scope).`, 'fa-solid fa-gavel', 'success');
+                }
                 closeBanModal();
             } catch (err) {
-                console.error("Ban failed:", err);
-                alert("Ban failed: " + err.message);
+                console.error("Action failed:", err);
+                alert("Action failed: " + err.message);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;

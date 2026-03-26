@@ -195,11 +195,6 @@ async function handleRequest(event) {
                          (url.includes('/baremux/') || 
                           url.includes('/uv/') || 
                           url.includes('/libcurl/') ||
-                          url.includes('/tglsc-proxy/') ||
-                          url.includes('/assets/') ||
-                          url.includes('/js/') ||
-                          url.includes('/var/') ||
-                          url.includes('/api/') ||
                           url.match(/\.(js|mjs|css|json|png|jpg|ico)$/)) &&
                          !isProxied;
 
@@ -261,9 +256,7 @@ async function handleRequest(event) {
                 // If specialized instance exists and prefix matches, use it
                 // Pass a new object that looks like a FetchEvent to ensure compatibility
                 const requestToFetch = url.startsWith(location.origin) ? event.request : new Request(new URL(url, location.origin).href, event.request);
-                const newEvent = Object.create(event);
-                Object.defineProperty(newEvent, 'request', { value: requestToFetch });
-                return await instance.fetch(newEvent);
+                return await instance.fetch(Object.assign(Object.create(event), { request: requestToFetch }));
             } catch (err) {
                 console.error(`Root SW: Instance fetch error for ${url}:`, err);
             }
@@ -302,15 +295,11 @@ async function handleRequest(event) {
             if (isEncoded && !url.includes(targetConfig.prefix)) {
                 const encodedPart = url.split('hvtrs8')[1];
                 const fullProxyUrl = location.origin + targetConfig.prefix + 'hvtrs8' + encodedPart;
-                const newEvent = Object.create(event);
-                Object.defineProperty(newEvent, 'request', { value: new Request(fullProxyUrl, event.request) });
-                return await targetInstance.fetch(newEvent);
+                return await targetInstance.fetch(Object.assign(Object.create(event), { request: new Request(fullProxyUrl, event.request) }));
             } else if (!url.includes(targetConfig.prefix)) {
                 const encoded = Ultraviolet.codec.xor.encode(url);
                 const fullProxyUrl = location.origin + targetConfig.prefix + encoded;
-                const newEvent = Object.create(event);
-                Object.defineProperty(newEvent, 'request', { value: new Request(fullProxyUrl, event.request) });
-                return await targetInstance.fetch(newEvent);
+                return await targetInstance.fetch(Object.assign(Object.create(event), { request: new Request(fullProxyUrl, event.request) }));
             } else {
                 return await targetInstance.fetch(event);
             }
