@@ -20,6 +20,7 @@ let unsubRole = null;
 let unsubBan = null;
 let banGuardInterval = null;
 let currentBanData = null; 
+let isUserAdmin = false; 
 
 function cleanupAllListeners() {
     console.log("BanEnforcer: Cleaning up all listeners.");
