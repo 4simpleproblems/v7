@@ -372,8 +372,21 @@ function lockPageAsBanned(banData) {
                 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    if (!isExcludedPage) {
-                        lockPageAsBanned({ uid: uid, ...data });
+                    
+                    // --- NEW: Page-Specific Scope Check ---
+                    if (data.scope === 'page' && data.pages && Array.isArray(data.pages)) {
+                        const isPageBanned = data.pages.some(p => path.includes(p));
+                        if (isPageBanned && !isExcludedPage) {
+                            lockPageAsBanned({ uid: uid, ...data });
+                        } else if (!isPageBanned && currentBanData && currentBanData.uid === uid) {
+                            // If they were locked but now on a safe page, unlock
+                            unlockPage();
+                        }
+                    } else {
+                        // Global Ban
+                        if (!isExcludedPage) {
+                            lockPageAsBanned({ uid: uid, ...data });
+                        }
                     }
                 } else {
                     if (!currentBanData || currentBanData.severity !== 'hardware') {

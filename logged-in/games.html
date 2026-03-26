@@ -709,7 +709,6 @@
         const categoryColors = {
             'StrongdogXP': 'text-strongdog-orange',
             'GN-Math': 'text-gn-math',
-            'TGLSC': 'text-blue-500',
             'Gameboy Games': 'text-gameboy',
             'Others': 'text-other-grey', 
         };
@@ -733,15 +732,6 @@
                 ],
                 logo: "./images/credits/gn_logo.png",
                 color: "#FD2E59"
-            },
-            'TGLSC': {
-                desc: "Main Creator: TGLSC Team. A high-speed content delivery network providing 170+ unblocked web games and apps across genres like .io, FPS, Horror, Sandbox, and Racing. Their structured API ensures robust delivery and seamless integration. (Last updated: March 23, 2026)",
-                links: [
-                    { type: 'github', url: "https://github.com/Endlessguyin/TGLSC-CDN/", label: "GitHub" },
-                    { type: 'discord', url: "https://discord.com/invite/tglsc", label: "Discord" }
-                ],
-                logo: "/tglsc-proxy/favicon.ico",
-                color: "#3B82F6"
             },
             'Others': { 
                 desc: "A tribute to the open-source community. This section features projects like Eaglercraft, JS-DOS, and Doom, developed by talented individuals who believe in accessible software for everyone.",
@@ -1169,21 +1159,6 @@
         async function openZone(game) {
             if (!game || !game.url) return;
 
-            // Use dedicated page for TGLSC games
-            if (game.category === 'TGLSC' && game.slug) {
-                window.location.href = '/games/' + game.slug;
-                return;
-            }
-
-            // Ensure TGLSC URLs are properly proxied if not already (fallback)
-            if (game.category === 'TGLSC' && !game.url.startsWith('/tglsc-proxy/')) {
-                game.url = game.url.replace(/^https?:\/\/(www\.)?glseries\.net\//, "/tglsc-proxy/");
-                if (!game.url.startsWith('/tglsc-proxy/')) {
-                    // Fallback for relative URLs or if regex missed
-                    game.url = "/tglsc-proxy/" + game.url.replace(/^\//, "");
-                }
-            }
-
             // Auto-replace legacy GN-Math URLs
             if (game.category === 'GN-Math' && game.url.includes('raw.githack.com/gn-math/html/main/')) {
                 game.url = game.url.replace('raw.githack.com/gn-math/html/main/', 'cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/');
@@ -1282,19 +1257,15 @@
             zoneFrame.setAttribute('sandbox', sandboxRules);
 
             // --- REVISED LOGIC FOR LOADING GAMES WITH RETRY ---
-            // GN-Math uses content injection. StrongdogXP, TGLSC, and Others use standard loading.
+            // GN-Math uses content injection. StrongdogXP and Others use standard loading.
             // EXCEPTION: Eaglercraft uses injection to ensure keyboard focus/input works correctly as a "local" file.
-            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP' || game.category === 'TGLSC';
+            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP';
             
             const attemptLoad = async (retriesLeft) => {
                 try {
                     // Pre-check URL validity
-                    console.log(`Attempting to load: ${game.url}`);
                     const check = await fetch(game.url, { method: 'HEAD' });
-                    if (!check.ok) {
-                        console.error(`HEAD check failed for ${game.url} with status ${check.status}`);
-                        throw new Error(`HTTP ${check.status}`);
-                    }
+                    if (!check.ok) throw new Error(`HTTP ${check.status}`);
                     
                     // If successful, set src
                     if (isStandardURLGame) {
@@ -1454,11 +1425,7 @@
 
         const handleSearch = debounce(() => {
             const text = searchInput.value.toLowerCase().trim();
-            const filteredDropdown = text ? searchableGames.filter(g => 
-                g.name.toLowerCase().includes(text) || 
-                (g.category && g.category.toLowerCase().includes(text)) || 
-                (g.originalCategory && g.originalCategory.toLowerCase().includes(text))
-            ).slice(0, 5) : [];
+            const filteredDropdown = text ? searchableGames.filter(g => g.name.toLowerCase().includes(text)).slice(0, 5) : [];
             
             searchResults.innerHTML = "";
             
@@ -1490,18 +1457,14 @@
                 linkEl.dataset.gameId = game.id;
                 let isFavorite = favorites.includes(String(game.id));
 
-                const catLabel = game.category === 'StrongdogXP' ? 'StrongdogXP' : (game.category === 'GN-Math' ? 'GN-Math' : (game.category === 'TGLSC' ? `TGLSC • ${game.originalCategory || 'General'}` : 'Others'));
-                const catColor = game.category === 'StrongdogXP' ? 'text-strongdog-orange' : (game.category === 'GN-Math' ? 'text-gn-math' : (game.category === 'TGLSC' ? 'text-blue-500' : 'text-gray-400'));
+                const catLabel = game.category === 'StrongdogXP' ? 'StrongdogXP' : (game.category === 'GN-Math' ? 'GN-Math' : 'Others');
+                const catColor = game.category === 'StrongdogXP' ? 'text-strongdog-orange' : (game.category === 'GN-Math' ? 'text-gn-math' : 'text-gray-400');
 
                 const smartTextClass = getSmartTextColor();
-                const statusBadge = game.status ? `<span class="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] px-1 py-0.5 rounded-full font-bold uppercase z-10 shadow-sm border border-white/20">${game.status}</span>` : '';
-
+                
                 linkEl.innerHTML = `
                     <div class="flex items-center truncate min-w-0">
-                        <div class="relative flex-shrink-0">
-                            <img src="${imgSrc}" alt="${game.name}" class="w-10 h-10 rounded-lg object-cover">
-                            ${statusBadge}
-                        </div>
+                        <img src="${imgSrc}" alt="${game.name}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
                         <div class="flex flex-col ml-3 truncate min-w-0">
                             <span class="font-medium truncate ${smartTextClass}" title="${game.name}">${game.name}</span>
                             <span class="category-badge w-fit ${catColor}">${catLabel}</span>
@@ -1635,39 +1598,6 @@
             }
             
             const strongdogGames = gamesData.map(g => ({ ...g, category: 'StrongdogXP' }));
-
-            // TGLSC Fetching
-            let tglscGames = [];
-            try {
-                const tglscRes = await fetch("https://glseries.net/api/cdn");
-                const tglscRaw = await tglscRes.json();
-                if (tglscRaw.success && tglscRaw.data) {
-                    tglscGames = tglscRaw.data.map(g => {
-                        let gameUrl = g.embed_url;
-                        if (/^https?:\/\/(www\.)?glseries\.net\//.test(gameUrl)) {
-                            gameUrl = gameUrl.replace(/^https?:\/\/(www\.)?glseries\.net\//, "/tglsc-proxy/");
-                        } else if (gameUrl.startsWith('/')) {
-                            gameUrl = '/tglsc-proxy' + gameUrl;
-                        } else if (!gameUrl.startsWith('http')) {
-                            gameUrl = '/tglsc-proxy/assets/applications/content/' + gameUrl;
-                        }
-
-                        return {
-                            id: `tglsc-${g.id}`,
-                            name: g.title,
-                            imgSrc: g.thumbnail.replace(/^https?:\/\/(www\.)?glseries\.net\//, "/tglsc-proxy/"),
-                            category: 'TGLSC',
-                            originalCategory: g.category,
-                            url: gameUrl,
-                            slug: g.slug,
-                            status: g.status,
-                            type: g.type
-                        };
-                    });
-                }
-            } catch (e) {
-                console.warn("Failed to load TGLSC games:", e);
-            }
             
             try {
                 let sharesponse;
@@ -1725,10 +1655,10 @@
                     popularity: popularityData[g.id] || 0
                 }));
                 
-                allGames = [...strongdogGames, ...gnMathGames, ...tglscGames, ...filteredOthers];
+                allGames = [...strongdogGames, ...gnMathGames, ...filteredOthers];
             } catch (error) { 
                 console.warn("Failed to load GN-Math, falling back to others.", error);
-                allGames = [...strongdogGames, ...tglscGames, ...filteredOthers]; 
+                allGames = [...strongdogGames, ...filteredOthers]; 
             }
 
             try {
@@ -1759,7 +1689,7 @@
                 }
             });
 
-            categories = ['StrongdogXP', 'GN-Math', 'TGLSC', 'Gameboy Games', 'Others'].filter(cat => allGames.some(g => g.category === cat));
+            categories = ['StrongdogXP', 'GN-Math', 'Gameboy Games', 'Others'].filter(cat => allGames.some(g => g.category === cat));
 
             const { category: urlCat } = parseURL();
             if (urlCat) currentCategoryIndex = Math.max(0, categories.findIndex(c => c.replace(/\s+/g, '-').toLowerCase() === urlCat.toLowerCase()));
