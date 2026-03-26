@@ -458,6 +458,12 @@
         const pageContent = document.getElementById('page-content');
         const optionsMenuBtn = document.getElementById('options-menu-btn');
         
+        let unsubConfig = () => {};
+        function cleanup() {
+            unsubConfig();
+        }
+        window.addEventListener('pagehide', cleanup);
+
         if (window.showLoader) window.showLoader("Soundboard");
         const optionsDropdown = document.getElementById('options-dropdown');
         const soundSearchInput = document.getElementById('sound-search');
@@ -518,44 +524,32 @@
             loadSoundsLocal();
             loadThirdPartySounds();
 
-            // Initialize Config Listener
-            initRealtimeConfig();
+            // Initialize Config
+            fetchConfig();
         }
 
-        // --- Firestore Realtime Listener ---
-        function initRealtimeConfig() {
-            const configRef = doc(db, 'config', 'soundboard');
-            onSnapshot(configRef, (docSnap) => {
+        // --- OPTIMIZATION: One-time fetch instead of live listener ---
+        async function fetchConfig() {
+            try {
+                const configRef = doc(db, 'config', 'soundboard');
+                const docSnap = await getDoc(configRef);
+                
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    // Admin toggle logic checks "explicitEnabled". Default to true if field missing but doc exists.
                     const isExplicitEnabled = data.explicitEnabled !== false;
-                    
-                    if (isExplicitEnabled) {
-                        explicitSectionWrapper.style.display = 'block';
-                    } else {
-                        explicitSectionWrapper.style.display = 'none';
-                    }
+                    explicitSectionWrapper.style.display = isExplicitEnabled ? 'block' : 'none';
 
-                    // Admin toggle logic for "thirdPartyEnabled". Default to true.
                     const isThirdPartyEnabled = data.thirdPartyEnabled !== false;
-
-                    if (isThirdPartyEnabled) {
-                        thirdPartySectionWrapper.style.display = 'block';
-                    } else {
-                        thirdPartySectionWrapper.style.display = 'none';
-                    }
+                    thirdPartySectionWrapper.style.display = isThirdPartyEnabled ? 'block' : 'none';
                 } else {
-                    // Doc doesn't exist? Default to true.
                     explicitSectionWrapper.style.display = 'block';
                     thirdPartySectionWrapper.style.display = 'block';
                 }
-            }, (error) => {
-                console.warn("Config listener error:", error);
-                // Fallback to visible on error
+            } catch (error) {
+                console.warn("Config fetch error:", error);
                 explicitSectionWrapper.style.display = 'block';
                 thirdPartySectionWrapper.style.display = 'block';
-            });
+            }
         }
         
         document.addEventListener('keydown', (e) => {

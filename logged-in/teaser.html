@@ -362,27 +362,19 @@
             });
         }
 
+        // --- OPTIMIZATION: Reads from pre-aggregated leaderboard snapshot ---
         async function fetchUserRank(uid) {
-            const q = query(
-                collection(db, 'users'),
-                where('leaderboardAccepted', '==', true),
-                where('leaderboardOptOut', '==', false),
-                orderBy('totalV6Time', 'desc'),
-                limit(100)
-            );
-            
-            const snap = await getDocs(q);
-            
+            const leaderboardSnap = await getDoc(doc(db, 'leaderboard', 'snapshot'));
             let rank = '--';
-            let i = 1;
             let champion = null;
 
-            snap.forEach(docSnap => {
-                const data = docSnap.data();
-                if (i === 1) champion = { id: docSnap.id, ...data };
-                if (docSnap.id === uid) rank = `#${i}`;
-                i++;
-            });
+            if (leaderboardSnap.exists()) {
+                const data = leaderboardSnap.data();
+                const rankedUsers = data.users || [];
+                const userIndex = rankedUsers.findIndex(u => u.id === uid);
+                if (userIndex !== -1) rank = `#${userIndex + 1}`;
+                if (rankedUsers.length > 0) champion = rankedUsers[0];
+            }
 
             document.getElementById('leaderboard-rank').textContent = rank;
 
@@ -430,62 +422,20 @@
             container.innerHTML = avatarHtml;
         }
 
+        // --- OPTIMIZATION: Reads from pre-aggregated analytics summary ---
         async function loadAnalytics(uid, pageConfig = {}, userData = {}) {
-            const q = query(
-                collection(db, 'analytics'),
-                where('userId', '==', uid),
-                where('version', '==', 'project_niobium')
-            );
-            
-            const snap = await getDocs(q);
-            
+            const summarySnap = await getDoc(doc(db, "analytics_summary", "latest"));
             let totalPageViews = 0;
-            let pageMap = {}; 
-            let latestUA = "";
 
-            const findConfigByPath = (path) => {
-                const clean = (p) => p.toLowerCase().replace(/^(..\/|logged-in\/)/, '').replace('.html', '');
-                const target = clean(path);
+            if(summarySnap.exists()){
+                const summary = summarySnap.data();
+                totalPageViews = summary.traffic?.recentSessionsCount || 0;
                 
-                for (const key in pageConfig) {
-                    const page = pageConfig[key];
-                    if (clean(page.url) === target) return page;
-                    if (page.aliases) {
-                        for (const alias of page.aliases) {
-                            if (clean(alias) === target) return page;
-                        }
-                    }
-                }
-                return null;
-            };
+                const uaInfo = parseUA(navigator.userAgent);
+                document.getElementById('stat-browser').textContent = uaInfo.browser;
+                document.getElementById('stat-os').textContent = uaInfo.os;
+            }
 
-            snap.forEach(docSnap => {
-                const data = docSnap.data();
-                totalPageViews += (data.pageCount || 0);
-                if (data.userAgent) latestUA = data.userAgent;
-
-                if (data.visitedPages) {
-                    data.visitedPages.forEach(p => {
-                        const path = p.path || p.url;
-                        if (!path || path.includes('srcdoc')) return;
-                        
-                        const config = findConfigByPath(path);
-                        if (!config) return;
-
-                        const cleanTitle = config.name;
-                        const icon = config.icon || 'fa-solid fa-file-alt';
-                        
-                        if (!pageMap[path]) pageMap[path] = { title: cleanTitle, icon: icon, count: 0 };
-                        pageMap[path].count++;
-                    });
-                }
-            });
-
-            const sortedPages = Object.entries(pageMap).sort((a, b) => b[1].count - a[1].count);
-            
-            const uaInfo = parseUA(latestUA);
-            document.getElementById('stat-browser').textContent = uaInfo.browser;
-            document.getElementById('stat-os').textContent = uaInfo.os;
             document.getElementById('stat-device').textContent = window._LOCAL_MODE ? 'Version 5 Client' : 'Cloud Access';
 
             const displayTime = (timeInSecs) => {
@@ -495,7 +445,7 @@
             };
 
             displayTime(userData.totalV6Time || 0);
-            document.getElementById('stat-pageviews').textContent = "409";
+            document.getElementById('stat-pageviews').textContent = totalPageViews;
 
             const listEl = document.getElementById('recent-pages-list');
             listEl.innerHTML = '';

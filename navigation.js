@@ -83,6 +83,17 @@ const DEFAULT_THEME = {
 
 let fireworksInstance = null; // Store fireworks instance globally
 
+let unsubNotifs = null;
+let unsubUserDoc = null;
+
+function cleanupGlobalListeners() {
+    if (unsubNotifs) { unsubNotifs(); unsubNotifs = null; }
+    if (unsubUserDoc) { unsubUserDoc(); unsubUserDoc = null; }
+}
+
+window.addEventListener('pagehide', cleanupGlobalListeners);
+window.addEventListener('beforeunload', cleanupGlobalListeners);
+
 const hexToRgb = (hex) => {
     if (!hex || typeof hex !== 'string') return null;
     let c = hex.substring(1); 
@@ -2104,6 +2115,7 @@ let db;
         allPages = pages;
 
         auth.onAuthStateChanged(async (user) => {
+            cleanupGlobalListeners();
             let isPrivilegedUser = false;
             let userData = null;
             currentUser = user;
@@ -2113,7 +2125,7 @@ let db;
                 isPrivilegedUser = user.email === PRIVILEGED_EMAIL;
 
                 // Notifications Listener
-                db.collection('notifications')
+                unsubNotifs = db.collection('notifications')
                     .where('recipientId', '==', user.uid)
                     .limit(50)
                     .onSnapshot(snap => {
@@ -2156,7 +2168,7 @@ let db;
                     }, err => console.warn("Notifications listener error:", err));
 
                 // Set up real-time listener for user data
-                db.collection('users').doc(user.uid).onSnapshot(async (doc) => {
+                unsubUserDoc = db.collection('users').doc(user.uid).onSnapshot(async (doc) => {
                     userData = doc.exists ? doc.data() : null;
                     currentUserData = userData;
 
