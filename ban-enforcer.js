@@ -381,3 +381,5 @@ function lockPageAsBanned(banData) {
                 }
             });
         });
+    }
+})();
