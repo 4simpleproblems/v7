@@ -11,7 +11,7 @@ const configs = {
         sw: '/VELIUM/uv/uv.sw.js',
         handler: '/VELIUM/uv/uv.handler.js',
         client: '/VELIUM/uv/uv.client.js',
-        worker: '/VELIUM/baremux/worker.js'
+        worker: '/logged-in/baremux/worker.js'
     },
     vora: {
         prefix: '/VORA/VERN_SYSTEM/uv/service/',
@@ -21,7 +21,7 @@ const configs = {
         sw: '/VORA/VERN_SYSTEM/uv/uv.sw.js',
         handler: '/VORA/VERN_SYSTEM/uv/uv.handler.js',
         client: '/VORA/VERN_SYSTEM/uv/uv.client.js',
-        worker: '/VORA/VERN_SYSTEM/baremux/worker.js'
+        worker: '/logged-in/baremux/worker.js'
     },
     vora_plus: {
         prefix: '/VORA_PLUS/VERN_SYSTEM/uv/service/',
@@ -31,7 +31,7 @@ const configs = {
         sw: '/VORA_PLUS/VERN_SYSTEM/uv/uv.sw.js',
         handler: '/VORA_PLUS/VERN_SYSTEM/uv/uv.handler.js',
         client: '/VORA_PLUS/VERN_SYSTEM/uv/uv.client.js',
-        worker: '/VORA_PLUS/VERN_SYSTEM/baremux/worker.js'
+        worker: '/logged-in/baremux/worker.js'
     },
     vern: {
         prefix: '/VERN/uv/service/',
@@ -41,7 +41,7 @@ const configs = {
         sw: '/VERN/uv/uv.sw.js',
         handler: '/VERN/uv/uv.handler.js',
         client: '/VERN/uv/uv.client.js',
-        worker: '/VERN/baremux/worker.js'
+        worker: '/logged-in/baremux/worker.js'
     },
     vana: {
         prefix: '/logged-in/uv/service/',
@@ -61,7 +61,7 @@ const configs = {
         sw: '/GAMES/uv/uv.sw.js',
         handler: '/GAMES/uv/uv.handler.js',
         client: '/GAMES/uv/uv.client.js',
-        worker: '/GAMES/baremux/worker.js'
+        worker: '/logged-in/baremux/worker.js'
     },
     valo: {
         prefix: '/VERN/uv/service/',
@@ -71,7 +71,7 @@ const configs = {
         sw: '/VERN/uv/uv.sw.js',
         handler: '/VERN/uv/uv.handler.js',
         client: '/VERN/uv/uv.client.js',
-        worker: '/VERN/baremux/worker.js'
+        worker: '/logged-in/baremux/worker.js'
     }
 };
 
@@ -92,8 +92,8 @@ async function getBareClient() {
 }
 
 // Default worker path
-let currentWorkerPath = location.origin + configs.vora.worker;
-let connection = new BareMux.WorkerConnection(currentWorkerPath);
+let currentWorkerPath = location.origin + '/logged-in/baremux/worker.js';
+let connection = new BareMux.BareMuxConnection(currentWorkerPath);
 let bareClient = new BareMux.BareClient(connection);
 
 function updateTransport(path, port = null) {
@@ -264,15 +264,7 @@ async function handleRequest(event) {
                 // If specialized instance exists and prefix matches, use it
                 // Pass a new object that looks like a FetchEvent to ensure compatibility
                 const requestToFetch = url.startsWith(location.origin) ? event.request : new Request(new URL(url, location.origin).href, event.request);
-                
-                const mockEvent = Object.create(event);
-                Object.defineProperty(mockEvent, 'request', {
-                    value: requestToFetch,
-                    writable: false,
-                    enumerable: true,
-                    configurable: true
-                });
-                return await instance.fetch(mockEvent);
+                return await instance.fetch({ request: requestToFetch });
             } catch (err) {
                 console.error(`Root SW: Instance fetch error for ${url}:`, err);
             }
@@ -311,25 +303,11 @@ async function handleRequest(event) {
             if (isEncoded && !url.includes(targetConfig.prefix)) {
                 const encodedPart = url.split('hvtrs8')[1];
                 const fullProxyUrl = location.origin + targetConfig.prefix + 'hvtrs8' + encodedPart;
-                const mockEvent = Object.create(event);
-                Object.defineProperty(mockEvent, 'request', {
-                    value: new Request(fullProxyUrl, event.request),
-                    writable: false,
-                    enumerable: true,
-                    configurable: true
-                });
-                return await targetInstance.fetch(mockEvent);
+                return await targetInstance.fetch({ request: new Request(fullProxyUrl, event.request) });
             } else if (!url.includes(targetConfig.prefix)) {
                 const encoded = Ultraviolet.codec.xor.encode(url);
                 const fullProxyUrl = location.origin + targetConfig.prefix + encoded;
-                const mockEvent = Object.create(event);
-                Object.defineProperty(mockEvent, 'request', {
-                    value: new Request(fullProxyUrl, event.request),
-                    writable: false,
-                    enumerable: true,
-                    configurable: true
-                });
-                return await targetInstance.fetch(mockEvent);
+                return await targetInstance.fetch({ request: new Request(fullProxyUrl, event.request) });
             } else {
                 return await targetInstance.fetch(event);
             }

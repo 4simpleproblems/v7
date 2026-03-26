@@ -481,7 +481,7 @@
 
             // Init BareMux
             try {
-                const workerPath = "/VERN/baremux/worker.js";
+                const workerPath = "/logged-in/baremux/worker.js";
                 const connection = new BareMux.BareMuxConnection(workerPath);
                 const wispUrl = "wss://wisp.mercurywork.shop/";
                 await connection.setTransport("/VERN/libcurl/index.mjs", [

@@ -57,8 +57,8 @@
                 }
             }
             try {
-                // Use consistent relative paths for BareMux within VELIUM
-                const workerPath = "/VELIUM/baremux/worker.js";
+                // Use standardized global path for SharedWorker to ensure it's shared with Root SW
+                const workerPath = "/logged-in/baremux/worker.js";
                 const connection = new BareMux.BareMuxConnection(workerPath);
                 const wispUrl = "wss://wisp.mercurywork.shop/";
                 await connection.setTransport("/VELIUM/libcurl/index.mjs", [
