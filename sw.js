@@ -90,12 +90,17 @@ let currentWorkerPath = location.origin + '/logged-in/baremux/worker.js';
 let connection = new BareMux.BareMuxConnection(currentWorkerPath);
 let bareClient = new BareMux.BareClient(connection);
 
+async function getBareClient() {
+    if (transportReady) return bareClient;
+    await transportPromise;
+    return bareClient;
+}
+
 function updateTransport(path, port = null) {
     const hasPathChanged = path && path !== currentWorkerPath;
     const hasNewPort = !!port;
 
     if (hasPathChanged || hasNewPort) {
-        // Prevent overwriting a valid port with a path-based search if the path is the same
         if (connection.port && !hasNewPort && !hasPathChanged) {
             return;
         }
@@ -106,12 +111,9 @@ function updateTransport(path, port = null) {
         }
         
         try {
-            // Re-initialize connection. If port is provided, it's used directly.
-            // Otherwise, use the path to create a new connection that will search for a port
             connection = new BareMux.BareMuxConnection(port || currentWorkerPath);
             bareClient = new BareMux.BareClient(connection);
             
-            // Re-inject the updated client into all active UV instances
             for (const key in instances) {
                 instances[key].bareClient = bareClient;
             }
@@ -195,7 +197,8 @@ async function handleRequest(event) {
                          (url.includes('/baremux/') || 
                           url.includes('/uv/') || 
                           url.includes('/libcurl/') ||
-                          url.match(/\.(js|mjs|css|json|png|jpg|ico)$/)) &&
+                          url.includes('/music-api/') ||
+                          url.match(/\.(js|mjs|css|json|png|jpg|ico|svg|wasm)$/)) &&
                          !isProxied;
 
     const needsProxy = (hasPrefix || isAutoProxy || isEncoded) && !isLocalAsset;
@@ -241,7 +244,9 @@ async function handleRequest(event) {
                             headers[k] = v;
                         }
 
-                        const response = await bareClient.fetch(decodedUrl, {
+                        // Use the robust getter
+                        const client = await getBareClient();
+                        const response = await client.fetch(decodedUrl, {
                             headers,
                             method: event.request.method,
                             body: (event.request.method === 'GET' || event.request.method === 'HEAD') ? null : await event.request.clone().arrayBuffer(),
@@ -256,7 +261,15 @@ async function handleRequest(event) {
                 // If specialized instance exists and prefix matches, use it
                 // Pass a new object that looks like a FetchEvent to ensure compatibility
                 const requestToFetch = url.startsWith(location.origin) ? event.request : new Request(new URL(url, location.origin).href, event.request);
-                return await instance.fetch(Object.assign(Object.create(event), { request: requestToFetch }));
+                
+                const mockEvent = Object.create(event);
+                Object.defineProperty(mockEvent, 'request', {
+                    value: requestToFetch,
+                    writable: false,
+                    enumerable: true,
+                    configurable: true
+                });
+                return await instance.fetch(mockEvent);
             } catch (err) {
                 console.error(`Root SW: Instance fetch error for ${url}:`, err);
             }
@@ -295,11 +308,25 @@ async function handleRequest(event) {
             if (isEncoded && !url.includes(targetConfig.prefix)) {
                 const encodedPart = url.split('hvtrs8')[1];
                 const fullProxyUrl = location.origin + targetConfig.prefix + 'hvtrs8' + encodedPart;
-                return await targetInstance.fetch(Object.assign(Object.create(event), { request: new Request(fullProxyUrl, event.request) }));
+                const mockEvent = Object.create(event);
+                Object.defineProperty(mockEvent, 'request', {
+                    value: new Request(fullProxyUrl, event.request),
+                    writable: false,
+                    enumerable: true,
+                    configurable: true
+                });
+                return await targetInstance.fetch(mockEvent);
             } else if (!url.includes(targetConfig.prefix)) {
                 const encoded = Ultraviolet.codec.xor.encode(url);
                 const fullProxyUrl = location.origin + targetConfig.prefix + encoded;
-                return await targetInstance.fetch(Object.assign(Object.create(event), { request: new Request(fullProxyUrl, event.request) }));
+                const mockEvent = Object.create(event);
+                Object.defineProperty(mockEvent, 'request', {
+                    value: new Request(fullProxyUrl, event.request),
+                    writable: false,
+                    enumerable: true,
+                    configurable: true
+                });
+                return await targetInstance.fetch(mockEvent);
             } else {
                 return await targetInstance.fetch(event);
             }

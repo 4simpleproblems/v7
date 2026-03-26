@@ -1,5 +1,5 @@
-"use strict";
 !(function () {
+  "use strict";
   const e = MessagePort.prototype.postMessage;
   let t = null;
   function a(e, t, a) {
@@ -131,5 +131,6 @@
     (self.onconnect = (e) => {
       l(e.ports[0]);
     }),
-    console.debug("bare-mux: running v2.1.6 (build 4b7607b)");
+    console.debug("bare-mux: running v2.1.7 (build c56d286)");
 })();
+//# sourceMappingURL=worker.js.map
