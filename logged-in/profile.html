@@ -565,6 +565,18 @@
         let isMutual         = false;
         let bannedUids       = new Set();
 
+        // --- FIX: Unsubscribe variables for all listeners ---
+        let unsubMainProfile = () => {};
+        let unsubFollower  = () => {};
+        let unsubFollowing = () => {};
+
+        function cleanup() {
+            unsubMainProfile();
+            unsubFollower();
+            unsubFollowing();
+        }
+        window.addEventListener('pagehide', cleanup);
+
         // ------------------------------------------------------------------
         // OVERLAY HELPERS
         // ------------------------------------------------------------------
