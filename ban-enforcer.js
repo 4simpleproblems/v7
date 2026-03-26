@@ -381,12 +381,3 @@ function lockPageAsBanned(banData) {
                 }
             });
         });
-    }
-})();
-               unlockPage();
-                    }
-                }
-            });
-        });
-    }
-})();
