@@ -302,39 +302,38 @@ function lockPageAsBanned(banData) {
         console.log("BanEnforcer: On excluded page. Skipping enforcement visuals.");
     }
 
-    // A. Check Hardware Ban first (even if signed out)
     const hwId = await getHardwareId();
-    const deathSentence = await checkDeathSentence();
-    
-    if (deathSentence && !isExcludedPage) {
-        lockPageAsBanned(deathSentence);
-    }
+    if (!hwId) return;
+
+    const checkHardwareEnforcement = () => {
+        if (isUserAdmin) {
+            unlockPage();
+            return;
+        }
+        if (!currentBanData || currentBanData.severity !== 'hardware') return;
+        
+        const user = auth.currentUser;
+        if (user && currentBanData.originalUid === user.uid) {
+            if (!isExcludedPage) {
+                lockPageAsBanned(currentBanData);
+            }
+        } else if (currentBanData.severity === 'hardware') {
+            unlockPage();
+        }
+    };
 
     // Check Hardware Ban in DB
     if (unsubHardware) unsubHardware();
     unsubHardware = onSnapshot(doc(db, 'hardware_bans', hwId), docSnap => {
         if (docSnap.exists()) {
-            const data = docSnap.data();
-            
-            // --- FIX: Only ban if this is the target user ---
-            onAuthStateChanged(auth, user => {
-                if (user && data.originalUid === user.uid) {
-                    if (!isExcludedPage) {
-                        lockPageAsBanned({ severity: 'hardware', ...data });
-                    } else {
-                        currentBanData = { severity: 'hardware', ...data };
-                    }
-                } else if (currentBanData && currentBanData.severity === 'hardware') {
-                    // If hardware record exists but UID doesn't match, unlock
-                    unlockPage();
-                }
-            });
+            currentBanData = { severity: 'hardware', ...docSnap.data() };
+            checkHardwareEnforcement();
         } else {
-            // Lift the lock if hardware ban is removed in the database
             if (currentBanData && currentBanData.severity === 'hardware') {
                 console.log("BanEnforcer: Hardware ban lifted in DB. Unlocking...");
                 localStorage.removeItem(DEATH_SENTENCE_KEY);
                 unlockPage();
+                currentBanData = null;
             }
         }
     });
@@ -342,10 +341,11 @@ function lockPageAsBanned(banData) {
     // B. Check Auth Status and Account Ban
     if (!path.includes('messenger-v2.html')) {
         onAuthStateChanged(auth, async user => {
-            cleanupAllListeners(); // Clean up old user's listeners before setting new ones
+            cleanupAllListeners(); 
 
             if (!user) {
-                // Handle signed-out state for restricted pages
+                isUserAdmin = false;
+                checkHardwareEnforcement();
                 return;
             }
 
@@ -353,12 +353,36 @@ function lockPageAsBanned(banData) {
 
             // 1. Role Check
             unsubRole = onSnapshot(doc(db, 'admins', uid), roleSnap => {
-                // Role logic...
+                const roleData = roleSnap.exists() ? roleSnap.data() : null;
+                isUserAdmin = (roleData && roleData.role === 'admin' && roleData.type === 'full') || (user.email === '4simpleproblems@gmail.com');
+                
+                window.isAdmin = isUserAdmin;
+                window.isSuperAdmin = user.email === '4simpleproblems@gmail.com';
+
+                if (isUserAdmin) {
+                    unlockPage();
+                } else {
+                    checkHardwareEnforcement();
+                }
             });
 
             // 2. Account Ban Check
             unsubBan = onSnapshot(doc(db, 'bans', uid), docSnap => {
-                // Ban logic...
+                if (isUserAdmin) {
+                    unlockPage();
+                    return;
+                }
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (!isExcludedPage) {
+                        lockPageAsBanned({ uid: uid, ...data });
+                    }
+                } else {
+                    if (!currentBanData || currentBanData.severity !== 'hardware') {
+                        unlockPage();
+                    }
+                }
             });
         });
     }

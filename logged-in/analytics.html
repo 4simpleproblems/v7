@@ -308,31 +308,28 @@
 
         <div id="tab-ban-requests" class="tab-content hidden">
             <div class="bg-[#0d0d0d] border border-[#1a1a1a] rounded-[1.25rem] overflow-hidden">
-                <div class="p-4 border-b border-[#1a1a1a] bg-[#0a0a0a] flex justify-between items-center">
+                <div class="p-6 border-b border-[#1a1a1a] bg-[#0a0a0a] flex justify-between items-center">
                     <div>
-                        <h3 class="text-white text-lg">Ban Requests</h3>
-                        <p class="text-sm text-gray-500">Requests submitted by sub-admins for review.</p>
+                        <h3 class="text-white text-xl font-bold">Pending Ban Requests</h3>
+                        <p class="text-sm text-gray-500">Requests submitted by sub-admins for administrative review.</p>
                     </div>
                     <div id="admin-only-ban-actions" class="hidden">
-                        <button id="clear-denied-requests" class="text-xs text-gray-500 hover:text-white transition">Clear Processed</button>
+                        <button id="clear-denied-requests" class="bg-[#1a1a1a] hover:bg-[#252525] text-gray-400 hover:text-white border border-[#333] px-4 py-2 rounded-[14px] text-xs transition">
+                            <i class="fa-solid fa-broom mr-2"></i> Clear Processed
+                        </button>
                     </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="analytics-table">
-                        <thead>
-                            <tr>
-                                <th>Target User</th>
-                                <th>Requested By</th>
-                                <th>Reason</th>
-                                <th>Severity/Scope</th>
-                                <th>Time</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ban-requests-body">
-                            <tr><td colspan="6" class="text-center text-gray-600 py-8">No pending ban requests.</td></tr>
-                        </tbody>
-                    </table>
+                
+                <div id="ban-requests-grid" class="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <!-- Cards will be injected here -->
+                </div>
+                
+                <div id="no-ban-requests" class="p-20 text-center hidden">
+                    <div class="w-16 h-16 bg-green-900/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-check-double text-2xl"></i>
+                    </div>
+                    <h4 class="text-white font-medium">All caught up!</h4>
+                    <p class="text-gray-500 text-sm mt-1">No pending ban requests at this time.</p>
                 </div>
             </div>
         </div>
@@ -894,61 +891,68 @@
         };
 
         const renderBanRequests = (requests) => {
-            const tbody = document.getElementById('ban-requests-body');
-            if (!tbody) return;
-            if (requests.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-600 py-8">No pending ban requests.</td></tr>';
+            const grid = document.getElementById('ban-requests-grid');
+            const emptyEl = document.getElementById('no-ban-requests');
+            if (!grid) return;
+
+            const pendingRequests = requests.filter(r => r.status !== 'denied');
+
+            if (pendingRequests.length === 0) {
+                grid.innerHTML = '';
+                emptyEl.classList.remove('hidden');
                 return;
             }
 
-            tbody.innerHTML = requests.sort((a, b) => (b.requestedAt?.toDate() || 0) - (a.requestedAt?.toDate() || 0)).map(req => {
+            emptyEl.classList.add('hidden');
+            grid.innerHTML = pendingRequests.sort((a, b) => (b.requestedAt?.toDate() || 0) - (a.requestedAt?.toDate() || 0)).map(req => {
                 const target = allUsers.find(u => u.id === req.targetUid) || { username: 'Unknown', email: req.targetUid };
                 const requester = allUsers.find(u => u.id === req.requestedBy) || { username: 'Admin', email: req.requestedBy };
                 
                 return `
-                    <tr class="${req.status === 'denied' ? 'opacity-50' : ''}">
-                        <td>
-                            <div class="flex flex-col">
-                                <span class="text-white font-medium">${target.username || 'Unknown'}</span>
-                                <span class="text-[10px] text-gray-500 font-mono">${req.targetUid}</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="flex flex-col">
-                                <span class="text-gray-300">${requester.username || 'Admin'}</span>
-                                <span class="text-[10px] text-gray-500 font-mono">${req.requestedBy.substring(0,8)}</span>
-                            </div>
-                        </td>
-                        <td class="max-w-xs truncate text-gray-400 text-sm" title="${req.reason}">${req.reason}</td>
-                        <td>
-                            <div class="flex flex-col gap-1">
-                                <span class="text-[10px] uppercase font-bold text-orange-400">${req.severity}</span>
-                                <span class="text-[10px] text-gray-500 uppercase">${req.scope}</span>
-                            </div>
-                        </td>
-                        <td class="text-xs text-gray-500">${formatTimeAgo(req.requestedAt)}</td>
-                        <td>
-                            ${currentUserRole === 'admin' && req.status !== 'denied' ? `
-                                <div class="flex gap-2">
-                                    <button class="action-btn btn-unblock btn-accept-ban" data-id="${req.id}" title="Accept & Ban">
-                                        <i class="fa-solid fa-check"></i>
-                                    </button>
-                                    <button class="action-btn btn-block btn-deny-ban" data-id="${req.id}" title="Deny Request">
-                                        <i class="fa-solid fa-xmark"></i>
-                                    </button>
+                    <div class="bg-[#0a0a0a] border border-[#1a1a1a] rounded-[1.25rem] p-5 flex flex-col gap-4 hover:border-red-900/30 transition-all group">
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-red-900/20 flex items-center justify-center text-red-500 font-bold">
+                                    ${(target.username || '?').charAt(0).toUpperCase()}
                                 </div>
-                            ` : `
-                                <span class="text-xs ${req.status === 'denied' ? 'text-red-500' : 'text-gray-500 italic'}">${req.status || 'Pending'}</span>
-                            `}
-                        </td>
-                    </tr>
+                                <div class="flex flex-col">
+                                    <span class="text-white font-medium">${target.username || 'Unknown'}</span>
+                                    <span class="text-[10px] text-gray-500 font-mono">${req.targetUid.substring(0,12)}...</span>
+                                </div>
+                            </div>
+                            <span class="text-[10px] bg-indigo-900/20 text-indigo-400 px-2 py-1 rounded border border-indigo-500/20 font-bold uppercase tracking-tighter">
+                                ${req.severity}
+                            </span>
+                        </div>
+
+                        <div class="bg-black/40 rounded-xl p-3 border border-[#1a1a1a]">
+                            <p class="text-xs text-gray-400 leading-relaxed italic">"${req.reason}"</p>
+                        </div>
+
+                        <div class="flex justify-between items-center mt-auto pt-2 border-t border-[#1a1a1a]">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-gray-500 uppercase tracking-widest">Requested By</span>
+                                <span class="text-xs text-gray-300 font-medium">${requester.username || 'Admin'}</span>
+                            </div>
+                            <span class="text-[10px] text-gray-600">${formatTimeAgo(req.requestedAt)}</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <button class="flex items-center justify-center gap-2 py-2.5 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-xl text-xs font-bold transition-all btn-accept-ban" data-id="${req.id}">
+                                <i class="fa-solid fa-gavel text-[10px]"></i> Accept Ban
+                            </button>
+                            <button class="flex items-center justify-center gap-2 py-2.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl text-xs font-bold transition-all btn-deny-ban" data-id="${req.id}">
+                                <i class="fa-solid fa-xmark text-[10px]"></i> Deny
+                            </button>
+                        </div>
+                    </div>
                 `;
             }).join('');
 
-            tbody.querySelectorAll('.btn-accept-ban').forEach(btn => {
+            grid.querySelectorAll('.btn-accept-ban').forEach(btn => {
                 btn.onclick = () => processBanRequest(btn.dataset.id, true);
             });
-            tbody.querySelectorAll('.btn-deny-ban').forEach(btn => {
+            grid.querySelectorAll('.btn-deny-ban').forEach(btn => {
                 btn.onclick = () => processBanRequest(btn.dataset.id, false);
             });
         };
@@ -1237,7 +1241,8 @@
                 });
             });
 
-            document.getElementById('admin-only-ban-actions')?.addEventListener('click', async () => {
+            document.getElementById('clear-denied-requests')?.addEventListener('click', async () => {
+                if (!confirm("Clear all denied requests?")) return;
                 const q = query(collection(db, 'ban_requests'), where('status', '==', 'denied'));
                 const snap = await getDocs(q);
                 const batch = writeBatch(db);
@@ -1245,7 +1250,6 @@
                 await batch.commit();
                 showNotification("Cleared processed requests", 'fa-solid fa-broom');
             });
-
         };
 
         const subscribeToData = () => {
@@ -1675,6 +1679,10 @@
                     canRemove = isSubAdmin;
                 }
 
+                // --- NEW: Ban Restriction Logic ---
+                const isTargetFullAdmin = isAdmin && !isSubAdmin;
+                const isBanDisabled = isTargetFullAdmin;
+
                 const tagHtml = user.userTag ? `
                     <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded border tracking-wider" style="color: ${user.userTag.color}; border-color: ${user.userTag.color}40; background-color: ${user.userTag.color}10;">
                         ${user.userTag.text}
@@ -1703,7 +1711,10 @@
                     <td>${statusBadge}</td>
                     <td>
                         <div class="flex items-center">
-                            <button class="action-btn ${isBanned ? 'btn-unblock' : 'btn-block'}" data-action="toggle-ban" data-uid="${user.id}" data-username="${user.username || user.email}" title="${isBanned ? 'Unban' : 'Ban'}">
+                            <button class="action-btn ${isBanned ? 'btn-unblock' : 'btn-block'} ${isBanDisabled ? 'opacity-20 cursor-not-allowed' : ''}" 
+                                    data-action="toggle-ban" data-uid="${user.id}" data-username="${user.username || user.email}" 
+                                    ${isBanDisabled ? 'disabled' : ''}
+                                    title="${isBanned ? 'Unban' : (currentUserRole === 'sub' ? 'Request Ban' : 'Ban')}">
                                 ${isBanned ? '<i class="fa-solid fa-unlock"></i>' : '<i class="fa-solid fa-ban"></i>'}
                             </button>
                             ${(isAdmin || isSubAdmin) 
@@ -2031,6 +2042,9 @@
             document.getElementById('delete-user-modal').classList.remove('open');
             userToDelete = null;
         };
+
+        document.getElementById('close-ban-modal').addEventListener('click', closeBanModal);
+        document.getElementById('cancel-ban').addEventListener('click', closeBanModal);
 
         document.getElementById('close-tag-modal').addEventListener('click', closeTagModal);
         document.getElementById('cancel-tag').addEventListener('click', closeTagModal);

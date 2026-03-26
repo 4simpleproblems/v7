@@ -230,7 +230,8 @@ service cloud.firestore {
     // XIII. Analytics & Summaries
     // ----------------------------------------------------------------------------------
     match /analytics/{sessionId} {
-      allow read, write: if isAdmin();
+      allow read: if isAtLeastSubAdmin();
+      allow write: if isAdmin();
       allow create, update: if (request.auth == null && request.resource.data.userId == 'anonymous') ||
                                (isAuthenticated() && request.resource.data.userId == request.auth.uid);
       allow delete: if false;
@@ -242,7 +243,7 @@ service cloud.firestore {
     }
 
     match /analytics_sessions/{sessionId} {
-      allow read, list, delete: if isAdmin();
+      allow read, list, delete: if isAtLeastSubAdmin();
       allow create, update: if true; 
     }
 
