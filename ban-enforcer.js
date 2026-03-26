@@ -315,11 +315,20 @@ function lockPageAsBanned(banData) {
     unsubHardware = onSnapshot(doc(db, 'hardware_bans', hwId), docSnap => {
         if (docSnap.exists()) {
             const data = docSnap.data();
-            if (!isExcludedPage) {
-                lockPageAsBanned({ severity: 'hardware', ...data });
-            } else {
-                currentBanData = { severity: 'hardware', ...data };
-            }
+            
+            // --- FIX: Only ban if this is the target user ---
+            onAuthStateChanged(auth, user => {
+                if (user && data.originalUid === user.uid) {
+                    if (!isExcludedPage) {
+                        lockPageAsBanned({ severity: 'hardware', ...data });
+                    } else {
+                        currentBanData = { severity: 'hardware', ...data };
+                    }
+                } else if (currentBanData && currentBanData.severity === 'hardware') {
+                    // If hardware record exists but UID doesn't match, unlock
+                    unlockPage();
+                }
+            });
         } else {
             // Lift the lock if hardware ban is removed in the database
             if (currentBanData && currentBanData.severity === 'hardware') {

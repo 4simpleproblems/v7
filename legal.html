@@ -55,7 +55,23 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             transition: border-color 0.3s ease;
+            position: relative;
         }
+        .section-tag {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--accent-color);
+            background: var(--accent-glow);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(79, 70, 229, 0.3);
+            font-weight: 700;
+            opacity: 0.6;
+        }
+        .legal-card:hover .section-tag { opacity: 1; }
         .legal-card:hover {
             border-color: var(--border-hover);
         }
@@ -174,6 +190,7 @@
 
                     <!-- Section: Network Agreement -->
                     <section id="network-agreement" class="scroll-mt-28 legal-card">
+                        <div class="section-tag">1;0</div>
                         <h3 class="text-xl text-white mb-4">1. Network Agreement</h3>
                         <p class="leading-relaxed mb-4">
                             By accessing, registering for, or using the 4simpleproblems (4SP) V6 network and its associated sub-systems (including but not limited to the Main Hub, VELIUM, VORA, and VANA), you agree to be bound by these Terms of Service.
@@ -185,31 +202,34 @@
 
                     <!-- Section: User Conduct -->
                     <section id="user-conduct" class="scroll-mt-28 legal-card">
+                        <div class="section-tag">2;0</div>
                         <h3 class="text-xl text-white mb-4">2. User Responsibility & Conduct</h3>
                         <p class="leading-relaxed mb-4">
                             You are solely responsible for your conduct and any data, text, photos, audio, or other materials ("Content") that you transmit, submit, or display on the 4SP service.
                         </p>
                         <ul class="space-y-2">
-                            <li class="legal-list-item"><strong>No Malicious Activity:</strong> You may not distribute viruses, destructive code, or attempt to compromise the integrity of the Firebase infrastructure, Cloud Functions, or Bare/Wisp servers.</li>
-                            <li class="legal-list-item"><strong>Infrastructure Protection:</strong> The intentional compromisation of 4SP access URLs, including the distribution of restricted links to unauthorized third parties, educational authorities, or network administrators, is strictly prohibited. Violation of this clause may result in immediate account termination. Appeals may be submitted to <span class="text-indigo-400">4simpleproblems@gmail.com</span>.</li>
-                            <li class="legal-list-item"><strong>Identity Integrity:</strong> You may not spoof administrative accounts or falsely claim affiliation with the 4SP development team.</li>
-                            <li class="legal-list-item"><strong>Respectful Interaction:</strong> Harassment, hate speech, threats, and explicit content are strictly prohibited across all social features.</li>
+                            <li class="legal-list-item"><strong>2;1 No Malicious Activity:</strong> You may not distribute viruses, destructive code, or attempt to compromise the integrity of the Firebase infrastructure, Cloud Functions, or Bare/Wisp servers.</li>
+                            <li class="legal-list-item"><strong>2;2 Infrastructure Protection:</strong> The intentional compromisation of 4SP access URLs, including the distribution of restricted links to unauthorized third parties, educational authorities, or network administrators, is strictly prohibited. Violation of this clause may result in immediate account termination. Appeals may be submitted to <span class="text-indigo-400">4simpleproblems@gmail.com</span>.</li>
+                            <li class="legal-list-item"><strong>2;3 Identity Integrity:</strong> You may not spoof administrative accounts or falsely claim affiliation with the 4SP development team.</li>
+                            <li class="legal-list-item"><strong>2;4 Respectful Interaction:</strong> Harassment, hate speech, threats, and explicit content are strictly prohibited across all social features.</li>
                         </ul>
                     </section>
 
                     <!-- Section: Content Responsibility -->
                     <section id="content-responsibility" class="scroll-mt-28 legal-card">
+                        <div class="section-tag">3;0</div>
                         <h3 class="text-xl text-white mb-4">3. Content Responsibility (Dailyphoto & Posts)</h3>
                         <p class="leading-relaxed mb-4">
                             Features like Dailyphoto and user feeds operate on a hyper-local, community-driven basis (e.g., filtered by school or district). 
                         </p>
                         <p class="leading-relaxed mb-4">
-                            <span class="text-red-400 font-medium">4simpleproblems is NOT liable for user-uploaded imagery or text.</span> We provide the conduit, but you retain ownership and responsibility for what you post. We reserve the right to remove any content reported by the community or deemed inappropriate by administrators without prior notice.
+                            <span class="text-red-400 font-medium">3;1 Liability Disclaimer: 4simpleproblems is NOT liable for user-uploaded imagery or text.</span> We provide the conduit, but you retain ownership and responsibility for what you post. We reserve the right to remove any content reported by the community or deemed inappropriate by administrators without prior notice.
                         </p>
                     </section>
 
                     <!-- Section: Leaderboard Terms -->
                     <section id="leaderboard-terms" class="scroll-mt-28 legal-card ring-1 ring-indigo-500/20 bg-indigo-900/5">
+                        <div class="section-tag">4;0</div>
                         <div class="flex items-center gap-3 mb-4">
                             <i class="fa-solid fa-trophy text-indigo-400 text-xl"></i>
                             <h3 class="text-xl text-white m-0">4. Global Leaderboard Terms</h3>
@@ -218,44 +238,47 @@
                             The 4SP Global Leaderboard is an opt-in, competitive ranking system that displays user activity and engagement metrics across the network.
                         </p>
                         <ul class="space-y-3 mb-6">
-                            <li class="legal-list-item"><strong>Opt-In Consent:</strong> By explicitly opting into the leaderboard, you consent to the public display of your Display Name, Username, Profile Picture (PFP, Custom, or Mibi Avatar), School Affiliation, and your calculated Activity Score.</li>
-                            <li class="legal-list-item"><strong>Score Calculation:</strong> Scores are generated via proprietary algorithms evaluating session duration, feature engagement, and social interactions. Exploiting bugs or using automated scripts (bots) to artificially inflate your score is prohibited and will result in a permanent ban.</li>
-                            <li class="legal-list-item"><strong>Right to Opt-Out:</strong> You may revoke your consent at any time via the Settings panel. Opting out will immediately remove your profile from the public leaderboard rankings.</li>
+                            <li class="legal-list-item"><strong>4;1 Opt-In Consent:</strong> By explicitly opting into the leaderboard, you consent to the public display of your Display Name, Username, Profile Picture (PFP, Custom, or Mibi Avatar), School Affiliation, and your calculated Activity Score.</li>
+                            <li class="legal-list-item"><strong>4;2 Score Calculation:</strong> Scores are generated via proprietary algorithms evaluating session duration, feature engagement, and social interactions. Exploiting bugs or using automated scripts (bots) to artificially inflate your score is prohibited and will result in a permanent ban.</li>
+                            <li class="legal-list-item"><strong>4;3 Right to Opt-Out:</strong> You may revoke your consent at any time via the Settings panel. Opting out will immediately remove your profile from the public leaderboard rankings.</li>
                         </ul>
                     </section>
 
                     <!-- Section: Messenger & Social -->
                     <section id="messenger-social" class="scroll-mt-28 legal-card">
+                        <div class="section-tag">5;0</div>
                         <h3 class="text-xl text-white mb-4">5. Messenger & Social Graph</h3>
                         <p class="leading-relaxed mb-4">
                             Our social features (Messenger, Follower/Following mechanics, Mutuals) facilitate peer-to-peer communication.
                         </p>
                         <ul class="space-y-2">
-                            <li class="legal-list-item"><strong>End-to-End Encryption:</strong> Currently, messages in 4SP Messenger are stored securely in Firestore but are <em>not</em> end-to-end encrypted. Do not share highly sensitive personal information.</li>
-                            <li class="legal-list-item"><strong>User Controls:</strong> 4SP does not proactively monitor private messages. You are empowered and expected to use the Block, Unfriend, and Report tools to manage your own social boundaries.</li>
+                            <li class="legal-list-item"><strong>5;1 Privacy Advisory:</strong> Currently, messages in 4SP Messenger are stored securely in Firestore but are <em>not</em> end-to-end encrypted. Do not share highly sensitive personal information.</li>
+                            <li class="legal-list-item"><strong>5;2 User Controls:</strong> 4SP does not proactively monitor private messages. You are empowered and expected to use the Block, Unfriend, and Report tools to manage your own social boundaries.</li>
                         </ul>
                     </section>
 
                     <!-- Section: Subsystems & Proxies -->
                     <section id="subsystems-proxies" class="scroll-mt-28 legal-card">
+                        <div class="section-tag">6;0</div>
                         <h3 class="text-xl text-white mb-4">6. Subsystems & Proxy Services (VELIUM, VERN, etc.)</h3>
                         <p class="leading-relaxed mb-4">
                             4SP integrates advanced web-proxy technologies (Bare, Wisp, UV) and media hubs (Soundboard, Games Hub, VANA) to bypass local network restrictions.
                         </p>
                         <ul class="space-y-2">
-                            <li class="legal-list-item"><strong>Liability Disclaimer:</strong> 4SP is not liable for disciplinary actions (e.g., detentions, loss of device privileges) taken by educational institutions or network administrators resulting from your use of these circumvention tools.</li>
-                            <li class="legal-list-item"><strong>Third-Party Nodes:</strong> Connection speeds and availability rely on external nodes. We do not guarantee 100% uptime for proxy services.</li>
+                            <li class="legal-list-item"><strong>6;1 Liability Disclaimer:</strong> 4SP is not liable for disciplinary actions (e.g., detentions, loss of device privileges) taken by educational institutions or network administrators resulting from your use of these circumvention tools.</li>
+                            <li class="legal-list-item"><strong>6;2 Third-Party Nodes:</strong> Connection speeds and availability rely on external nodes. We do not guarantee 100% uptime for proxy services.</li>
                         </ul>
                     </section>
 
                     <!-- Section: Administration -->
                     <section id="administration" class="scroll-mt-28 legal-card">
+                        <div class="section-tag">7;0</div>
                         <h3 class="text-xl text-white mb-4">7. Administration & Governance</h3>
                         <p class="leading-relaxed mb-4">
                             The primary Creator (<span class="text-indigo-400">4simpleproblems@gmail.com</span>) and appointed Administrators maintain absolute authority over the platform infrastructure.
                         </p>
                         <p class="leading-relaxed">
-                            Administrators possess the tools to globally ban users, instantly disintegrate accounts, and manage network traffic. Attempts to bypass an administrative ban via alternate accounts, clearing local storage, or IP-spoofing may result in severe, permanent hardware-level blocks. Administrative decisions are final.
+                            <strong>7;1 Enforcement decision:</strong> Administrators possess the tools to globally ban users, instantly disintegrate accounts, and manage network traffic. Attempts to bypass an administrative ban via alternate accounts, clearing local storage, or IP-spoofing may result in severe, permanent hardware-level blocks. Administrative decisions are final.
                         </p>
                     </section>
                 </div>
@@ -270,6 +293,7 @@
 
                     <!-- Section: Data Collection -->
                     <section id="data-collection" class="scroll-mt-28 legal-card">
+                        <div class="section-tag">P;1.0</div>
                         <h3 class="text-xl text-white mb-4">1. Information We Store (Cloud Data)</h3>
                         <p class="leading-relaxed mb-6">
                             To facilitate social networking, cross-device syncing, and authentication, we securely store the following data within our Google Firebase infrastructure:
@@ -278,19 +302,19 @@
                             <div>
                                 <h4 class="text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide">Identity & Profile</h4>
                                 <ul class="space-y-2 text-sm">
-                                    <li class="legal-list-item">Email Address & Authentication Provider (Google, MS, GitHub)</li>
-                                    <li class="legal-list-item">Display Name & @Username</li>
-                                    <li class="legal-list-item">Profile Visuals (URL, Custom Base64, or Mibi Config)</li>
-                                    <li class="legal-list-item">School/District Affiliation</li>
+                                    <li class="legal-list-item">P;1.1 Email Address & Authentication Provider (Google, MS, GitHub)</li>
+                                    <li class="legal-list-item">P;1.2 Display Name & @Username</li>
+                                    <li class="legal-list-item">P;1.3 Profile Visuals (URL, Custom Base64, or Mibi Config)</li>
+                                    <li class="legal-list-item">P;1.4 School/District Affiliation</li>
                                 </ul>
                             </div>
                             <div>
                                 <h4 class="text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide">Social & Interaction</h4>
                                 <ul class="space-y-2 text-sm">
-                                    <li class="legal-list-item">Followers / Following Maps</li>
-                                    <li class="legal-list-item">Sent & Received Messages</li>
-                                    <li class="legal-list-item">Posts, Comments, and Dailyphotos</li>
-                                    <li class="legal-list-item">Notifications and Friend Requests</li>
+                                    <li class="legal-list-item">P;1.5 Followers / Following Maps</li>
+                                    <li class="legal-list-item">P;1.6 Sent & Received Messages</li>
+                                    <li class="legal-list-item">P;1.7 Posts, Comments, and Dailyphotos</li>
+                                    <li class="legal-list-item">P;1.8 Notifications and Friend Requests</li>
                                 </ul>
                             </div>
                         </div>
@@ -298,25 +322,26 @@
 
                     <!-- Section: Local Data -->
                     <section id="local-data" class="scroll-mt-28 legal-card">
+                        <div class="section-tag">P;2.0</div>
                         <h3 class="text-xl text-white mb-4">2. Local-Only Data (On-Device)</h3>
                         <p class="leading-relaxed mb-4">
                             V6 respects your privacy by processing highly personal utility data entirely locally. The following information is stored in your browser's LocalStorage or IndexedDB and is <strong>never</strong> transmitted to our servers:
                         </p>
                         <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <li class="bg-[#111] p-3 rounded-xl border border-[#222]">
-                                <span class="block text-white font-medium mb-1"><i class="fa-solid fa-pen-clip text-purple-400 mr-2"></i>Notes</span>
+                                <span class="block text-white font-medium mb-1"><i class="fa-solid fa-pen-clip text-purple-400 mr-2"></i>P;2.1 Notes</span>
                                 <span class="text-sm text-gray-400">All data generated in the Notes application.</span>
                             </li>
                             <li class="bg-[#111] p-3 rounded-xl border border-[#222]">
-                                <span class="block text-white font-medium mb-1"><i class="fa-solid fa-calendar text-purple-400 mr-2"></i>Schedules</span>
+                                <span class="block text-white font-medium mb-1"><i class="fa-solid fa-calendar text-purple-400 mr-2"></i>P;2.2 Schedules</span>
                                 <span class="text-sm text-gray-400">Your personalized class and bell schedules.</span>
                             </li>
                             <li class="bg-[#111] p-3 rounded-xl border border-[#222]">
-                                <span class="block text-white font-medium mb-1"><i class="fa-solid fa-user-secret text-purple-400 mr-2"></i>Privacy Settings</span>
+                                <span class="block text-white font-medium mb-1"><i class="fa-solid fa-user-secret text-purple-400 mr-2"></i>P;2.3 Privacy Settings</span>
                                 <span class="text-sm text-gray-400">Panic Key bindings and Tab Disguise configurations.</span>
                             </li>
                             <li class="bg-[#111] p-3 rounded-xl border border-[#222]">
-                                <span class="block text-white font-medium mb-1"><i class="fa-solid fa-palette text-purple-400 mr-2"></i>Local Themes</span>
+                                <span class="block text-white font-medium mb-1"><i class="fa-solid fa-palette text-purple-400 mr-2"></i>P;2.4 Local Themes</span>
                                 <span class="text-sm text-gray-400">Un-synced theme preferences and navbar layouts.</span>
                             </li>
                         </ul>
@@ -324,30 +349,33 @@
 
                     <!-- Section: Analytics & Cookies -->
                     <section id="analytics-cookies" class="scroll-mt-28 legal-card">
+                        <div class="section-tag">P;3.0</div>
                         <h3 class="text-xl text-white mb-4">3. Analytics & Cookies</h3>
                         <p class="leading-relaxed mb-4">
                             We utilize <strong>Google Analytics (GA4)</strong> to monitor broad traffic trends, feature usage, and network health. This helps us understand which utilities are most critical to our users.
                         </p>
                         <p class="leading-relaxed">
-                            <strong>Cookies & Storage:</strong> 4SP uses LocalStorage and SessionStorage extensively to maintain application state, handle client-side routing, and store authentication tokens provided by Firebase. We do not sell your data to advertising networks.
+                            <strong>P;3.1 Cookies & Storage:</strong> 4SP uses LocalStorage and SessionStorage extensively to maintain application state, handle client-side routing, and store authentication tokens provided by Firebase. We do not sell your data to advertising networks.
                         </p>
                     </section>
 
                     <!-- Section: Third-Party Services -->
                     <section id="third-party-services" class="scroll-mt-28 legal-card">
+                        <div class="section-tag">P;4.0</div>
                         <h3 class="text-xl text-white mb-4">4. Third-Party Services Integration</h3>
                         <p class="leading-relaxed mb-4">
                             Our platform relies on several trusted third-party providers. By using 4SP, you also acknowledge the privacy practices of these entities:
                         </p>
                         <ul class="space-y-2">
-                            <li class="legal-list-item"><strong>Google Firebase:</strong> Hosts our database (Firestore), authentication (Auth), and file storage (Cloud Storage).</li>
-                            <li class="legal-list-item"><strong>Cloudflare / Vercel:</strong> Manages our DNS, CDN, and edge routing to ensure the network remains unblockable.</li>
-                            <li class="legal-list-item"><strong>Stripe:</strong> (If applicable) Processes secure donations or premium tier subscriptions. 4SP does not store raw credit card details; all financial data is handled entirely by Stripe.</li>
+                            <li class="legal-list-item"><strong>P;4.1 Google Firebase:</strong> Hosts our database (Firestore), authentication (Auth), and file storage (Cloud Storage).</li>
+                            <li class="legal-list-item"><strong>P;4.2 Cloudflare / Vercel:</strong> Manages our DNS, CDN, and edge routing to ensure the network remains unblockable.</li>
+                            <li class="legal-list-item"><strong>P;4.3 Stripe:</strong> (If applicable) Processes secure donations or premium tier subscriptions. 4SP does not store raw credit card details; all financial data is handled entirely by Stripe.</li>
                         </ul>
                     </section>
 
                     <!-- Section: Data Deletion -->
                     <section id="data-deletion" class="scroll-mt-28 legal-card border-red-900/30 bg-red-900/5">
+                        <div class="section-tag">P;5.0</div>
                         <div class="flex items-center gap-3 mb-4">
                             <i class="fa-solid fa-trash-can text-red-400 text-xl"></i>
                             <h3 class="text-xl text-white m-0">5. The Right to Disappear (Account Deletion)</h3>
@@ -356,7 +384,7 @@
                             You possess complete autonomy over your digital footprint on the network. 
                         </p>
                         <p class="leading-relaxed">
-                            Through the <a href="/logged-in/settings.html" class="text-indigo-400 hover:underline">Settings</a> page, you can execute a full account deletion. Initiating this process triggers a Cloud Function that irreversibly purges your Firestore profile, releases your reserved username, deletes your posts/messages, and destroys your Firebase Authentication record. Local on-device data is also cleared simultaneously.
+                            <strong>P;5.1 Termination:</strong> Through the <a href="/logged-in/settings.html" class="text-indigo-400 hover:underline">Settings</a> page, you can execute a full account deletion. Initiating this process triggers a Cloud Function that irreversibly purges your Firestore profile, releases your reserved username, deletes your posts/messages, and destroys your Firebase Authentication record. Local on-device data is also cleared simultaneously.
                         </p>
                     </section>
 
