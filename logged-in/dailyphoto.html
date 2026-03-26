@@ -615,6 +615,17 @@
         const DAILY_COLLECTION = collection(db, 'daily_photos');
         const USERS_COLLECTION = 'users';
 
+        // --- Cursed Text Filter ---
+        function containsCursedText(text) {
+            if (!text) return false;
+            // Combining characters range (Zalgo text uses these heavily)
+            const combiningMarksRegex = /[\u0300-\u036f\u1ab0-\u1aff\u1dc0-\u1dff\u20d0-\u20ff\ufe20-\ufe2f]/g;
+            const matches = text.match(combiningMarksRegex);
+            if (!matches) return false;
+            // Block if more than 15 combining marks total or ratio is high
+            return matches.length > 15 || matches.length > text.length;
+        }
+
         // --- Custom UI Helpers ---
         const CustomUI = {
             alert: (message, title = "Notice") => {
@@ -1031,6 +1042,12 @@
                     const handleSendComment = async () => {
                         const text = commentInput.value.trim();
                         if (!text) return;
+
+                        if (containsCursedText(text)) {
+                            await CustomUI.alert("Your comment contains prohibited characters.", "Filter Blocked");
+                            return;
+                        }
+
                         const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
                         const myUsername = userSnap.data()?.username || "Someone";
                         await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: text, timestamp: new Date() }) });
@@ -1276,6 +1293,12 @@
 
                 const title = await CustomUI.prompt("Give your moment a title:", "Daily Moment", "Post Moment", previewUrl);
                 if (title === null) {
+                    if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
+                    return;
+                }
+
+                if (containsCursedText(title)) {
+                    await CustomUI.alert("Your title contains prohibited characters.", "Filter Blocked");
                     if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
                     return;
                 }
