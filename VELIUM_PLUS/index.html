@@ -571,60 +571,7 @@
             });
         }
 
-        function setGreeting() {
-            const hour = new Date().getHours();
-            let g = "Good evening";
-            if (hour < 12) g = "Good morning";
-            else if (hour < 17) g = "Good afternoon";
-            document.getElementById('greeting').textContent = g;
-        }
-
-        function setupEventListeners() {
-            // Navigation
-            document.querySelectorAll('.nav-item[data-view]').forEach(item => {
-                item.addEventListener('click', () => {
-                    switchView(item.dataset.view);
-                });
-            });
-
-            // Search
-            let searchTimeout;
-            document.getElementById('searchInput').addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                const q = e.target.value.trim();
-                if (q.length > 2) {
-                    searchTimeout = setTimeout(() => handleSearch(q), 500);
-                } else if (q.length === 0) {
-                    document.getElementById('search-results').classList.add('hidden');
-                    document.getElementById('browse-all').classList.remove('hidden');
-                }
-            });
-
-            // Playback
-            document.getElementById('play-pause-btn').addEventListener('click', togglePlayPause);
-            document.getElementById('next-btn').addEventListener('click', playNext);
-            document.getElementById('prev-btn').addEventListener('click', playPrev);
-            document.getElementById('shuffle-btn').addEventListener('click', toggleShuffle);
-            document.getElementById('repeat-btn').addEventListener('click', toggleRepeat);
-            document.getElementById('like-btn').addEventListener('click', toggleLike);
-
-            // Progress
-            document.getElementById('progress-container').addEventListener('click', (e) => {
-                if (!audio && !ytPlayer) return;
-                const rect = e.currentTarget.getBoundingClientRect();
-                const percent = (e.clientX - rect.left) / rect.width;
-                seekTo(percent);
-            });
-
-            // Volume
-            document.getElementById('volume-container').addEventListener('click', (e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const v = Math.round((e.clientX - rect.left) / rect.width * 100);
-                setVolume(v);
-            });
-        }
-
-        function initApp() {
+        window.initApp = function() {
             setGreeting();
             setupEventListeners();
             loadTrending();
