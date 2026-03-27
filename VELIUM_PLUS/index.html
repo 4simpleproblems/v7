@@ -476,21 +476,20 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-
-
-
-
-
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const adminDoc = await getDoc(doc(db, 'admins', user.uid));
                 const isSuperAdmin = user.email === '4simpleproblems@gmail.com';
-                
+
                 if (adminDoc.exists() || isSuperAdmin) {
                     const role = isSuperAdmin ? 'admin' : adminDoc.data().type;
                     if (role === 'full' || role === 'sub' || role === 'admin') {
                         document.getElementById('auth-overlay').classList.add('hidden');
-                        initApp();
+                        // initApp is defined further down in this same module script.
+                        // Using Promise.resolve().then() ensures the entire script has
+                        // been parsed before the call executes, preventing the
+                        // "initApp is not defined" ReferenceError at line 493.
+                        Promise.resolve().then(() => initApp());
                     } else {
                         window.location.href = '../index.html';
                     }
@@ -501,10 +500,8 @@
                 window.location.href = '../index.html';
             }
         });
-    </script>
 
-    <!-- Music Logic -->
-    <script>
+        // Music Logic (moved from non-module script)
         const API_BASE_URL = '/music-api';
         let currentTrack = null;
         let playlist = [];
@@ -571,7 +568,7 @@
             });
         }
 
-        window.initApp = function() {
+        function initApp() {
             setGreeting();
             setupEventListeners();
             loadTrending();
@@ -583,3 +580,347 @@
             tag.src = "https://www.youtube.com/iframe_api";
             document.head.appendChild(tag);
         }
+
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            const navItem = document.querySelector(`.nav-item[data-view="${viewId}"]`);
+            if (navItem) navItem.classList.add('active');
+
+            if (viewId === 'library') renderLibrary();
+        }
+
+        async function loadTrending() {
+            const grid = document.getElementById('trending-grid');
+            try {
+                const res = await fetch(`${API_BASE_URL}/search?q=top hits 2025&limit=10`);
+                const data = await res.json();
+                renderTrackGrid(data.tracks, grid);
+            } catch (e) {
+                grid.innerHTML = '<p class="text-gray-500">Failed to load trending music.</p>';
+            }
+        }
+
+        function renderArtists() {
+            const artists = ['The Weeknd', 'Drake', 'Post Malone', 'Dua Lipa', 'Taylor Swift', 'Travis Scott', 'Kanye West', 'Kendrick Lamar', 'Ariana Grande', 'Bad Bunny'];
+            const grid = document.getElementById('artists-grid');
+            grid.innerHTML = artists.map(name => `
+                <div class="bg-card-dark p-4 rounded-2xl border border-brand-border hover:bg-[#151515] transition-all cursor-pointer group" onclick="loadArtist('${name.replace(/'/g, "\\'")}')">
+                    <div class="aspect-square bg-gray-800 rounded-full mb-4 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-accent-purple transition-all">
+                        <i class="fas fa-user text-3xl text-gray-700 group-hover:text-accent-purple"></i>
+                    </div>
+                    <p class="font-bold text-center truncate">${name}</p>
+                    <p class="text-[10px] text-center text-gray-500 uppercase tracking-widest mt-1">Artist</p>
+                </div>
+            `).join('');
+        }
+
+        async function handleSearch(query) {
+            const results = document.getElementById('search-results');
+            const browse = document.getElementById('browse-all');
+            const grid = document.getElementById('search-grid');
+            
+            results.classList.remove('hidden');
+            browse.classList.add('hidden');
+            grid.innerHTML = '<div class="col-span-full py-20 flex justify-center"><i class="fas fa-circle-notch fa-spin text-3xl text-accent-purple"></i></div>';
+            
+            try {
+                const res = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&limit=20`);
+                const data = await res.json();
+                renderTrackGrid(data.tracks, grid);
+            } catch (e) {
+                grid.innerHTML = '<p class="text-red-500">Search failed.</p>';
+            }
+        }
+
+        function renderTrackGrid(tracks, container) {
+            container.innerHTML = tracks.map((t, i) => `
+                <div class="track-card group" onclick="playFromList(${i}, ${JSON.stringify(tracks).replace(/"/g, '&quot;')})">
+                    <img src="${getProxyUrl(t.artwork_url)}" alt="${t.title}" loading="lazy">
+                    <div class="play-btn-overlay">
+                        <i class="fas fa-play"></i>
+                    </div>
+                    <div class="font-bold text-sm truncate pr-2">${t.title}</div>
+                    <div class="text-xs text-gray-500 truncate hover:underline" onclick="event.stopPropagation(); loadArtist('${t.artist_name.replace(/'/g, "\\'")}')">${t.artist_name}</div>
+                </div>
+            `).join('');
+        }
+
+        function getProxyUrl(url) {
+            if (!url) return '';
+            const prefix = "/VELIUM_PLUS/VERN_SYSTEM/uv/service/";
+            const encode = Ultraviolet.codec.xor.encode;
+            return prefix + encode(url);
+        }
+
+        // --- Playback Logic ---
+        let ytPlayer = null;
+        let activeSource = 'audio'; // 'audio' or 'youtube'
+
+        function playFromList(index, tracks) {
+            playlist = tracks;
+            currentIndex = index;
+            playTrack(playlist[currentIndex]);
+        }
+
+        async function playTrack(track) {
+            currentTrack = track;
+            updatePlayerUI();
+            
+            if (audio) { audio.pause(); audio.src = ''; }
+            if (ytPlayer && typeof ytPlayer.stopVideo === 'function') ytPlayer.stopVideo();
+
+            const directUrl = getDownloadUrl(track);
+            if (directUrl) {
+                activeSource = 'audio';
+                loadAudio(directUrl);
+            } else {
+                activeSource = 'youtube';
+                loadYouTube(track.youtube_id || (await fetchYTId(track)));
+            }
+        }
+
+        function getDownloadUrl(item) {
+            if (item.downloadUrl && item.downloadUrl.length > 0) {
+                const b = item.downloadUrl.find(d => d.quality === '320kbps') || item.downloadUrl[item.downloadUrl.length - 1];
+                return getProxyUrl(b.link || b.url);
+            }
+            if (item.url && (item.url.includes('saavncdn.com') || item.url.match(/\.(mp3|mp4|m4a)$/i))) {
+                return getProxyUrl(item.url);
+            }
+            return null;
+        }
+
+        async function fetchYTId(track) {
+            const res = await fetch(`${API_BASE_URL}/youtube-search?q=${encodeURIComponent(track.title + ' ' + track.artist_name)}`);
+            const data = await res.json();
+            return data.videoId;
+        }
+
+        function loadAudio(url) {
+            if (!audio) {
+                audio = new Audio();
+                audio.addEventListener('timeupdate', updateProgress);
+                audio.addEventListener('ended', playNext);
+            }
+            audio.src = url;
+            audio.volume = volume / 100;
+            audio.play().then(() => {
+                isPlaying = true;
+                updatePlayPauseBtn();
+            });
+        }
+
+        function loadYouTube(id) {
+            if (!id) return;
+            if (!ytPlayer) {
+                window.onYouTubeIframeAPIReady = () => {
+                    ytPlayer = new YT.Player('audio-container', {
+                        height: '0', width: '0', videoId: id,
+                        events: {
+                            'onReady': (e) => { e.target.setVolume(volume); e.target.playVideo(); },
+                            'onStateChange': (e) => {
+                                if (e.data === YT.PlayerState.PLAYING) {
+                                    isPlaying = true;
+                                    updatePlayPauseBtn();
+                                    startYTProgress();
+                                } else if (e.data === YT.PlayerState.ENDED) {
+                                    playNext();
+                                }
+                            }
+                        }
+                    });
+                };
+            } else {
+                ytPlayer.loadVideoById(id);
+                ytPlayer.playVideo();
+            }
+        }
+
+        function updatePlayerUI() {
+            document.getElementById('player-artwork').src = getProxyUrl(currentTrack.artwork_url);
+            document.getElementById('player-artwork').classList.remove('hidden');
+            document.getElementById('artwork-placeholder').classList.add('hidden');
+            document.getElementById('player-title').textContent = currentTrack.title;
+            document.getElementById('player-artist').textContent = currentTrack.artist_name;
+            
+            const isLiked = favorites.some(f => f.id === currentTrack.id);
+            document.getElementById('like-btn').innerHTML = isLiked ? '<i class="fas fa-heart text-accent-purple"></i>' : '<i class="far fa-heart"></i>';
+        }
+
+        function togglePlayPause() {
+            if (!currentTrack) return;
+            if (activeSource === 'audio') {
+                if (isPlaying) audio.pause(); else audio.play();
+            } else {
+                if (isPlaying) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
+            }
+            isPlaying = !isPlaying;
+            updatePlayPauseBtn();
+        }
+
+        function updatePlayPauseBtn() {
+            document.getElementById('play-pause-btn').innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play ml-0.5"></i>';
+        }
+
+        function playNext() {
+            if (playlist.length === 0) return;
+            currentIndex = (currentIndex + 1) % playlist.length;
+            playTrack(playlist[currentIndex]);
+        }
+
+        function playPrev() {
+            if (playlist.length === 0) return;
+            currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+            playTrack(playlist[currentIndex]);
+        }
+
+        function updateProgress() {
+            if (activeSource !== 'audio') return;
+            const percent = (audio.currentTime / audio.duration) * 100;
+            document.getElementById('progress-fill').style.width = percent + '%';
+            document.getElementById('current-time').textContent = formatTime(audio.currentTime);
+            document.getElementById('duration').textContent = formatTime(audio.duration);
+        }
+
+        function startYTProgress() {
+            if (progressInterval) clearInterval(progressInterval);
+            progressInterval = setInterval(() => {
+                if (activeSource === 'youtube' && ytPlayer && ytPlayer.getCurrentTime) {
+                    const current = ytPlayer.getCurrentTime();
+                    const total = ytPlayer.getDuration();
+                    const percent = (current / total) * 100;
+                    document.getElementById('progress-fill').style.width = percent + '%';
+                    document.getElementById('current-time').textContent = formatTime(current);
+                    document.getElementById('duration').textContent = formatTime(total);
+                }
+            }, 1000);
+        }
+
+        function formatTime(s) {
+            if (isNaN(s)) return '0:00';
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        function seekTo(percent) {
+            if (activeSource === 'audio') {
+                audio.currentTime = audio.duration * percent;
+            } else {
+                ytPlayer.seekTo(ytPlayer.getDuration() * percent);
+            }
+        }
+
+        function setVolume(v) {
+            volume = v;
+            document.getElementById('volume-fill').style.width = v + '%';
+            if (activeSource === 'audio' && audio) audio.volume = v / 100;
+            if (activeSource === 'youtube' && ytPlayer) ytPlayer.setVolume(v);
+        }
+
+        function toggleShuffle() {
+            isShuffle = !isShuffle;
+            document.getElementById('shuffle-btn').classList.toggle('text-accent-purple', isShuffle);
+        }
+
+        function toggleRepeat() {
+            const modes = ['off', 'all', 'one'];
+            repeatMode = modes[(modes.indexOf(repeatMode) + 1) % modes.length];
+            const btn = document.getElementById('repeat-btn');
+            btn.classList.toggle('text-accent-purple', repeatMode !== 'off');
+            btn.innerHTML = repeatMode === 'one' ? '<i class="fas fa-repeat"></i><span class="absolute text-[8px] font-bold mt-1 ml-1">1</span>' : '<i class="fas fa-repeat"></i>';
+        }
+
+        function toggleLike() {
+            if (!currentTrack) return;
+            const index = favorites.findIndex(f => f.id === currentTrack.id);
+            if (index > -1) {
+                favorites.splice(index, 1);
+            } else {
+                favorites.push(currentTrack);
+            }
+            localStorage.setItem('velium_plus_favorites', JSON.stringify(favorites));
+            updatePlayerUI();
+            if (document.getElementById('view-library').classList.contains('active')) renderLibrary();
+        }
+
+        function renderLibrary() {
+            const grid = document.getElementById('library-grid');
+            grid.innerHTML = `
+                <div class="track-card bg-gradient-to-br from-accent-purple to-indigo-900 group" onclick="loadFavorites()">
+                    <div class="aspect-square flex items-center justify-center">
+                        <i class="fas fa-heart text-5xl text-white"></i>
+                    </div>
+                    <div class="play-btn-overlay"><i class="fas fa-play"></i></div>
+                    <div class="font-bold">Liked Songs</div>
+                    <div class="text-xs text-white/60">${favorites.length} songs</div>
+                </div>
+            `;
+            // Add other playlists here
+        }
+
+        function loadFavorites() {
+            switchView('dynamic');
+            const header = document.getElementById('dynamic-header');
+            header.innerHTML = `
+                <div class="w-56 h-56 bg-gradient-to-br from-accent-purple to-indigo-900 rounded-2xl flex items-center justify-center shadow-2xl">
+                    <i class="fas fa-heart text-7xl text-white"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Playlist</span>
+                    <h1 class="text-7xl font-black tracking-tighter mb-4">Liked Songs</h1>
+                    <p class="text-gray-400 font-medium">${favorites.length} songs</p>
+                </div>
+            `;
+            renderTrackList(favorites);
+        }
+
+        async function loadArtist(name) {
+            switchView('dynamic');
+            const header = document.getElementById('dynamic-header');
+            header.innerHTML = `
+                <div class="w-56 h-56 bg-card-dark rounded-full border border-brand-border flex items-center justify-center shadow-2xl">
+                    <i class="fas fa-user text-7xl text-gray-700"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Artist</span>
+                    <h1 class="text-7xl font-black tracking-tighter mb-4">${name}</h1>
+                </div>
+            `;
+            
+            const list = document.getElementById('dynamic-list');
+            list.innerHTML = '<div class="py-10 flex justify-center"><i class="fas fa-circle-notch fa-spin text-2xl text-accent-purple"></i></div>';
+            
+            try {
+                const res = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(name)}&limit=20`);
+                const data = await res.json();
+                renderTrackList(data.tracks);
+            } catch (e) {
+                list.innerHTML = '<p class="text-red-500">Search failed.</p>';
+            }
+        }
+
+        function renderTrackList(tracks) {
+            const list = document.getElementById('dynamic-list');
+            list.innerHTML = tracks.map((t, i) => `
+                <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 group cursor-pointer border border-transparent hover:border-brand-border transition-all" onclick="playFromList(${i}, ${JSON.stringify(tracks).replace(/"/g, '&quot;')})">
+                    <div class="w-8 text-center text-gray-500 font-bold group-hover:hidden text-xs">${i + 1}</div>
+                    <div class="w-8 text-center text-accent-purple hidden group-hover:block text-xs"><i class="fas fa-play"></i></div>
+                    <img src="${getProxyUrl(t.artwork_url)}" class="w-10 h-10 rounded-lg object-cover">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-bold truncate">${t.title}</div>
+                        <div class="text-xs text-gray-500 truncate hover:underline" onclick="event.stopPropagation(); loadArtist('${t.artist_name.replace(/'/g, "\\'")}')">${t.artist_name}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showCreatePlaylistModal() {
+            // Implementation...
+        }
+    </script>
+</body>
+</html>
