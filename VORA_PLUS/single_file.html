@@ -22,7 +22,7 @@
         import * as libcurl from "/VORA_PLUS/VERN_SYSTEM/libcurl/index.mjs";
         
         window.checkBare = async (retries = 3) => {
-            const workerPath = "/logged-in/baremux/worker.js";
+            const workerPath = window.location.origin + "/VORA_PLUS/VERN_SYSTEM/baremux/worker.js";
             const connection = new BareMux.BareMuxConnection(workerPath);
             const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VORA_PLUS/VERN_SYSTEM/libcurl/index.mjs";

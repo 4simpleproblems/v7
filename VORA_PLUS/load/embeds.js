@@ -197,10 +197,7 @@ async function loadFromHash() {
     let fullHash = window.location.hash.substring(1);
     if (!fullHash) {
         const playerView = document.getElementById('player-view');
-        if (playerView) {
-            playerView.classList.add('opacity-0');
-            setTimeout(() => playerView.remove(), 300);
-        }
+        if (playerView) playerView.remove();
         document.body.style.overflow = 'auto';
         return;
     }
@@ -214,39 +211,44 @@ async function loadFromHash() {
     if (!playerView) {
         playerView = document.createElement('div');
         playerView.id = 'player-view';
-        playerView.className = 'transition-opacity duration-300';
         document.body.appendChild(playerView);
     }
     playerView.innerHTML = `<div class="flex items-center justify-center h-screen bg-black text-purple-500"><i class="fas fa-circle-notch fa-spin text-5xl"></i></div>`;
 
     try {
-        const res = await originalThemoviedb(`${type}/${id}`, { params: { language: getTmdbLanguage(), append_to_response: 'recommendations' } });
+        const res = await originalThemoviedb(`${type}/${id}`, { params: { language: getTmdbLanguage() } });
         const item = await res.json();
         renderPlayerUI(type, id, item);
     } catch (e) {
-        playerView.innerHTML = `<div class="flex items-center justify-center h-screen text-white">Error loading content. <button onclick="window.location.hash=''" class="ml-4 underline font-bold">Go Back</button></div>`;
+        playerView.innerHTML = `<div class="flex items-center justify-center h-screen text-white">Error loading content. <button onclick="window.location.hash=''" class="ml-4 underline">Go Back</button></div>`;
     }
 }
 
-// Proxy Helper - Standardized for Vora Plus
+// Proxy Helper - EXACT match of Vora's implementation for reliability
 function proxyUrl(url) {
     if (!url) return url;
     if (url.startsWith('data:') || url.startsWith('blob:')) return url;
     
-    const prefix = "/VORA_PLUS/VERN_SYSTEM/uv/service/";
+    const prefix = "/VORA/VERN_SYSTEM/uv/service/";
+    
+    // Check multiple possible locations for the encoder
     const encoder = (window.__uv$config && window.__uv$config.encodeUrl) ? window.__uv$config.encodeUrl : 
                     (typeof Ultraviolet !== 'undefined' ? Ultraviolet.codec.xor.encode : null);
     
     if (encoder) {
         try {
             const encoded = encoder(url);
+            // Ensure encoded doesn't start with a slash if prefix ends with one
             const cleanEncoded = encoded.startsWith('/') ? encoded.substring(1) : encoded;
-            return prefix + cleanEncoded;
+            const result = prefix + cleanEncoded;
+            return result;
         } catch (e) {
-            console.error("Vora Plus Proxy Encoding Error:", e);
+            console.error("Vora Proxy Encoding Error:", e);
             return url;
         }
     }
+    
+    console.warn("Vora Proxy: No encoder found for URL", url);
     return url;
 }
 
@@ -259,107 +261,50 @@ function renderPlayerUI(type, id, item) {
     const playerView = document.getElementById('player-view');
     playerView.innerHTML = `
         <div class="info-backdrop" style="background-image: url(${backdrop})"></div>
-        
-        <!-- Integrated Navbar Style -->
-        <div class="fixed top-0 left-0 right-0 h-20 flex items-center px-16 z-[1600] bg-gradient-to-b from-black/80 to-transparent">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.hash=''">
-                <img src="./images/logo.png" class="w-8 h-8 object-contain">
-                <span class="text-xl font-black tracking-tighter text-white uppercase">VORA<span class="text-accent-purple ml-1">PLUS</span></span>
-            </div>
-            <button onclick="window.location.hash=''" class="ml-auto bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-6 py-2 rounded-full text-xs font-bold transition flex items-center gap-2 border border-white/10">
-                <i class="fas fa-times"></i> Close Player
+        <div class="info-container">
+            <button onclick="window.location.hash=''" class="mb-8 flex items-center gap-2 text-white/60 hover:text-white transition">
+                <i class="fas fa-arrow-left"></i> Back to Home
             </button>
-        </div>
-
-        <div class="info-container relative z-10">
+            
             <div class="player-container-wrapper">
                 <iframe id="main-player" src="${embedUrl}" class="w-full h-full border-none" allowfullscreen></iframe>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-16">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 <div class="lg:col-span-2">
-                    <div class="flex flex-col gap-2 mb-6">
-                        <div class="flex items-center gap-2 text-accent-purple text-xs font-bold tracking-widest uppercase opacity-80">
-                            <i class="fas fa-play-circle"></i> Currently Playing
-                        </div>
-                        <h1 class="text-6xl font-black tracking-tighter text-white leading-tight">${title}</h1>
-                    </div>
-
-                    <div class="flex items-center gap-6 mb-8 text-sm text-white/60 font-medium">
-                        <div class="flex items-center gap-2">
-                            <i class="fas fa-star text-yellow-500"></i>
-                            <span class="text-white font-bold">${item.vote_average?.toFixed(1)}</span>
-                        </div>
+                    <h1 class="text-5xl font-black mb-4 tracking-tighter text-white">${title}</h1>
+                    <div class="flex items-center gap-4 mb-6 text-sm text-white/60 font-medium">
+                        <span class="text-purple-500 font-bold">${item.vote_average?.toFixed(1)} Rating</span>
                         <span>${(item.release_date || item.first_air_date || '').split('-')[0]}</span>
-                        <span class="bg-accent-purple/20 text-accent-purple border border-accent-purple/30 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase">${type}</span>
-                        ${item.runtime ? `<span>${Math.floor(item.runtime/60)}h ${item.runtime%60}m</span>` : ''}
+                        <span class="border border-white/20 px-2 py-0.5 rounded text-[10px] uppercase">${type}</span>
                     </div>
-
-                    <p class="text-xl text-white/80 leading-relaxed mb-12 max-w-4xl font-medium">${item.overview}</p>
+                    <p class="text-lg text-white/70 leading-relaxed mb-8">${item.overview}</p>
                     
-                    <div class="space-y-8">
-                        <div class="flex flex-col gap-4">
-                            <label class="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Streaming Server</label>
-                            <div class="flex flex-wrap gap-3">
-                                ${PROVIDERS.map((p, i) => `
-                                    <button onclick="window.switchProvider(${i})" class="px-8 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-accent-purple transition text-sm font-bold text-white ${i === currentProviderIndex ? 'border-accent-purple bg-accent-purple/20' : ''}">
-                                        ${p.name}
-                                    </button>
-                                `).join('')}
-                            </div>
+                    <div class="flex flex-col gap-4">
+                        <label class="text-xs font-bold uppercase tracking-widest text-white/40">Server</label>
+                        <div class="flex flex-wrap gap-2">
+                            ${PROVIDERS.map((p, i) => `
+                                <button onclick="window.switchProvider(${i})" class="px-6 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500 transition text-sm text-white ${i === currentProviderIndex ? 'border-purple-500 bg-purple-500/20' : ''}">
+                                    ${p.name}
+                                </button>
+                            `).join('')}
                         </div>
-
-                        ${type === 'tv' ? `
-                            <div class="pt-8 border-t border-white/5">
-                                <h3 class="text-2xl font-black mb-6 tracking-tight">Select Episode</h3>
-                                <div class="grid grid-cols-1 gap-4">
-                                    <select id="season-select" class="bg-white/5 border border-white/10 p-4 rounded-2xl outline-none w-full text-white font-bold text-sm cursor-pointer hover:bg-white/10 transition">
-                                        ${(item.seasons || []).filter(s => s.season_number > 0).map(s => `<option value="${s.season_number}" class="bg-black">Season ${s.season_number}</option>`).join('')}
-                                    </select>
-                                    <div id="episode-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-2 custom-scroll">
-                                        <!-- Episodes injected here -->
-                                    </div>
-                                </div>
-                            </div>
-                        ` : ''}
                     </div>
                 </div>
 
-                <div class="lg:col-span-1">
-                    <div class="bg-card-dark border border-brand-border rounded-[2rem] p-8 space-y-8">
-                        <div>
-                            <label class="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-4 block">Genres</label>
-                            <div class="flex flex-wrap gap-2">
-                                ${(item.genres || []).map(g => `<span class="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-white/80">${g.name}</span>`).join('')}
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-4 block">Production</label>
-                            <div class="space-y-2">
-                                ${(item.production_companies || []).slice(0, 3).map(c => `<div class="text-sm font-medium text-white/70">${c.name}</div>`).join('')}
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-4 block">More Like This</label>
-                            <div class="grid grid-cols-2 gap-4" id="recommendations-grid">
-                                ${(item.recommendations?.results || []).slice(0, 4).map(rec => `
-                                    <div class="aspect-[2/3] rounded-2xl overflow-hidden cursor-pointer hover:scale-105 transition border border-white/10" onclick="window.location.hash='${type}/${rec.id}'">
-                                        <img src="https://image.tmdb.org/t/p/w200${rec.poster_path}" class="w-full h-full object-cover">
-                                    </div>
-                                `).join('')}
-                            </div>
+                <div class="${type === 'tv' ? '' : 'hidden'} text-white">
+                    <h3 class="text-xl font-bold mb-6">Episodes</h3>
+                    <div class="flex flex-col gap-4">
+                        <select id="season-select" class="bg-white/5 border border-white/10 p-3 rounded-xl outline-none w-full mb-4 text-white">
+                            ${(item.seasons || []).map(s => `<option value="${s.season_number}" class="bg-black">Season ${s.season_number}</option>`).join('')}
+                        </select>
+                        <div id="episode-list" class="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scroll">
+                            <!-- Episodes load here -->
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <footer class="mt-32 pt-16 pb-16 px-16 border-t border-white/5 text-center text-white/20">
-            <img src="./images/logo.png" class="w-8 h-8 mx-auto mb-6 opacity-20 grayscale">
-            <p class="text-xs font-bold tracking-widest uppercase">End of page • Flyflix Design</p>
-        </footer>
     `;
 
     if (type === 'tv') {
@@ -368,14 +313,9 @@ function renderPlayerUI(type, id, item) {
             const data = await fetchSeason(id, seasonSelect.value);
             const epList = document.getElementById('episode-list');
             epList.innerHTML = data.episodes.map(ep => `
-                <button onclick="playEpisode('${id}', ${seasonSelect.value}, ${ep.episode_number})" class="ep-btn w-full p-5 rounded-2xl text-left flex items-center justify-between group transition-all" data-ep="${ep.episode_number}">
-                    <div class="flex flex-col gap-1 truncate pr-4">
-                        <span class="text-xs font-bold text-white/40 tracking-tighter">Episode ${ep.episode_number}</span>
-                        <span class="text-sm font-bold text-white group-hover:text-accent-purple transition-colors truncate">${ep.name}</span>
-                    </div>
-                    <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-accent-purple group-hover:text-white transition-all">
-                        <i class="fas fa-play text-[10px]"></i>
-                    </div>
+                <button onclick="playEpisode('${id}', ${seasonSelect.value}, ${ep.episode_number})" class="ep-btn w-full p-4 rounded-xl text-left flex items-center justify-between group" data-ep="${ep.episode_number}">
+                    <span class="truncate pr-4 text-white"><span class="text-white/40 mr-2">${ep.episode_number}.</span> ${ep.name}</span>
+                    <i class="fas fa-play opacity-0 group-hover:opacity-100 transition text-purple-500"></i>
                 </button>
             `).join('');
         };

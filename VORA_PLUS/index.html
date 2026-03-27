@@ -25,8 +25,8 @@
             if (window.__4sp_bare_mux_connecting) return;
             window.__4sp_bare_mux_connecting = true;
 
-            // Use the standardized worker path for project-wide consistency
-            const workerPath = "/logged-in/baremux/worker.js";
+            // Use the stable VORA worker path for root SW compatibility
+            const workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
             const connection = new BareMux.BareMuxConnection(workerPath);
             const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VORA_PLUS/VERN_SYSTEM/libcurl/index.mjs";
