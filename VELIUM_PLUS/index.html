@@ -918,6 +918,21 @@
             `).join('');
         }
 
+        function renderSidebarPlaylists() {
+            const container = document.getElementById('sidebar-playlists');
+            if (!container) return;
+            if (!playlists || playlists.length === 0) {
+                container.innerHTML = '<p class="text-[11px] text-gray-600 px-2">No playlists yet.</p>';
+                return;
+            }
+            container.innerHTML = playlists.map(pl => `
+                <div class="nav-item" onclick="loadPlaylist('${pl.id}')">
+                    <i class="fas fa-music text-xs"></i>
+                    <span class="truncate text-sm">${pl.name}</span>
+                </div>
+            `).join('');
+        }
+
         function showCreatePlaylistModal() {
             // Implementation...
         }
