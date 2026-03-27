@@ -390,6 +390,7 @@
 
         .hidden { display: none !important; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/better-profanity@0.4.0/dist/better-profanity.min.js"></script>
 </head>
 <body>
     <div id="custom-tooltip"></div>
@@ -428,10 +429,14 @@
                     </div>
                 </div>
 
-                <div id="blocked-section" class="hidden">
-                    <h2 class="text-lg mb-2">Blocked</h2>
-                    <div id="blocked-list-wrapper" class="compact-list-wrapper">
-                        <div id="blocked-list-items" class="compact-list-items"></div>
+                <div id="admin-settings-section" class="mb-6 pb-4 border-b border-[var(--border-main)] hidden">
+                    <h2 class="text-lg mb-2">Admin Settings</h2>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Profanity Filter</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="profanity-filter-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
                     </div>
                 </div>
 
@@ -615,17 +620,23 @@
         const DAILY_COLLECTION = collection(db, 'daily_photos');
         const USERS_COLLECTION = 'users';
 
-        // --- Cursed Text Filter ---
-        function containsCursedText(text) {
-            if (!text) return false;
-            // Combining characters range (Zalgo text uses these heavily)
-            const combiningMarksRegex = /[\u0300-\u036f\u1ab0-\u1aff\u1dc0-\u1dff\u20d0-\u20ff\ufe20-\ufe2f]/g;
-            const matches = text.match(combiningMarksRegex);
-            if (!matches) return false;
-            // Block if more than 15 combining marks total or ratio is high
-            return matches.length > 15 || matches.length > text.length;
-        }
+        // Initialize the profanity filter
+        const profanityFilter = new BetterProfanity();
 
+        // --- Profanity Filter ---
+        // Replaces the existing 'containsCursedText' to use BetterProfanity.
+        function containsCursedText(text) {
+        if (!text) return false;
+        const originalText = text;
+        const cleaned = profanityFilter.clean(originalText);
+
+        // Detect if profanity was present:
+        // If the original text had content, and after cleaning it's different or empty, consider it cursed.
+        if (originalText.trim() !== '' && (cleaned === '' || cleaned !== originalText)) {
+            return true;
+        }
+        return false; // No profanity detected or original text was empty/whitespace.
+        }
         // --- Custom UI Helpers ---
         const CustomUI = {
             alert: (message, title = "Notice") => {
@@ -703,33 +714,67 @@
                 isAdmin = adminSnap.exists() || currentUser.email === '4simpleproblems@gmail.com';
             } catch (e) { console.warn("Admin check failed", e); }
 
-            // -----------------------------------------------------------------------
-            // FIX 1 APPLIED: Fetch social graph ONCE here, not inside listenToUser.
-            // listenToUser is now a lightweight doc watcher for profile/school data only.
-            // -----------------------------------------------------------------------
-            await fetchSocialGraph();
+        // Add the mock post data and function to add it
+        const mockProfanityPost = {
+            creatorUid: currentUser.uid,
+            creatorUsername: 'AdminTester',
+            createdAt: serverTimestamp(),
+            imageURL: 'https://via.placeholder.com/600/FF0000/FFFFFF?text=TEST+POST', // Placeholder image
+            title: 'A Test Post with Damn Fuck Ass', // Profanity in title
+            schoolId: userData.schoolId || 'Test School',
+            districtId: userData.districtId || 'Test District',
+            status: 'active',
+            hearts: [],
+            comments: [
+                { uid: currentUser.uid, username: 'AdminTester', text: 'This comment is damn good!', timestamp: new Date() },
+                { uid: 'another_user_id', username: 'TestUser', text: 'What the fuck is this ass?', timestamp: new Date() }
+            ],
+            visibleToAdminsOnly: true // This is the key flag
+        };
 
-            setupSidebarNav();
-            setupFeedToggles();
-            setupRefreshButton();
-            listenToUser();
-            setupUserSearch();
-            setupSchoolSelection();
+        async function addMockPost() {
+            try {
+                await addDoc(collection(db, 'daily_photos'), mockProfanityPost);
+                console.log("Mock post added successfully.");
+            } catch (error) {
+                console.error("Error adding mock post:", error);
+            }
+        }
+
+        // Call addMockPost if admin, or when admin settings are initialized
+        if (isAdmin) {
+            // Optionally add a button or mechanism to trigger this, or call it directly if desired on init
+            // For now, we'll call it directly if isAdmin is true, assuming it's for testing setup
+            addMockPost(); 
         }
 
         // -----------------------------------------------------------------------
-        // fetchSocialGraph: runs once at init (and can be called again after a
-        // follow/unfollow action). Does NOT run on every user doc update.
+        // FIX 1 APPLIED: Fetch social graph ONCE here, not inside listenToUser.
+        // listenToUser is now a lightweight doc watcher for profile/school data only.
         // -----------------------------------------------------------------------
-        async function fetchSocialGraph() {
-            const [followingSnap, followersSnap] = await Promise.all([
-                getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'following')),
-                getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'followers'))
-            ]);
-            followingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
-            followerUids = followersSnap.docs.map(d => d.id).filter(id => id !== '.init');
-            mutualUids = followingUids.filter(id => followerUids.includes(id));
-        }
+        await fetchSocialGraph();
+
+        setupSidebarNav();
+        setupFeedToggles();
+        setupRefreshButton();
+        listenToUser();
+        setupUserSearch();
+        setupSchoolSelection();
+    }
+
+    // -----------------------------------------------------------------------
+    // fetchSocialGraph: runs once at init (and can be called again after a
+    // follow/unfollow action). Does NOT run on every user doc update.
+    // -----------------------------------------------------------------------
+    async function fetchSocialGraph() {
+        const [followingSnap, followersSnap] = await Promise.all([
+            getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'following')),
+            getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'followers'))
+        ]);
+        followingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
+        followerUids = followersSnap.docs.map(d => d.id).filter(id => id !== '.init');
+        mutualUids = followingUids.filter(id => followerUids.includes(id));
+    }
 
         // -----------------------------------------------------------------------
         // listenToUser: watches the user doc for profile/school changes only.
@@ -854,7 +899,10 @@
                 const combinedMap = new Map();
                 primaryDocs.forEach(d => combinedMap.set(d.id, d));
                 friendDocs.forEach(d => combinedMap.set(d.id, d));
-                const allDocs = Array.from(combinedMap.values());
+                
+                // Filter out posts marked as visible only to admins, unless the current user is an admin
+                const allDocs = Array.from(combinedMap.values())
+                                .filter(docSnap => !docSnap.data().visibleToAdminsOnly || isAdmin);
 
                 const modeLabel = isNoSchool
                     ? (feedMode === 'district' ? 'the network' : 'your mutuals')
@@ -1043,7 +1091,7 @@
                         const text = commentInput.value.trim();
                         if (!text) return;
 
-                        if (containsCursedText(text)) {
+                        if (profanityFilterEnabled && containsCursedText(text)) {
                             await CustomUI.alert("Your comment contains prohibited characters.", "Filter Blocked");
                             return;
                         }
@@ -1297,7 +1345,7 @@
                     return;
                 }
 
-                if (containsCursedText(title)) {
+                if (profanityFilterEnabled && containsCursedText(title)) {
                     await CustomUI.alert("Your title contains prohibited characters.", "Filter Blocked");
                     if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
                     return;
