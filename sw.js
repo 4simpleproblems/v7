@@ -72,6 +72,16 @@ const configs = {
         handler: '/VERN/uv/uv.handler.js',
         client: '/VERN/uv/uv.client.js',
         worker: '/logged-in/baremux/worker.js'
+    },
+    velium_plus: {
+        prefix: '/VELIUM_PLUS/VERN_SYSTEM/uv/service/',
+        bare: '/api/bare',
+        bundle: '/VELIUM_PLUS/VERN_SYSTEM/uv/uv.bundle.js',
+        config: '/VELIUM_PLUS/VERN_SYSTEM/uv/uv.config.js',
+        sw: '/VELIUM_PLUS/VERN_SYSTEM/uv/uv.sw.js',
+        handler: '/VELIUM_PLUS/VERN_SYSTEM/uv/uv.handler.js',
+        client: '/VELIUM_PLUS/VERN_SYSTEM/uv/uv.client.js',
+        worker: '/VELIUM_PLUS/VERN_SYSTEM/baremux/worker.js'
     }
 };
 
@@ -241,10 +251,29 @@ async function handleRequest(event) {
                 if (decodedUrl !== "unknown" && transportReady && isHighPerformance) {
                     console.log(`Root SW: Using optimized fetch for ${key}, fetching ${decodedUrl}`);
                     try {
-                        // Create a clean headers object
+                        // Strip headers that cause CDN rejections (null origin, proxied referer, etc.)
+                        const STRIP_HEADERS = new Set([
+                            "origin", "referer", "host", "x-forwarded-for",
+                            "x-real-ip", "cf-connecting-ip", "cf-ray",
+                            "x-forwarded-proto", "x-forwarded-host"
+                        ]);
                         const headers = {};
                         for (const [k, v] of event.request.headers.entries()) {
-                            headers[k] = v;
+                            if (!STRIP_HEADERS.has(k.toLowerCase())) {
+                                headers[k] = v;
+                            }
+                        }
+                        // Inject safe baseline headers
+                        headers["user-agent"] = navigator.userAgent;
+                        headers["accept"] = headers["accept"] || "*/*";
+                        headers["accept-language"] = headers["accept-language"] || "en-US,en;q=0.9";
+
+                        // Argon API and SoundCloud CDN require a real origin/referer or they 400
+                        if (decodedUrl.includes("argon.global.ssl.fastly.net") ||
+                            decodedUrl.includes("soundcloud.com") ||
+                            decodedUrl.includes("sndcdn.com")) {
+                            headers["origin"] = "https://soundcloud.com";
+                            headers["referer"] = "https://soundcloud.com/";
                         }
 
                         // Use the robust getter
