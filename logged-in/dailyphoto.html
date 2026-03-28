@@ -1072,9 +1072,8 @@
                             // --- UPDATED LOGIC based on API response example ---
                             // The API returns `isProfanity: true` and `flaggedFor: "..."`
                             // It does NOT return `censored_message`. If profanity is detected,
-                            // we block the post and inform the user.
+                            // we block the post and inform the user with a general message.
                             if (profanityData.isProfanity === true) {
-                                // Use a general message as requested, without revealing specific word.
                                 await CustomUI.alert("Your comment contains inappropriate content and cannot be posted.", "Profanity Filter Blocked");
                                 return; // Stop posting
                             } else {
@@ -1353,9 +1352,8 @@
                     // --- UPDATED LOGIC based on API response example ---
                     // The API returns `isProfanity: true` and `flaggedFor: "..."`
                     // It does NOT return `censored_message`. If profanity is detected,
-                    // we block the post and inform the user.
+                    // we block the post and inform the user with a general message.
                     if (profanityData.isProfanity === true) {
-                        // Use a general message as requested, without revealing specific word.
                         await CustomUI.alert("Your title contains inappropriate content and cannot be posted.", "Profanity Filter Blocked");
                         if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
                         return; // Stop upload
@@ -1640,3 +1638,5 @@
 </body>
 </html>
 <!-- Made with ❤️ from 4SP -->
+</body>
+</html>
