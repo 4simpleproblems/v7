@@ -3,32 +3,33 @@
   "headers": [
     {
       "source": "/firestore.rules",
-      "headers": [
-        {
-          "key": "X-Robots-Tag",
-          "value": "noindex"
-        }
-      ]
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    },
+    {
+      "source": "/firestore2.rules",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
     },
     {
       "source": "/storage.rules",
-      "headers": [
-        {
-          "key": "X-Robots-Tag",
-          "value": "noindex"
-        }
-      ]
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    },
+    {
+      "source": "/firebase-config.js",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    },
+    {
+      "source": "/firebase-config-2.js",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
     }
   ],
   "routes": [
-    {
-      "src": "/firestore.rules",
-      "status": 404
-    },
-    {
-      "src": "/storage.rules",
-      "status": 404
-    },
+    { "src": "/firestore.rules", "status": 404 },
+    { "src": "/firestore2.rules", "status": 404 },
+    { "src": "/storage.rules", "status": 404 },
+    { "src": "/firebase-config.js", "status": 404 },
+    { "src": "/firebase-config-2.js", "status": 404 },
+    { "src": "/.firebaserc", "status": 404 },
+    { "src": "/firebase.json", "status": 404 },
     { "handle": "filesystem" }
   ],
   "rewrites": [
