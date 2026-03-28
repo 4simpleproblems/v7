@@ -195,18 +195,11 @@
 
     // ─── Firebase write — NO reads, NO merge ─────────────────────────────────
     //
-    // The original code used `batch.set(..., { merge: true })` which forces
-    // Firestore to READ every document before writing so it can merge fields.
-    // At 700 users with syncs every 2 min + every visibility change, that
-    // compounds to millions of reads/day.
-    //
-    // Fix: we own the full document shape and overwrite it entirely with
-    // plain `set()` (no merge). Page views that have already been written
-    // are tracked in sessionStorage as a flat counter so we never need to
-    // read the existing array back — we just record a running total.
+    // Fix: We now offload analytics data to the secondary project via mongoBridge
+    // to bypass primary project Firestore write limits and leverage MongoDB scalability.
 
     async function syncToFirebase() {
-        if (!db || !db2 || !hardwareId || !sessionId) return;
+        if (!db || !hardwareId || !sessionId) return;
 
         const now = Date.now();
         if (now - lastSyncTime < MIN_SYNC_GAP_MS) return;
@@ -215,45 +208,23 @@
 
         const FieldValue = window.firebase.firestore.FieldValue;
 
-        // ── Session analytics doc (full overwrite — zero reads) ──────────────
-        //
-        // Instead of arrayUnion (requires merge → requires read), we write
-        // page views as a sub-keyed map: { "ts_<timestamp>": {path, title} }
-        // Maps can be set with merge:false because each key is unique.
-        // Alternatively, we write them as a batch of small sub-collection docs.
-        // Chosen approach: sub-collection `pageviews` — one write per view,
-        // no reads, naturally append-only, and queryable.
+        // 1. Offload Analytics Session & Page Views to MongoDB (Secondary Project)
+        const mongoPayload = {
+            action: 'insertOne',
+            collection: 'analytics',
+            payload: {
+                sessionId,
+                hardwareId,
+                userAgent: navigator.userAgent,
+                totalDuration,
+                isAdmin,
+                pageViews: pageViews.map(pv => ({ path: pv.path, title: pv.title, ts: pv.ts })),
+                syncCount: pageViews.length
+            }
+        };
 
-        const batchPrimary = db.batch(); // for user_presence and users
-        const batchSecondary = db2.batch(); // for analytics and pageviews
-
-        // 1. Session doc — Use set with merge:true for increment support
-        // This is only 1 read per 3 minutes, which is acceptable for efficiency.
-        const sessionRef = db2.collection('analytics').doc(sessionId);
-        batchSecondary.set(sessionRef, {
-            sessionId,
-            hardwareId,
-            userId:       currentUser,
-            userAgent:    navigator.userAgent,
-            version:      'v3_zero_read',
-            lastActive:   FieldValue.serverTimestamp(),
-            totalDuration,
-            isAdmin,
-            // Store a running count of page views seen
-            pageViewCount: FieldValue.increment(pageViews.length)
-        }, { merge: true });
-
-        // 2. Page view sub-collection — one tiny doc per view, no reads
-        for (const pv of pageViews) {
-            const pvRef = sessionRef.collection('pageviews').doc(pv.ts.toString());
-            batchSecondary.set(pvRef, {
-                path:  pv.path,
-                title: pv.title,
-                ts:    pv.ts
-            });
-        }
-
-        // 3. User stats and presence
+        // 2. User presence doc — Keep on primary Firestore for real-time navigation components
+        const batchPrimary = db.batch();
         if (currentUser !== 'anonymous') {
             const presenceRef = db.collection('user_presence').doc(currentUser);
             const userRef     = db.collection('users').doc(currentUser);
@@ -266,29 +237,28 @@
                 sessionId
             });
 
-            // Efficiently increment total time in the user's main profile
-            // Use set with merge:true to ensure the field is created if missing
             batchPrimary.set(userRef, {
                 totalV6Time: FieldValue.increment(activeDuration)
             }, { merge: true });
         }
 
         console.log(
-            `Analytics: Syncing — ${pageViews.length} new pageview(s), ` +
-            `${activeDuration}s new active time.`
+            `Analytics: Syncing — ${pageViews.length} new pageview(s) to MongoDB, ` +
+            `${activeDuration}s new active time to Primary.`
         );
 
         try {
+            const mongoBridge = window.firebase.functions().httpsCallable('mongoBridge');
             await Promise.all([
                 batchPrimary.commit(),
-                batchSecondary.commit()
+                mongoBridge(mongoPayload)
             ]);
+            
             // Reset active duration and clear queue only after successful write
             activeDuration = 0;
             pageViews = [];
             persistDuration();
         } catch (err) {
-            // Put views back so they're retried next sync
             console.error("Analytics: Sync failed, will retry.", err);
             isDirty = true;
         }

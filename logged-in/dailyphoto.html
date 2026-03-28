@@ -1040,15 +1040,19 @@
                             if (newIsHearted && !isOwner) {
                                 const meSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
                                 const myUsername = meSnap.data()?.username || "Someone";
-                                await addDoc(collection(db, 'notifications'), {
-                                    recipientId: data.creatorUid,
-                                    senderId: currentUser.uid,
-                                    senderUsername: myUsername,
-                                    type: 'like',
-                                    postId: postId,
-                                    message: `@${myUsername} liked your moment!`,
-                                    timestamp: serverTimestamp(),
-                                    read: false
+                                const mongoBridge = window.firebase.functions().httpsCallable('mongoBridge');
+                                await mongoBridge({
+                                    action: 'insertOne',
+                                    collection: 'notifications',
+                                    payload: {
+                                        recipientId: data.creatorUid,
+                                        senderId: currentUser.uid,
+                                        senderUsername: myUsername,
+                                        type: 'like',
+                                        postId: postId,
+                                        message: `@${myUsername} liked your moment!`,
+                                        read: false
+                                    }
                                 });
                             }
                         };
@@ -1104,18 +1108,38 @@
 
                         const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
                         const myUsername = userSnap.data()?.username || "Someone";
-                        await updateDoc(doc(db2, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: processedComment, timestamp: new Date() }) });
+                        
+                        const mongoBridge = window.firebase.functions().httpsCallable('mongoBridge');
+                        await mongoBridge({
+                            action: 'update',
+                            collection: 'daily_photos',
+                            query: { _id: postId },
+                            payload: { 
+                                $push: {
+                                    comments: {
+                                        uid: currentUser.uid, 
+                                        username: myUsername, 
+                                        text: processedComment, 
+                                        timestamp: new Date()
+                                    }
+                                }
+                            }
+                        });
                         
                         if (!isOwner) {
-                            await addDoc(collection(db, 'notifications'), {
-                                recipientId: data.creatorUid,
-                                senderId: currentUser.uid,
-                                senderUsername: myUsername,
-                                type: 'comment',
-                                postId: postId,
-                                message: `@${myUsername} commented on your moment!`,
-                                timestamp: serverTimestamp(),
-                                read: false
+                            const mongoBridge = window.firebase.functions().httpsCallable('mongoBridge');
+                            await mongoBridge({
+                                action: 'insertOne',
+                                collection: 'notifications',
+                                payload: {
+                                    recipientId: data.creatorUid,
+                                    senderId: currentUser.uid,
+                                    senderUsername: myUsername,
+                                    type: 'comment',
+                                    postId: postId,
+                                    message: `@${myUsername} commented on your moment!`,
+                                    read: false
+                                }
                             });
                         }
                         commentInput.value = '';
@@ -1420,23 +1444,30 @@
                         finalImageData = { imageBase64: base64Str };
                     }
 
-                    const postRef = await addDoc(collection(db2, 'daily_photos'), {
-                        creatorUid: currentUser.uid,
-                        creatorUsername: username,
-                        createdAt: serverTimestamp(),
-                        ...finalImageData,
-                        title: processedTitle, // Use the processed title here!
-                        schoolId: uData.schoolId || null,
-                        districtId: uData.districtId || null,
-                        status: 'active',
-                        hearts: [],
-                        comments: []
+                    const mongoBridge = window.firebase.functions().httpsCallable('mongoBridge');
+                    const postRefRes = await mongoBridge({
+                        action: 'insertOne',
+                        collection: 'daily_photos',
+                        payload: {
+                            creatorUid: currentUser.uid,
+                            creatorUsername: username,
+                            ...finalImageData,
+                            title: processedTitle,
+                            schoolId: uData.schoolId || null,
+                            districtId: uData.districtId || null,
+                            status: 'active',
+                            hearts: [],
+                            comments: []
+                        }
                     });
+
+                    if (!postRefRes.data.success) throw new Error("Mongo offload failed");
+                    const postId = postRefRes.data.id;
 
                     const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
                     const slots = uData.dailySlotsUsed || [];
                     while (slots.length <= slotIdx) slots.push(null);
-                    slots[slotIdx] = postRef.id;
+                    slots[slotIdx] = postId;
                     await updateDoc(userRef, { dailySlotsUsed: slots });
                     await CustomUI.alert("Upload complete!");
 
@@ -1522,7 +1553,12 @@
 
         window.reportPost = async (postId) => {
             if (await CustomUI.confirm("Report this post for inappropriate content?")) {
-                await addDoc(collection(db, 'reports'), { postId, reportedBy: currentUser.uid, timestamp: serverTimestamp(), type: 'daily_photo' });
+                const mongoBridge = window.firebase.functions().httpsCallable('mongoBridge');
+                await mongoBridge({
+                    action: 'insertOne',
+                    collection: 'reports',
+                    payload: { postId, reportedBy: currentUser.uid, type: 'daily_photo' }
+                });
                 await CustomUI.alert("Thank you. Our moderators will review this post.");
             }
         };

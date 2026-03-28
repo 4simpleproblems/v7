@@ -2,8 +2,111 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const cors = require("cors")({ origin: true });
+const { MongoClient } = require('mongodb');
 
 admin.initializeApp();
+
+// --- MongoDB Configuration (Firestore Enterprise Offloading) ---
+// Note: Use 'firebase functions:config:set mongo.uri="mongodb://user:pass@host..."'
+// or set MONGO_URI in your environment.
+const MONGO_URI = process.env.MONGO_URI || "mongodb://<username>:<password>@bca8cb6c-1e00-46ee-993e-3080702f0913.us-east5.firestore.goog:443/foursimpleproblems-db2?loadBalanced=true&tls=true&authMechanism=SCRAM-SHA-256&retryWrites=false";
+let mongoClient = null;
+
+async function getMongoClient() {
+    if (mongoClient) return mongoClient;
+    mongoClient = new MongoClient(MONGO_URI, {
+        tls: true,
+        connectTimeoutMS: 5000,
+        serverSelectionTimeoutMS: 5000
+    });
+    await mongoClient.connect();
+    return mongoClient;
+}
+
+/**
+ * mongoBridge: Secure gateway to the secondary project's MongoDB API.
+ * Offloads high-volume data (messages, analytics, notifications).
+ */
+exports.mongoBridge = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Login required.');
+    }
+
+    const { action, collection: collectionName, query: queryData, payload, options = {} } = data;
+    const uid = context.auth.uid;
+
+    // Security: Restrict allowed collections
+    const allowedCollections = ['messages', 'notifications', 'analytics', 'user_presence', 'daily_photos', 'reports', 'feedback'];
+    if (!allowedCollections.includes(collectionName)) {
+        throw new functions.https.HttpsError('permission-denied', 'Collection not offloadable.');
+    }
+
+    try {
+        const client = await getMongoClient();
+        const dbMongo = client.db(); // Uses the DB from the URI (foursimpleproblems-db2)
+        const collection = dbMongo.collection(collectionName);
+
+        switch (action) {
+            case 'insertOne':
+                // Auto-inject metadata
+                const docToInsert = { 
+                    ...payload, 
+                    creatorUid: uid, 
+                    serverTimestamp: new Date() 
+                };
+                const insertRes = await collection.insertOne(docToInsert);
+                return { success: true, id: insertRes.insertedId };
+
+            case 'find':
+                // Auto-filter by UID for private collections
+                let finalQuery = queryData || {};
+                if (['messages', 'notifications'].includes(collectionName)) {
+                    // Ensure users can only see their own data
+                    // For messages, they can be sender or recipient
+                    if (collectionName === 'messages') {
+                        finalQuery = { $and: [finalQuery, { $or: [{ senderId: uid }, { recipientId: uid }] }] };
+                    } else if (collectionName === 'notifications') {
+                        finalQuery = { ...finalQuery, recipientId: uid };
+                    }
+                }
+                const findCursor = collection.find(finalQuery)
+                    .sort(options.sort || { serverTimestamp: -1 })
+                    .limit(options.limit || 50);
+                const results = await findCursor.toArray();
+                return { success: true, results };
+
+            case 'update':
+                // queryData should contain the filter, payload can be the direct update object
+                // like {$set: {...}} or {$push: {...}}
+                const filter = { ...queryData };
+                if (filter._id && typeof filter._id === 'string') {
+                    const { ObjectId } = require('mongodb');
+                    try { filter._id = new ObjectId(filter._id); } catch(e) {}
+                }
+                
+                const updateRes = await collection.updateOne(
+                    { ...filter, creatorUid: uid }, 
+                    payload
+                );
+                return { success: true, modifiedCount: updateRes.modifiedCount };
+
+            case 'delete':
+                const delFilter = { ...queryData };
+                if (delFilter._id && typeof delFilter._id === 'string') {
+                    const { ObjectId } = require('mongodb');
+                    try { delFilter._id = new ObjectId(delFilter._id); } catch(e) {}
+                }
+                const deleteRes = await collection.deleteOne({ ...delFilter, creatorUid: uid });
+                return { success: true, deletedCount: deleteRes.deletedCount };
+
+            default:
+                throw new functions.https.HttpsError('invalid-argument', 'Invalid action.');
+        }
+    } catch (error) {
+        console.error("mongoBridge Error:", error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
 
 // Initialize secondary app for offloaded data (analytics, daily_photos)
 // Note: Requires FIREBASE_CONFIG_SECONDARY env var or similar setup if deployed.

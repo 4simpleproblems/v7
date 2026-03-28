@@ -353,13 +353,14 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { initializeApp, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { 
             getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, 
             collection, query, where, getDocs, serverTimestamp, arrayUnion, arrayRemove, 
             writeBatch, runTransaction
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { firebaseConfig2 } from "/firebase-config-2.js";
 
         // --- FIREBASE CONFIGURATION (REPLACE WITH YOURS) ---
         const firebaseConfig = {
@@ -375,8 +376,17 @@
         
         // --- INITIALIZE APP ---
         const app = initializeApp(firebaseConfig);
+        
+        let app2;
+        try {
+            app2 = getApp("secondary");
+        } catch (e) {
+            app2 = initializeApp(firebaseConfig2, "secondary");
+        }
+
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const db2 = getFirestore(app2); // Secondary DB for messages and notifications
 
         // --- GLOBAL STATE & DOM ELEMENTS ---
         let currentUser = null;
@@ -472,7 +482,7 @@
         }
 
         async function setupUserDocument() {
-            const userDocRef = doc(db, 'users', currentUser.uid);
+            const userDocRef = doc(db2, 'users', currentUser.uid);
             const userDoc = await getDoc(userDocRef);
             if (!userDoc.exists()) {
                 const newId = await generateUniqueId();
@@ -502,7 +512,7 @@
 
         function listenForUserDocChanges() {
             unsubUserDoc();
-            const userDocRef = doc(db, 'users', currentUser.uid);
+            const userDocRef = doc(db2, 'users', currentUser.uid);
             unsubUserDoc = onSnapshot(userDocRef, (doc) => {
                 // Future use
             });
@@ -589,7 +599,7 @@
             };
             
             unsubContacts();
-            const contactsRef = collection(db, `users/${currentUser.uid}/contacts`);
+            const contactsRef = collection(db2, `users/${currentUser.uid}/contacts`);
             unsubContacts = onSnapshot(query(contactsRef), (snapshot) => {
                 const friendUids = new Set(snapshot.docs.map(d => d.id));
 
@@ -624,14 +634,14 @@
             });
 
             unsubPendingIn();
-            const pendingInRef = collection(db, `users/${currentUser.uid}/pendingIn`);
+            const pendingInRef = collection(db2, `users/${currentUser.uid}/pendingIn`);
             unsubPendingIn = onSnapshot(query(pendingInRef), (snapshot) => {
                 state.incoming = snapshot.docs;
                 renderAll();
             });
             
             unsubPendingOut();
-            const pendingOutRef = collection(db, `users/${currentUser.uid}/pendingOut`);
+            const pendingOutRef = collection(db2, `users/${currentUser.uid}/pendingOut`);
             unsubPendingOut = onSnapshot(query(pendingOutRef), (snapshot) => {
                 state.outgoing = snapshot.docs;
                 renderAll();
@@ -737,7 +747,7 @@
             loadLocalMessages(uid);
             
             const chatId = [currentUser.uid, currentChatPartner.uid].sort().join('_');
-            const chatDocRef = doc(db, 'chats', chatId);
+            const chatDocRef = doc(db2, 'chats', chatId);
             const chatDoc = await getDoc(chatDocRef);
             
             let dbMessages = [];
@@ -754,7 +764,7 @@
             listenForMessages();
             listenForPartnerTyping(uid); // NEW
             
-            const contactRef = doc(db, `users/${currentUser.uid}/contacts`, uid);
+            const contactRef = doc(db2, `users/${currentUser.uid}/contacts`, uid);
             try { await updateDoc(contactRef, { unread: false }); } catch (e) { /* (e) */ }
         }
 
@@ -832,7 +842,7 @@
         function listenForMessages() {
             unsubMessages();
             const chatId = [currentUser.uid, currentChatPartner.uid].sort().join('_');
-            const chatDocRef = doc(db, 'chats', chatId);
+            const chatDocRef = doc(db2, 'chats', chatId);
 
             unsubMessages = onSnapshot(chatDocRef, (doc) => {
                 if (!doc.exists() || !currentChatPartner) return; 
@@ -947,10 +957,10 @@
             if (!currentChatPartner) return;
             
             const chatId = [currentUser.uid, currentChatPartner.uid].sort().join('_');
-            const chatDocRef = doc(db, 'chats', chatId);
+            const chatDocRef = doc(db2, 'chats', chatId);
             
             try {
-                await runTransaction(db, async (transaction) => {
+                await runTransaction(db2, async (transaction) => {
                     const chatDoc = await transaction.get(chatDocRef);
                     if (!chatDoc.exists()) return;
                     
@@ -1022,7 +1032,7 @@
         async function generateUniqueId(length = 8) {
             while (true) {
                 const id = Math.random().toString(36).substring(2, 2 + length);
-                const q = query(collection(db, 'users'), where('publicId', '==', id));
+                const q = query(collection(db2, 'users'), where('publicId', '==', id));
                 const snapshot = await getDocs(q);
                 if (snapshot.empty) return id;
             }
@@ -1030,7 +1040,7 @@
         
         async function getUserDoc(uid) {
             if (!uid) return null;
-            const userDoc = await getDoc(doc(db, 'users', uid));
+            const userDoc = await getDoc(doc(db2, 'users', uid));
             return userDoc.exists() ? userDoc.data() : null;
         }
 
@@ -1194,7 +1204,7 @@
             
             // Tell partner we are typing
             try {
-                updateDoc(doc(db, 'users', currentUser.uid), { typingInChatWith: currentChatPartner.uid });
+                updateDoc(doc(db2, 'users', currentUser.uid), { typingInChatWith: currentChatPartner.uid });
             } catch(e) { console.error("Error setting typing status", e); }
 
             // Clear existing timeout
@@ -1213,13 +1223,13 @@
             }
             try {
                 // Set typing status to null in Firestore
-                updateDoc(doc(db, 'users', currentUser.uid), { typingInChatWith: null });
+                updateDoc(doc(db2, 'users', currentUser.uid), { typingInChatWith: null });
             } catch(e) { /* Fails silently if offline or user is gone */ }
         }
 
         function listenForPartnerTyping(partnerUid) {
             unsubPartnerDoc(); // Unsubscribe from old partner
-            unsubPartnerDoc = onSnapshot(doc(db, 'users', partnerUid), (doc) => {
+            unsubPartnerDoc = onSnapshot(doc(db2, 'users', partnerUid), (doc) => {
                 if (doc.exists() && currentChatPartner) {
                     const data = doc.data();
                     // Check if partner is typing in chat with *us*
@@ -1266,10 +1276,10 @@
 
             const filteredText = await filterProfanity(text);
             const chatId = [currentUser.uid, currentChatPartner.uid].sort().join('_');
-            const chatDocRef = doc(db, 'chats', chatId);
+            const chatDocRef = doc(db2, 'chats', chatId);
 
             const messageData = {
-                id: doc(collection(db, 'temp')).id, 
+                id: doc(collection(db2, 'temp')).id, 
                 text: filteredText, 
                 images: images,
                 senderId: currentUser.uid, 
@@ -1286,7 +1296,7 @@
                 await setDoc(chatDocRef, { messages: trimmedMessages });
                 
                 const lastMessageText = filteredText || (images.length > 0 ? 'Sent an image' : 'New Message');
-                const recipientContactRef = doc(db, `users/${currentChatPartner.uid}/contacts`, currentUser.uid);
+                const recipientContactRef = doc(db2, `users/${currentChatPartner.uid}/contacts`, currentUser.uid);
                 
                 // --- FIX: Removed 'name' property from this update ---
                 // This prevents overwriting the contact's custom name for us.
@@ -1297,7 +1307,7 @@
                     // REMOVED: name: (await getUserDoc(currentUser.uid))?.username || 'New Contact'
                 }, { merge: true });
 
-                const senderContactRef = doc(db, `users/${currentUser.uid}/contacts`, currentChatPartner.uid);
+                const senderContactRef = doc(db2, `users/${currentUser.uid}/contacts`, currentChatPartner.uid);
                 await updateDoc(senderContactRef, { 
                     lastMessage: `You: ${lastMessageText}`, 
                     timestamp: serverTimestamp() 
@@ -1335,7 +1345,7 @@
                 return;
             }
 
-            const q = query(collection(db, 'users'), where('publicId', '==', id));
+            const q = query(collection(db2, 'users'), where('publicId', '==', id));
             const snapshot = await getDocs(q);
             if (snapshot.empty) {
                 dom.addContactMessage.textContent = 'User not found.';
@@ -1345,19 +1355,19 @@
             const contactUser = snapshot.docs[0].data();
             const contactUid = contactUser.uid;
             
-            const friendDoc = await getDoc(doc(db, `users/${currentUser.uid}/contacts`, contactUid));
+            const friendDoc = await getDoc(doc(db2, `users/${currentUser.uid}/contacts`, contactUid));
             if (friendDoc.exists()) {
                 dom.addContactMessage.textContent = 'You are already friends with this user.';
                 return;
             }
             
-            const outDoc = await getDoc(doc(db, `users/${currentUser.uid}/pendingOut`, contactUid));
+            const outDoc = await getDoc(doc(db2, `users/${currentUser.uid}/pendingOut`, contactUid));
             if (outDoc.exists()) {
                 dom.addContactMessage.textContent = 'Request already sent.';
                 return;
             }
             
-            const inDocRef = doc(db, `users/${currentUser.uid}/pendingIn`, contactUid);
+            const inDocRef = doc(db2, `users/${currentUser.uid}/pendingIn`, contactUid);
             const inDoc = await getDoc(inDocRef);
             if (inDoc.exists()) {
                 await handleAcceptRequest(contactUid, contactUser.username, contactUser.publicId);
@@ -1368,16 +1378,16 @@
 
             const myUserDoc = await getUserDoc(currentUser.uid);
             
-            const batch = writeBatch(db);
+            const batch = writeBatch(db2);
             
-            const myOutRef = doc(db, `users/${currentUser.uid}/pendingOut`, contactUid);
+            const myOutRef = doc(db2, `users/${currentUser.uid}/pendingOut`, contactUid);
             batch.set(myOutRef, { 
                 username: contactUser.username || `User ${contactUser.publicId}`, 
                 publicId: contactUser.publicId, 
                 timestamp: serverTimestamp() 
             });
             
-            const theirInRef = doc(db, `users/${contactUid}/pendingIn`, currentUser.uid);
+            const theirInRef = doc(db2, `users/${contactUid}/pendingIn`, currentUser.uid);
             batch.set(theirInRef, { 
                 username: myUserDoc.username || `User ${myUserDoc.publicId}`, 
                 publicId: myUserDoc.publicId, 
@@ -1392,19 +1402,19 @@
         async function handleAcceptRequest(uid, name, publicId) {
             const myUserDoc = await getUserDoc(currentUser.uid);
             
-            const batch = writeBatch(db);
+            const batch = writeBatch(db2);
             
-            batch.delete(doc(db, `users/${currentUser.uid}/pendingIn`, uid));
-            batch.delete(doc(db, `users/${uid}/pendingOut`, currentUser.uid));
+            batch.delete(doc(db2, `users/${currentUser.uid}/pendingIn`, uid));
+            batch.delete(doc(db2, `users/${uid}/pendingOut`, currentUser.uid));
             
-            const myContactRef = doc(db, `users/${currentUser.uid}/contacts`, uid);
+            const myContactRef = doc(db2, `users/${currentUser.uid}/contacts`, uid);
             batch.set(myContactRef, { 
                 name: name || `User ${publicId}`, 
                 unread: false, 
                 timestamp: serverTimestamp() 
             });
             
-            const theirContactRef = doc(db, `users/${uid}/contacts`, currentUser.uid);
+            const theirContactRef = doc(db2, `users/${uid}/contacts`, currentUser.uid);
             batch.set(theirContactRef, { 
                 name: myUserDoc.username || `User ${myUserDoc.publicId}`, 
                 unread: false, 
@@ -1415,16 +1425,16 @@
         }
         
         async function handleDeclineRequest(uid) {
-            const batch = writeBatch(db);
-            batch.delete(doc(db, `users/${currentUser.uid}/pendingIn`, uid));
-            batch.delete(doc(db, `users/${uid}/pendingOut`, currentUser.uid));
+            const batch = writeBatch(db2);
+            batch.delete(doc(db2, `users/${currentUser.uid}/pendingIn`, uid));
+            batch.delete(doc(db2, `users/${uid}/pendingOut`, currentUser.uid));
             await batch.commit();
         }
         
         async function handleCancelRequest(uid) {
-            const batch = writeBatch(db);
-            batch.delete(doc(db, `users/${currentUser.uid}/pendingOut`, uid));
-            batch.delete(doc(db, `users/${uid}/pendingIn`, currentUser.uid));
+            const batch = writeBatch(db2);
+            batch.delete(doc(db2, `users/${currentUser.uid}/pendingOut`, uid));
+            batch.delete(doc(db2, `users/${uid}/pendingIn`, currentUser.uid));
             await batch.commit();
         }
         
@@ -1436,15 +1446,15 @@
                 closeChat();
             }
 
-            const batch = writeBatch(db);
+            const batch = writeBatch(db2);
             
             // Delete contacts for both users
-            batch.delete(doc(db, `users/${currentUser.uid}/contacts`, uid));
-            batch.delete(doc(db, `users/${uid}/contacts`, currentUser.uid));
+            batch.delete(doc(db2, `users/${currentUser.uid}/contacts`, uid));
+            batch.delete(doc(db2, `users/${uid}/contacts`, currentUser.uid));
 
             // Delete chat document
             const chatId = [currentUser.uid, uid].sort().join('_');
-            const chatDocRef = doc(db, 'chats', chatId);
+            const chatDocRef = doc(db2, 'chats', chatId);
             batch.delete(chatDocRef);
             
             await batch.commit();
@@ -1459,7 +1469,7 @@
         async function handleEditName(uid, oldName) {
             const newName = prompt("Enter new name for contact:", oldName);
             if (newName && newName.trim() !== '' && newName.trim() !== oldName) {
-                await updateDoc(doc(db, `users/${currentUser.uid}/contacts`, uid), { name: newName.trim() });
+                await updateDoc(doc(db2, `users/${currentUser.uid}/contacts`, uid), { name: newName.trim() });
                 
                 // NEW: If this is the currently open chat, update UI
                 if (currentChatPartner && currentChatPartner.uid === uid) {
@@ -1506,7 +1516,7 @@
             if (!currentChatPartner || !confirm(`Are you sure you want to clear local-only message history for this chat? The last 5 messages will be kept.`)) return;
 
             const chatId = [currentUser.uid, currentChatPartner.uid].sort().join('_');
-            const chatDocRef = doc(db, 'chats', chatId);
+            const chatDocRef = doc(db2, 'chats', chatId);
             const chatDoc = await getDoc(chatDocRef);
             
             const dbMessages = chatDoc.exists() ? chatDoc.data().messages || [] : [];

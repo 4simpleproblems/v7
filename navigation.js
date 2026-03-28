@@ -2108,9 +2108,24 @@ let db;
         }
         window.applyTheme(savedTheme || DEFAULT_THEME); 
 
+        // Secondary Config Fallback (Ensures consistency across all pages)
+        if (!window.FIREBASE_CONFIG_2) {
+            window.FIREBASE_CONFIG_2 = {
+                apiKey: "AIzaSyAHrP6BCMxI9I8T2iRwKwRJrcpVvxJr8fY",
+                authDomain: "foursimpleproblems-extra.firebaseapp.com",
+                projectId: "foursimpleproblems-extra",
+                storageBucket: "foursimpleproblems-extra.firebasestorage.app",
+                messagingSenderId: "125667300841",
+                appId: "1:125667300841:web:31dcf4ed67ddf6f07ee778"
+            };
+        }
+
         const app = firebase.initializeApp(firebaseConfig);
+        const app2 = firebase.initializeApp(window.FIREBASE_CONFIG_2, "secondary");
+
         auth = firebase.auth();
         db = firebase.firestore();
+        const db2 = app2.firestore(); // Secondary DB for notifications
 
         allPages = pages;
 
@@ -2124,8 +2139,8 @@ let db;
                 // Check if hardcoded privileged email
                 isPrivilegedUser = user.email === PRIVILEGED_EMAIL;
 
-                // Notifications Listener
-                unsubNotifs = db.collection('notifications')
+                // Notifications Listener (Using db2 for offloading)
+                unsubNotifs = db2.collection('notifications')
                     .where('recipientId', '==', user.uid)
                     .limit(50)
                     .onSnapshot(snap => {
