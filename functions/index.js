@@ -5,6 +5,19 @@ const cors = require("cors")({ origin: true });
 
 admin.initializeApp();
 
+// Initialize secondary app for offloaded data (analytics, daily_photos)
+// Note: Requires FIREBASE_CONFIG_SECONDARY env var or similar setup if deployed.
+let app2;
+try {
+    app2 = admin.app('secondary');
+} catch (error) {
+    app2 = admin.initializeApp({
+        projectId: "foursimpleproblems-extra"
+    }, 'secondary');
+}
+const db = admin.firestore();
+const db2 = app2.firestore();
+
 // ==================================================================
 // CONFIGURATION: API KEYS
 // ==================================================================
@@ -145,7 +158,7 @@ exports.deleteUser = functions.https.onCall(async (data, context) => {
         }
         
         const relatedQueries = [
-            admin.firestore().collection('daily_photos').where('creatorUid', '==', uid),
+            db2.collection('daily_photos').where('creatorUid', '==', uid),
             admin.firestore().collection('messages').where('senderId', '==', uid),
             admin.firestore().collection('messages').where('recipientId', '==', uid),
             admin.firestore().collection('notifications').where('recipientId', '==', uid),
@@ -499,10 +512,10 @@ async function runPlatformAggregation() {
         generatedAt: new Date().toISOString(),
     };
 
-    await db.collection('analytics_summary').doc('platform').set(summary);
+    await db2.collection('analytics_summary').doc('platform').set(summary);
 
     // Also write the pages sub-doc that leaderboard.html reads
-    await db.collection('analytics_summary').doc('pages').set({
+    await db2.collection('analytics_summary').doc('pages').set({
         pages: topPages,
         lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
         generatedAt: new Date().toISOString(),
