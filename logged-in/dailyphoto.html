@@ -1085,20 +1085,18 @@
 
                             const profanityData = await profanityCheckResponse.json();
 
-                            // Assuming the API returns {"censored_message": "..."}
-                            if (profanityData.censored_message) {
-                                processedComment = profanityData.censored_message;
-                                if (processedComment !== text) {
-                                    await CustomUI.alert("Your comment was automatically censored for profanity.", "Profanity Filter");
-                                }
-                            } else if (profanityData.has_profanity) {
-                                // If API only flags profanity but doesn't provide censored text, block the post.
-                                await CustomUI.alert("Your comment contains profanity and cannot be posted.", "Profanity Filter Blocked");
+                            // --- UPDATED LOGIC based on API response example ---
+                            if (profanityData.isProfanity === true) {
+                                // API flagged profanity, but no 'censored_message' field in example.
+                                // Use 'flaggedFor' for alert and block the post.
+                                await CustomUI.alert(`Your comment contains profanity (${profanityData.flaggedFor || 'detected'}) and cannot be posted.`, "Profanity Filter Blocked");
                                 return; // Stop posting
                             } else {
                                 // No profanity detected, use original comment text
                                 processedComment = text;
                             }
+                            // --- End of UPDATED LOGIC ---
+
                         } catch (error) {
                             console.error("Profanity check failed for comment:", error);
                             await CustomUI.alert("Could not check comment for profanity. Please try again or post without checking.", "Profanity Filter Error");
@@ -1366,24 +1364,21 @@
 
                     const profanityData = await profanityCheckResponse.json();
 
-                    // Assuming the API returns {"censored_message": "..."}
-                    if (profanityData.censored_message) {
-                        processedTitle = profanityData.censored_message;
-                        // Inform user if censorship occurred.
-                        if (processedTitle !== title) {
-                            await CustomUI.alert("Your title was automatically censored for profanity.", "Profanity Filter");
-                        }
-                    } else if (profanityData.has_profanity) {
-                        // If API only flags profanity but doesn't provide censored text, block the post.
-                        await CustomUI.alert("Your title contains profanity and cannot be posted.", "Profanity Filter Blocked");
+                    // --- UPDATED LOGIC based on API response example ---
+                    // The API returns `isProfanity: true` and `flaggedFor: "..."`
+                    // It does NOT return `censored_message`. If profanity is detected,
+                    // we block the post and inform the user.
+                    if (profanityData.isProfanity === true) {
+                        await CustomUI.alert(`Your title contains profanity (${profanityData.flaggedFor || 'detected'}) and cannot be posted.`, "Profanity Filter Blocked");
                         if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
                         return; // Stop upload
                     } else {
                         // No profanity detected, use original title
                         processedTitle = title;
                     }
+                    // --- End of UPDATED LOGIC ---
                 } catch (error) {
-                    console.error("Profanity check failed:", error);
+                    console.error("Profanity check failed for title:", error);
                     await CustomUI.alert("Could not check title for profanity. Please try again or post without checking.", "Profanity Filter Error");
                     // Fallback to original title if API fails, but alert the user.
                     processedTitle = title; 
