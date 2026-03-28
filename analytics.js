@@ -2,9 +2,11 @@
     console.log("Analytics: Initializing v3 (Zero-Read)");
 
     // ─── Configuration ────────────────────────────────────────────────────────
+    const TICK_MS            = 5000;   // 5 second activity tick
     const SYNC_INTERVAL_MS   = 180000; // 3 min periodic sync
     const MIN_SYNC_GAP_MS    = 60000;  // never sync more than once per minute
     const MAX_PAGEVIEWS_STORED = 50;   // cap localStorage growth
+    const MAX_LOCAL_HISTORY  = 10;     // for dashboard recently accessed
 
     // ─── State ────────────────────────────────────────────────────────────────
     let db, auth;
@@ -150,6 +152,18 @@
         const name = getPageName(path, document.title);
         pageViews.push({ path, title: name, ts: Date.now() });
         isDirty = true;
+
+        // Local history for dashboard
+        try {
+            let localHistory = JSON.parse(localStorage.getItem('v6_recent_pages') || '[]');
+            // Remove existing entry for this path if exists
+            localHistory = localHistory.filter(p => p.path !== path);
+            // Add to front
+            localHistory.unshift({ path, title: name, ts: Date.now() });
+            // Cap size
+            if (localHistory.length > MAX_LOCAL_HISTORY) localHistory.pop();
+            localStorage.setItem('v6_recent_pages', JSON.stringify(localHistory));
+        } catch (e) { console.warn("Analytics: Local history save failed", e); }
     }
 
     // ─── Persist duration across SPA navigations / page loads ─────────────────

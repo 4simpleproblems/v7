@@ -198,25 +198,6 @@
             </div>
         </div>
 
-        <!-- TOP PAGES -->
-        <!-- -----------------------------------------------------------------------
-             FIX 3 APPLIED: Page stats now read from a single `analytics_summary`
-             document written by the Cloud Function `aggregateAnalytics` (see
-             index.js). Previously this scanned every analytics session document
-             (potentially thousands of reads). Now it's 1 read, always.
-             ----------------------------------------------------------------------- -->
-        <div class="mb-16">
-            <div class="label-tiny">System Pulse</div>
-            <h2 class="section-title" style="color: var(--text-main);">Most Used Pages</h2>
-            <div id="pages-stale-notice" class="stale-notice hidden">
-                <i class="fas fa-clock"></i>
-                <span>Stats update hourly</span>
-            </div>
-            <div id="top-pages-list" class="page-stat-grid">
-                <p style="color: var(--text-muted);" class="opacity-40 italic">Calculating activity metrics...</p>
-            </div>
-        </div>
-
         <!-- GLOBAL RANKINGS -->
         <div>
             <div class="label-tiny">Active Roster</div>
@@ -245,7 +226,6 @@
                     return;
                 }
                 loadUserRankings(user ? user.uid : null);
-                loadPageStats();
             });
         }
 

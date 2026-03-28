@@ -412,147 +412,63 @@
         }
 
         async function fetchUserStats(uid) {
-            // 1. Get User's Rank
-            const q = query(
-                collection(db, 'users'),
-                where('leaderboardAccepted', '==', true),
-                where('leaderboardOptOut', '==', false),
-                orderBy('totalV6Time', 'desc')
-            );
+            const CACHE_KEY = `leaderboard_rank_${uid}`;
+            const CACHE_TIME_KEY = `leaderboard_rank_time_${uid}`;
+            const ONE_HOUR = 3600000;
+
+            const now = Date.now();
+            const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+            const cachedData = localStorage.getItem(CACHE_KEY);
+
+            if (cachedTime && cachedData && (now - parseInt(cachedTime) < ONE_HOUR)) {
+                console.log("Dashboard: Using cached leaderboard rank");
+                renderRankData(JSON.parse(cachedData));
+                return;
+            }
+
+            console.log("Dashboard: Fetching fresh leaderboard rank");
+            // Fetch User's Rank from snapshot document (efficient)
+            const leaderboardSnap = await getDoc(doc(db, 'leaderboard', 'snapshot'));
             
-            const snap = await getDocs(q);
-            
+            if (!leaderboardSnap.exists()) return;
+
+            const { users: rankedUsers } = leaderboardSnap.data();
             let rank = '--';
-            let i = 1;
             let userData = null;
 
-            snap.forEach(docSnap => {
-                if (docSnap.id === uid) {
-                    rank = `#${i}`;
-                    userData = docSnap.data();
+            if (rankedUsers) {
+                const index = rankedUsers.findIndex(u => u.id === uid);
+                if (index !== -1) {
+                    rank = `#${index + 1}`;
+                    userData = rankedUsers[index];
                 }
-                i++;
-            });
+            }
 
+            const dataToCache = { rank, userData };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(dataToCache));
+            localStorage.setItem(CACHE_TIME_KEY, now.toString());
+
+            renderRankData(dataToCache);
+        }
+
+        function renderRankData({ rank, userData }) {
             document.getElementById('leaderboard-rank').textContent = rank;
-
             if (userData) {
                 document.getElementById('user-stats-name').textContent = userData.displayName || userData.username || "Anonymous";
                 const hours = Math.floor((userData.totalV6Time || 0) / 3600);
                 const minutes = Math.floor(((userData.totalV6Time || 0) % 3600) / 60);
                 document.getElementById('user-stats-time').textContent = `${hours}h ${minutes}m total`;
                 const avatarWidget = document.getElementById('user-avatar-widget');
-                avatarWidget.innerHTML = getAvatarHTML(userData, "w-24 h-24", false, auth.currentUser, "rounded-[32px]");            }
-        }
-
-        function renderAvatar(userData, containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            const initial = (userData.letterAvatarText || userData.username || userData.displayName || '?').charAt(0).toUpperCase();
-            const pfpType = userData.pfpType || 'google';
-
-            let avatarHtml = '';
-
-            if (pfpType === 'custom' && userData.customPfp) {
-                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover">`;
-            } else if (pfpType === 'mibi' && (userData.mibiConfig || userData.mibiEyes)) {
-                const config = userData.mibiConfig || {
-                    eyes: userData.mibiEyes,
-                    mouths: userData.mibiMouth,
-                    hats: userData.mibiHat,
-                    bgColor: userData.mibiBg,
-                    rotation: userData.mibiRotation || 0,
-                    size: userData.mibiSize || 100,
-                    offsetX: userData.mibiOffsetX || 0,
-                    offsetY: userData.mibiOffsetY || 0
-                };
-                const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = config;
-                const scale = (size || 100) / 100;
-                const rot = rotation || 0;
-                const x = offsetX || 0;
-                const y = offsetY || 0;
-
-                avatarHtml = `
-                    <div class="relative w-full h-full overflow-hidden" style="background-color: ${bgColor || '#3B82F6'};">
-                        <div class="absolute inset-0 w-full h-full" style="transform: translate(${x}%, ${y}%) rotate(${rot}deg) scale(${scale}); transform-origin: center;">
-                            <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
-                            ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                            ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                            ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                        </div>
-                    </div>
-                `;
-            } else if (pfpType === 'letter') {
-                const bg = userData.letterAvatarColor || userData.pfpLetterBg || '#333';
-                avatarHtml = `<div class="w-full h-full flex items-center justify-center font-bold text-white" style="background: ${bg};">${initial}</div>`;
-            } else {
-                if (userData.photoURL) {
-                    avatarHtml = `<img src="${userData.photoURL}" class="w-full h-full object-cover">`;
-                } else {
-                    avatarHtml = `<div class="w-full h-full bg-indigo-600 flex items-center justify-center font-bold text-white">${initial}</div>`;
-                }
+                avatarWidget.innerHTML = getAvatarHTML(userData, "w-24 h-24", false, auth.currentUser, "rounded-[32px]");
             }
-
-            container.innerHTML = avatarHtml;
         }
 
         async function loadAnalytics(uid, pageConfig = {}, userData = {}) {
-            const q = query(
-                collection(db, 'analytics'),
-                where('userId', '==', uid),
-                where('version', '==', 'project_niobium')
-            );
-            
-            const snap = await getDocs(q);
-            
-            let totalPageViews = 0;
-            let pageMap = {}; 
-            let latestUA = "";
-
-            const findConfigByPath = (path) => {
-                const clean = (p) => p.toLowerCase().replace(/^(..\/|logged-in\/)/, '').replace('.html', '');
-                const target = clean(path);
-                
-                for (const key in pageConfig) {
-                    const page = pageConfig[key];
-                    if (clean(page.url) === target) return page;
-                    if (page.aliases) {
-                        for (const alias of page.aliases) {
-                            if (clean(alias) === target) return page;
-                        }
-                    }
-                }
-                return null;
-            };
-
-            snap.forEach(docSnap => {
-                const data = docSnap.data();
-                totalPageViews += (data.pageCount || 0);
-                if (data.userAgent) latestUA = data.userAgent;
-
-                if (data.visitedPages) {
-                    data.visitedPages.forEach(p => {
-                        const path = p.path || p.url;
-                        if (!path || path.includes('srcdoc')) return;
-                        
-                        const config = findConfigByPath(path);
-                        if (!config) return;
-
-                        const cleanTitle = config.name;
-                        const icon = config.icon || 'fa-solid fa-file-alt';
-                        
-                        if (!pageMap[path]) pageMap[path] = { title: cleanTitle, icon: icon, count: 0 };
-                        pageMap[path].count++;
-                    });
-                }
-            });
-
-            const sortedPages = Object.entries(pageMap).sort((a, b) => b[1].count - a[1].count);
-            
-            const uaInfo = parseUA(latestUA);
-            document.getElementById('stat-browser').textContent = uaInfo.browser;
-            document.getElementById('stat-os').textContent = uaInfo.os;
-            document.getElementById('stat-device').textContent = window._LOCAL_MODE ? 'Version 5 Client' : 'Cloud Access';
+            // Local history from analytics.js
+            let recentPages = [];
+            try {
+                recentPages = JSON.parse(localStorage.getItem('v6_recent_pages') || '[]');
+            } catch (e) { console.warn("Dashboard: Local history read failed", e); }
 
             const displayTime = (timeInSecs) => {
                 const hours = Math.floor(timeInSecs / 3600);
@@ -561,52 +477,63 @@
             };
 
             displayTime(userData.totalV6Time || 0);
-            document.getElementById('stat-pageviews').textContent = totalPageViews;
-
+            
+            // Experience time updates in real-time via user doc listener (efficient)
             onSnapshot(doc(db, 'users', uid), docSnap => {
-                if (docSnap.exists()) displayTime(docSnap.data().totalV6Time || 0);
+                if (docSnap.exists()) {
+                    const d = docSnap.data();
+                    displayTime(d.totalV6Time || 0);
+                }
             });
+
+            // Minimal system stats
+            const uaInfo = parseUA(navigator.userAgent);
+            document.getElementById('stat-browser').textContent = uaInfo.browser;
+            document.getElementById('stat-os').textContent = uaInfo.os;
+            document.getElementById('stat-device').textContent = window._LOCAL_MODE ? 'Local Client' : 'Cloud Access';
+            document.getElementById('stat-pageviews').textContent = recentPages.length;
 
             const listEl = document.getElementById('recent-pages-list');
             listEl.innerHTML = '';
             
-            sortedPages.slice(0, 6).forEach(([path, data]) => {
+            if (recentPages.length === 0) {
+                listEl.innerHTML = '<div class="col-span-2 py-20 text-center italic text-sm" style="color: var(--text-muted); opacity: 0.6;">No recent activity found.</div>';
+                return;
+            }
+
+            recentPages.slice(0, 6).forEach(p => {
                 const item = document.createElement('div');
                 item.className = 'page-btn';
                 
+                // Find icon from mapping or default
+                let icon = 'fa-solid fa-file-alt';
+                for (const key in pageConfig) {
+                    if (pageConfig[key].url && p.path.includes(pageConfig[key].url.split('/').pop())) {
+                        icon = pageConfig[key].icon || icon;
+                        break;
+                    }
+                }
+                
                 item.innerHTML = `
                     <div class="icon-box">
-                        <i class="${data.icon}"></i>
+                        <i class="${icon}"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-white truncate">${data.title}</p>
-                        <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">${data.count} Sessions</p>
+                        <p class="text-sm font-medium text-white truncate">${p.title}</p>
+                        <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">${new Date(p.ts).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                     </div>
                 `;
 
                 item.onclick = () => {
                     if (window.parent && window.parent.loadPage) {
-                        window.parent.loadPage(path);
-                    } else if (window.loadPage) {
-                        window.loadPage(path);
+                        window.parent.loadPage(p.path);
                     } else {
-                        window.location.href = path;
+                        window.location.href = p.path;
                     }
                 };
 
                 listEl.appendChild(item);
             });
-
-            // Handle scaling/clipping: If 6 items cause overflow in the container, reduce to 4
-            setTimeout(() => {
-                const container = document.getElementById('quick-access-section');
-                // Check if the content height (including gap/margins) exceeds the container's available height
-                if (container.scrollHeight > container.clientHeight + 5) {
-                    while (listEl.children.length > 4) {
-                        listEl.removeChild(listEl.lastChild);
-                    }
-                }
-            }, 100);
         }
 
         function startClock() {
