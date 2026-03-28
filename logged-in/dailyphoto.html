@@ -1070,9 +1070,45 @@
                             return;
                         }
 
+                        // --- Profanity Check Integration for Comments ---
+                        let processedComment = text;
+                        try {
+                            const profanityCheckResponse = await fetch('https://vector.profanity.dev', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ message: text }),
+                            });
+
+                            if (!profanityCheckResponse.ok) {
+                                throw new Error(`HTTP error! status: ${profanityCheckResponse.status}`);
+                            }
+
+                            const profanityData = await profanityCheckResponse.json();
+
+                            // Assuming the API returns {"censored_message": "..."}
+                            if (profanityData.censored_message) {
+                                processedComment = profanityData.censored_message;
+                                if (processedComment !== text) {
+                                    await CustomUI.alert("Your comment was automatically censored for profanity.", "Profanity Filter");
+                                }
+                            } else if (profanityData.has_profanity) {
+                                // If API only flags profanity but doesn't provide censored text, block the post.
+                                await CustomUI.alert("Your comment contains profanity and cannot be posted.", "Profanity Filter Blocked");
+                                return; // Stop posting
+                            } else {
+                                // No profanity detected, use original comment text
+                                processedComment = text;
+                            }
+                        } catch (error) {
+                            console.error("Profanity check failed for comment:", error);
+                            await CustomUI.alert("Could not check comment for profanity. Please try again or post without checking.", "Profanity Filter Error");
+                            processedComment = text; // Fallback to original text
+                        }
+                        // --- End Profanity Check Integration ---
+
                         const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
                         const myUsername = userSnap.data()?.username || "Someone";
-                        await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: text, timestamp: new Date() }) });
+                        await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: processedComment, timestamp: new Date() }) });
                         
                         if (!isOwner) {
                             await addDoc(collection(db, 'notifications'), {
