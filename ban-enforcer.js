@@ -150,8 +150,12 @@ function unlockPage() {
     const btn = document.getElementById('ban-enforcer-home-button');
     if (btn) btn.remove();
 
-    document.documentElement.style.cssText = document.documentElement.style.cssText.replace(/overflow:\s*hidden\s*!important;?/, '');
-    document.body.style.cssText = document.body.style.cssText.replace(/overflow:\s*hidden\s*!important;?/, '');
+    if (document.documentElement && document.documentElement.style) {
+        document.documentElement.style.cssText = document.documentElement.style.cssText.replace(/overflow:\s*hidden\s*!important;?/, '');
+    }
+    if (document.body && document.body.style) {
+        document.body.style.cssText = document.body.style.cssText.replace(/overflow:\s*hidden\s*!important;?/, '');
+    }
 }
 
 function renderBanVisuals(banData) {

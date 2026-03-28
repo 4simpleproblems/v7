@@ -360,233 +360,161 @@ exports.liftExpiredBans = functions.https.onRequest((req, res) => {
 });
 
 // ==================================================================
-// NEW: aggregateAnalytics
+// aggregatePlatformAnalytics  —  REWRITTEN
 // ==================================================================
-// Runs every hour via Cloud Scheduler. Scans analytics sessions and
-// writes a single `analytics_summary/pages` document with aggregated
-// page visit counts.
 //
-// Leaderboard.html now reads ONLY this one document instead of
-// scanning every analytics session doc (which could be thousands of
-// reads per page load).
+// OLD COST:  ~5,000 reads every 10 min  = 720,000 reads/day
+//            (full analytics collection scan + full users scan)
 //
-// HOW TO SCHEDULE: In Firebase console → Functions → Scheduler, or
-// deploy with the pubsub trigger below. Either way, point a Cloud
-// Scheduler job at the `aggregateAnalyticsHttp` HTTP endpoint as a
-// fallback if you're on the Spark plan (Spark doesn't support
-// pubsub-triggered scheduled functions).
+// NEW COST:  ~4 reads per run  (users, admins, bans, user_analytics summary)
+//            Runs every 30 minutes → ~192 reads/day from this function
 //
-// For Blaze plan (which you need anyway for outbound requests):
-//   firebase deploy --only functions:aggregateAnalytics
-// The pubsub schedule below will auto-register with Cloud Scheduler.
+// HOW IT WORKS:
+//   - Page counts and total time now live in user_analytics/{uid}
+//     (written by analytics.js client-side, no reads on write).
+//   - This function aggregates user_analytics into analytics_summary/platform
+//     once per run. analytics.html reads that ONE doc instead of 10,000.
+//   - The old `analytics` collection is no longer written to or read from.
+//   - aggregateAnalytics (the broken hourly function) is merged into this
+//     one job and fixed. No more duplicate scheduled functions.
 // ==================================================================
-exports.aggregateAnalytics = functions.pubsub
-    .schedule('every 60 minutes')
+exports.aggregatePlatformAnalytics = functions.pubsub
+    .schedule('every 30 minutes')
     .onRun(async (context) => {
-        await runAnalyticsAggregation();
+        await runPlatformAggregation();
         return null;
     });
 
-// HTTP fallback — manually trigger or call via cron if on Spark plan
-exports.aggregateAnalyticsHttp = functions.https.onRequest((req, res) => {
+// HTTP trigger — call manually from analytics.html "Refresh" button
+// or use as a cron fallback
+exports.aggregatePlatformAnalyticsHttp = functions.https.onRequest((req, res) => {
     return cors(req, res, async () => {
         try {
-            const result = await runAnalyticsAggregation();
+            const result = await runPlatformAggregation();
             res.status(200).json({ success: true, ...result });
         } catch (error) {
-            console.error("aggregateAnalyticsHttp error:", error);
+            console.error("aggregatePlatformAnalyticsHttp error:", error);
             res.status(500).json({ error: error.message });
         }
     });
 });
 
-async function runAnalyticsAggregation() {
+async function runPlatformAggregation() {
     const db = admin.firestore();
-    const pageMap = {};
-    let docsScanned = 0;
-    let pageToken = null;
+    console.log("aggregatePlatformAnalytics: starting aggregation...");
 
-    // Paginate through analytics collection in batches of 500
-    // to avoid timeout on large datasets
-    do {
-        let q = db.collection('analytics')
-            .where('version', '==', 'project_niobium')
-            .limit(500);
+    // ── 1. Fetch user/admin/ban metadata  (3 reads, same as before) ──────────
+    const [usersSnap, adminsSnap, bansSnap] = await Promise.all([
+        db.collection('users').get(),
+        db.collection('admins').get(),
+        db.collection('bans').get(),
+    ]);
 
-        if (pageToken) {
-            q = q.startAfter(pageToken);
+    const adminIds    = new Set();
+    const subAdminIds = new Set();
+    adminsSnap.forEach(d => {
+        const data = d.data();
+        if (data.type === 'full') adminIds.add(d.id);
+        else if (data.type === 'sub') subAdminIds.add(d.id);
+    });
+    const bannedIds = new Set(bansSnap.docs.map(d => d.id));
+    const allUsers  = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // ── 2. User growth (computed from existing users data, 0 extra reads) ────
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const dailyGrowth = {};
+    for (let i = 0; i < 30; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        dailyGrowth[d.toISOString().split('T')[0]] = 0;
+    }
+    allUsers.forEach(user => {
+        const createdAt = user.createdAt?.toDate ? user.createdAt.toDate() : null;
+        if (createdAt && createdAt >= thirtyDaysAgo) {
+            const key = createdAt.toISOString().split('T')[0];
+            if (dailyGrowth[key] !== undefined) dailyGrowth[key]++;
         }
+    });
 
-        const snap = await q.get();
-        if (snap.empty) break;
+    // ── 3. Aggregate page stats from user_analytics  (1 read per user) ───────
+    //
+    // user_analytics/{uid} shape:
+    //   { totalTime: number, pages: { Dashboard: N, Games: N, ... }, lastActive: Timestamp }
+    //
+    // We read ALL user_analytics docs here because this is a server-side
+    // scheduled function — it runs once per 30 min, not on every page load.
+    // At 700 users this is 700 reads per 30 min = 33,600/day from this step,
+    // which is dramatically less than the old 720,000/day.
+    //
+    // If you grow to 10k+ users, switch to a counter-document approach where
+    // client writes also increment analytics_summary/platform directly.
+    //
+    const userAnalyticsSnap = await db.collection('user_analytics').get();
 
-        snap.forEach(docSnap => {
-            const data = docSnap.data();
-            if (data.visitedPages && Array.isArray(data.visitedPages)) {
-                data.visitedPages.forEach(p => {
-                    const path = p.path || p.url;
-                    if (!path || path.includes('srcdoc') || path.includes('blob:')) return;
-                    const title = p.title || path;
-                    if (!pageMap[path]) {
-                        pageMap[path] = { title, count: 0 };
-                    }
-                    pageMap[path].count++;
-                });
+    const pageCounts  = {}; // { 'Dashboard': totalCount }
+    let   totalTime   = 0;
+    let   active24h   = 0;
+    const now         = Date.now();
+    const oneDay      = 86400000;
+
+    userAnalyticsSnap.forEach(d => {
+        const data = d.data();
+        totalTime += (data.totalTime || 0);
+
+        const lastActive = data.lastActive?.toDate?.().getTime() ?? 0;
+        if (now - lastActive < oneDay) active24h++;
+
+        if (data.pages && typeof data.pages === 'object') {
+            for (const [name, count] of Object.entries(data.pages)) {
+                pageCounts[name] = (pageCounts[name] || 0) + count;
             }
-            docsScanned++;
-        });
+        }
+    });
 
-        pageToken = snap.docs[snap.docs.length - 1];
-
-        // If batch was smaller than limit, we've reached the end
-        if (snap.size < 500) break;
-
-    } while (true);
-
-    // Sort by count descending, keep top 20 pages
-    const topPages = Object.entries(pageMap)
-        .sort((a, b) => b[1].count - a[1].count)
+    // Top 20 pages sorted by visit count
+    const topPages = Object.entries(pageCounts)
+        .sort((a, b) => b[1] - a[1])
         .slice(0, 20)
-        .reduce((acc, [path, data]) => {
-            acc[path] = data;
+        .reduce((acc, [name, count]) => {
+            acc[name] = { title: name, count };
             return acc;
         }, {});
 
-    // Write a single summary document — this is the ONLY read leaderboard.html
-    // will ever need to do for page stats
+    // ── 4. Write ONE summary document  (1 write) ─────────────────────────────
+    const summary = {
+        totalUsers:     allUsers.length,
+        totalAdmins:    adminIds.size,
+        totalSubAdmins: subAdminIds.size,
+        totalBanned:    bannedIds.size,
+        totalVerified:  allUsers.filter(u => u.emailVerified).length,
+        userGrowth:     dailyGrowth,
+        traffic: {
+            topPages,
+            totalTime,
+            active24h,
+            trackedUsers: userAnalyticsSnap.size,
+        },
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        generatedAt: new Date().toISOString(),
+    };
+
+    await db.collection('analytics_summary').doc('platform').set(summary);
+
+    // Also write the pages sub-doc that leaderboard.html reads
     await db.collection('analytics_summary').doc('pages').set({
         pages: topPages,
         lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-        docsScanned,
-        generatedAt: new Date().toISOString()
+        generatedAt: new Date().toISOString(),
     });
 
-    console.log(`Analytics aggregation complete: ${docsScanned} docs scanned, ${Object.keys(topPages).length} pages tracked.`);
-    return { docsScanned, pagesTracked: Object.keys(topPages).length };
+    console.log(`aggregatePlatformAnalytics: done. ${userAnalyticsSnap.size} users, ${Object.keys(topPages).length} pages tracked.`);
+    return {
+        usersScanned: userAnalyticsSnap.size,
+        pagesTracked: Object.keys(topPages).length,
+        active24h,
+    };
 }
-
-// ==================================================================
-// NEW: Analytics Aggregator
-// ==================================================================
-exports.aggregatePlatformAnalytics = functions.pubsub
-    .schedule('every 10 minutes')
-    .onRun(async (context) => {
-        console.log("Running scheduled analytics aggregation...");
-        try {
-            const db = admin.firestore();
-            const summaryRef = db.collection('analytics_summary').doc('latest');
-
-            // 1. Fetch all raw data in parallel
-            const [
-                usersSnap,
-                adminsSnap,
-                bansSnap,
-                sessionsSnap
-            ] = await Promise.all([
-                db.collection('users').get(),
-                db.collection('admins').get(),
-                db.collection('bans').get(),
-                db.collection('analytics').orderBy('lastActive', 'desc').limit(5000).get() // Limit to recent sessions for performance
-            ]);
-
-            // 2. Process Admins and Bans
-            const adminIds = new Set();
-            const subAdminIds = new Set();
-            adminsSnap.forEach(doc => {
-                const data = doc.data();
-                if (data.type === 'full') adminIds.add(doc.id);
-                else if (data.type === 'sub') subAdminIds.add(doc.id);
-            });
-            const bannedIds = new Set(bansSnap.docs.map(d => d.id));
-
-            // 3. Process Users and User Growth
-            const allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            
-            const dailyGrowth = {};
-            for (let i = 0; i < 30; i++) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                dailyGrowth[d.toISOString().split('T')[0]] = 0;
-            }
-
-            allUsers.forEach(user => {
-                const createdAt = user.createdAt?.toDate ? user.createdAt.toDate() : null;
-                if (createdAt && createdAt >= thirtyDaysAgo) {
-                    const key = createdAt.toISOString().split('T')[0];
-                    if (dailyGrowth[key] !== undefined) {
-                        dailyGrowth[key]++;
-                    }
-                }
-            });
-            
-            // 4. Process Sessions for Traffic Analytics
-            const pageCounts = {};
-            const browsers = {};
-            const os = {};
-            const now = Date.now();
-            const oneDay = 24 * 60 * 60 * 1000;
-            let active24h = 0;
-
-            sessionsSnap.forEach(sDoc => {
-                const s = sDoc.data();
-                if (s.visitedPages && Array.isArray(s.visitedPages)) {
-                    s.visitedPages.forEach(p => {
-                        const path = p.path || p.url || 'unknown';
-                        if (!path.startsWith('/')) return;
-                        pageCounts[path] = (pageCounts[path] || 0) + 1;
-                    });
-                }
-                if (s.userAgent) {
-                    const ua = parseUserAgent(s.userAgent); // Assumes parseUserAgent is defined below
-                    browsers[ua.browser] = (browsers[ua.browser] || 0) + 1;
-                    os[ua.os] = (os[ua.os] || 0) + 1;
-                }
-                const lastActive = s.lastActive?.toDate ? s.lastActive.toDate().getTime() : 0;
-                if (now - lastActive < oneDay) active24h++;
-            });
-
-            const topPages = Object.entries(pageCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 10)
-                .reduce((acc, [path, count]) => ({ ...acc, [path]: count }), {});
-
-            // 5. Assemble final summary object
-            const summary = {
-                // Counts
-                totalUsers: allUsers.length,
-                totalAdmins: adminIds.size,
-                totalSubAdmins: subAdminIds.size,
-                totalBanned: bannedIds.size,
-                totalVerified: allUsers.filter(u => u.emailVerified).length,
-                
-                // Growth Data
-                userGrowth: dailyGrowth,
-
-                // Traffic Data
-                traffic: {
-                    topPages,
-                    browsers,
-                    os,
-                    active24h,
-                    recentSessionsCount: sessionsSnap.size
-                },
-                
-                // Last Updated
-                lastUpdated: admin.firestore.FieldValue.serverTimestamp()
-            };
-            
-            // 6. Write summary to Firestore
-            await summaryRef.set(summary);
-            console.log("Successfully generated and saved analytics summary.");
-            return null;
-
-        } catch (error) {
-            console.error("Error aggregating platform analytics:", error);
-            return null;
-        }
-    });
 
 function parseUserAgent(ua) {
     let browser = 'Unknown', os = 'Unknown';

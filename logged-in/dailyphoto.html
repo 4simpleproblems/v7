@@ -248,7 +248,7 @@
         .modal-backdrop.open { opacity: 1; pointer-events: auto; }
         
         .modal-content {
-            background-color: var(--bg-card); 
+            background-color: var(--bg-card);
             border: 1px solid var(--border-main);
             border-radius: 1.5rem; 
             width: 95%; 
@@ -390,7 +390,6 @@
 
         .hidden { display: none !important; }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/better-profanity@0.4.0/dist/better-profanity.min.js"></script>
 </head>
 <body>
     <div id="custom-tooltip"></div>
@@ -451,1154 +450,296 @@
 
         <!-- Main View -->
         <main class="main-view">
-            <div class="feed-content-inner">
-                <div class="flex justify-between items-center mb-10">
-                    <div>
-                        <h1 class="text-4xl font-bold mb-2">Dailyphoto</h1>
-                        <p id="feed-desc" class="opacity-60">Moments from your school.</p>
+            <button id="sidebarToggle" class="sidebar-toggle-btn fixed top-6 left-6 z-[1001] p-3 bg-card-dark rounded-full text-white text-xl md:hidden">
+                <i class="fas fa-bars"></i>
+            </button>
+            <!-- Home View -->
+            <section class="view active" id="homeView">
+                <div class="mb-10">
+                    <h1 class="text-4xl font-bold mb-2" id="greetingText">Good evening</h1>
+                    <p class="text-[var(--text-muted)] opacity-60">Discover something new today.</p>
+                </div>
+
+                <div class="mb-12">
+                    <h2 class="text-xl font-bold mb-6 text-[var(--text-main)]">Popular Tracks</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="popularTracks">
+                        <!-- Tracks will be injected here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Search View -->
+            <section class="view" id="searchView">
+                <div class="mb-10 flex flex-col items-center">
+                    <h1 class="text-5xl font-black mb-8 tracking-tighter text-[var(--text-main)]">What do you want to listen to?</h1>
+                    <div class="search-box">
+                        <i class="fas fa-search text-[var(--text-muted)] opacity-40"></i>
+                        <input type="text" id="searchInput" placeholder="Search for songs, artists, or albums" class="bg-transparent border-none outline-none flex-1 text-[var(--text-main)]">
+                    </div>
+                </div>
+
+                <div id="searchResults" class="hidden">
+                    <div id="tracksTab" class="search-tab-content active">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="searchGrid"></div>
                     </div>
                     
-                    <div class="flex gap-3 items-center">
-                        <!-- Manual refresh button — replaces live listener -->
-                        <button id="refresh-feed-btn" class="btn-icon refresh-pulse" title="Refresh feed">
-                            <i class="fas fa-sync-alt text-sm"></i>
+                    <div id="searchPagination" class="hidden flex justify-center items-center gap-6 py-10">
+                        <button id="prevPageBtn" class="btn-niobium opacity-50 hover:opacity-100 transition-opacity">
+                            <i class="fas fa-chevron-left mr-2"></i> Previous
                         </button>
-                        <div class="inline-flex bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl p-1">
-                            <button id="feed-toggle-school" class="px-4 py-2 rounded-xl text-sm transition-all active btn-primary-override">School</button>
-                            <button id="feed-toggle-district" class="px-4 py-2 rounded-xl text-sm transition-all">District</button>
+                        <span id="pageIndicator" class="text-sm font-bold text-[var(--text-main)] opacity-60">Page 1</span>
+                        <button id="nextPageBtn" class="btn-niobium">
+                            Next <i class="fas fa-chevron-right ml-2"></i>
+                        </button>
+                    </div>
+
+                    <div id="searchLoader" class="col-span-full text-center py-8 hidden">
+                        <i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i>
+                    </div>
+                </div>
+
+                <div id="browseCategories">
+                    <h2 class="text-xl font-bold mb-6 text-[var(--text-main)]">Browse all</h2>
+                    <div class3="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+                </div>
+            </section>
+
+            <!-- Library View -->
+            <section class="view" id="libraryView">
+                <h1 class="text-4xl font-bold mb-10 text-[var(--text-main)]">Your Library</h1>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6" id="libraryContent">
+                    <!-- Playlists -->
+                </div>
+            </section>
+
+            <!-- Favorites View -->
+            <section class="view" id="favoritesView">
+                <div class="flex flex-col md:flex-row items-end gap-8 mb-10">
+                    <div class="w-56 h-56 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
+                        <i class="fas fa-heart text-white text-7xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <span class="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] opacity-60">Playlist</span>
+                        <h1 class="text-7xl font-black tracking-tighter mb-4 text-white">Liked Songs</h1>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-white opacity-80" id="likedSongsCount">0 songs</span>
                         </div>
                     </div>
                 </div>
-                
-                <div id="photo-feed" class="photo-grid"></div>
-            </div>
+                <div class="flex items-center gap-6 mb-8 border-b border-[var(--border-main)] pb-8">
+                    <button class="w-16 h-16 bg-[var(--accent-color)] rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg" onclick="playAllFavorites()">
+                        <i class="fas fa-play text-white text-xl"></i>
+                    </button>
+                </div>
+                <div id="favoritesList" class="space-y-2"></div>
+            </section>
+
+            <!-- Playlist/Album/Artist View Container -->
+            <div id="dynamicView" class="view"></div>
         </main>
-    </div>
 
-    <!-- Announcement Modal -->
-    <div id="announcement-modal" class="modal-backdrop">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-md p-8 text-center">
-            <div class="w-16 h-16 bg-indigo-500/20 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i class="fas fa-school text-2xl"></i>
-            </div>
-            <h3 class="text-2xl font-bold mb-4">Simplifying Dailyphoto</h3>
-            <p class="opacity-60 mb-8 text-sm leading-relaxed">To keep our community safe and focused, we're moving to a school-based system. You'll now see moments from your school and district instead of a global public feed.</p>
-            <button id="announcement-continue-btn" class="btn-toolbar-style btn-primary-override w-full py-3">Find My School</button>
-        </div>
-    </div>
-
-    <!-- School Selection Modal -->
-    <div id="school-selection-modal" class="modal-backdrop">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-lg p-8">
-            <h3 class="text-2xl font-bold mb-2">Select Your School</h3>
-            <p class="text-xs opacity-50 mb-6 font-medium uppercase tracking-widest">Help us localize your feed</p>
-            
-            <div id="state-step">
-                <label class="text-xs font-bold opacity-40 uppercase mb-2 block">1. Search Your State</label>
-                <div class="relative mb-4">
-                    <input type="text" id="state-search-input" placeholder="Search by name or abbreviation (e.g. Ohio or OH)..." class="w-full p-4 pl-12 bg-black/40 border border-[var(--border-main)] rounded-2xl outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] transition-all">
-                    <i class="fas fa-map-marker-alt absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-lg"></i>
+        <!-- Player Bar -->
+        <footer class="now-playing-bar">
+            <!-- Track Info -->
+            <div class="flex items-center gap-4 min-w-0">
+                <div class="w-14 h-14 bg-[var(--bg-card)] rounded-xl overflow-hidden border border-[var(--border-main)] flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onclick="toggleFullscreenPlayer()">
+                    <img id="currentArtwork" src="" class="w-full h-full object-cover hidden">
+                    <div id="artworkPlaceholder" class="w-full h-full flex items-center justify-center">
+                        <i class="fas fa-music text-[var(--text-muted)] opacity-40"></i>
+                    </div>
                 </div>
-                <div class="scroll-container-wrapper">
-                    <div id="state-fade-top" class="scroll-fade-top"></div>
-                    <div id="state-results" class="space-y-2 max-h-48 overflow-y-auto mb-6 custom-scroll"></div>
-                    <div id="state-fade-bottom" class="scroll-fade-bottom"></div>
+                <div class="min-w-0">
+                    <div id="currentTrackName" class="text-sm font-bold text-[var(--text-main)] truncate">Not Playing</div>
+                    <div id="currentArtistName" class="text-xs text-[var(--text-muted)] opacity-60 truncate">Select a track</div>
                 </div>
-            </div>
-
-            <div id="school-step" class="hidden">
-                <label class="text-xs font-bold opacity-40 uppercase mb-2 block">2. Find Your School</label>
-                <div class="relative mb-4">
-                    <input type="text" id="school-search-input" placeholder="Search by school, district, or county..." class="w-full p-4 pl-12 bg-black/40 border border-[var(--border-main)] rounded-2xl outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] transition-all">
-                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-lg"></i>
-                </div>
-                <div class="scroll-container-wrapper">
-                    <div id="school-fade-top" class="scroll-fade-top"></div>
-                    <div id="school-results" class="space-y-2 max-h-60 overflow-y-auto mb-6 custom-scroll"></div>
-                    <div id="school-fade-bottom" class="scroll-fade-bottom"></div>
-                </div>
-                <button id="back-to-states" class="btn-toolbar-style w-full py-3 mt-4 text-xs font-bold flex items-center justify-center gap-2">
-                    <i class="fas fa-arrow-left"></i> Change State
+                <button id="likeButton" class="text-[var(--text-muted)] opacity-60 hover:text-[var(--text-main)] transition-colors ml-2">
+                    <i class="far fa-heart"></i>
                 </button>
             </div>
 
-            <div class="mt-8 pt-6 border-t border-[var(--border-main)] flex gap-3">
-                <button id="skip-school-btn" class="btn-toolbar-style w-full py-3 opacity-60 hover:opacity-100 transition-all font-bold">Skip (Not in US)</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Photo Modal -->
-    <div id="photo-modal" class="modal-backdrop">
-        <div id="modal-content-container" class="modal-content"></div>
-    </div>
-
-    <!-- Upload Modal -->
-    <div id="upload-menu-modal" class="modal-backdrop">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8">
-            <h3 class="text-2xl font-bold mb-6">Post Photo</h3>
-            <input type="file" id="upload-file-input" class="hidden" accept="image/*">
-            <label for="upload-file-input" class="bg-black/40 border-2 border-dashed border-[var(--border-main)] rounded-[22px] p-12 text-center cursor-pointer hover:border-[var(--accent-color)] transition-all block mb-6">
-                <i class="fas fa-cloud-upload-alt text-5xl mb-4 opacity-20"></i>
-                <span class="block font-medium opacity-60">Select Image</span>
-            </label>
-            <button id="upload-menu-close-btn" class="btn-toolbar-style w-full py-3">Cancel</button>
-        </div>
-    </div>
-
-    <!-- Custom Alert -->
-    <div id="custom-alert-modal" class="modal-backdrop">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8 text-center">
-            <h3 id="custom-alert-title" class="text-xl font-bold mb-4">Alert</h3>
-            <p id="custom-alert-message" class="opacity-60 mb-8 text-sm"></p>
-            <button id="custom-alert-btn" class="btn-toolbar-style btn-primary-override w-full py-3">OK</button>
-        </div>
-    </div>
-
-    <!-- Custom Confirm -->
-    <div id="custom-confirm-modal" class="modal-backdrop">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8 text-center">
-            <h3 id="custom-confirm-title" class="text-xl font-bold mb-4">Confirm</h3>
-            <p id="custom-confirm-message" class="opacity-60 mb-8 text-sm"></p>
-            <div class="flex gap-3">
-                <button id="custom-confirm-cancel" class="btn-toolbar-style flex-1 py-3">Cancel</button>
-                <button id="custom-confirm-ok" class="btn-toolbar-style btn-primary-override flex-1 py-3">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Custom Prompt -->
-    <div id="custom-prompt-modal" class="modal-backdrop">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8">
-            <h3 id="custom-prompt-title" class="text-xl font-bold mb-4">Input</h3>
-            <div id="custom-prompt-preview-container" class="hidden mb-6 aspect-video rounded-xl overflow-hidden bg-black/40 border border-[var(--border-main)]">
-                <img id="custom-prompt-preview-img" src="" class="w-full h-full object-contain">
-            </div>
-            <p id="custom-prompt-message" class="opacity-60 mb-4 text-sm"></p>
-            <input type="text" id="custom-prompt-input" class="w-full p-3 bg-black/20 border border-[var(--border-main)] rounded-[14px] outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] mb-6">
-            <div class="flex gap-3">
-                <button id="custom-prompt-cancel" class="btn-toolbar-style flex-1 py-3">Cancel</button>
-                <button id="custom-prompt-ok" class="btn-toolbar-style btn-primary-override flex-1 py-3">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, getDoc, setDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, arrayRemove, writeBatch, limit, addDoc, deleteDoc, serverTimestamp, orderBy, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-        import { firebaseConfig } from "/firebase-config.js";
-        import { getAvatarHTML } from "/utils.js";
-
-        if (!getApps().length) initializeApp(firebaseConfig);
-        const auth = getAuth();
-        const db = getFirestore();
-        const storage = getStorage();
-
-        let currentUser = null;
-        let userData = {};
-
-        // -----------------------------------------------------------------------
-        // FIX 1: Social graph is cached once at init, NOT re-fetched on every
-        // user doc snapshot. followingUids/followerUids/mutualUids are only
-        // refreshed when the user explicitly changes their follow state.
-        // -----------------------------------------------------------------------
-        let followingUids = [];
-        let followerUids = [];
-        let mutualUids = [];
-        let blockedUsers = [];
-        let feedMode = 'school';
-        let isAdmin = false;
-        let unsubModal = () => {};
-        let unsubUser = () => {};
-
-        let allStates = [];
-        let currentStateSchools = [];
-        let selectedState = null;
-
-        const DAILY_COLLECTION = collection(db, 'daily_photos');
-        const USERS_COLLECTION = 'users';
-
-        // Initialize the profanity filter
-        const profanityFilter = new BetterProfanity();
-
-        // --- Profanity Filter ---
-        // Replaces the existing 'containsCursedText' to use BetterProfanity.
-        function containsCursedText(text) {
-        if (!text) return false;
-        const originalText = text;
-        const cleaned = profanityFilter.clean(originalText);
-
-        // Detect if profanity was present:
-        // If the original text had content, and after cleaning it's different or empty, consider it cursed.
-        if (originalText.trim() !== '' && (cleaned === '' || cleaned !== originalText)) {
-            return true;
-        }
-        return false; // No profanity detected or original text was empty/whitespace.
-        }
-        // --- Custom UI Helpers ---
-        const CustomUI = {
-            alert: (message, title = "Notice") => {
-                return new Promise(resolve => {
-                    const modal = document.getElementById('custom-alert-modal');
-                    document.getElementById('custom-alert-title').textContent = title;
-                    document.getElementById('custom-alert-message').textContent = message;
-                    modal.classList.add('open');
-                    document.getElementById('custom-alert-btn').onclick = () => {
-                        modal.classList.remove('open');
-                        resolve();
-                    };
-                });
-            },
-            confirm: (message, title = "Confirm") => {
-                return new Promise(resolve => {
-                    const modal = document.getElementById('custom-confirm-modal');
-                    document.getElementById('custom-confirm-title').textContent = title;
-                    document.getElementById('custom-confirm-message').textContent = message;
-                    modal.classList.add('open');
-                    document.getElementById('custom-confirm-ok').onclick = () => {
-                        modal.classList.remove('open');
-                        resolve(true);
-                    };
-                    document.getElementById('custom-confirm-cancel').onclick = () => {
-                        modal.classList.remove('open');
-                        resolve(false);
-                    };
-                });
-            },
-            prompt: (message, defaultValue = "", title = "Input", previewSrc = null) => {
-                return new Promise(resolve => {
-                    const modal = document.getElementById('custom-prompt-modal');
-                    const input = document.getElementById('custom-prompt-input');
-                    const previewContainer = document.getElementById('custom-prompt-preview-container');
-                    const previewImg = document.getElementById('custom-prompt-preview-img');
-                    
-                    document.getElementById('custom-prompt-title').textContent = title;
-                    document.getElementById('custom-prompt-message').textContent = message;
-                    input.value = defaultValue;
-                    
-                    if (previewSrc) {
-                        previewImg.src = previewSrc;
-                        previewContainer.classList.remove('hidden');
-                    } else {
-                        previewContainer.classList.add('hidden');
-                    }
-
-                    modal.classList.add('open');
-                    setTimeout(() => input.focus(), 100);
-                    document.getElementById('custom-prompt-ok').onclick = () => {
-                        modal.classList.remove('open');
-                        resolve(input.value);
-                    };
-                    document.getElementById('custom-prompt-cancel').onclick = () => {
-                        modal.classList.remove('open');
-                        resolve(null);
-                    };
-                });
-            }
-        };
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                initApp();
-            } else {
-                await signInAnonymously(auth);
-            }
-        });
-
-        async function initApp() {
-            try {
-                const adminSnap = await getDoc(doc(db, 'admins', currentUser.uid));
-                isAdmin = adminSnap.exists() || currentUser.email === '4simpleproblems@gmail.com';
-            } catch (e) { console.warn("Admin check failed", e); }
-
-        // Add the mock post data and function to add it
-        const mockProfanityPost = {
-            creatorUid: currentUser.uid,
-            creatorUsername: 'AdminTester',
-            createdAt: serverTimestamp(),
-            imageURL: 'https://via.placeholder.com/600/FF0000/FFFFFF?text=TEST+POST', // Placeholder image
-            title: 'A Test Post with Damn Fuck Ass', // Profanity in title
-            schoolId: userData.schoolId || 'Test School',
-            districtId: userData.districtId || 'Test District',
-            status: 'active',
-            hearts: [],
-            comments: [
-                { uid: currentUser.uid, username: 'AdminTester', text: 'This comment is damn good!', timestamp: new Date() },
-                { uid: 'another_user_id', username: 'TestUser', text: 'What the fuck is this ass?', timestamp: new Date() }
-            ],
-            visibleToAdminsOnly: true // This is the key flag
-        };
-
-        async function addMockPost() {
-            try {
-                await addDoc(collection(db, 'daily_photos'), mockProfanityPost);
-                console.log("Mock post added successfully.");
-            } catch (error) {
-                console.error("Error adding mock post:", error);
-            }
-        }
-
-        // Call addMockPost if admin, or when admin settings are initialized
-        if (isAdmin) {
-            // Optionally add a button or mechanism to trigger this, or call it directly if desired on init
-            // For now, we'll call it directly if isAdmin is true, assuming it's for testing setup
-            addMockPost(); 
-        }
-
-        // -----------------------------------------------------------------------
-        // FIX 1 APPLIED: Fetch social graph ONCE here, not inside listenToUser.
-        // listenToUser is now a lightweight doc watcher for profile/school data only.
-        // -----------------------------------------------------------------------
-        await fetchSocialGraph();
-
-        setupSidebarNav();
-        setupFeedToggles();
-        setupRefreshButton();
-        listenToUser();
-        setupUserSearch();
-        setupSchoolSelection();
-    }
-
-    // -----------------------------------------------------------------------
-    // fetchSocialGraph: runs once at init (and can be called again after a
-    // follow/unfollow action). Does NOT run on every user doc update.
-    // -----------------------------------------------------------------------
-    async function fetchSocialGraph() {
-        const [followingSnap, followersSnap] = await Promise.all([
-            getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'following')),
-            getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'followers'))
-        ]);
-        followingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
-        followerUids = followersSnap.docs.map(d => d.id).filter(id => id !== '.init');
-        mutualUids = followingUids.filter(id => followerUids.includes(id));
-    }
-
-        // -----------------------------------------------------------------------
-        // listenToUser: watches the user doc for profile/school changes only.
-        // NO longer fetches following/followers subcollections on every update.
-        // -----------------------------------------------------------------------
-        function listenToUser() {
-            if (unsubUser) unsubUser();
-            unsubUser = onSnapshot(doc(db, USERS_COLLECTION, currentUser.uid), async snap => {
-                userData = snap.data() || {};
-                blockedUsers = userData.blocked_users || [];
-                
-                const schoolIndicator = document.getElementById('school-indicator-sidebar');
-                const sidebarSchoolName = document.getElementById('sidebar-school-name');
-                if (userData.schoolName) {
-                    sidebarSchoolName.textContent = userData.schoolName;
-                    schoolIndicator.classList.remove('hidden');
-                } else {
-                    schoolIndicator.classList.add('hidden');
-                }
-
-                const urlParams = new URLSearchParams(window.location.search);
-                const forceChange = urlParams.get('changeSchool') === 'true';
-
-                if ((!userData.schoolId && !userData.schoolSkipped) || forceChange) {
-                    document.getElementById('announcement-modal').classList.add('open');
-                    if (forceChange) window.history.replaceState({}, '', window.location.pathname);
-                }
-
-                renderMyPosts(userData.dailySlotsUsed || []);
-
-                // Only load feed on first real data arrival (not on every ping update)
-                if (!window._feedLoaded) {
-                    window._feedLoaded = true;
-                    await loadFeed();
-                }
-
-                if (!document.getElementById('friends-section-wrapper').classList.contains('hidden')) renderMutualsList();
-                if (!document.getElementById('blocked-section').classList.contains('hidden')) renderBlockedList();
-            });
-        }
-
-        // -----------------------------------------------------------------------
-        // FIX 2: Feed uses getDocs (one-time fetch) instead of onSnapshot.
-        // A manual refresh button replaces the live listener.
-        // This eliminates the continuous read drain from 700 concurrent listeners.
-        // -----------------------------------------------------------------------
-        async function loadFeed() {
-            const grid = document.getElementById('photo-feed');
-            const refreshBtn = document.getElementById('refresh-feed-btn');
-
-            grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin opacity-20 text-3xl"></i></div>';
-            refreshBtn.disabled = true;
-            refreshBtn.querySelector('i').classList.add('fa-spin');
-
-            const today = new Date(); today.setHours(0,0,0,0);
-
-            try {
-                let primaryDocs = [];
-                const isNoSchool = !userData.schoolId || userData.schoolSkipped;
-
-                if (isNoSchool) {
-                    document.getElementById('feed-toggle-school').textContent = 'Mutuals';
-                    document.getElementById('feed-toggle-district').textContent = 'Public';
-
-                    if (feedMode === 'district' || feedMode === 'public') {
-                        const q = query(DAILY_COLLECTION,
-                            where('status', '==', 'active'),
-                            where('schoolId', '==', null),
-                            where('createdAt', '>=', today),
-                            limit(50)
-                        );
-                        const snap = await getDocs(q);
-                        primaryDocs = snap.docs;
-                    } else {
-                        const uids = [currentUser.uid, ...mutualUids].slice(0, 10);
-                        const q = query(DAILY_COLLECTION,
-                            where('status', '==', 'active'),
-                            where('creatorUid', 'in', uids),
-                            where('createdAt', '>=', today)
-                        );
-                        const snap = await getDocs(q);
-                        primaryDocs = snap.docs;
-                    }
-                } else {
-                    document.getElementById('feed-toggle-school').textContent = 'School';
-                    document.getElementById('feed-toggle-district').textContent = 'District';
-
-                    if (feedMode === 'district') {
-                        const q = query(DAILY_COLLECTION,
-                            where('status', '==', 'active'),
-                            where('districtId', '==', userData.districtId),
-                            where('createdAt', '>=', today),
-                            limit(100)
-                        );
-                        const snap = await getDocs(q);
-                        primaryDocs = snap.docs;
-                    } else {
-                        const q = query(DAILY_COLLECTION,
-                            where('status', '==', 'active'),
-                            where('schoolId', '==', userData.schoolId),
-                            where('createdAt', '>=', today),
-                            limit(50)
-                        );
-                        const snap = await getDocs(q);
-                        primaryDocs = snap.docs;
-                    }
-                }
-
-                // Fetch mutual friend posts separately (only if school mode and mutuals exist)
-                let friendDocs = [];
-                if (!isNoSchool && mutualUids.length > 0 && feedMode === 'school') {
-                    const friendQ = query(DAILY_COLLECTION,
-                        where('status', '==', 'active'),
-                        where('creatorUid', 'in', mutualUids.slice(0, 10)),
-                        where('createdAt', '>=', today)
-                    );
-                    const friendSnap = await getDocs(friendQ);
-                    friendDocs = friendSnap.docs;
-                }
-
-                // Merge and deduplicate
-                const combinedMap = new Map();
-                primaryDocs.forEach(d => combinedMap.set(d.id, d));
-                friendDocs.forEach(d => combinedMap.set(d.id, d));
-                
-                // Filter out posts marked as visible only to admins, unless the current user is an admin
-                const allDocs = Array.from(combinedMap.values())
-                                .filter(docSnap => !docSnap.data().visibleToAdminsOnly || isAdmin);
-
-                const modeLabel = isNoSchool
-                    ? (feedMode === 'district' ? 'the network' : 'your mutuals')
-                    : (feedMode === 'district' ? 'your district' : 'your school');
-
-                if (allDocs.length === 0) {
-                    grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today from ${modeLabel}.</p>`;
-                    return;
-                }
-
-                // Sort: mutuals first, then newest
-                const sortedDocs = allDocs
-                    .filter(d => !blockedUsers.includes(d.data().creatorUid))
-                    .sort((a, b) => {
-                        const da = a.data(), db_ = b.data();
-                        const aM = mutualUids.includes(da.creatorUid);
-                        const bM = mutualUids.includes(db_.creatorUid);
-                        if (aM && !bM) return -1;
-                        if (!aM && bM) return 1;
-                        return (db_.createdAt?.toMillis() || 0) - (da.createdAt?.toMillis() || 0);
-                    });
-
-                const fragment = document.createDocumentFragment();
-                sortedDocs.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const isMutual = mutualUids.includes(data.creatorUid);
-
-                    const el = document.createElement('div');
-                    el.className = `photo-thumbnail ${isMutual ? 'is-mutual' : ''}`;
-                    el.setAttribute('data-post-id', docSnap.id);
-
-                    const metaLabel = (feedMode === 'district' && data.schoolId)
-                        ? `<div class="absolute bottom-12 left-3 z-20 text-[8px] font-black uppercase tracking-widest opacity-40 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/5 truncate max-w-[80%]">${data.schoolId}</div>`
-                        : '';
-
-                    el.innerHTML = `
-                        ${isMutual ? `<div class="mutual-badge"><i class="fas fa-heart"></i> Mutual</div>` : ''}
-                        <img src="${data.imageURL || data.imageBase64}" loading="lazy">
-                        <div class="overlay-grad"></div>
-                        <div class="absolute top-3 right-3 flex gap-2">
-                            <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
-                                <i class="fas fa-heart text-red-500"></i> <span class="heart-count">${data.hearts?.length || 0}</span>
-                            </span>
-                            <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
-                                <i class="fas fa-comment text-indigo-400"></i> <span class="comment-count">${data.comments?.length || 0}</span>
-                            </span>
-                        </div>
-                        ${metaLabel}
-                        <div class="title-overlay">${data.title}</div>
-                    `;
-                    el.onclick = () => window.viewPost(docSnap.id);
-                    fragment.appendChild(el);
-                });
-
-                grid.innerHTML = '';
-                grid.appendChild(fragment);
-
-            } catch (e) {
-                console.error("loadFeed error:", e);
-                grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Error loading feed. Check console.</p>';
-            } finally {
-                refreshBtn.disabled = false;
-                refreshBtn.querySelector('i').classList.remove('fa-spin');
-            }
-        }
-
-        function setupRefreshButton() {
-            document.getElementById('refresh-feed-btn').onclick = () => loadFeed();
-        }
-
-        // -----------------------------------------------------------------------
-        // viewPost: onSnapshot is KEPT here intentionally. The modal is a single
-        // document watcher for one post at a time — this is fine and necessary
-        // for live comment/heart updates while the modal is open.
-        // -----------------------------------------------------------------------
-        window.viewPost = (postId) => {
-            const modal = document.getElementById('photo-modal');
-            const container = document.getElementById('modal-content-container');
-            modal.classList.add('open');
-            container.innerHTML = '<div class="w-full h-full flex items-center justify-center"><i class="fas fa-spinner fa-spin text-2xl"></i></div>';
-
-            if (unsubModal) unsubModal();
-            unsubModal = onSnapshot(doc(db, 'daily_photos', postId), async snap => {
-                try {
-                    if (!snap.exists()) { window.closeModal(); return; }
-                    const data = snap.data();
-                    const isHearted = data.hearts?.includes(currentUser.uid);
-                    const isOwner = data.creatorUid === currentUser.uid;
-
-                    const authorSnap = await getDoc(doc(db, USERS_COLLECTION, data.creatorUid));
-                    const authorData = authorSnap.exists() ? authorSnap.data() : null;
-
-                    container.innerHTML = `
-                        <button onclick="window.closeModal()" class="modal-close-btn" title="Close">
-                            <i class="fas fa-times"></i>
-                        </button>
-                        
-                        <div id="photo-display-area">
-                            <img src="${data.imageURL || data.imageBase64}" class="photo-modal-img" onerror="this.src='/assets/placeholder-image.png'">
-                        </div>
-                        
-                        <div id="photo-info-panel">
-                            <div class="flex items-center gap-4 mb-6 shrink-0">
-                                <a href="/logged-in/@${data.creatorUsername}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity shrink-0">
-                                    ${authorData ? getAvatarHTML(authorData, "w-12 h-12", false, currentUser) : `<div class="w-full h-full bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-lg uppercase">${(data.creatorUsername || '?').charAt(0)}</div>`}
-                                </a>
-                                <div class="min-w-0 flex-1">
-                                    <a href="/logged-in/@${data.creatorUsername}" class="text-sm font-bold text-[var(--text-main)] truncate block hover:text-[var(--accent-color)] transition-colors">@${data.creatorUsername}</a>
-                                    <p class="text-[10px] opacity-50 font-mono uppercase tracking-tighter">${data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : 'Just now'}</p>
-                                </div>
-                            </div>
-
-                            <div class="mb-4 shrink-0">
-                                <h3 class="text-lg font-black leading-tight text-[var(--text-main)] mb-4">${data.title || "Untitled Moment"}</h3>
-                                
-                                <div class="flex items-center gap-3">
-                                    <button id="modal-heart-btn" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all ${isHearted ? 'text-red-500' : 'opacity-60'}">
-                                        <i class="fas fa-heart ${isHearted ? '' : 'far'}"></i> 
-                                        <span class="text-sm font-bold">${data.hearts?.length || 0}</span>
-                                    </button>
-                                    <div class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 opacity-40">
-                                        <i class="fas fa-comment"></i> 
-                                        <span class="text-sm font-bold">${data.comments?.length || 0}</span>
-                                    </div>
-                                    <div class="ml-auto flex gap-2">
-                                        ${!isOwner ? `
-                                            <button onclick="window.blockUser('${data.creatorUid}', '${data.creatorUsername}')" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xs opacity-40 hover:opacity-100 hover:text-red-500 transition-all" title="Block"><i class="fas fa-ban"></i></button>
-                                        ` : ''}
-                                        ${(isOwner || isAdmin) ? `
-                                            <button onclick="window.deletePost('${postId}')" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xs opacity-40 hover:opacity-100 hover:text-red-500 transition-all" title="Delete"><i class="fas fa-trash"></i></button>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="comments-section">
-                                ${(data.comments || []).map(c => `
-                                    <div class="mb-3 text-xs leading-relaxed">
-                                        <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
-                                        <span class="text-[var(--text-main)] opacity-90">${c.text}</span>
-                                    </div>
-                                `).join('') || '<div class="h-full flex items-center justify-center opacity-20 italic text-xs py-10">No comments yet.</div>'}
-                            </div>
-
-                            <div class="mt-auto pt-4 border-t border-[var(--border-main)] shrink-0">
-                                <div class="flex gap-2">
-                                    <input type="text" id="comment-input" placeholder="Add a comment..." class="flex-1 bg-white/5 border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)] focus:bg-white/10 transition-all text-[var(--text-main)] placeholder:opacity-30">
-                                    <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-color)] text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all shrink-0">
-                                        <i class="fas fa-paper-plane text-[10px]"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-
-                    const commentsSection = document.getElementById('comments-section');
-                    if (commentsSection) commentsSection.scrollTop = commentsSection.scrollHeight;
-
-                    const heartBtn = document.getElementById('modal-heart-btn');
-                    if (heartBtn) {
-                        heartBtn.onclick = async () => {
-                            const newIsHearted = !isHearted;
-                            await updateDoc(doc(db, 'daily_photos', postId), { hearts: newIsHearted ? arrayUnion(currentUser.uid) : arrayRemove(currentUser.uid) });
-                            
-                            if (newIsHearted && !isOwner) {
-                                const meSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
-                                const myUsername = meSnap.data()?.username || "Someone";
-                                await addDoc(collection(db, 'notifications'), {
-                                    recipientId: data.creatorUid,
-                                    senderId: currentUser.uid,
-                                    senderUsername: myUsername,
-                                    type: 'like',
-                                    postId: postId,
-                                    message: `@${myUsername} liked your moment!`,
-                                    timestamp: serverTimestamp(),
-                                    read: false
-                                });
-                            }
-                        };
-                    }
-
-                    const commentInput = document.getElementById('comment-input');
-                    const commentBtn = document.getElementById('send-comment-btn');
-
-                    const handleSendComment = async () => {
-                        const text = commentInput.value.trim();
-                        if (!text) return;
-
-                        if (profanityFilterEnabled && containsCursedText(text)) {
-                            await CustomUI.alert("Your comment contains prohibited characters.", "Filter Blocked");
-                            return;
-                        }
-
-                        const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
-                        const myUsername = userSnap.data()?.username || "Someone";
-                        await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: text, timestamp: new Date() }) });
-                        
-                        if (!isOwner) {
-                            await addDoc(collection(db, 'notifications'), {
-                                recipientId: data.creatorUid,
-                                senderId: currentUser.uid,
-                                senderUsername: myUsername,
-                                type: 'comment',
-                                postId: postId,
-                                message: `@${myUsername} commented on your moment!`,
-                                timestamp: serverTimestamp(),
-                                read: false
-                            });
-                        }
-                        commentInput.value = '';
-                    };
-
-                    if (commentBtn) commentBtn.onclick = handleSendComment;
-                    if (commentInput) {
-                        commentInput.onkeydown = (e) => {
-                            if (e.key === 'Enter') { e.preventDefault(); handleSendComment(); }
-                        };
-                    }
-                } catch (err) {
-                    console.error("Error rendering post modal:", err);
-                    container.innerHTML = `
-                        <div class="flex-1 flex flex-col items-center justify-center p-12 text-center">
-                            <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4 opacity-50"></i>
-                            <h3 class="text-lg font-bold mb-2">Failed to load moment</h3>
-                            <p class="text-sm opacity-50 mb-8">This post might have been deleted or there was a network error.</p>
-                            <button onclick="window.closeModal()" class="btn-toolbar-style px-8 py-3">Close Modal</button>
-                        </div>
-                    `;
-                }
-            });
-        };
-
-        let currentRenderId = 0;
-
-        async function renderMyPosts(usedSlots) {
-            const myId = ++currentRenderId;
-            const container = document.getElementById('daily-posts-container');
-            const fragment = document.createDocumentFragment();
-
-            const postPromises = usedSlots.map(postId => {
-                if (postId && postId !== 'DELETED') {
-                    return getDoc(doc(db, 'daily_photos', postId));
-                }
-                return Promise.resolve(null);
-            });
-
-            const postSnaps = await Promise.all(postPromises);
-
-            for (let i = 0; i < 5; i++) {
-                const postSnap = postSnaps[i];
-                const postId = usedSlots[i];
-                const div = document.createElement('div');
-                div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl overflow-hidden flex items-center p-2 gap-3 transition-all hover:border-[var(--accent-color)]';
-                
-                if (postId && postId !== 'DELETED' && postSnap && postSnap.exists()) {
-                    const postData = postSnap.data();
-                    div.innerHTML = `
-                        <div class="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0">
-                            <img src="${postData.imageURL || postData.imageBase64}" class="w-full h-full object-cover" loading="lazy">
-                        </div>
-                        <div class="flex-grow min-w-0">
-                            <p class="text-xs font-bold truncate">${postData.title}</p>
-                            <p class="text-[10px] opacity-50">${new Date(postData.createdAt?.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
-                        </div>
-                        <div class="flex gap-1 pr-1">
-                            <button onclick="window.viewPost('${postId}')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5" title="View"><i class="fas fa-eye text-xs"></i></button>
-                            <button onclick="window.deletePost('${postId}', ${i})" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-xs"></i></button>
-                        </div>
-                    `;
-                } else if (postId && postId !== 'DELETED') {
-                    div.innerHTML = `<span class="text-xs opacity-30 p-3 italic">Post missing...</span><button onclick="window.fixSlot(${i})" class="text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-lg ml-auto mr-2">Fix</button>`;
-                } else {
-                    div.innerHTML = `
-                        <div class="w-12 h-12 rounded-xl border border-dashed border-[var(--border-main)] flex items-center justify-center shrink-0 opacity-20"><i class="fas fa-plus text-xs"></i></div>
-                        <span class="text-xs opacity-30 italic">Empty Slot ${i+1}</span>
-                        <button onclick="window.openUpload(${i})" class="btn-icon w-8 h-8 rounded-lg ml-auto mr-1" title="Post Moment"><i class="fas fa-plus text-xs"></i></button>
-                    `;
-                }
-                fragment.appendChild(div);
-            }
-
-            if (myId === currentRenderId) {
-                container.innerHTML = '';
-                container.appendChild(fragment);
-            }
-        }
-
-        async function setupSchoolSelection() {
-            try {
-                const res = await fetch('/schools/states.json');
-                allStates = await res.json();
-            } catch (err) { console.error("Failed to load states:", err); }
-
-            document.getElementById('announcement-continue-btn').onclick = () => {
-                document.getElementById('announcement-modal').classList.remove('open');
-                document.getElementById('school-selection-modal').classList.add('open');
-            };
-
-            const stateInput = document.getElementById('state-search-input');
-            const stateResults = document.getElementById('state-results');
-            const schoolInput = document.getElementById('school-search-input');
-            const schoolResults = document.getElementById('school-results');
-
-            stateInput.oninput = () => {
-                const term = stateInput.value.trim().toLowerCase();
-                if (!term) { stateResults.innerHTML = ''; return; }
-                const filtered = allStates.filter(s => s.name.toLowerCase().includes(term) || s.abbr.toLowerCase().includes(term));
-                stateResults.innerHTML = filtered.map(s => `
-                    <div class="list-item-themed flex justify-between items-center group" onclick="window.selectState('${s.abbr}')">
-                        <span class="font-bold">${s.name}</span>
-                        <span class="text-xs opacity-40 group-hover:opacity-100 transition-opacity">${s.abbr}</span>
+            <!-- Controls -->
+            <div class="flex flex-col items-center gap-2">
+                <div class="flex items-center gap-6">
+                    <button class="player-btn text-lg" id="shuffleButton"><i class="fas fa-shuffle"></i></button>
+                    <button class="player-btn text-xl" id="prevButton"><i class="fas fa-step-backward"></i></button>
+                    <button class="w-10 h-10 bg-[var(--text-main)] text-[var(--bg-page)] rounded-full flex items-center justify-center hover:scale-105 transition-transform" id="playPauseButton">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="player-btn text-xl" id="nextButton"><i class="fas fa-step-forward"></i></button>
+                    <button class="player-btn text-lg" id="repeatButton"><i class="fas fa-repeat"></i></button>
+                </div>
+                <div class="w-full flex items-center gap-3 text-[10px] font-bold text-[var(--text-muted)] opacity-60">
+                    <span id="currentTimeLabel">0:00</span>
+                    <div class="progress-bar flex-1" id="progressTrack">
+                        <div class<progress-bar-fill" id="progressBarFill"></div>
                     </div>
-                `).join('');
-                updateScrollFades(stateResults, 'state-fade-top', 'state-fade-bottom');
-            };
+                    <span id="durationLabel">0:00</span>
+                </div>
+            </div>
 
-            stateResults.onscroll = () => updateScrollFades(stateResults, 'state-fade-top', 'state-fade-bottom');
-            schoolResults.onscroll = () => updateScrollFades(schoolResults, 'school-fade-top', 'school-fade-bottom');
+            <!-- Volume & Extras -->
+            <div class="flex items-center justify-end gap-4">
+                <div class="flex items-center gap-2 group">
+                    <i class="fas fa-volume-up text-[var(--text-muted)] opacity-60 group-hover:text-[var(--text-main)] transition-colors"></i>
+                    <div class="w-24 h-1 bg-[var(--border-main)] rounded-full cursor-pointer relative">
+                        <input type="range" id="volumeSlider" min="0" max="100" value="70" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                        <div class="bg-[var(--text-muted)] opacity-60 h-full rounded-full" id="volumeBarFill" style="width: 70%;"></div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
 
-            window.selectState = async (abbr) => {
-                selectedState = allStates.find(s => s.abbr === abbr);
-                stateResults.innerHTML = '<div class="p-8 text-center"><i class="fas fa-spinner fa-spin text-2xl opacity-20"></i></div>';
-                try {
-                    const res = await fetch(`/schools/${abbr.trim()}.json`);
-                    currentStateSchools = await res.json();
-                    currentStateSchools.sort((a, b) => a.name.localeCompare(b.name));
-                    document.getElementById('state-step').classList.add('hidden');
-                    document.getElementById('school-step').classList.remove('hidden');
-                    renderSchools('');
-                } catch (err) { 
-                    console.error("Failed to load schools:", err); 
-                    alert("Failed to load schools for this state.");
-                }
-            };
+    <!-- Modals -->
+    <div id="createPlaylistModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-6 text-[var(--text-main)]">Create New Playlist</h2>
+            <input type="hidden" id="editPlaylistId">
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="text-xs font-bold text-[var(--text-muted)] opacity-60 uppercase tracking-widest mb-2 block">Name</label>
+                    <input type="text" id="playlistNameInput" class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 outline-none focus:border-[var(--accent-color)] text-[var(--text-main)]" placeholder="My Playlist #1">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-[var(--text-muted)] opacity-60 uppercase tracking-widest mb-2 block">Description</label>
+                    <textarea id="playlistDescInput" class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] h-24" placeholder="Optional description"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button class="px-6 py-3 rounded-xl font-bold text-gray-400 hover:text-white transition-colors" onclick="hideCreatePlaylistModal()">Cancel</button>
+                <button class="btn-niobium" id="savePlaylistBtn">Create Playlist</button>
+            </div>
+        </div>
+    </div>
 
-            schoolInput.oninput = () => renderSchools(schoolInput.value.trim());
+    <!-- Full-Screen Now Playing Modal -->
+    <div id="fullscreenPlayer" class="fixed inset-0 bg-black z-[100000] hidden flex-col px-8 py-8 lg:px-16 transition-all duration-500 overflow-hidden text-white keep-white" style="--tint-color: #ffffff; --progress-bg: rgba(255,255,255,0.1);">
+        <!-- Blurred Background -->
+        <div id="fsBackground" class="absolute inset-0 z-[-1] opacity-60 transition-all duration-1000"></div>
+        <div class="absolute inset-0 bg-black/25 z-[-1]"></div>
+        <div class="absolute inset-0 backdrop-blur-[120px] z-[-1]"></div>
 
-            function renderSchools(term) {
-                const search = term.toLowerCase();
-                const filtered = currentStateSchools.filter(s => {
-                    if (!search) return true;
-                    return s.name.toLowerCase().includes(search) || 
-                           (s.district && s.district.toLowerCase().includes(search)) ||
-                           (s.county && s.county.toLowerCase().includes(search));
-                }).slice(0, 100);
+        <!-- Scaling Wrapper -->
+        <div id="fsScaleWrapper" class="flex flex-col h-full w-full transition-transform duration-300 origin-center relative">
+            <div class="absolute top-0 left-0 p-4 lg:p-8 z-20">
+                <button onclick="toggleFullscreenPlayer()" class="text-3xl lg:text-4xl hover:scale-110 transition-transform" style="color: #ffffff !important">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
 
-                schoolResults.innerHTML = filtered.map(s => `
-                    <div class="list-item-themed" onclick="window.selectSchool('${s.name.replace(/'/g, "\\'")}', '${(s.district || '').replace(/'/g, "\\'")}')">
-                        <div class="font-bold text-sm mb-1">${s.name}</div>
-                        <div class="flex gap-3 text-[10px] opacity-40 uppercase tracking-widest font-bold">
-                            <span>${s.district || 'Independent'}</span>
-                            <span class="text-indigo-500/60">•</span>
-                            <span>${s.level}</span>
+            <div class="flex-1 flex items-center justify-center max-w-7xl mx-auto w-full relative z-10 px-4">
+                <!-- Centered Content: Artwork & Controls -->
+                <div class="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 w-full">
+                    <div class="w-full max-w-[400px] lg:max-w-[550px] aspect-square rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex-shrink-0">
+                        <img id="fsArtwork" src="" class="w-full h-full object-cover">
+                    </div>
+                    
+                    <div class="flex flex-col w-full max-w-2xl">
+                        <div class="w-full mb-8 lg:mb-12 text-center lg:text-left">
+                            <h1 id="fsTrackName" class="text-4xl lg:text-7xl font-black tracking-tighter mb-2 lg:mb-4" style="color: #ffffff !important">Not Playing</h1>
+                            <p id="fsArtistName" class="text-xl lg:text-3xl font-medium opacity-70" style="color: #ffffff !important">Select a track</p>
+                        </div>
+
+                        <!-- Fullscreen Controls -->
+                        <div class="w-full flex flex-col items-center lg:items-start gap-8 lg:gap-12">
+                            <div class="w-full flex flex-col gap-3">
+                                <div class="progress-bar w-full h-2 lg:h-3 rounded-full overflow-hidden cursor-pointer" id="fsProgressTrack" style="background: var(--progress-bg)">
+                                    <div class="progress-bar-fill h-full transition-all duration-150" id="fsProgressBarFill" style="background: #ffffff !important"></div>
+                                </div>
+                                <div class="flex justify-between text-sm lg:text-base font-bold opacity-50" style="color: #ffffff !important">
+                                    <span id="fsCurrentTime">0:00</span>
+                                    <span id="fsDuration">0:00</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-center lg:justify-start gap-10 lg:gap-16 w-full">
+                                <button class="player-btn text-2xl lg:text-3xl opacity-70 hover:opacity-100 transition-all" id="fsShuffle"><i class="fas fa-shuffle"></i></button>
+                                <button class="player-btn text-3xl lg:text-5xl hover:scale-110 transition-all" id="fsPrev"><i class="fas fa-step-backward"></i></button>
+                                <button class="w-20 h-20 lg:w-28 lg:h-28 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-xl" id="fsPlayPause">
+                                    <i class="fas fa-play text-4xl lg:text-6xl ml-1 text-black"></i>
+                                </button>
+                                <button class="player-btn text-3xl lg:text-5xl hover:scale-110 transition-all" id="fsNext"><i class="fas fa-step-forward"></i></button>
+                                <div class="flex items-center gap-10 lg:gap-16">
+                                    <button class="player-btn text-2xl lg:text-3xl opacity-70 hover:opacity-100 transition-all" id="fsRepeat"><i class="fas fa-repeat"></i></button>
+                                    <button class="player-btn text-2xl lg:text-3xl opacity-70 hover:opacity-100 transition-all" id="fsLike"><i class="far fa-heart"></i></button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                `).join('');
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="editPlaylistModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-6 text-[var(--text-main)]">Edit Playlist</h2>
+            <input type="hidden" id="editPlaylistId">
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 block">Name</label>
+                    <input type="text" id="editPlaylistNameInput" class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 outline-none focus:border-[var(--accent-color)] text-[var(--text-main)]" placeholder="My Playlist #1">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 block">Description</label>
+                    <textarea id="editPlaylistDescInput" class="w-full bg-[var(--bg-page)] border border-[var(--border-main)] rounded-xl p-3 outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] h-24" placeholder="Optional description"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button class="px-6 py-3 rounded-xl font-bold text-gray-400 hover:text-white transition-colors" onclick="hideEditPlaylistModal()">Cancel</button>
+                <button class="btn-niobium" id="confirmEditPlaylistBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addToPlaylistModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-6 text-[var(--text-main)]">Add to Playlist</h2>
+            <div id="playlistSelectionList" class="space-y-2 max-h-64 overflow-y-auto custom-scroll mb-8">
+                <!-- Playlists will be injected here -->
+            </div>
+            <div class="flex justify-end gap-3">
+                <button class="px-6 py-3 rounded-xl font-bold text-gray-400 hover:text-white transition-colors" onclick="hideAddToPlaylistModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed bottom-32 left-1/2 -translate-x-1/2 z-[100000] flex flex-col gap-2 pointer-events-none"></div>
+
+    <div id="cropperModal">
+        <div id="cropperContent">
+            <!-- Header -->
+            <div class="flex justify-between items-center p-6 border-b border-[var(--border-main)] bg-[var(--bg-secondary)]">
+                <h3 class="text-2xl font-bold text-[var(--text-main)]">Adjust Playlist Cover</h3>
+                <button id="cancelCropBtn" class="w-10 h-10 flex items-center justify-center p-0 rounded-full hover:bg-[var(--border-faint)] transition-colors text-[var(--text-main)]">
+                     <i class="fa-solid fa-xmark fa-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="flex flex-col items-center p-6 bg-[var(--bg-page)]">
+                <p class="text-sm text-[var(--text-muted)] opacity-60 mb-4">Drag to move. Scroll to resize the selection.</p>
                 
-                if (filtered.length === 0) {
-                    schoolResults.innerHTML = '<p class="text-center py-8 opacity-30 italic text-sm">No schools found matching your search.</p>';
-                }
-                updateScrollFades(schoolResults, 'school-fade-top', 'school-fade-bottom');
-            }
-
-            function updateScrollFades(el, topId, bottomId) {
-                const topFade = document.getElementById(topId);
-                const bottomFade = document.getElementById(bottomId);
-                if (!el || !topFade || !bottomFade) return;
-                const isAtTop = el.scrollTop <= 5;
-                const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 5;
-                const hasScroll = el.scrollHeight > el.clientHeight;
-                topFade.classList.toggle('scroll-fade-active', hasScroll && !isAtTop);
-                bottomFade.classList.toggle('scroll-fade-active', hasScroll && !isAtBottom);
-            }
-
-            window.selectSchool = async (schoolName, districtName) => {
-                if (await CustomUI.confirm(`Confirm selection: ${schoolName}?`)) {
-                    const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
-                    const currentMonth = new Date().getMonth() + 1;
-                    let changes = userData.schoolChangesThisMonth || 0;
-                    if ((userData.lastSchoolChangeMonth || 0) !== currentMonth) changes = 0;
-
-                    await updateDoc(userRef, {
-                        schoolId: schoolName,
-                        schoolName: schoolName,
-                        districtId: districtName || schoolName,
-                        state: selectedState.name,
-                        stateAbbr: selectedState.abbr,
-                        schoolSkipped: false,
-                        schoolChangesThisMonth: changes + 1,
-                        lastSchoolChangeMonth: currentMonth
-                    });
-                    document.getElementById('school-selection-modal').classList.remove('open');
-                    // Refresh feed after school change
-                    window._feedLoaded = false;
-                    await loadFeed();
-                }
-            };
-
-            document.getElementById('back-to-states').onclick = () => {
-                document.getElementById('school-step').classList.add('hidden');
-                document.getElementById('state-step').classList.remove('hidden');
-            };
-
-            document.getElementById('skip-school-btn').onclick = async () => {
-                if (await CustomUI.confirm("Skip school selection? You'll see moments from other users who also skipped.")) {
-                    await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { 
-                        schoolSkipped: true,
-                        schoolId: deleteField(),
-                        schoolName: deleteField(),
-                        districtId: deleteField(),
-                        state: deleteField(),
-                        stateAbbr: deleteField()
-                    });
-                    document.getElementById('school-selection-modal').classList.remove('open');
-                    window._feedLoaded = false;
-                    await loadFeed();
-                }
-            };
-        }
-
-        window.openUpload = (slotIdx) => {
-            const modal = document.getElementById('upload-menu-modal');
-            const fileInput = document.getElementById('upload-file-input');
-            modal.classList.add('open');
-            fileInput.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                modal.classList.remove('open');
+                <div id="cropperCanvasContainer" class="relative mb-6 border border-[#333] rounded-[32px] overflow-hidden">
+                    <canvas id="cropperCanvas"></canvas>
+                </div>
                 
-                let previewUrl = "";
-                if (file.type === 'image/gif') {
-                    previewUrl = URL.createObjectURL(file);
-                } else {
-                    previewUrl = await compressImage(file, 400);
-                }
+                <div class="flex justify-end w-full">
+                    <button id="submitCropBtn" class="btn-niobium">
+                        <i class="fa-solid fa-check mr-2"></i> Submit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <input type="file" id="playlistCoverInput" accept="image/*" class="hidden">
+    <input type="hidden" id="uploadPlaylistId">
 
-                const title = await CustomUI.prompt("Give your moment a title:", "Daily Moment", "Post Moment", previewUrl);
-                if (title === null) {
-                    if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
-                    return;
-                }
+    <!-- Audio Element (hidden) -->
+    <div id="audioElement"></div>
 
-                if (profanityFilterEnabled && containsCursedText(title)) {
-                    await CustomUI.alert("Your title contains prohibited characters.", "Filter Blocked");
-                    if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
-                    return;
-                }
-                
-                try {
-                    await CustomUI.alert("Processing image, please wait...");
-                    
-                    const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
-                    const uData = userSnap.data();
-                    const username = uData.username;
-
-                    let finalImageData = {};
-
-                    if (file.type === 'image/gif') {
-                        const storageRef = ref(storage, `daily_photos/${currentUser.uid}/${Date.now()}_${file.name}`);
-                        const metadata = {
-                            customMetadata: {
-                                deleteAfter24h: 'true',
-                                uploadedAt: Date.now().toString()
-                            }
-                        };
-                        const snapshot = await uploadBytes(storageRef, file, metadata);
-                        const downloadURL = await getDownloadURL(snapshot.ref);
-                        finalImageData = { imageURL: downloadURL };
-                        URL.revokeObjectURL(previewUrl);
-                    } else {
-                        const base64Str = await compressImage(file);
-                        finalImageData = { imageBase64: base64Str };
-                    }
-
-                    const postRef = await addDoc(collection(db, 'daily_photos'), {
-                        creatorUid: currentUser.uid,
-                        creatorUsername: username,
-                        createdAt: serverTimestamp(),
-                        ...finalImageData,
-                        title: title || "Daily Moment",
-                        schoolId: uData.schoolId || null,
-                        districtId: uData.districtId || null,
-                        status: 'active',
-                        hearts: [],
-                        comments: []
-                    });
-
-                    const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
-                    const slots = uData.dailySlotsUsed || [];
-                    while (slots.length <= slotIdx) slots.push(null);
-                    slots[slotIdx] = postRef.id;
-                    await updateDoc(userRef, { dailySlotsUsed: slots });
-                    await CustomUI.alert("Upload complete!");
-
-                    // Refresh feed to show the new post immediately
-                    await loadFeed();
-                } catch (error) {
-                    console.error("Upload error:", error);
-                    await CustomUI.alert("Failed to upload image. Please try again.");
-                }
-            };
-        };
-
-        function compressImage(file, maxWidth = 800) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = event => {
-                    const img = new Image();
-                    img.src = event.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > maxWidth) {
-                            height = Math.round((height *= maxWidth / width));
-                            width = maxWidth;
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.8));
-                    };
-                    img.onerror = error => reject(error);
-                };
-                reader.onerror = error => reject(error);
-            });
-        }
-
-        window.deletePost = async (postId, idx) => {
-            if (!(await CustomUI.confirm("Delete this moment?"))) return;
-            
-            const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
-            const userSnap = await getDoc(userRef);
-            const uData = userSnap.data();
-            
-            const slots = [...(uData.dailySlotsUsed || [])];
-            const slotIdx = idx !== undefined ? idx : slots.indexOf(postId);
-            
-            if (slotIdx > -1) {
-                slots[slotIdx] = 'DELETED';
-                await updateDoc(userRef, { dailySlotsUsed: slots });
-            }
-            
-            await deleteDoc(doc(db, 'daily_photos', postId));
-            if (idx === undefined) window.closeModal();
-
-            // Remove deleted post from feed grid without full reload
-            const el = document.querySelector(`[data-post-id="${postId}"]`);
-            if (el) el.remove();
-        };
-
-        window.blockUser = async (uid, username) => {
-            if (await CustomUI.confirm(`Block @${username}? You won't see their posts anymore.`)) {
-                await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { 
-                    blocked_users: arrayUnion(uid),
-                    friends: arrayRemove(uid)
-                });
-                await updateDoc(doc(db, USERS_COLLECTION, uid), { friends: arrayRemove(currentUser.uid) });
-                window.closeModal();
-                // Remove their posts from current feed view
-                document.querySelectorAll('[data-post-id]').forEach(el => {
-                    // We don't store uid on the element, so just reload
-                });
-                await loadFeed();
-            }
-        };
-
-        window.reportPost = async (postId) => {
-            if (await CustomUI.confirm("Report this post for inappropriate content?")) {
-                await addDoc(collection(db, 'reports'), { postId, reportedBy: currentUser.uid, timestamp: serverTimestamp(), type: 'daily_photo' });
-                await CustomUI.alert("Thank you. Our moderators will review this post.");
-            }
-        };
-
-        window.closeModal = () => {
-            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
-            if (unsubModal) unsubModal();
-            setTimeout(() => {
-                const container = document.getElementById('modal-content-container');
-                if (container) container.innerHTML = '';
-            }, 300);
-        };
-
-        function setupSidebarNav() {
-            const btns = { posts: 'sidebar-nav-posts', friends: 'sidebar-nav-friends', blocked: 'sidebar-nav-blocked' };
-            const sections = { posts: 'daily-posts-section', friends: 'friends-section-wrapper', blocked: 'blocked-section' };
-            
-            Object.keys(btns).forEach(key => {
-                document.getElementById(btns[key]).onclick = () => {
-                    Object.values(btns).forEach(b => document.getElementById(b).classList.remove('active'));
-                    Object.values(sections).forEach(s => document.getElementById(s).classList.add('hidden'));
-                    document.getElementById(btns[key]).classList.add('active');
-                    document.getElementById(sections[key]).classList.remove('hidden');
-                    if (key === 'friends') renderMutualsList();
-                    if (key === 'blocked') renderBlockedList();
-                };
-            });
-        }
-
-        function setupFeedToggles() {
-            document.getElementById('feed-toggle-school').onclick = async () => {
-                feedMode = 'school';
-                document.getElementById('feed-toggle-school').classList.add('active', 'btn-primary-override');
-                document.getElementById('feed-toggle-district').classList.remove('active', 'btn-primary-override');
-                const isNoSchool = !userData.schoolId || userData.schoolSkipped;
-                document.getElementById('feed-desc').textContent = isNoSchool ? 'Moments from mutual friends.' : 'Moments from your school.';
-                await loadFeed();
-            };
-            document.getElementById('feed-toggle-district').onclick = async () => {
-                feedMode = 'district';
-                document.getElementById('feed-toggle-district').classList.add('active', 'btn-primary-override');
-                document.getElementById('feed-toggle-school').classList.remove('active', 'btn-primary-override');
-                const isNoSchool = !userData.schoolId || userData.schoolSkipped;
-                document.getElementById('feed-desc').textContent = isNoSchool ? 'Discover shared moments from across the network.' : 'Moments from across your district.';
-                await loadFeed();
-            };
-        }
-
-        function setupUserSearch() {
-            const input = document.getElementById('user-search-input');
-            const results = document.getElementById('search-results');
-            
-            input.oninput = async (e) => {
-                const term = e.target.value.trim().toLowerCase();
-                if (term.length < 2) { results.innerHTML = ''; return; }
-                
-                const q = query(collection(db, USERS_COLLECTION), where('username', '>=', term), where('username', '<=', term + '\uf8ff'), limit(5));
-                const snap = await getDocs(q);
-                
-                results.innerHTML = '';
-                snap.forEach(docSnap => {
-                    if (docSnap.id === currentUser.uid) return;
-                    const d = docSnap.data();
-                    const div = document.createElement('div');
-                    div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-xl p-2 flex items-center gap-3 cursor-pointer hover:border-[var(--accent-color)] transition-all';
-                    div.innerHTML = `
-                        <div class="w-8 h-8 rounded-lg overflow-hidden shrink-0">${getAvatarHTML(d, "w-8 h-8", false, currentUser)}</div>
-                        <span class="text-xs font-bold truncate">@${d.username}</span>
-                    `;
-                    div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
-                    results.appendChild(div);
-                });
-            };
-        }
-
-        async function renderMutualsList() {
-            const list = document.getElementById('friends-list-items');
-            list.innerHTML = '<div class="p-4 text-center opacity-20"><i class="fas fa-spinner fa-spin"></i></div>';
-            list.innerHTML = '';
-            if (mutualUids.length === 0) {
-                list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No mutual friends yet.</p>';
-                return;
-            }
-            for (const uid of mutualUids) {
-                const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
-                const d = snap.data() || {};
-                const div = document.createElement('div');
-                div.className = 'compact-list-item flex items-center gap-3 cursor-pointer hover:bg-white/5';
-                div.innerHTML = `
-                    <div class="w-6 h-6 rounded-lg overflow-hidden shrink-0">${getAvatarHTML(d, "w-6 h-6", false, currentUser)}</div>
-                    <span class="text-xs truncate">@${d.username}</span>
-                `;
-                div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
-                list.appendChild(div);
-            }
-        }
-
-        async function renderBlockedList() {
-            const list = document.getElementById('blocked-list-items');
-            list.innerHTML = '';
-            if (blockedUsers.length === 0) { list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No users blocked.</p>'; return; }
-            for (const uid of blockedUsers) {
-                const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
-                const div = document.createElement('div');
-                div.className = 'compact-list-item flex justify-between items-center';
-                div.innerHTML = `<span class="text-xs opacity-50">@${snap.data()?.username || 'Unknown'}</span><button onclick="window.unblock('${uid}')" class="text-[var(--accent-color)] text-[10px] border border-[var(--accent-color)]/20 px-2 py-1 rounded-lg hover:bg-[var(--accent-color)]/10">Unblock</button>`;
-                list.appendChild(div);
-            }
-        }
-
-        window.unblock = async (uid) => {
-            await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { blocked_users: arrayRemove(uid) });
-        };
-
-        window.fixSlot = async (idx) => {
-            const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
-            const userSnap = await getDoc(userRef);
-            const slots = userSnap.data().dailySlotsUsed || [];
-            slots[idx] = null;
-            await updateDoc(userRef, { dailySlotsUsed: slots });
-        };
-
-        document.getElementById('upload-menu-close-btn').onclick = () => window.closeModal();
-    </script>
+    <script src="/VELIUM/db.js"></script>
+    <script src="/VELIUM/music.js"></script>
+    <!-- Made with ❤️ from 4SP -->
 </body>
 </html>
-<!-- Made with ❤️ from 4SP -->

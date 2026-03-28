@@ -1449,110 +1449,101 @@
             }
         });
 
+        // ─────────────────────────────────────────────────────────────────
+        // loadTrafficData — REWRITTEN
+        //
+        // OLD: getDocs(query(analytics, limit(10000)))  = up to 10,000 reads
+        //      every time an admin opens the Traffic tab.
+        //
+        // NEW: getDoc(analytics_summary/platform)  = exactly 1 read.
+        //      Data is pre-aggregated by the Cloud Function
+        //      `aggregatePlatformAnalytics` (runs every 30 min).
+        //
+        // The "recent sessions" table is removed because we no longer store
+        // individual session documents — that data doesn't exist anymore.
+        // It's replaced by a per-page visit count table from the summary.
+        //
+        // If you want to manually re-aggregate, hit the HTTP endpoint:
+        //   /aggregatePlatformAnalyticsHttp
+        // ─────────────────────────────────────────────────────────────────
         const loadTrafficData = async () => {
             try {
-                const q = query(collection(db, 'analytics'), orderBy('lastActive', 'desc'), limit(10000));
-                const snap = await getDocs(q);
-                allSessions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const summarySnap = await getDoc(doc(db, 'analytics_summary', 'platform'));
 
-                if (allSessions.length === 0) {
-                    document.getElementById('loading-traffic').textContent = "No traffic data available yet.";
+                if (!summarySnap.exists()) {
+                    document.getElementById('loading-traffic').textContent =
+                        "Analytics summary not yet generated. The scheduled function runs every 30 minutes — check back soon, or trigger aggregatePlatformAnalyticsHttp manually.";
                     return;
                 }
 
-                const totalSessions = allSessions.length; 
-                let totalDuration = 0;
-                let totalPageViews = 0;
-                let active24h = 0;
-                const pageCounts = {};
-                const now = Date.now();
-                const oneDay = 24 * 60 * 60 * 1000;
-                const browsers = {};
-                const os = {};
+                const s = summarySnap.data();
+                const traffic = s.traffic || {};
 
-                allSessions.forEach(s => {
-                    totalDuration += (s.duration || 0);
-                    
-                    if (s.visitedPages && Array.isArray(s.visitedPages)) {
-                        totalPageViews += s.visitedPages.length;
-                        s.visitedPages.forEach(p => {
-                            const path = p.path || p; 
-                            const title = p.title || path;
-                            if (!pageCounts[path]) pageCounts[path] = { count: 0, title: title };
-                            pageCounts[path].count++;
-                        });
-                    } else if (s.pageCount) {
-                        totalPageViews += s.pageCount;
-                    }
+                // ── Stat cards ────────────────────────────────────────────
+                // total tracked users = proxy for "sessions" (one doc per user)
+                document.getElementById('stat-total-sessions').textContent =
+                    (traffic.trackedUsers ?? '--').toLocaleString();
 
-                    if (s.userAgent) {
-                        const ua = parseUserAgent(s.userAgent);
-                        browsers[ua.browser] = (browsers[ua.browser] || 0) + 1;
-                        os[ua.os] = (os[ua.os] || 0) + 1;
-                    }
+                // total time across all users, expressed as average
+                const avgSecs = traffic.trackedUsers > 0
+                    ? Math.round((traffic.totalTime || 0) / traffic.trackedUsers)
+                    : 0;
+                document.getElementById('stat-avg-duration').textContent = formatDuration(avgSecs);
 
-                    const lastActive = s.lastActive && s.lastActive.toDate ? s.lastActive.toDate().getTime() : 0;
-                    if (now - lastActive < oneDay) active24h++;
-                });
+                // total page visits = sum of all page counts
+                const totalPageVisits = Object.values(traffic.topPages || {})
+                    .reduce((sum, p) => sum + (p.count || 0), 0);
+                document.getElementById('stat-total-views').textContent =
+                    totalPageVisits.toLocaleString();
 
-                const avgDuration = totalSessions > 0 ? (totalDuration / totalSessions).toFixed(1) : 0;
+                document.getElementById('stat-active-24h').textContent =
+                    (traffic.active24h ?? '--').toLocaleString();
 
-                document.getElementById('stat-total-sessions').textContent = totalSessions + (allSessions.length === 10000 ? '+' : '');
-                document.getElementById('stat-avg-duration').textContent = formatDuration(avgDuration);
-                document.getElementById('stat-total-views').textContent = totalPageViews;
-                document.getElementById('stat-active-24h').textContent = active24h;
+                // ── Top pages table ───────────────────────────────────────
+                const sortedPages = Object.values(traffic.topPages || {})
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 10);
 
-                const sortedPages = Object.values(pageCounts).sort((a, b) => b.count - a.count).slice(0, 10);
                 const pagesBody = document.getElementById('top-pages-body');
-                pagesBody.innerHTML = sortedPages.map(p => `
-                    <tr>
-                        <td class="text-xs font-mono text-gray-500 truncate max-w-[150px]">${p.title}</td>
-                         <td class="text-white">${p.title}</td>
-                        <td class="text-right text-gray-300 font-mono">${p.count}</td>
-                    </tr>
-                `).join('');
+                if (sortedPages.length === 0) {
+                    pagesBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-600 py-4">No page data yet.</td></tr>';
+                } else {
+                    pagesBody.innerHTML = sortedPages.map(p => `
+                        <tr>
+                            <td class="text-xs font-mono text-gray-500 truncate max-w-[150px]">${p.title}</td>
+                            <td class="text-white">${p.title}</td>
+                            <td class="text-right text-gray-300 font-mono">${(p.count || 0).toLocaleString()}</td>
+                        </tr>
+                    `).join('');
+                }
 
+                // ── Recent sessions table — replaced with top-user time ───
+                // Individual session docs no longer exist. Show a note.
                 const sessionsBody = document.getElementById('recent-sessions-body');
-                sessionsBody.innerHTML = allSessions.slice(0, 15).map(s => {
-                    let displayName = 'Guest';
-                    let displayEmail = '-';
-                    let userClass = 'text-gray-500';
-
-                    if (s.userId && s.userId !== 'anonymous') {
-                        const matchedUser = allUsers.find(u => u.id === s.userId);
-                        if (matchedUser) {
-                            displayName = matchedUser.username || 'Unknown Name';
-                            displayEmail = matchedUser.email || 'No Email';
-                            userClass = 'text-blue-400 font-medium';
-                        } else {
-                            displayName = 'ID: ' + s.userId.substring(0,8) + '...';
-                            displayEmail = 'Synced User not found';
-                            userClass = 'text-yellow-500/70 font-mono text-xs';
-                        }
-                    }
-
-                    return `
-                    <tr>
-                        <td>
-                            <div class="flex flex-col">
-                                <span class="${userClass}">${displayName}</span>
-                                <span class="text-xs text-gray-600">${displayEmail}</span>
-                            </div>
-                        </td>
-                        <td class="text-gray-400 text-sm">${formatTimeAgo(s.startTime)}</td>
-                        <td class="text-gray-300 text-sm font-mono">${formatDuration(s.duration)}</td>
-                        <td class="text-gray-400 text-sm font-mono">${s.visitedPages ? s.visitedPages.length : (s.pageCount || 0)}</td>
-                    </tr>
-                `}).join('');
+                if (sessionsBody) {
+                    const lastUpdated = s.lastUpdated?.toDate
+                        ? formatTimeAgo(s.lastUpdated)
+                        : 'unknown';
+                    sessionsBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center text-gray-600 py-6 text-sm">
+                                Session-level data is no longer stored to reduce Firestore reads.<br>
+                                <span class="text-gray-700 text-xs">Summary last updated ${lastUpdated}.</span>
+                            </td>
+                        </tr>`;
+                }
 
                 document.getElementById('loading-traffic').style.display = 'none';
 
-                renderPieChart('browserChart', browsers, 'Browsers');
-                renderPieChart('osChart', os, 'Operating Systems');
+                // ── Charts — browser/OS data not in new schema, show placeholder ──
+                // If you want browser/OS stats back, add userAgent tracking to
+                // user_analytics/{uid} and aggregate it in the Cloud Function.
+                renderPieChart('browserChart', { 'Not tracked': 1 }, 'Browsers');
+                renderPieChart('osChart',      { 'Not tracked': 1 }, 'OS');
 
             } catch (error) {
-                console.error("Error loading traffic data:", error);
-                document.getElementById('loading-traffic').textContent = "Error loading analytics.";
+                console.error("loadTrafficData error:", error);
+                document.getElementById('loading-traffic').textContent = "Error loading analytics summary.";
             }
         };
 

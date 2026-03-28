@@ -1,167 +1,204 @@
-(async function() {
-    console.log("Analytics: Initializing v2 (Efficient)");
+(async function () {
+    // ─────────────────────────────────────────────────────────────────────────
+    // 4SP Analytics v4  —  "One Doc Per User"
+    //
+    // ARCHITECTURE:
+    //   Firestore collection: user_analytics/{uid}
+    //     totalTime      : number  (seconds, incremented with FieldValue.increment)
+    //     pages          : map     { 'Dashboard': N, 'Games': N, ... }
+    //     lastActive     : timestamp
+    //
+    //   Anonymous / pre-auth writes go nowhere — we simply don't track guests
+    //   at the document level to avoid creating hundreds of orphaned docs.
+    //   Guest activity is still counted locally and written once auth resolves.
+    //
+    // READS USED PER SESSION: 0  (pure writes, no merge, no arrayUnion)
+    // ─────────────────────────────────────────────────────────────────────────
 
-    // --- Configuration ---
-    const DEBOUNCE_INTERVAL = 120000; // 2 minutes
+    const SYNC_INTERVAL_MS = 120000; // write every 2 min while active
+    const MIN_GAP_MS       = 45000;  // never write more than once per 45s
+    const TICK_MS          = 5000;   // activity counter granularity
 
-    // --- Local State ---
-    let db, auth, currentUser = 'anonymous', hardwareId = null, sessionId = null;
-    let isTracking = false;
-    let lastSync = 0;
-    let pageViews = [];
-    let activeDuration = 0;
-    let activityInterval, syncInterval;
+    // ── State ────────────────────────────────────────────────────────────────
+    let db, auth;
+    let currentUid   = null;   // null until auth resolves
+    let isTracking   = false;
+    let isDirty      = false;
 
-    // --- Core Functions ---
-    function getSessionId() {
-        if (!sessionId) {
-            sessionId = sessionStorage.getItem('analytics_session_id') || 'sess_' + Date.now() + Math.random().toString(36).substring(2, 9);
-            sessionStorage.setItem('analytics_session_id', sessionId);
-        }
-        return sessionId;
+    let ticksSinceSync  = 0;   // visible ticks accumulated, flushed on sync
+    let lastSyncTime    = 0;
+    let activityTimer   = null;
+    let syncTimer       = null;
+
+    // Page visits buffered locally: { 'Dashboard': 3, 'Games': 1 }
+    // Flushed to Firestore as FieldValue.increment per key on sync.
+    let pendingPageCounts = {};
+
+    // ── Page name helpers ────────────────────────────────────────────────────
+    const PAGE_MAP = {
+        'dashboard.html':  'Dashboard',
+        'soundboard.html': 'Soundboard',
+        'notes.html':      'Notes',
+        'dailyphoto.html': 'DailyPhoto',
+        'dictionary.html': 'Dictionary',
+        'schedule.html':   'Schedule',
+        'games.html':      'Games',
+        'settings.html':   'Settings',
+        'leaderboard.html':'Leaderboard',
+        'index.html':      'Home',
+        '':                'Home',
+    };
+
+    function getPageName(path, fallback) {
+        if (path.includes('/VELIUM/')) return 'Velium';
+        if (path.includes('/VORA/'))   return 'Vora';
+        if (path.includes('/VERN/'))   return 'Vern';
+        const file = path.split('/').pop().split('?')[0];
+        return PAGE_MAP[file] ?? fallback ?? 'Unknown';
     }
 
-    async function getHardwareId() {
-        if (hardwareId) return hardwareId;
-        const components = [navigator.userAgent, screen.width, screen.height, navigator.language, navigator.hardwareConcurrency, new Date().getTimezoneOffset()];
-        const data = components.join('|');
-        let hash = 0;
-        for (let i = 0; i < data.length; i++) {
-            hash = ((hash << 5) - hash) + data.charCodeAt(i);
-            hash |= 0;
-        }
-        hardwareId = 'HW-' + Math.abs(hash).toString(16).toUpperCase();
-        return hardwareId;
-    }
-    
+    // ── Firebase boot ────────────────────────────────────────────────────────
     function waitForFirebase() {
-        if (window.firebase?.apps.length > 0) initAnalytics();
+        if (window.firebase?.apps?.length > 0) initAnalytics();
         else setTimeout(waitForFirebase, 500);
     }
 
     function initAnalytics() {
         if (isTracking) return;
         isTracking = true;
-        console.log("Analytics: Firebase found. Starting efficient tracking.");
-        
+
         const app = window.firebase.app();
-        db = app.firestore();
+        db   = app.firestore();
         auth = app.auth();
 
-        getSessionId();
-        getHardwareId();
-
         auth.onAuthStateChanged(user => {
-            currentUser = user ? user.uid : 'anonymous';
-            if (user?.email === '4simpleproblems@gmail.com') {
-                 sessionStorage.setItem('analytics_is_admin', 'true')
-            }
+            currentUid = user ? user.uid : null;
+            // If we buffered activity before auth resolved, flush it now
+            if (currentUid && isDirty) syncToFirebase();
         });
 
-        // Restore state from sessionStorage
-        pageViews = JSON.parse(sessionStorage.getItem('analytics_pageviews') || '[]');
-        activeDuration = parseInt(sessionStorage.getItem('analytics_active_duration') || '0');
+        // Record this page load
+        recordPageView();
 
-        trackPageView(); 
-        
-        // Start tracking intervals
-        activityInterval = setInterval(() => {
+        // Activity counter — only ticks while tab is visible
+        activityTimer = setInterval(() => {
             if (document.visibilityState === 'visible') {
-                activeDuration += 5; // 5 seconds
+                ticksSinceSync++;
+                isDirty = true;
             }
-        }, 5000);
+        }, TICK_MS);
 
-        syncInterval = setInterval(syncDataToFirebase, DEBOUNCE_INTERVAL);
+        // Periodic sync
+        syncTimer = setInterval(() => {
+            if (isDirty && currentUid) syncToFirebase();
+        }, SYNC_INTERVAL_MS);
 
-        // Sync when user leaves
+        // Sync on hide
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') syncDataToFirebase();
+            if (document.visibilityState === 'hidden' && isDirty && currentUid) {
+                syncToFirebase();
+            }
         });
-        window.addEventListener('beforeunload', () => {
-            clearInterval(activityInterval);
-            clearInterval(syncInterval);
-            syncDataToFirebase(false); // Perform a synchronous final write if possible
+
+        // Final sync on close
+        window.addEventListener('pagehide', () => {
+            clearInterval(activityTimer);
+            clearInterval(syncTimer);
+            if (isDirty && currentUid) syncToFirebase();
         });
     }
 
-    function trackPageView() {
-        const path = window.location.protocol === 'file:' ? window.location.href : window.location.pathname;
-        if (path.includes('srcdoc') || path.includes('javascript:')) return;
-        
-        const pageName = getCleanTitle(window.location.pathname, document.title);
-        pageViews.push({ path, title: pageName, timestamp: Date.now() });
-        sessionStorage.setItem('analytics_pageviews', JSON.stringify(pageViews));
+    // ── Track page visit ─────────────────────────────────────────────────────
+    function recordPageView() {
+        const path = window.location.protocol === 'file:'
+            ? window.location.href
+            : window.location.pathname;
+
+        if (path.includes('srcdoc') || path.startsWith('javascript:')) return;
+
+        const name = getPageName(path, document.title);
+        pendingPageCounts[name] = (pendingPageCounts[name] || 0) + 1;
+        isDirty = true;
     }
 
-    function syncDataToFirebase(async = true) {
-        if (!db || !hardwareId || !sessionId) return;
-        
+    // ── Write to Firestore ───────────────────────────────────────────────────
+    // Structure written to user_analytics/{uid}:
+    //
+    //   totalTime: increment(secondsActive)   ← server-side atomic, no read
+    //   pages.Dashboard: increment(N)         ← map field increment, no read
+    //   lastActive: serverTimestamp()
+    //
+    // All three sentinel types (increment, serverTimestamp) work on a plain
+    // set() with NO merge:true. We set the whole document each time.
+    // On first write, Firestore creates the doc. On subsequent writes it
+    // overwrites non-sentinel fields and applies sentinels atomically.
+    // Result: ZERO reads, ever.
+    //
+    function syncToFirebase() {
+        if (!db || !currentUid) return;
+
         const now = Date.now();
-        if (!async) { // This is a best-effort for beforeunload
-            if (pageViews.length === 0 && activeDuration === parseInt(sessionStorage.getItem('analytics_active_duration') || '0')) return;
-        } else {
-            if (now - lastSync < DEBOUNCE_INTERVAL / 2) return;
-        }
-        
-        console.log(`Analytics: Syncing data. ${pageViews.length} pageviews. Active for ${activeDuration}s.`);
-        lastSync = now;
+        if (now - lastSyncTime < MIN_GAP_MS) return;
+        lastSyncTime = now;
+
+        const secondsActive = ticksSinceSync * (TICK_MS / 1000);
+        const pagesToFlush  = { ...pendingPageCounts };
+
+        // Nothing to write
+        if (secondsActive === 0 && Object.keys(pagesToFlush).length === 0) return;
+
+        // Reset local buffers immediately so concurrent ticks don't double-write
+        ticksSinceSync    = 0;
+        pendingPageCounts = {};
+        isDirty           = false;
 
         const FieldValue = window.firebase.firestore.FieldValue;
-        const batch = db.batch();
 
-        // 1. Update analytics session document
-        const analyticsRef = db.collection('analytics').doc(sessionId);
-        const analyticsData = {
-            sessionId: sessionId,
-            hardwareId: hardwareId,
-            userId: currentUser,
-            userAgent: navigator.userAgent,
-            version: 'project_niobium_v2',
+        // Build the update payload using increment sentinels for every field.
+        // increment() on a plain set() (no merge) is safe — Firestore applies
+        // the delta on top of whatever the current server value is.
+        const payload = {
             lastActive: FieldValue.serverTimestamp(),
-            duration: activeDuration,
-            isAdmin: sessionStorage.getItem('analytics_is_admin') === 'true'
+            uid: currentUid,
         };
-        if (pageViews.length > 0) {
-            analyticsData.visitedPages = FieldValue.arrayUnion(...pageViews);
-        }
-        batch.set(analyticsRef, analyticsData, { merge: true });
 
-        // 2. Update user presence document (if logged in)
-        if (currentUser !== 'anonymous') {
-            const presenceRef = db.collection('user_presence').doc(currentUser);
-            const activity = getCleanTitle(window.location.pathname, document.title);
-            batch.set(presenceRef, {
-                isOnline: true,
-                currentActivity: activity,
-                lastActive: FieldValue.serverTimestamp()
-            }, { merge: true });
+        if (secondsActive > 0) {
+            payload.totalTime = FieldValue.increment(secondsActive);
         }
 
-        // Commit the batch
-        batch.commit().then(() => {
-            // Clear local cache on successful write
-            pageViews = [];
-            sessionStorage.setItem('analytics_pageviews', '[]');
-            sessionStorage.setItem('analytics_active_duration', activeDuration.toString());
-        }).catch(err => {
-            console.error("Analytics: Batch sync failed.", err);
+        // Write page increments as `pages.PageName` dot-notation keys
+        for (const [name, count] of Object.entries(pagesToFlush)) {
+            payload[`pages.${name}`] = FieldValue.increment(count);
+        }
+
+        const ref = db.collection('user_analytics').doc(currentUid);
+
+        // update() creates the doc if it doesn't exist when combined with
+        // set+merge, but we deliberately use update() here because:
+        //   - It NEVER reads first (unlike merge:true set)
+        //   - It fails silently on a missing doc (first-ever write for this user)
+        // So for first-ever write, we fall back to set() with the same payload.
+        ref.update(payload).catch(err => {
+            if (err.code === 'not-found') {
+                // First write for this user — create the document
+                ref.set(payload);
+            } else {
+                // Re-queue on failure so data isn't lost
+                ticksSinceSync    += secondsActive / (TICK_MS / 1000);
+                pendingPageCounts  = mergePageCounts(pagesToFlush, pendingPageCounts);
+                isDirty            = true;
+                console.error('Analytics: write failed, re-queued.', err);
+            }
         });
     }
 
-    const PAGE_NAME_LOOKUP = {
-        'dashboard.html': 'Dashboard', 'soundboard.html': 'Soundboard', 'notes.html': 'Notes',
-        'dailyphoto.html': 'Dailyphoto', 'dictionary.html': 'Dictionary', 'schedule.html': 'Schedule',
-        'games.html': 'Games', 'settings.html': 'Settings', 'index.html': 'Home'
-    };
-
-    const getCleanTitle = (path, originalTitle) => {
-        const pathSegments = path.split('/');
-        if (path.includes('/VELIUM/')) return 'Velium';
-        if (path.includes('/VORA/')) return 'Vora';
-        if (path.includes('/VERN/')) return 'Vern';
-        const fileName = pathSegments.pop().split('?')[0];
-        return PAGE_NAME_LOOKUP[fileName] || originalTitle || 'Unknown Page';
-    };
+    function mergePageCounts(a, b) {
+        const out = { ...a };
+        for (const [k, v] of Object.entries(b)) {
+            out[k] = (out[k] || 0) + v;
+        }
+        return out;
+    }
 
     waitForFirebase();
 })();
