@@ -543,7 +543,11 @@ function setupEventListeners() {
 
     // Modals
     const createPlaylistBtn = document.querySelector('.create-playlist-btn');
-    if (createPlaylistBtn) createPlaylistBtn.addEventListener('click', showCreatePlaylistModal);
+    if (createPlaylistBtn) {
+        createPlaylistBtn.addEventListener('click', showCreatePlaylistModal);
+    } else {
+        console.log("VELIUM: .create-playlist-btn not found, skipping listener");
+    }
     
     const savePlaylistBtn = document.getElementById('savePlaylistBtn');
     if (savePlaylistBtn) {

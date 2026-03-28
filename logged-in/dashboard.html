@@ -421,21 +421,23 @@
             const cachedData = localStorage.getItem(CACHE_KEY);
 
             if (cachedTime && cachedData && (now - parseInt(cachedTime) < ONE_HOUR)) {
-                console.log("Dashboard: Using cached leaderboard rank");
+                console.log("Dashboard: Using cached leaderboard rank:", cachedData);
                 renderRankData(JSON.parse(cachedData));
                 return;
             }
 
-            console.log("Dashboard: Fetching fresh leaderboard rank");
+            console.log("Dashboard: Fetching fresh leaderboard rank for", uid);
             try {
                 // Primary source: snapshot document (efficient)
+                console.log("Dashboard: Attempting to fetch leaderboard/snapshot");
                 const leaderboardSnap = await getDoc(doc(db, 'leaderboard', 'snapshot'));
                 
                 let rankedUsers = [];
                 if (leaderboardSnap.exists()) {
+                    console.log("Dashboard: Leaderboard snapshot found");
                     rankedUsers = leaderboardSnap.data().users || [];
                 } else {
-                    console.log("Dashboard: Snapshot missing, falling back to direct query");
+                    console.warn("Dashboard: Snapshot missing, falling back to direct query");
                     // Fallback source: Direct query (top 50 is only 50 reads)
                     const q = query(
                         collection(db, 'users'),
@@ -445,21 +447,28 @@
                         limit(50)
                     );
                     const querySnap = await getDocs(q);
+                    console.log("Dashboard: Direct query returned", querySnap.size, "users");
                     rankedUsers = querySnap.docs.map(d => ({ ...d.data(), id: d.id }));
                 }
 
                 let rank = '--';
-                let userData = null;
+                let userDataRankInfo = null;
 
                 if (rankedUsers.length > 0) {
-                    const index = rankedUsers.findIndex(u => u.id === uid);
+                    // Check for both .id and .uid as field names vary across collection/summary
+                    const index = rankedUsers.findIndex(u => (u.id === uid || u.uid === uid));
                     if (index !== -1) {
                         rank = `#${index + 1}`;
-                        userData = rankedUsers[index];
+                        userDataRankInfo = rankedUsers[index];
+                        console.log("Dashboard: Rank identified:", rank);
+                    } else {
+                        console.log("Dashboard: User not found in top rankings list");
                     }
+                } else {
+                    console.warn("Dashboard: No ranked users found in sources");
                 }
 
-                const dataToCache = { rank, userData };
+                const dataToCache = { rank, userData: userDataRankInfo };
                 localStorage.setItem(CACHE_KEY, JSON.stringify(dataToCache));
                 localStorage.setItem(CACHE_TIME_KEY, now.toString());
 
@@ -469,15 +478,15 @@
             }
         }
 
-        function renderRankData({ rank, userData }) {
+        function renderRankData({ rank, userData: rankData }) {
             document.getElementById('leaderboard-rank').textContent = rank;
-            if (userData) {
-                document.getElementById('user-stats-name').textContent = userData.displayName || userData.username || "Anonymous";
-                const hours = Math.floor((userData.totalV6Time || 0) / 3600);
-                const minutes = Math.floor(((userData.totalV6Time || 0) % 3600) / 60);
+            if (rankData) {
+                document.getElementById('user-stats-name').textContent = rankData.displayName || rankData.username || "Anonymous";
+                const hours = Math.floor((rankData.totalV6Time || 0) / 3600);
+                const minutes = Math.floor(((rankData.totalV6Time || 0) % 3600) / 60);
                 document.getElementById('user-stats-time').textContent = `${hours}h ${minutes}m total`;
                 const avatarWidget = document.getElementById('user-avatar-widget');
-                avatarWidget.innerHTML = getAvatarHTML(userData, "w-24 h-24", false, auth.currentUser, "rounded-[32px]");
+                avatarWidget.innerHTML = getAvatarHTML(rankData, "w-24 h-24", false, auth.currentUser, "rounded-[32px]");
             }
         }
 
@@ -494,12 +503,14 @@
                 document.getElementById('stat-total-time').textContent = `${hours}h ${minutes}m`;
             };
 
+            // Load initial time from the provided userData (fetched in initDashboard)
             displayTime(userData.totalV6Time || 0);
             
             // Experience time updates in real-time via user doc listener (efficient)
             onSnapshot(doc(db, 'users', uid), docSnap => {
                 if (docSnap.exists()) {
                     const d = docSnap.data();
+                    console.log("Dashboard: Real-time time update:", d.totalV6Time);
                     displayTime(d.totalV6Time || 0);
                 }
             });

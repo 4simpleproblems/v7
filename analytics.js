@@ -1,10 +1,13 @@
 (async function () {
+    if (window.__4sp_analytics_v3_loaded) return;
+    window.__4sp_analytics_v3_loaded = true;
+
     console.log("Analytics: Initializing v3 (Zero-Read)");
 
     // ─── Configuration ────────────────────────────────────────────────────────
     const TICK_MS            = 5000;   // 5 second activity tick
     const SYNC_INTERVAL_MS   = 180000; // 3 min periodic sync
-    const MIN_SYNC_GAP_MS    = 60000;  // never sync more than once per minute
+    const MIN_SYNC_GAP_MS    = 10000;  // First sync can happen sooner
     const MAX_PAGEVIEWS_STORED = 50;   // cap localStorage growth
     const MAX_LOCAL_HISTORY  = 10;     // for dashboard recently accessed
 
@@ -245,10 +248,10 @@
             });
 
             // Efficiently increment total time in the user's main profile
-            // Use update here because the user doc must already exist
-            batch.update(userRef, {
+            // Use set with merge:true to ensure the field is created if missing
+            batch.set(userRef, {
                 totalV6Time: FieldValue.increment(activeDuration)
-            });
+            }, { merge: true });
         }
 
         console.log(
