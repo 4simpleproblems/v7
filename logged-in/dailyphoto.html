@@ -447,6 +447,25 @@
         <!-- Main View -->
         <main class="main-view">
             <div class="feed-content-inner">
+                
+                <!-- Admin Mock Post Section -->
+                <div id="admin-mock-post" class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl p-6 mb-8" ${isAdmin ? '' : 'hidden'}>
+                    <h3 class="text-lg font-bold mb-2 text-[var(--accent-color)]">Admin Test: Profanity Filter Demo</h3>
+                    <p class="text-xs opacity-50 mb-4">This is a mock post to demonstrate how profanity is handled.</p>
+                    
+                    <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-xl p-4 flex items-center gap-3">
+                        <div class="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-black/30 flex items-center justify-center text-white text-3xl opacity-40">
+                            <i class="fas fa-ban"></i>
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <p class="text-sm font-bold truncate">This is a test title with some bad words like F*** and S***</p>
+                            <p class="text-[10px] opacity-50">Admin Test Post • Just now</p>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-xs opacity-40">In a real scenario, the title would be automatically censored by the API.</p>
+                </div>
+                <!-- End Admin Mock Post Section -->
+
                 <div class="flex justify-between items-center mb-10">
                     <div>
                         <h1 class="text-4xl font-bold mb-2">Dailyphoto</h1>
@@ -604,7 +623,7 @@
         let mutualUids = [];
         let blockedUsers = [];
         let feedMode = 'school';
-        let isAdmin = false;
+        let isAdmin = false; // Admin status is determined in initApp
         let unsubModal = () => {};
         let unsubUser = () => {};
 
@@ -699,9 +718,11 @@
 
         async function initApp() {
             try {
+                // Check if the current user is an admin
                 const adminSnap = await getDoc(doc(db, 'admins', currentUser.uid));
-                isAdmin = adminSnap.exists() || currentUser.email === '4simpleproblems@gmail.com';
-            } catch (e) { console.warn("Admin check failed", e); }
+                // Also consider the hardcoded admin email as a fallback
+                isAdmin = adminSnap.exists() || (currentUser.email && currentUser.email === '4simpleproblems@gmail.com'); 
+            } catch (e) { console.warn("Admin check failed:", e); }
 
             // -----------------------------------------------------------------------
             // FIX 1 APPLIED: Fetch social graph ONCE here, not inside listenToUser.
@@ -1043,6 +1064,7 @@
                         const text = commentInput.value.trim();
                         if (!text) return;
 
+                        // Client-side check for prohibited characters (e.g., Zalgo text)
                         if (containsCursedText(text)) {
                             await CustomUI.alert("Your comment contains prohibited characters.", "Filter Blocked");
                             return;
@@ -1087,10 +1109,7 @@
             });
         };
 
-        let currentRenderId = 0;
-
         async function renderMyPosts(usedSlots) {
-            const myId = ++currentRenderId;
             const container = document.getElementById('daily-posts-container');
             const fragment = document.createDocumentFragment();
 
@@ -1136,10 +1155,8 @@
                 fragment.appendChild(div);
             }
 
-            if (myId === currentRenderId) {
-                container.innerHTML = '';
-                container.appendChild(fragment);
-            }
+            container.innerHTML = '';
+            container.appendChild(fragment);
         }
 
         async function setupSchoolSelection() {
@@ -1202,7 +1219,7 @@
                 }).slice(0, 100);
 
                 schoolResults.innerHTML = filtered.map(s => `
-                    <div class="list-item-themed" onclick="window.selectSchool('${s.name.replace(/'/g, "\\'")}', '${(s.district || '').replace(/'/g, "\\'")}')">
+                    <div class="list-item-themed" onclick="window.selectSchool('${s.name.replace(/'/g, "'")}', '${(s.district || '').replace(/'/g, "'")}')">
                         <div class="font-bold text-sm mb-1">${s.name}</div>
                         <div class="flex gap-3 text-[10px] opacity-40 uppercase tracking-widest font-bold">
                             <span>${s.district || 'Independent'}</span>
@@ -1297,7 +1314,52 @@
                     return;
                 }
 
-                if (containsCursedText(title)) {
+                let processedTitle = title; // Variable to hold the final title (potentially censored)
+
+                // --- Profanity Check Integration using profanity.dev API ---
+                try {
+                    const profanityCheckResponse = await fetch('https://vector.profanity.dev', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: title }),
+                    });
+
+                    if (!profanityCheckResponse.ok) {
+                        throw new Error(`HTTP error! status: ${profanityCheckResponse.status}`);
+                    }
+
+                    const profanityData = await profanityCheckResponse.json();
+
+                    // Assuming the API returns {"censored_message": "..."}
+                    if (profanityData.censored_message) {
+                        processedTitle = profanityData.censored_message;
+                        // Inform user if censorship occurred.
+                        if (processedTitle !== title) {
+                            await CustomUI.alert("Your title was automatically censored for profanity.", "Profanity Filter");
+                        }
+                    } else if (profanityData.has_profanity) {
+                        // If API only flags profanity but doesn't provide censored text, block the post.
+                        await CustomUI.alert("Your title contains profanity and cannot be posted.", "Profanity Filter Blocked");
+                        if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
+                        return; // Stop upload
+                    } else {
+                        // No profanity detected, use original title
+                        processedTitle = title;
+                    }
+                } catch (error) {
+                    console.error("Profanity check failed:", error);
+                    await CustomUI.alert("Could not check title for profanity. Please try again or post without checking.", "Profanity Filter Error");
+                    // Fallback to original title if API fails, but alert the user.
+                    processedTitle = title; 
+                    // If strict checking is desired, uncomment the following lines to stop upload on API error:
+                    // if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
+                    // return; 
+                }
+                // --- End Profanity Check Integration ---
+
+
+                // Original client-side check for prohibited characters (e.g., Zalgo text)
+                if (containsCursedText(processedTitle)) {
                     await CustomUI.alert("Your title contains prohibited characters.", "Filter Blocked");
                     if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
                     return;
@@ -1334,7 +1396,7 @@
                         creatorUsername: username,
                         createdAt: serverTimestamp(),
                         ...finalImageData,
-                        title: title || "Daily Moment",
+                        title: processedTitle, // Use the processed title here!
                         schoolId: uData.schoolId || null,
                         districtId: uData.districtId || null,
                         status: 'active',
@@ -1412,14 +1474,19 @@
             if (await CustomUI.confirm(`Block @${username}? You won't see their posts anymore.`)) {
                 await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { 
                     blocked_users: arrayUnion(uid),
-                    friends: arrayRemove(uid)
+                    friends: arrayRemove(uid) // Also remove from friends if blocked
                 });
-                await updateDoc(doc(db, USERS_COLLECTION, uid), { friends: arrayRemove(currentUser.uid) });
+                // If the blocked user also has the current user as a friend, remove that too
+                const blockedUserRef = doc(db, USERS_COLLECTION, uid);
+                const blockedUserSnap = await getDoc(blockedUserRef);
+                if (blockedUserSnap.exists()) {
+                    const blockedUserData = blockedUserSnap.data();
+                    if (blockedUserData.friends && blockedUserData.friends.includes(currentUser.uid)) {
+                        await updateDoc(blockedUserRef, { friends: arrayRemove(currentUser.uid) });
+                    }
+                }
                 window.closeModal();
-                // Remove their posts from current feed view
-                document.querySelectorAll('[data-post-id]').forEach(el => {
-                    // We don't store uid on the element, so just reload
-                });
+                // Reload feed to remove blocked user's posts
                 await loadFeed();
             }
         };
@@ -1530,9 +1597,10 @@
             if (blockedUsers.length === 0) { list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No users blocked.</p>'; return; }
             for (const uid of blockedUsers) {
                 const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
+                const d = snap.data() || {};
                 const div = document.createElement('div');
                 div.className = 'compact-list-item flex justify-between items-center';
-                div.innerHTML = `<span class="text-xs opacity-50">@${snap.data()?.username || 'Unknown'}</span><button onclick="window.unblock('${uid}')" class="text-[var(--accent-color)] text-[10px] border border-[var(--accent-color)]/20 px-2 py-1 rounded-lg hover:bg-[var(--accent-color)]/10">Unblock</button>`;
+                div.innerHTML = `<span class="text-xs opacity-50">@${d.username || 'Unknown'}</span><button onclick="window.unblock('${uid}')" class="text-[var(--accent-color)] text-[10px] border border-[var(--accent-color)]/20 px-2 py-1 rounded-lg hover:bg-[var(--accent-color)]/10">Unblock</button>`;
                 list.appendChild(div);
             }
         }
