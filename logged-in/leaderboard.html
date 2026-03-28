@@ -209,15 +209,28 @@
     </div>
 
     <script type="module">
-        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from '../firebase-config.js';
+        import { firebaseConfig2 } from '../firebase-config-2.js';
         import { getAvatarHTML } from "../utils.js";
 
+        // Initialize primary app
         if (!getApps().length) initializeApp(firebaseConfig);
-        const auth = getAuth();
-        const db = getFirestore();
+        const app = getApp();
+        
+        // Initialize secondary app for offloading data
+        let app2;
+        try {
+            app2 = getApp("secondary");
+        } catch (e) {
+            app2 = initializeApp(firebaseConfig2, "secondary");
+        }
+
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const db2 = getFirestore(app2); // Secondary DB for analytics_summary
 
         async function initLeaderboard() {
             onAuthStateChanged(auth, async (user) => {
@@ -372,7 +385,7 @@
             const staleNotice = document.getElementById('pages-stale-notice');
 
             try {
-                const summarySnap = await getDoc(doc(db, 'analytics_summary', 'pages'));
+                const summarySnap = await getDoc(doc(db2, 'analytics_summary', 'pages'));
 
                 if (!summarySnap.exists()) {
                     listEl.innerHTML = '<p class="opacity-30 italic text-sm col-span-full">Page stats are being compiled. Check back soon.</p>';

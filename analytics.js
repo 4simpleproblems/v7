@@ -12,7 +12,7 @@
     const MAX_LOCAL_HISTORY  = 10;     // for dashboard recently accessed
 
     // ─── State ────────────────────────────────────────────────────────────────
-    let db, auth;
+    let db, db2, auth;
     let currentUser     = 'anonymous';
     let isAdmin         = false;
     let hardwareId      = null;
@@ -95,8 +95,26 @@
         console.log("Analytics: Firebase ready. Starting zero-read tracking.");
 
         const app = window.firebase.app();
-        db   = app.firestore();
-        auth = app.auth();
+        
+        // Secondary App for Analytics Data Offloading
+        const firebaseConfig2 = {
+            apiKey: "AIzaSyAHrP6BCMxI9I8T2iRwKwRJrcpVvxJr8fY",
+            authDomain: "foursimpleproblems-extra.firebaseapp.com",
+            projectId: "foursimpleproblems-extra",
+            storageBucket: "foursimpleproblems-extra.firebasestorage.app",
+            messagingSenderId: "125667300841",
+            appId: "1:125667300841:web:31dcf4ed67ddf6f07ee778"
+        };
+        let app2;
+        try {
+            app2 = window.firebase.app("secondary");
+        } catch (e) {
+            app2 = window.firebase.initializeApp(firebaseConfig2, "secondary");
+        }
+
+        db   = app.firestore();  // Primary DB
+        db2  = app2.firestore(); // Secondary DB for analytics
+        auth = app.auth(); // Still use primary auth
 
         auth.onAuthStateChanged(user => {
             currentUser = user ? user.uid : 'anonymous';
@@ -187,8 +205,8 @@
     // are tracked in sessionStorage as a flat counter so we never need to
     // read the existing array back — we just record a running total.
 
-    function syncToFirebase() {
-        if (!db || !hardwareId || !sessionId) return;
+    async function syncToFirebase() {
+        if (!db || !db2 || !hardwareId || !sessionId) return;
 
         const now = Date.now();
         if (now - lastSyncTime < MIN_SYNC_GAP_MS) return;
@@ -206,12 +224,13 @@
         // Chosen approach: sub-collection `pageviews` — one write per view,
         // no reads, naturally append-only, and queryable.
 
-        const batch = db.batch();
+        const batchPrimary = db.batch(); // for user_presence and users
+        const batchSecondary = db2.batch(); // for analytics and pageviews
 
         // 1. Session doc — Use set with merge:true for increment support
         // This is only 1 read per 3 minutes, which is acceptable for efficiency.
-        const sessionRef = db.collection('analytics').doc(sessionId);
-        batch.set(sessionRef, {
+        const sessionRef = db2.collection('analytics').doc(sessionId);
+        batchSecondary.set(sessionRef, {
             sessionId,
             hardwareId,
             userId:       currentUser,
@@ -227,7 +246,7 @@
         // 2. Page view sub-collection — one tiny doc per view, no reads
         for (const pv of pageViews) {
             const pvRef = sessionRef.collection('pageviews').doc(pv.ts.toString());
-            batch.set(pvRef, {
+            batchSecondary.set(pvRef, {
                 path:  pv.path,
                 title: pv.title,
                 ts:    pv.ts
@@ -240,7 +259,7 @@
             const userRef     = db.collection('users').doc(currentUser);
             const activity    = getPageName(window.location.pathname, document.title);
             
-            batch.set(presenceRef, {
+            batchPrimary.set(presenceRef, {
                 isOnline:        true,
                 currentActivity: activity,
                 lastActive:      FieldValue.serverTimestamp(),
@@ -249,7 +268,7 @@
 
             // Efficiently increment total time in the user's main profile
             // Use set with merge:true to ensure the field is created if missing
-            batch.set(userRef, {
+            batchPrimary.set(userRef, {
                 totalV6Time: FieldValue.increment(activeDuration)
             }, { merge: true });
         }
@@ -259,18 +278,20 @@
             `${activeDuration}s new active time.`
         );
 
-        batch.commit()
-            .then(() => {
-                // Reset active duration and clear queue only after successful write
-                activeDuration = 0;
-                pageViews = [];
-                persistDuration();
-            })
-            .catch(err => {
-                // Put views back so they're retried next sync
-                console.error("Analytics: Sync failed, will retry.", err);
-                isDirty = true;
-            });
+        try {
+            await Promise.all([
+                batchPrimary.commit(),
+                batchSecondary.commit()
+            ]);
+            // Reset active duration and clear queue only after successful write
+            activeDuration = 0;
+            pageViews = [];
+            persistDuration();
+        } catch (err) {
+            // Put views back so they're retried next sync
+            console.error("Analytics: Sync failed, will retry.", err);
+            isDirty = true;
+        }
     }
 
     // ─── Boot ─────────────────────────────────────────────────────────────────

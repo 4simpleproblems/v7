@@ -578,12 +578,25 @@
         import { getFirestore, doc, onSnapshot, getDoc, setDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, arrayRemove, writeBatch, limit, addDoc, deleteDoc, serverTimestamp, orderBy, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
         import { firebaseConfig } from "/firebase-config.js";
+        import { firebaseConfig2 } from "/firebase-config-2.js";
         import { getAvatarHTML } from "/utils.js";
 
+        // Initialize primary app
         if (!getApps().length) initializeApp(firebaseConfig);
-        const auth = getAuth();
-        const db = getFirestore();
-        const storage = getStorage();
+        const app = getApp();
+        
+        // Initialize secondary app for offloading data
+        let app2;
+        try {
+            app2 = getApp("secondary");
+        } catch (e) {
+            app2 = initializeApp(firebaseConfig2, "secondary");
+        }
+
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const db2 = getFirestore(app2); // Secondary DB for daily_photos
+        const storage = getStorage(app);
 
         let currentUser = null;
         let userData = {};
@@ -602,7 +615,7 @@
         let currentStateSchools = [];
         let selectedState = null;
 
-        const DAILY_COLLECTION = collection(db, 'daily_photos');
+        const DAILY_COLLECTION = collection(db2, 'daily_photos'); // Using db2
         const USERS_COLLECTION = 'users';
 
         // --- Custom UI Helpers ---
@@ -884,7 +897,7 @@ function listenToUser() {
             // Parallel fetch all post documents
             const postPromises = usedSlots.map(postId => {
                 if (postId && postId !== 'DELETED') {
-                    return getDoc(doc(db, 'daily_photos', postId));
+                    return getDoc(doc(db2, 'daily_photos', postId));
                 }
                 return Promise.resolve(null);
             });
@@ -1083,7 +1096,7 @@ function listenToUser() {
             container.innerHTML = '<div class="w-full h-full flex items-center justify-center"><i class="fas fa-spinner fa-spin text-2xl"></i></div>';
 
             unsubModal();
-            unsubModal = onSnapshot(doc(db, 'daily_photos', postId), async snap => {
+            unsubModal = onSnapshot(doc(db2, 'daily_photos', postId), async snap => {
                 try {
                     if (!snap.exists()) { window.closeModal(); return; }
                     const data = snap.data();
@@ -1168,7 +1181,7 @@ function listenToUser() {
                     if (heartBtn) {
                         heartBtn.onclick = async () => {
                             const newIsHearted = !isHearted;
-                            await updateDoc(doc(db, 'daily_photos', postId), { hearts: newIsHearted ? arrayUnion(currentUser.uid) : arrayRemove(currentUser.uid) });
+                            await updateDoc(doc(db2, 'daily_photos', postId), { hearts: newIsHearted ? arrayUnion(currentUser.uid) : arrayRemove(currentUser.uid) });
                             
                             if (newIsHearted && !isOwner) {
                                 const meSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
@@ -1195,7 +1208,7 @@ function listenToUser() {
                         if (!text) return;
                         const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
                         const myUsername = userSnap.data()?.username || "Someone";
-                        await updateDoc(doc(db, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: text, timestamp: new Date() }) });
+                        await updateDoc(doc(db2, 'daily_photos', postId), { comments: arrayUnion({ uid: currentUser.uid, username: myUsername, text: text, timestamp: new Date() }) });
                         
                         if (!isOwner) {
                             await addDoc(collection(db, 'notifications'), {
@@ -1289,7 +1302,7 @@ function listenToUser() {
                         finalImageData = { imageBase64: base64Str };
                     }
 
-                    const postRef = await addDoc(collection(db, 'daily_photos'), {
+                    const postRef = await addDoc(collection(db2, 'daily_photos'), {
                         creatorUid: currentUser.uid,
                         creatorUsername: username,
                         createdAt: serverTimestamp(),
@@ -1363,7 +1376,7 @@ function listenToUser() {
                 await updateDoc(userRef, { dailySlotsUsed: slots });
             }
             
-            await deleteDoc(doc(db, 'daily_photos', postId));
+            await deleteDoc(doc(db2, 'daily_photos', postId));
             if (idx === undefined) window.closeModal();
         };
 

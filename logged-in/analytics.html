@@ -787,11 +787,18 @@
             deleteField
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig as masterConfig } from "../firebase-config.js";
+        import { firebaseConfig2 } from "../firebase-config-2.js";
         import { getAvatarHTML } from "../utils.js";
 
+        // Initialize primary app
         const app = initializeApp(masterConfig);
+        
+        // Initialize secondary app for offloading data
+        const app2 = initializeApp(firebaseConfig2, "secondary");
+
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const db2 = getFirestore(app2); // Secondary DB for analytics
         const functions = getFunctions(app);
 
         let currentUserRole = 'user';
@@ -1468,7 +1475,7 @@
         // ─────────────────────────────────────────────────────────────────
         const loadTrafficData = async () => {
             try {
-                const summarySnap = await getDoc(doc(db, 'analytics_summary', 'platform'));
+                const summarySnap = await getDoc(doc(db2, 'analytics_summary', 'platform'));
 
                 if (!summarySnap.exists()) {
                     document.getElementById('loading-traffic').textContent =
@@ -1977,7 +1984,7 @@
                         }
                     } else if (severity === 'hardware') {
                         // Gather hardware IDs from historical sessions
-                        const q = query(collection(db, 'analytics'), where('userId', '==', userToBan.uid), limit(50));
+                        const q = query(collection(db2, 'analytics'), where('userId', '==', userToBan.uid), limit(50));
                         const snap = await getDocs(q);
                         const hwIds = new Set();
                         snap.forEach(d => { if (d.data().hardwareId) hwIds.add(d.data().hardwareId); });
