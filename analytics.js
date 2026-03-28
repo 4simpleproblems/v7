@@ -205,7 +205,8 @@
 
         const batch = db.batch();
 
-        // 1. Session doc — plain set, full overwrite, ZERO reads
+        // 1. Session doc — Use set with merge:true for increment support
+        // This is only 1 read per 3 minutes, which is acceptable for efficiency.
         const sessionRef = db.collection('analytics').doc(sessionId);
         batch.set(sessionRef, {
             sessionId,
@@ -216,15 +217,9 @@
             lastActive:   FieldValue.serverTimestamp(),
             totalDuration,
             isAdmin,
-            // Store a running count of page views seen — NOT the array.
-            // The actual page view docs live in the sub-collection below.
+            // Store a running count of page views seen
             pageViewCount: FieldValue.increment(pageViews.length)
-        });
-        // NOTE: `increment` is a sentinel that works WITHOUT merge:true.
-        // It is applied server-side atomically on a plain set() as long as
-        // the field already exists. On first write the field will be set to
-        // pageViews.length. Subsequent plain set()s with increment() will add
-        // to the stored value — no read required.
+        }, { merge: true });
 
         // 2. Page view sub-collection — one tiny doc per view, no reads
         for (const pv of pageViews) {
@@ -234,32 +229,37 @@
                 title: pv.title,
                 ts:    pv.ts
             });
-            // Plain set with a deterministic doc ID is idempotent and
-            // never requires a prior read.
         }
 
-        // 3. User presence doc — only if logged in (full overwrite, no reads)
+        // 3. User stats and presence
         if (currentUser !== 'anonymous') {
             const presenceRef = db.collection('user_presence').doc(currentUser);
+            const userRef     = db.collection('users').doc(currentUser);
             const activity    = getPageName(window.location.pathname, document.title);
+            
             batch.set(presenceRef, {
                 isOnline:        true,
                 currentActivity: activity,
                 lastActive:      FieldValue.serverTimestamp(),
                 sessionId
             });
-            // No merge:true → no read. This fully replaces the presence doc,
-            // which is fine — it only holds ephemeral "who is online" state.
+
+            // Efficiently increment total time in the user's main profile
+            // Use update here because the user doc must already exist
+            batch.update(userRef, {
+                totalV6Time: FieldValue.increment(activeDuration)
+            });
         }
 
         console.log(
             `Analytics: Syncing — ${pageViews.length} new pageview(s), ` +
-            `${totalDuration}s total active time.`
+            `${activeDuration}s new active time.`
         );
 
         batch.commit()
             .then(() => {
-                // Clear the queue only after a confirmed write
+                // Reset active duration and clear queue only after successful write
+                activeDuration = 0;
                 pageViews = [];
                 persistDuration();
             })

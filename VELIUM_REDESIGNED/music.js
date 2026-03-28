@@ -497,12 +497,17 @@ function setupEventListeners() {
     if (prevBtn) prevBtn.addEventListener('click', searchPrevPage);
 
     // Player Controls
-    document.getElementById('playPauseButton').addEventListener('click', togglePlayPause);
-    document.getElementById('nextButton').addEventListener('click', playNext);
-    document.getElementById('prevButton').addEventListener('click', playPrev);
-    document.getElementById('shuffleButton').addEventListener('click', toggleShuffle);
-    document.getElementById('repeatButton').addEventListener('click', cycleRepeat);
-    document.getElementById('likeButton').addEventListener('click', toggleLike);
+    const safeAdd = (id, event, fn) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener(event, fn);
+    };
+
+    safeAdd('playPauseButton', 'click', togglePlayPause);
+    safeAdd('nextButton', 'click', playNext);
+    safeAdd('prevButton', 'click', playPrev);
+    safeAdd('shuffleButton', 'click', toggleShuffle);
+    safeAdd('repeatButton', 'click', cycleRepeat);
+    safeAdd('likeButton', 'click', toggleLike);
 
     // Progress Bar
     const progressTrack = document.getElementById('progressTrack');
@@ -530,26 +535,35 @@ function setupEventListeners() {
             } else if (player && typeof player.setVolume === 'function') {
                 player.setVolume(volume);
             }
-            document.getElementById('volumeBarFill').style.width = volume + '%';
+            const fill = document.getElementById('volumeBarFill');
+            if (fill) fill.style.width = volume + '%';
             saveToStorage('volume', volume);
         });
     }
 
     // Modals
-    document.querySelector('.create-playlist-btn').addEventListener('click', showCreatePlaylistModal);
-    document.getElementById('savePlaylistBtn').addEventListener('click', () => {
-        createPlaylist(document.getElementById('playlistNameInput').value.trim(), document.getElementById('playlistDescInput').value.trim());
-        hideCreatePlaylistModal();
-    });
-    document.getElementById('confirmEditPlaylistBtn').addEventListener('click', confirmEditPlaylist);
+    const createPlaylistBtn = document.querySelector('.create-playlist-btn');
+    if (createPlaylistBtn) createPlaylistBtn.addEventListener('click', showCreatePlaylistModal);
+    
+    const savePlaylistBtn = document.getElementById('savePlaylistBtn');
+    if (savePlaylistBtn) {
+        savePlaylistBtn.addEventListener('click', () => {
+            const nameInput = document.getElementById('playlistNameInput');
+            const descInput = document.getElementById('playlistDescInput');
+            createPlaylist(nameInput ? nameInput.value.trim() : 'New Playlist', descInput ? descInput.value.trim() : '');
+            hideCreatePlaylistModal();
+        });
+    }
+    
+    safeAdd('confirmEditPlaylistBtn', 'click', confirmEditPlaylist);
 
     // Fullscreen
-    document.getElementById('fsPlayPause').addEventListener('click', togglePlayPause);
-    document.getElementById('fsNext').addEventListener('click', playNext);
-    document.getElementById('fsPrev').addEventListener('click', playPrev);
-    document.getElementById('fsShuffle').addEventListener('click', toggleShuffle);
-    document.getElementById('fsRepeat').addEventListener('click', cycleRepeat);
-    document.getElementById('fsLike').addEventListener('click', toggleLike);
+    safeAdd('fsPlayPause', 'click', togglePlayPause);
+    safeAdd('fsNext', 'click', playNext);
+    safeAdd('fsPrev', 'click', playPrev);
+    safeAdd('fsShuffle', 'click', toggleShuffle);
+    safeAdd('fsRepeat', 'click', cycleRepeat);
+    safeAdd('fsLike', 'click', toggleLike);
 
     const fsProgressTrack = document.getElementById('fsProgressTrack');
     if (fsProgressTrack) {
@@ -1681,60 +1695,80 @@ function initCropper() {
         requestAnimationFrame(drawCropper);
     };
 
-    cropperCanvas.addEventListener('mousedown', e => handleStart(e.offsetX, e.offsetY));
-    cropperCanvas.addEventListener('mousemove', e => handleMove(e.offsetX, e.offsetY));
-    cropperCanvas.addEventListener('mouseup', handleEnd);
-    cropperCanvas.addEventListener('mouseleave', handleEnd);
-    cropperCanvas.addEventListener('wheel', handleScroll);
+    const cropperCanvas = document.getElementById('cropperCanvas');
+    if (cropperCanvas) {
+        cropperCanvas.addEventListener('mousedown', e => handleStart(e.offsetX, e.offsetY));
+        cropperCanvas.addEventListener('mousemove', e => handleMove(e.offsetX, e.offsetY));
+        cropperCanvas.addEventListener('mouseup', handleEnd);
+        cropperCanvas.addEventListener('mouseleave', handleEnd);
+        cropperCanvas.addEventListener('wheel', handleScroll);
+    }
 
-    document.getElementById('playlistCoverInput').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            cropperImage = new Image();
-            cropperImage.onload = () => {
-                const fixedHeight = 400;
-                const scale = fixedHeight / cropperImage.height;
-                cropperCanvas.height = fixedHeight;
-                cropperCanvas.width = cropperImage.width * scale;
-                cropState = { x: cropperCanvas.width / 2, y: cropperCanvas.height / 2, radius: Math.min(cropperCanvas.width, cropperCanvas.height) / 3 };
-                document.getElementById('cropperModal').style.display = 'flex';
-                requestAnimationFrame(drawCropper);
+    const playlistCoverInput = document.getElementById('playlistCoverInput');
+    if (playlistCoverInput) {
+        playlistCoverInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                cropperImage = new Image();
+                cropperImage.onload = () => {
+                    const fixedHeight = 400;
+                    const scale = fixedHeight / cropperImage.height;
+                    cropperCanvas.height = fixedHeight;
+                    cropperCanvas.width = cropperImage.width * scale;
+                    cropState = { x: cropperCanvas.width / 2, y: cropperCanvas.height / 2, radius: Math.min(cropperCanvas.width, cropperCanvas.height) / 3 };
+                    const modal = document.getElementById('cropperModal');
+                    if (modal) modal.style.display = 'flex';
+                    requestAnimationFrame(drawCropper);
+                };
+                cropperImage.src = evt.target.result;
             };
-            cropperImage.src = evt.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
+            reader.readAsDataURL(file);
+        });
+    }
 
-    document.getElementById('cancelCropBtn').addEventListener('click', () => {
-        document.getElementById('cropperModal').style.display = 'none';
-        document.getElementById('playlistCoverInput').value = '';
-    });
+    const cancelCropBtn = document.getElementById('cancelCropBtn');
+    if (cancelCropBtn) {
+        cancelCropBtn.addEventListener('click', () => {
+            const modal = document.getElementById('cropperModal');
+            if (modal) modal.style.display = 'none';
+            if (playlistCoverInput) playlistCoverInput.value = '';
+        });
+    }
 
-    document.getElementById('submitCropBtn').addEventListener('click', async () => {
-        const tempCanvas = document.createElement('canvas');
-        const size = 512;
-        tempCanvas.width = size;
-        tempCanvas.height = size;
-        const tCtx = tempCanvas.getContext('2d');
-        const scale = cropperCanvas.height / cropperImage.height;
-        const sourceX = (cropState.x - cropState.radius) / scale;
-        const sourceY = (cropState.y - cropState.radius) / scale;
-        const sourceSize = (cropState.radius * 2) / scale;
-        tCtx.drawImage(cropperImage, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
-        const base64 = tempCanvas.toDataURL('image/jpeg', 0.8);
-        
-        const id = document.getElementById('uploadPlaylistId').value;
-        const pl = playlists.find(p => p.id.toString() === id.toString());
-        if (pl) {
-            updatePlaylist(pl.id, pl.name, pl.description, base64);
-            document.getElementById('cropperModal').style.display = 'none';
-        } else {
-            console.error('Playlist not found for ID:', id);
-        }
-    });
+    const submitCropBtn = document.getElementById('submitCropBtn');
+    if (submitCropBtn) {
+        submitCropBtn.addEventListener('click', async () => {
+            const tempCanvas = document.createElement('canvas');
+            const size = 512;
+            tempCanvas.width = size;
+            tempCanvas.height = size;
+            const tCtx = tempCanvas.getContext('2d');
+            const scale = cropperCanvas.height / cropperImage.height;
+            const sourceX = (cropState.x - cropState.radius) / scale;
+            const sourceY = (cropState.y - cropState.radius) / scale;
+            const sourceSize = (cropState.radius * 2) / scale;
+            tCtx.drawImage(cropperImage, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+            const base64 = tempCanvas.toDataURL('image/jpeg', 0.8);
+            
+            const idInput = document.getElementById('uploadPlaylistId');
+            const id = idInput ? idInput.value : null;
+            const pl = playlists.find(p => p.id.toString() === (id ? id.toString() : ''));
+            if (pl) {
+                updatePlaylist(pl.id, pl.name, pl.description, base64);
+                const modal = document.getElementById('cropperModal');
+                if (modal) modal.style.display = 'none';
+            } else {
+                console.error('Playlist not found for ID:', id);
+            }
+        });
+    }
 }
+
+// Ensure loader hides even if something is slightly off
+if (typeof hideLoader === 'function') hideLoader();
+console.log("VELIUM: Redesigned Music.js initialized");
 
 function showPlaylistCoverUploadModal(id) { 
     document.getElementById('uploadPlaylistId').value = id; 

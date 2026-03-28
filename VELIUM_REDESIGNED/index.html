@@ -301,6 +301,32 @@
         <span class="mt-4 text-xs font-bold uppercase tracking-widest text-gray-500">Initializing Velium</span>
     </div>
 
+    <script>
+        (function() {
+            const loader = document.getElementById('startup-loader');
+            const hideLoader = () => {
+                if (loader && !loader.classList.contains('hidden')) {
+                    loader.classList.add('hidden');
+                    console.log("VELIUM: Proxy Ready, hiding loader");
+                }
+            };
+
+            // Listen for ready signal from BareMux
+            const bc = new BroadcastChannel("bare-mux-sync");
+            bc.onmessage = (event) => {
+                if (event.data && event.data.type === 'baremuxready') hideLoader();
+            };
+
+            // Also hide on window load as a fallback
+            window.addEventListener('load', () => {
+                setTimeout(hideLoader, 500); 
+            });
+
+            // Safety timeout
+            setTimeout(hideLoader, 8000);
+        })();
+    </script>
+
     <nav class="nav-glass" id="navbar">
         <div class="flex items-center gap-12 w-full">
             <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('home')">

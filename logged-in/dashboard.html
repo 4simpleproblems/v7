@@ -427,28 +427,46 @@
             }
 
             console.log("Dashboard: Fetching fresh leaderboard rank");
-            // Fetch User's Rank from snapshot document (efficient)
-            const leaderboardSnap = await getDoc(doc(db, 'leaderboard', 'snapshot'));
-            
-            if (!leaderboardSnap.exists()) return;
-
-            const { users: rankedUsers } = leaderboardSnap.data();
-            let rank = '--';
-            let userData = null;
-
-            if (rankedUsers) {
-                const index = rankedUsers.findIndex(u => u.id === uid);
-                if (index !== -1) {
-                    rank = `#${index + 1}`;
-                    userData = rankedUsers[index];
+            try {
+                // Primary source: snapshot document (efficient)
+                const leaderboardSnap = await getDoc(doc(db, 'leaderboard', 'snapshot'));
+                
+                let rankedUsers = [];
+                if (leaderboardSnap.exists()) {
+                    rankedUsers = leaderboardSnap.data().users || [];
+                } else {
+                    console.log("Dashboard: Snapshot missing, falling back to direct query");
+                    // Fallback source: Direct query (top 50 is only 50 reads)
+                    const q = query(
+                        collection(db, 'users'),
+                        where('leaderboardAccepted', '==', true),
+                        where('leaderboardOptOut', '==', false),
+                        orderBy('totalV6Time', 'desc'),
+                        limit(50)
+                    );
+                    const querySnap = await getDocs(q);
+                    rankedUsers = querySnap.docs.map(d => ({ ...d.data(), id: d.id }));
                 }
+
+                let rank = '--';
+                let userData = null;
+
+                if (rankedUsers.length > 0) {
+                    const index = rankedUsers.findIndex(u => u.id === uid);
+                    if (index !== -1) {
+                        rank = `#${index + 1}`;
+                        userData = rankedUsers[index];
+                    }
+                }
+
+                const dataToCache = { rank, userData };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(dataToCache));
+                localStorage.setItem(CACHE_TIME_KEY, now.toString());
+
+                renderRankData(dataToCache);
+            } catch (e) {
+                console.error("Dashboard: Failed to fetch leaderboard rank", e);
             }
-
-            const dataToCache = { rank, userData };
-            localStorage.setItem(CACHE_KEY, JSON.stringify(dataToCache));
-            localStorage.setItem(CACHE_TIME_KEY, now.toString());
-
-            renderRankData(dataToCache);
         }
 
         function renderRankData({ rank, userData }) {
