@@ -108,7 +108,7 @@
                     colors: {
                         'deep-black': 'var(--bg-page)',
                         'card-dark': 'var(--bg-card)',
-                        'accent-indigo': 'var(--accent-color)',
+                        'accent-purple': 'var(--accent-color)',
                         'brand-border': 'var(--border-main)',
                     },
                     fontFamily: {
@@ -170,16 +170,16 @@
         }
         
         :root {
-            --bg-page: var(--bg-primary, #000000);
-            --bg-card: var(--bg-secondary, #0d0d0d);
-            --text-main: var(--text-primary, #ffffff);
-            --text-muted: var(--text-secondary, #c0c0c0);
-            --accent-color: var(--accent-primary, #4f46e5);
-            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
-            --border-main: var(--border-primary, #1a1a1a);
-            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
-            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
-            --btn-text: var(--button-text, #4f46e5);
+            --bg-page: #050505;
+            --bg-card: #0d0d0d;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --accent-color: #a855f7;
+            --accent-glow: rgba(168, 85, 247, 0.4);
+            --border-main: #1a1a1a;
+            --border-faint: rgba(255,255,255,0.05);
+            --btn-bg: rgba(168, 85, 247, 0.1);
+            --btn-text: #a855f7;
         }
 
         body { 
@@ -191,6 +191,24 @@
             transition: background-color 0.3s ease, color 0.3s ease;
             margin: 0;
             padding: 0;
+            padding-top: 80px;
+        }
+
+        .nav-glass {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            padding: 0 4rem;
+            z-index: 1000;
+            background: rgba(5, 5, 5, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-main);
+            transition: background 0.3s;
+        }
+        .nav-glass.scrolled {
+            background: rgba(5, 5, 5, 0.95);
         }
 
         h1, h2, h3, h4, h5, h6 {
@@ -211,7 +229,7 @@
                 "playbar playbar";
             grid-template-columns: 280px 1fr;
             grid-template-rows: 1fr 90px;
-            height: calc(100vh - 64px);
+            height: calc(100vh - 170px);
             width: 100%;
             background: var(--bg-page);
             box-sizing: border-box;
@@ -224,7 +242,7 @@
                     "main"
                     "playbar";
                 grid-template-rows: 1fr 90px;
-                height: calc(100vh - 64px);
+                height: calc(100vh - 170px);
             }
 
             .sidebar {
@@ -303,7 +321,7 @@
         .track-card {
             background: var(--bg-card);
             border: 1px solid var(--border-faint);
-            border-radius: 22px; /* 24 - 2 */
+            border-radius: 18px;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             position: relative;
@@ -312,8 +330,9 @@
 
         .track-card:hover {
             border-color: var(--accent-color);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px -20px var(--accent-glow);
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: 0 10px 30px var(--accent-glow);
         }
 
         .track-artwork {
@@ -383,12 +402,12 @@
         }
 
         .player-btn.active {
-            color: #4f46e5 !important;
+            color: #a855f7 !important;
             opacity: 1;
         }
 
         .player-btn.active i {
-            color: #4f46e5 !important;
+            color: #a855f7 !important;
         }
 
         /* Heart buttons should always be red when active, overriding the theme color */
@@ -434,18 +453,20 @@
         }
 
         .btn-niobium {
-            background: var(--btn-bg);
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
             padding: 10px 24px;
-            border-radius: 14px; /* 16 - 2 */
-            transition: all 0.2s;
-            font-weight: 500;
+            border-radius: 12px;
+            transition: all 0.3s;
+            font-weight: 600;
         }
 
         .btn-niobium:hover {
-            background: var(--accent-color);
+            background: rgba(168, 85, 247, 0.2);
+            border-color: var(--accent-color);
             color: white;
+            transform: translateY(-2px);
         }
 
         .side-panel {
@@ -540,6 +561,28 @@
         <span class="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Initializing Proxy</span>
     </div>
 
+    <nav class="nav-glass" id="navbar">
+        <div class="flex items-center gap-8 w-full">
+            <div class="flex items-center gap-3">
+                <img src="../images/logo.png" class="w-10 h-10 object-contain navbar-logo">
+                <span class="text-2xl font-black tracking-tighter text-white">VELIUM</span>
+            </div>
+            <div class="flex items-center gap-6 ml-8">
+                <div class="text-sm font-medium text-white hover:text-gray-300 transition cursor-pointer" onclick="const event = new Event('click'); document.querySelector('[data-view=\'home\']').dispatchEvent(event);">Home</div>
+                <div class="text-sm font-medium text-gray-400 hover:text-gray-300 transition cursor-pointer" onclick="const event = new Event('click'); document.querySelector('[data-view=\'search\']').dispatchEvent(event);">Search</div>
+                <div class="text-sm font-medium text-gray-400 hover:text-gray-300 transition cursor-pointer" onclick="const event = new Event('click'); document.querySelector('[data-view=\'library\']').dispatchEvent(event);">Library</div>
+            </div>
+            <div class="ml-auto flex items-center gap-6">
+                <div class="relative">
+                    <i class="fas fa-search text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 text-xs"></i>
+                    <input type="text" placeholder="Search for music..." 
+                           class="bg-black/40 border border-white/20 rounded-full py-1.5 pl-9 pr-4 text-xs focus:outline-none focus:border-white/40 w-64 transition-all"
+                           oninput="document.getElementById('searchInput').value = this.value; document.getElementById('searchInput').dispatchEvent(new Event('input'));">
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <script>
         (function() {
             const loader = document.getElementById('startup-loader');
@@ -558,6 +601,13 @@
 
             // Safety timeout
             setTimeout(hideLoader, 10000);
+
+            // Handle scroll for navbar
+            window.addEventListener('scroll', () => {
+                const nav = document.getElementById('navbar');
+                if (window.scrollY > 50) nav.classList.add('scrolled');
+                else nav.classList.remove('scrolled');
+            });
         })();
     </script>
 
@@ -649,7 +699,7 @@
                     </div>
 
                     <div id="searchLoader" class="col-span-full text-center py-8 hidden">
-                        <i class="fas fa-circle-notch fa-spin text-3xl text-accent-indigo"></i>
+                        <i class="fas fa-circle-notch fa-spin text-3xl text-accent-purple"></i>
                     </div>
                 </div>
 
@@ -670,7 +720,7 @@
             <!-- Favorites View -->
             <section class="view" id="favoritesView">
                 <div class="flex flex-col md:flex-row items-end gap-8 mb-10">
-                    <div class="w-56 h-56 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl flex items-center justify-center shadow-2xl">
+                    <div class="w-56 h-56 bg-gradient-to-br from-purple-600 to-purple-900 rounded-3xl flex items-center justify-center shadow-2xl">
                         <i class="fas fa-heart text-white text-7xl"></i>
                     </div>
                     <div class="flex-1">
