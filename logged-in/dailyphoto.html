@@ -586,6 +586,7 @@
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, getDoc, setDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, arrayRemove, writeBatch, limit, addDoc, deleteDoc, serverTimestamp, orderBy, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
         import { firebaseConfig } from "/firebase-config.js";
         import { firebaseConfig2 } from "/firebase-config-2.js";
         import { getAvatarHTML } from "/utils.js";
@@ -606,6 +607,8 @@
         const db = getFirestore(app);
         const db2 = getFirestore(app2); // Secondary DB for daily_photos
         const storage = getStorage(app);
+        const functions = getFunctions(app);
+        const mongoBridge = httpsCallable(functions, 'mongoBridge');
 
         let currentUser = null;
         let userData = {};
@@ -1040,7 +1043,7 @@
                             if (newIsHearted && !isOwner) {
                                 const meSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
                                 const myUsername = meSnap.data()?.username || "Someone";
-                                const mongoBridge = window.firebase.functions().httpsCallable('mongoBridge');
+                                
                                 await mongoBridge({
                                     action: 'insertOne',
                                     collection: 'notifications',
@@ -1109,7 +1112,7 @@
                         const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
                         const myUsername = userSnap.data()?.username || "Someone";
                         
-                        const mongoBridge = window.firebase.functions().httpsCallable('mongoBridge');
+                        
                         await mongoBridge({
                             action: 'update',
                             collection: 'daily_photos',
@@ -1127,7 +1130,7 @@
                         });
                         
                         if (!isOwner) {
-                            const mongoBridge = window.firebase.functions().httpsCallable('mongoBridge');
+                            
                             await mongoBridge({
                                 action: 'insertOne',
                                 collection: 'notifications',
@@ -1444,7 +1447,7 @@
                         finalImageData = { imageBase64: base64Str };
                     }
 
-                    const mongoBridge = window.firebase.functions().httpsCallable('mongoBridge');
+                    
                     const postRefRes = await mongoBridge({
                         action: 'insertOne',
                         collection: 'daily_photos',
@@ -1553,7 +1556,7 @@
 
         window.reportPost = async (postId) => {
             if (await CustomUI.confirm("Report this post for inappropriate content?")) {
-                const mongoBridge = window.firebase.functions().httpsCallable('mongoBridge');
+                
                 await mongoBridge({
                     action: 'insertOne',
                     collection: 'reports',

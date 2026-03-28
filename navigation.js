@@ -1569,6 +1569,7 @@ let db;
             await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js", true);
             await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js", true);
             await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js", true);
+            await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js", true);
             initializeApp(pages, window.FIREBASE_CONFIG);
         } catch (error) {
             console.error("Failed to load core Firebase SDKs:", error);
