@@ -448,23 +448,7 @@
         <main class="main-view">
             <div class="feed-content-inner">
                 
-                <!-- Admin Mock Post Section -->
-                <div id="admin-mock-post" class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl p-6 mb-8" ${isAdmin ? '' : 'hidden'}>
-                    <h3 class="text-lg font-bold mb-2 text-[var(--accent-color)]">Admin Test: Profanity Filter Demo</h3>
-                    <p class="text-xs opacity-50 mb-4">This is a mock post to demonstrate how profanity is handled.</p>
-                    
-                    <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-xl p-4 flex items-center gap-3">
-                        <div class="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-black/30 flex items-center justify-center text-white text-3xl opacity-40">
-                            <i class="fas fa-ban"></i>
-                        </div>
-                        <div class="flex-grow min-w-0">
-                            <p class="text-sm font-bold truncate">This is a test title with some bad words like F*** and S***</p>
-                            <p class="text-[10px] opacity-50">Admin Test Post • Just now</p>
-                        </div>
-                    </div>
-                    <p class="mt-4 text-xs opacity-40">In a real scenario, the title would be automatically censored by the API.</p>
-                </div>
-                <!-- End Admin Mock Post Section -->
+                <!-- Admin Mock Post Section REMOVED -->
 
                 <div class="flex justify-between items-center mb-10">
                     <div>
@@ -1086,10 +1070,12 @@
                             const profanityData = await profanityCheckResponse.json();
 
                             // --- UPDATED LOGIC based on API response example ---
+                            // The API returns `isProfanity: true` and `flaggedFor: "..."`
+                            // It does NOT return `censored_message`. If profanity is detected,
+                            // we block the post and inform the user.
                             if (profanityData.isProfanity === true) {
-                                // API flagged profanity, but no 'censored_message' field in example.
-                                // Use 'flaggedFor' for alert and block the post.
-                                await CustomUI.alert(`Your comment contains profanity (${profanityData.flaggedFor || 'detected'}) and cannot be posted.`, "Profanity Filter Blocked");
+                                // Use a general message as requested, without revealing specific word.
+                                await CustomUI.alert("Your comment contains inappropriate content and cannot be posted.", "Profanity Filter Blocked");
                                 return; // Stop posting
                             } else {
                                 // No profanity detected, use original comment text
@@ -1134,7 +1120,7 @@
                     container.innerHTML = `
                         <div class="flex-1 flex flex-col items-center justify-center p-12 text-center">
                             <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4 opacity-50"></i>
-                            <h3 class="text-lg font-bold mb-2">Failed to load moment</h3>
+                            <h3 class="text-l<ctrl61>g font-bold mb-2">Failed to load moment</h3>
                             <p class="text-sm opacity-50 mb-8">This post might have been deleted or there was a network error.</p>
                             <button onclick="window.closeModal()" class="btn-toolbar-style px-8 py-3">Close Modal</button>
                         </div>
@@ -1369,7 +1355,8 @@
                     // It does NOT return `censored_message`. If profanity is detected,
                     // we block the post and inform the user.
                     if (profanityData.isProfanity === true) {
-                        await CustomUI.alert(`Your title contains profanity (${profanityData.flaggedFor || 'detected'}) and cannot be posted.`, "Profanity Filter Blocked");
+                        // Use a general message as requested, without revealing specific word.
+                        await CustomUI.alert("Your title contains inappropriate content and cannot be posted.", "Profanity Filter Blocked");
                         if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
                         return; // Stop upload
                     } else {
