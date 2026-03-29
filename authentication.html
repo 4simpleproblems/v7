@@ -484,7 +484,7 @@
         const handleSuccessfulLogin = async (user) => {
             await setPersistence(auth, browserLocalPersistence);
             
-            const isProviderLogin = user.providerData.some(p => ['google.com', 'github.com', 'twitter.com', 'microsoft.com'].includes(p.providerId));
+            const isProviderLogin = user.providerData.some(p => ['google.com', 'github.com', 'twitter.com', 'discord.com'].includes(p.providerId));
             
             if (user.emailVerified || isProviderLogin) {                                                                                                                   
                 navigateToDashboard();
@@ -661,21 +661,31 @@
             // --- Social Authentication Handler ---
             const handleSocialAuth = async (providerName) => {
                 try {
+                    const origin = window.location.origin;
+                    console.log("Auth: Initiating Supabase OAuth from origin:", origin);
+                    
+                    // Determine redirect URL accurately
+                    let redirectUrl = origin + '/logged-in/dashboard.html';
+                    
+                    // Fix for potentially incorrect origins (e.g. running behind a proxy)
+                    if (origin.includes('localhost') && origin !== 'http://localhost:3000') {
+                        console.warn("Auth: Localhost mismatch detected. Ensure Supabase whitelist includes current origin.");
+                    }
+
                     // Sign in with Supabase OAuth
                     const { data, error } = await supabase.auth.signInWithOAuth({
                         provider: providerName,
                         options: {
-                            redirectTo: window.location.origin + '/logged-in/dashboard.html'
+                            redirectTo: redirectUrl,
+                            skipBrowserRedirect: false
                         }
                     });
 
                     if (error) throw error;
-                    
-                    // Note: Supabase will redirect. Firebase sync will happen on dashboard if needed.
                 } catch (error) {
                     console.error("Supabase Auth Error:", error.message);
                     const visibleMessageDiv = messageDivs.login.offsetParent ? messageDivs.login : messageDivs.username;
-                    showMessage(visibleMessageDiv, `Authentication failed: ${error.message}`);
+                    showMessage(visibleMessageDiv, `Authentication failed: ${error.message}. Please ensure your domain is whitelisted in Supabase.`);
                 }
             };
 
