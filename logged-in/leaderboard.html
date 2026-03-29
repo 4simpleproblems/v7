@@ -209,11 +209,13 @@
     </div>
 
     <script type="module">
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from '../firebase-config.js';
         import { firebaseConfig2 } from '../firebase-config-2.js';
+        import { supabaseConfig } from '../supabase-config.js';
         import { getAvatarHTML } from "../utils.js";
 
         // Initialize primary app
@@ -232,13 +234,26 @@
         const db = getFirestore(app);
         const db2 = getFirestore(app2); // Secondary DB for analytics_summary
 
+        // Initialize Supabase
+        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+
         async function initLeaderboard() {
+            // Supabase session check
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                loadUserRankings(session.user.id);
+            }
+
+            // Firebase fallback
             onAuthStateChanged(auth, async (user) => {
-                if (!user && !window._LOCAL_MODE) {
-                    window.location.replace('../index.html');
-                    return;
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    if (!user && !window._LOCAL_MODE) {
+                        window.location.replace('../index.html');
+                        return;
+                    }
+                    loadUserRankings(user ? user.uid : null);
                 }
-                loadUserRankings(user ? user.uid : null);
             });
         }
 

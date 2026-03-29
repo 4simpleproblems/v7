@@ -197,6 +197,7 @@
     //
     // Fix: We now offload analytics data to the secondary project via mongoBridge
     // to bypass primary project Firestore write limits and leverage MongoDB scalability.
+    // Redundancy: Also syncing a session pulse to Supabase.
 
     async function syncToFirebase() {
         if (!db || !hardwareId || !sessionId) return;
@@ -259,6 +260,16 @@
             const promises = [batchPrimary.commit(), mongoBridge(mongoPayload)];
             if (currentUser !== 'anonymous') promises.push(mongoBridge(timePayload));
             
+            // 4. Supabase Redundancy (Optional but requested)
+            if (window.supabase) {
+                promises.push(window.supabase.from('analytics_pulse').upsert({
+                    session_id: sessionId,
+                    user_id: currentUser,
+                    total_duration: totalDuration,
+                    last_active: new Date().toISOString()
+                }));
+            }
+
             await Promise.all(promises);
             
             // Reset active duration and clear queue only after successful write

@@ -286,9 +286,9 @@
                             <img src="images/google-icon.png" alt="Google" class="w-5 h-5 mr-3">
                             Google
                         </button>
-                        <button id="microsoftAuthBtn" class="btn btn-secondary">
-                            <img src="images/microsoft.png" alt="Microsoft" class="w-5 h-5 mr-3">
-                            Microsoft
+                        <button id="discordAuthBtn" class="btn btn-secondary">
+                            <i class="fa-brands fa-discord text-xl mr-3" style="color: #5865F2;"></i>
+                            Discord
                         </button>
                         <button id="githubAuthBtn" class="btn btn-secondary">
                             <img src="images/github-mark-white.png" alt="GitHub" class="w-5 h-5 mr-3">
@@ -319,7 +319,8 @@
     </footer>
 
 <script type="module">
-        // --- Firebase Imports (Combined) ---
+        // --- Supabase & Firebase Imports ---
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import {
             getAuth,
@@ -349,27 +350,30 @@
             where,
             getDocs,
             serverTimestamp,
-            setLogLevel,
             writeBatch
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         
-        // --- Import Firebase Config ---
+        // --- Import Configs ---
         import { firebaseConfig } from "./firebase-config.js"; 
+        import { supabaseConfig } from "./supabase-config.js";
 
-        // --- Canvas Global Variables (MANDATORY USE) ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-        if (!firebaseConfig || !firebaseConfig.apiKey) {
-            console.error("FATAL ERROR: Firebase configuration is missing or invalid.");
-        }
+        // --- Supabase Client ---
+        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 
         // --- Firebase Initialization ---
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        // setLogLevel('debug'); // Disabled for production cleanup
 
         let hasRedirected = false;
+
+        // Sync Supabase Auth with Firebase Auth (Dual-Auth architecture)
+        supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN') {
+                console.log("Supabase Auth: Signed in", session.user.email);
+                // In a production environment, we'd sync this to Firebase for legacy components
+            }
+        });
 
        onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -655,60 +659,30 @@
             });
 
             // --- Social Authentication Handler ---
-            const handleSocialAuth = async (provider) => {
+            const handleSocialAuth = async (providerName) => {
                 try {
-                    const result = await signInWithPopup(auth, provider);
-                    const user = result.user;
-                    const additionalInfo = getAdditionalUserInfo(result);
-                    const userDoc = await getDoc(getUserDocRef(user.uid));
-                    const providerName = provider.providerId.split('.')[0];
+                    // Sign in with Supabase OAuth
+                    const { data, error } = await supabase.auth.signInWithOAuth({
+                        provider: providerName,
+                        options: {
+                            redirectTo: window.location.origin + '/logged-in/dashboard.html'
+                        }
+                    });
 
-                    if (userDoc.exists()) {
-                        await handleSuccessfulLogin(user);
-                    } else {
-                        if (await checkEmailBan(user.email)) {
-                            await user.delete();
-                            const visibleMessageDiv = messageDivs.login.offsetParent ? messageDivs.login : messageDivs.username;
-                            showMessage(visibleMessageDiv, 'This email address is not permitted to access this network.');
-                            return;
-                        }
-                        
-                        let rawUsername = additionalInfo?.username || user.displayName || user.email.split('@')[0] || 'User';
-                        let username = rawUsername.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
-                        
-                        if (username.length < 6) username = `User${user.uid.substring(0, 8)}`;
-                        if (await checkProfanity(username)) username = `User${user.uid.substring(0, 8)}`;
-                        
-                        let finalUsername = username;
-                        let counter = 1;
-                        while (await isUsernameTaken(finalUsername)) {
-                            finalUsername = `${username.slice(0, 14)}_${counter++}`;
-                        }
-
-                        const docCreated = await createUserDocument(user, providerName, finalUsername);
-                        if (docCreated) {
-                            await setPersistence(auth, browserLocalPersistence);
-                            navigateToDashboard();
-                        } else {
-                            throw new Error('Failed to create user document for social auth.');
-                        }
-                    }
+                    if (error) throw error;
+                    
+                    // Note: Supabase will redirect. Firebase sync will happen on dashboard if needed.
                 } catch (error) {
-                    let msg = `A problem occurred during social sign-in.`;
-                    if (error.code === 'auth/account-exists-with-different-credential') {
-                        msg = 'An account with this email already exists using a different sign-in method. Please sign in with the provider you originally used.';
-                    } else if (error.code === 'auth/popup-closed-by-user') {
-                        return;
-                    }
+                    console.error("Supabase Auth Error:", error.message);
                     const visibleMessageDiv = messageDivs.login.offsetParent ? messageDivs.login : messageDivs.username;
-                    showMessage(visibleMessageDiv, msg);
+                    showMessage(visibleMessageDiv, `Authentication failed: ${error.message}`);
                 }
             };
 
-            document.getElementById('googleAuthBtn').addEventListener('click', () => handleSocialAuth(new GoogleAuthProvider()));
-            document.getElementById('githubAuthBtn').addEventListener('click', () => handleSocialAuth(new GithubAuthProvider()));
-            document.getElementById('twitterAuthBtn').addEventListener('click', () => handleSocialAuth(new TwitterAuthProvider()));
-            document.getElementById('microsoftAuthBtn').addEventListener('click', () => handleSocialAuth(new OAuthProvider('microsoft.com')));
+            document.getElementById('googleAuthBtn').addEventListener('click', () => handleSocialAuth('google'));
+            document.getElementById('discordAuthBtn').addEventListener('click', () => handleSocialAuth('discord'));
+            document.getElementById('githubAuthBtn').addEventListener('click', () => handleSocialAuth('github'));
+            document.getElementById('twitterAuthBtn').addEventListener('click', () => handleSocialAuth('twitter'));
             
         });
     </script>

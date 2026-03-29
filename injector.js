@@ -39,6 +39,20 @@
     };
     window.showLoader = () => {};
 
+    // --- Supabase Global Initialization ---
+    // Make supabase client available to all scripts (e.g. analytics.js)
+    const loadSupabase = async () => {
+        try {
+            const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm");
+            const { supabaseConfig } = await import("/supabase-config.js");
+            window.supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+            console.log("Supabase: Global client initialized.");
+        } catch (e) {
+            console.warn("Supabase: Global initialization failed", e);
+        }
+    };
+    loadSupabase();
+
     // 1. DEFINE YOUR SCRIPTS HERE
     // Update this array (and ONLY this array) to manage your application's scripts.
     const scriptsToLoad = [

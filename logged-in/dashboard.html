@@ -325,11 +325,13 @@
     </div>
 
     <script type="module">
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from '../firebase-config.js';
         import { firebaseConfig2 } from '../firebase-config-2.js';
+        import { supabaseConfig } from '../supabase-config.js';
         import { getAvatarHTML, syncGooglePhoto } from "../utils.js";
 
         // Initialize primary app
@@ -347,6 +349,9 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const db2 = getFirestore(app2); // Secondary DB for analytics/stats
+
+        // Initialize Supabase
+        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 
         const V6_PAGES = {
             'dashboard.html': 'Dashboard',
@@ -399,10 +404,14 @@
                 console.error("Failed to load page identification config", e);
             }
 
-            onAuthStateChanged(auth, async (user) => {
+            // Primary Auth Listener (Firebase for legacy, Supabase for modern)
+            const handleUser = async (user, source = 'firebase') => {
                 if (user) {
-                    syncGooglePhoto(user); // Sync Google PFP to Firestore field
-                    const userDocRef = doc(db, 'users', user.uid);
+                    console.log(`Dashboard: User authenticated via ${source}`, user.email);
+                    if (source === 'firebase') syncGooglePhoto(user);
+                    
+                    const uid = user.id || user.uid; // Supabase uses .id, Firebase uses .uid
+                    const userDocRef = doc(db, 'users', uid);
                     const userSnap = await getDoc(userDocRef);
                     
                     if (userSnap.exists()) {
@@ -418,7 +427,7 @@
                         if (data.leaderboardAccepted && !data.leaderboardOptOut) {
                             widget.classList.remove('greyed-out');
                             overlay.style.display = 'none';
-                            fetchUserStats(user.uid);
+                            fetchUserStats(uid);
                         } else {
                             widget.classList.add('greyed-out');
                             overlay.style.display = 'flex';
@@ -442,10 +451,40 @@
                                 };
                             }
                         }
-                        loadAnalytics(user.uid, pageConfig, data);
+                        loadAnalytics(uid, pageConfig, data);
+                    } else {
+                        // Create basic doc if it doesn't exist (e.g. first time Supabase login)
+                        console.log("Dashboard: Creating missing user document for", uid);
+                        const newUser = {
+                            email: user.email,
+                            username: user.user_metadata?.custom_claims?.global_name || user.email.split('@')[0],
+                            createdAt: serverTimestamp(),
+                            leaderboardAccepted: false,
+                            leaderboardOptOut: false
+                        };
+                        await setDoc(userDocRef, newUser);
+                        location.reload();
                     }
-                } else if (!window._LOCAL_MODE) {
-                    window.location.replace('../index.html');
+                } else if (!window._LOCAL_MODE && source === 'firebase') {
+                    // Only redirect if both fail. We check Supabase first.
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) {
+                        window.location.replace('../index.html');
+                    }
+                }
+            };
+
+            // Supabase session check
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                handleUser(session.user, 'supabase');
+            }
+
+            // Firebase fallback/sync
+            onAuthStateChanged(auth, async (user) => {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    handleUser(user, 'firebase');
                 }
             });
 
