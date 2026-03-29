@@ -249,21 +249,31 @@
             // Removed live query on 'users' collection.
             // Now reads a single pre-aggregated document.
             // Cost reduced from 100+ reads to 1 read.
-            const leaderboardSnap = await getDoc(doc(db, 'leaderboard', 'snapshot'));
+            const leaderboardSnap = await getDoc(doc(db2, 'leaderboard', 'snapshot'));
 
-            if (!leaderboardSnap.exists()) {
-                rankingsEl.innerHTML = '<p class="text-gray-600 italic p-4">Leaderboard data is being generated. Please check back in a few minutes.</p>';
-                return;
+            if (leaderboardSnap.exists()) {
+                console.log("Leaderboard: Snapshot found on secondary DB");
+                const snapData = leaderboardSnap.data();
+                rankedUsers = snapData.users || [];
+            } else {
+                console.warn("Leaderboard: Snapshot missing on secondary, falling back to direct query on secondary");
+                // Fallback source: Direct query on secondary
+                const q = query(
+                    collection(db2, 'user_stats'), // Stats users collection on secondary
+                    orderBy('totalV6Time', 'desc'),
+                    limit(50)
+                );
+                const querySnap = await getDocs(q);
+                console.log("Leaderboard: Direct query returned", querySnap.size, "users");
+                rankedUsers = querySnap.docs.map(d => ({ ...d.data(), id: d.id }));
             }
 
-            const { users: rankedUsers, lastUpdated } = leaderboardSnap.data();
-
-            if (!rankedUsers || rankedUsers.length === 0) {
+            if (rankedUsers.length === 0) {
                 rankingsEl.innerHTML = '<p class="text-gray-600 italic p-4">No users have joined the leaderboard yet.</p>';
                 return;
             }
             
-            // Fetch current user's following list and all banned users in parallel
+            // Fetch current user's following list and all banned users in parallel (Primary DB)
             let following = new Set();
             let bannedUids = new Set();
 

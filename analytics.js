@@ -223,11 +223,22 @@
             }
         };
 
-        // 2. User presence doc — Keep on primary Firestore for real-time navigation components
+        // 2. Increment experience time in the secondary project (using mongoBridge)
+        const timePayload = {
+            action: 'update',
+            collection: 'user_stats',
+            query: { uid: currentUser },
+            payload: { 
+                $inc: { totalV6Time: activeDuration },
+                $set: { lastActive: new Date() }
+            },
+            options: { upsert: true }
+        };
+
+        // 3. User presence doc — Keep on primary Firestore for real-time navigation components
         const batchPrimary = db.batch();
         if (currentUser !== 'anonymous') {
             const presenceRef = db.collection('user_presence').doc(currentUser);
-            const userRef     = db.collection('users').doc(currentUser);
             const activity    = getPageName(window.location.pathname, document.title);
             
             batchPrimary.set(presenceRef, {
@@ -236,23 +247,19 @@
                 lastActive:      FieldValue.serverTimestamp(),
                 sessionId
             });
-
-            batchPrimary.set(userRef, {
-                totalV6Time: FieldValue.increment(activeDuration)
-            }, { merge: true });
         }
 
         console.log(
             `Analytics: Syncing — ${pageViews.length} new pageview(s) to MongoDB, ` +
-            `${activeDuration}s new active time to Primary.`
+            `${activeDuration}s new active time to Secondary.`
         );
 
         try {
             const mongoBridge = window.firebase.functions().httpsCallable('mongoBridge');
-            await Promise.all([
-                batchPrimary.commit(),
-                mongoBridge(mongoPayload)
-            ]);
+            const promises = [batchPrimary.commit(), mongoBridge(mongoPayload)];
+            if (currentUser !== 'anonymous') promises.push(mongoBridge(timePayload));
+            
+            await Promise.all(promises);
             
             // Reset active duration and clear queue only after successful write
             activeDuration = 0;

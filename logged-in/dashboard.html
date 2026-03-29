@@ -226,6 +226,24 @@
 
 <body>
     <div id="page-content">
+        <!-- Migration Notice Modal -->
+        <div id="migration-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md hidden">
+            <div class="bg-[var(--bg-container)] border border-[var(--accent-color)]/30 p-10 rounded-[40px] max-w-lg w-full mx-4 shadow-2xl text-center">
+                <div class="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-8">
+                    <i class="fas fa-database text-3xl text-indigo-400"></i>
+                </div>
+                <h2 class="text-3xl font-light tracking-tight mb-4 text-white">Database Migration</h2>
+                <p class="text-gray-400 leading-relaxed mb-10 text-sm">
+                    We've upgraded our infrastructure to a more scalable analytics engine. 
+                    As a result, global leaderboard rankings and experience time have been reset. 
+                    <span class="block mt-4 text-[var(--accent-primary)] font-medium">This does not affect your account settings, posts, or personal data.</span>
+                </p>
+                <button id="close-migration-modal" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-indigo-500/20">
+                    Understood
+                </button>
+            </div>
+        </div>
+
         <!-- WELCOME SECTION -->
         <div id="welcome-section" class="dashboard-card no-hover">
             <div id="clock-date" class="date-display">--------</div>
@@ -307,15 +325,28 @@
     </div>
 
     <script type="module">
-        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from '../firebase-config.js';
+        import { firebaseConfig2 } from '../firebase-config-2.js';
         import { getAvatarHTML, syncGooglePhoto } from "../utils.js";
 
+        // Initialize primary app
         if (!getApps().length) initializeApp(firebaseConfig);
-        const auth = getAuth();
-        const db = getFirestore();
+        const app = getApp();
+        
+        // Initialize secondary app for offloading data
+        let app2;
+        try {
+            app2 = getApp("secondary");
+        } catch (e) {
+            app2 = initializeApp(firebaseConfig2, "secondary");
+        }
+
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const db2 = getFirestore(app2); // Secondary DB for analytics/stats
 
         const V6_PAGES = {
             'dashboard.html': 'Dashboard',
@@ -349,6 +380,16 @@
         };
 
         async function initDashboard() {
+            // Migration Notice Logic
+            if (!localStorage.getItem('v6_migration_seen')) {
+                const modal = document.getElementById('migration-modal');
+                modal.classList.remove('hidden');
+                document.getElementById('close-migration-modal').onclick = () => {
+                    modal.classList.add('hidden');
+                    localStorage.setItem('v6_migration_seen', 'true');
+                };
+            }
+
             // Load page identification config
             let pageConfig = {};
             try {
@@ -428,21 +469,19 @@
 
             console.log("Dashboard: Fetching fresh leaderboard rank for", uid);
             try {
-                // Primary source: snapshot document (efficient)
-                console.log("Dashboard: Attempting to fetch leaderboard/snapshot");
-                const leaderboardSnap = await getDoc(doc(db, 'leaderboard', 'snapshot'));
+                // Primary source: snapshot document (efficient) - NOW from DB2
+                console.log("Dashboard: Attempting to fetch leaderboard/snapshot from secondary DB");
+                const leaderboardSnap = await getDoc(doc(db2, 'leaderboard', 'snapshot'));
                 
                 let rankedUsers = [];
                 if (leaderboardSnap.exists()) {
                     console.log("Dashboard: Leaderboard snapshot found");
                     rankedUsers = leaderboardSnap.data().users || [];
                 } else {
-                    console.warn("Dashboard: Snapshot missing, falling back to direct query");
-                    // Fallback source: Direct query (top 50 is only 50 reads)
+                    console.warn("Dashboard: Snapshot missing on secondary, falling back to direct query on secondary");
+                    // Fallback source: Direct query on secondary
                     const q = query(
-                        collection(db, 'users'),
-                        where('leaderboardAccepted', '==', true),
-                        where('leaderboardOptOut', '==', false),
+                        collection(db2, 'user_stats'), // Stats users collection on secondary
                         orderBy('totalV6Time', 'desc'),
                         limit(50)
                     );
@@ -490,7 +529,7 @@
             }
         }
 
-        async function loadAnalytics(uid, pageConfig = {}, userData = {}) {
+        async function loadAnalytics(uid, pageConfig = {}, userDataPrimary = {}) {
             // Local history from analytics.js
             let recentPages = [];
             try {
@@ -503,15 +542,15 @@
                 document.getElementById('stat-total-time').textContent = `${hours}h ${minutes}m`;
             };
 
-            // Load initial time from the provided userData (fetched in initDashboard)
-            displayTime(userData.totalV6Time || 0);
-            
-            // Experience time updates in real-time via user doc listener (efficient)
-            onSnapshot(doc(db, 'users', uid), docSnap => {
+            // Experience time updates in real-time via user stats doc listener on SECONDARY DB
+            onSnapshot(doc(db2, 'user_stats', uid), docSnap => {
                 if (docSnap.exists()) {
                     const d = docSnap.data();
-                    console.log("Dashboard: Real-time time update:", d.totalV6Time);
+                    console.log("Dashboard: Real-time time update from secondary:", d.totalV6Time);
                     displayTime(d.totalV6Time || 0);
+                } else {
+                    console.log("Dashboard: User stats not found on secondary yet");
+                    displayTime(0);
                 }
             });
 
