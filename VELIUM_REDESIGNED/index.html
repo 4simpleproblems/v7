@@ -304,26 +304,41 @@
     <script>
         (function() {
             const loader = document.getElementById('startup-loader');
+            let hidden = false;
             const hideLoader = () => {
-                if (loader && !loader.classList.contains('hidden')) {
+                if (loader && !hidden) {
                     loader.classList.add('hidden');
+                    loader.style.display = 'none';
+                    hidden = true;
                     console.log("VELIUM: Proxy Ready, hiding loader");
                 }
             };
 
             // Listen for ready signal from BareMux
-            const bc = new BroadcastChannel("bare-mux-sync");
-            bc.onmessage = (event) => {
-                if (event.data && event.data.type === 'baremuxready') hideLoader();
-            };
+            try {
+                const bc = new BroadcastChannel("bare-mux-sync");
+                bc.onmessage = (event) => {
+                    if (event.data && (event.data.type === 'baremuxready' || event.data.type === 'ready')) hideLoader();
+                };
+            } catch (e) {}
 
             // Also hide on window load as a fallback
             window.addEventListener('load', () => {
-                setTimeout(hideLoader, 500); 
+                setTimeout(hideLoader, 1500); 
             });
 
+            // Handle potential BareMux connection directly
+            if (window.BareMux) {
+                const checkInterval = setInterval(() => {
+                    if (window.BareMux.ready) {
+                        hideLoader();
+                        clearInterval(checkInterval);
+                    }
+                }, 500);
+            }
+
             // Safety timeout
-            setTimeout(hideLoader, 8000);
+            setTimeout(hideLoader, 6000);
         })();
     </script>
 

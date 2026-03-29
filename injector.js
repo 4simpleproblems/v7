@@ -42,6 +42,7 @@
     // --- Supabase Global Initialization ---
     // Make supabase client available to all scripts (e.g. analytics.js)
     const loadSupabase = async () => {
+        if (window.supabase) return; // Prevent multiple loads
         try {
             const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm");
             const { supabaseConfig } = await import("/supabase-config.js");

@@ -357,8 +357,12 @@
         import { firebaseConfig } from "./firebase-config.js"; 
         import { supabaseConfig } from "./supabase-config.js";
 
-        // --- Supabase Client ---
-        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        // --- Supabase Client (Reuse global instance if available) ---
+        let supabase = window.supabase;
+        if (!supabase) {
+            supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+            window.supabase = supabase;
+        }
 
         // --- Firebase Initialization ---
         const app = initializeApp(firebaseConfig);

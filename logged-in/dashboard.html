@@ -230,16 +230,16 @@
         <div id="migration-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md hidden">
             <div class="bg-[var(--bg-container)] border border-[var(--accent-color)]/30 p-10 rounded-[40px] max-w-lg w-full mx-4 shadow-2xl text-center">
                 <div class="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-8">
-                    <i class="fas fa-database text-3xl text-indigo-400"></i>
+                    <i class="fas fa-rocket text-3xl text-indigo-400"></i>
                 </div>
-                <h2 class="text-3xl font-light tracking-tight mb-4 text-white">Database Migration</h2>
+                <h2 class="text-3xl font-light tracking-tight mb-4 text-white">Infrastructure Upgrade</h2>
                 <p class="text-gray-400 leading-relaxed mb-10 text-sm">
-                    We've upgraded our infrastructure to a more scalable analytics engine. 
-                    As a result, global leaderboard rankings and experience time have been reset. 
-                    <span class="block mt-4 text-[var(--accent-primary)] font-medium">This does not affect your account settings, posts, or personal data.</span>
+                    We've transitioned to a higher-performance analytics engine. 
+                    As a result, your experience time and leaderboard ranking have been refreshed. 
+                    <span class="block mt-4 text-[var(--accent-primary)] font-medium">This migration only affects statistics; your account, posts, and settings remain untouched.</span>
                 </p>
                 <button id="close-migration-modal" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-indigo-500/20">
-                    Understood
+                    Got it
                 </button>
             </div>
         </div>
@@ -348,10 +348,14 @@
 
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const db2 = getFirestore(app2); // Secondary DB for analytics/stats
+        const db2 = app2.firestore(); // Secondary DB for logs/pageviews
 
-        // Initialize Supabase
-        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        // Initialize Supabase (Reuse global instance if available)
+        let supabase = window.supabase;
+        if (!supabase) {
+            const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm");
+            supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        }
 
         const V6_PAGES = {
             'dashboard.html': 'Dashboard',
@@ -410,12 +414,41 @@
                     console.log(`Dashboard: User authenticated via ${source}`, user.email);
                     if (source === 'firebase') syncGooglePhoto(user);
                     
-                    const uid = user.id || user.uid; // Supabase uses .id, Firebase uses .uid
-                    const userDocRef = doc(db, 'users', uid);
-                    const userSnap = await getDoc(userDocRef);
+                    const uid = user.id || user.uid; 
+                    let data = null;
+
+                    if (source === 'supabase') {
+                        // Fetch from Supabase profiles table
+                        const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', uid).single();
+                        if (profile) {
+                            data = {
+                                ...profile,
+                                displayName: profile.display_name,
+                                username: profile.username || user.user_metadata?.custom_claims?.global_name || user.email.split('@')[0],
+                                leaderboardAccepted: profile.leaderboard_accepted,
+                                leaderboardOptOut: profile.leaderboard_opt_out
+                            };
+                        }
+                    } else {
+                        // Legacy Firebase path
+                        const userDocRef = doc(db, 'users', uid);
+                        try {
+                            const userSnap = await getDoc(userDocRef);
+                            if (userSnap.exists()) data = userSnap.data();
+                        } catch (e) {
+                            console.warn("Dashboard: Firestore Primary access denied. Switching to Supabase profile.");
+                            const { data: profile } = await supabase.from('profiles').select('*').eq('id', uid).single();
+                            if (profile) {
+                                data = {
+                                    ...profile,
+                                    displayName: profile.display_name,
+                                    username: profile.username
+                                };
+                            }
+                        }
+                    }
                     
-                    if (userSnap.exists()) {
-                        const data = userSnap.data();
+                    if (data) {
                         document.getElementById('user-name-display').textContent = data.displayName || data.username || "User";
                         
                         // Leaderboard handling
@@ -436,17 +469,22 @@
                                 promptText.textContent = "Leaderboard participation is disabled in settings";
                                 acceptBtn.textContent = "Enable Participation";
                                 acceptBtn.onclick = async () => {
-                                    await updateDoc(userDocRef, { leaderboardOptOut: false });
+                                    if (source === 'supabase') {
+                                        await supabase.from('profiles').update({ leaderboard_opt_out: false }).eq('id', uid);
+                                    } else {
+                                        await updateDoc(doc(db, 'users', uid), { leaderboardOptOut: false });
+                                    }
                                     location.reload();
                                 };
                             } else {
                                 promptText.textContent = "Join the leaderboard to see your rank";
                                 acceptBtn.textContent = "Accept Terms";
                                 acceptBtn.onclick = async () => {
-                                    await updateDoc(userDocRef, {
-                                        leaderboardAccepted: true,
-                                        leaderboardOptOut: false
-                                    });
+                                    if (source === 'supabase') {
+                                        await supabase.from('profiles').update({ leaderboard_accepted: true, leaderboard_opt_out: false }).eq('id', uid);
+                                    } else {
+                                        await updateDoc(doc(db, 'users', uid), { leaderboardAccepted: true, leaderboardOptOut: false });
+                                    }
                                     location.reload();
                                 };
                             }
@@ -454,15 +492,25 @@
                         loadAnalytics(uid, pageConfig, data);
                     } else {
                         // Create basic doc if it doesn't exist (e.g. first time Supabase login)
-                        console.log("Dashboard: Creating missing user document for", uid);
-                        const newUser = {
-                            email: user.email,
-                            username: user.user_metadata?.custom_claims?.global_name || user.email.split('@')[0],
-                            createdAt: serverTimestamp(),
-                            leaderboardAccepted: false,
-                            leaderboardOptOut: false
-                        };
-                        await setDoc(userDocRef, newUser);
+                        console.log("Dashboard: Creating missing user profile for", uid);
+                        const username = user.user_metadata?.custom_claims?.global_name || user.email.split('@')[0];
+                        if (source === 'supabase') {
+                            await supabase.from('profiles').upsert({
+                                id: uid,
+                                username: username,
+                                display_name: username,
+                                leaderboard_accepted: false,
+                                leaderboard_opt_out: false
+                            });
+                        } else {
+                            await setDoc(doc(db, 'users', uid), {
+                                email: user.email,
+                                username: username,
+                                createdAt: serverTimestamp(),
+                                leaderboardAccepted: false,
+                                leaderboardOptOut: false
+                            });
+                        }
                         location.reload();
                     }
                 } else if (!window._LOCAL_MODE && source === 'firebase') {
@@ -501,49 +549,33 @@
             const cachedData = localStorage.getItem(CACHE_KEY);
 
             if (cachedTime && cachedData && (now - parseInt(cachedTime) < ONE_HOUR)) {
-                console.log("Dashboard: Using cached leaderboard rank:", cachedData);
                 renderRankData(JSON.parse(cachedData));
                 return;
             }
 
-            console.log("Dashboard: Fetching fresh leaderboard rank for", uid);
             try {
-                // Primary source: snapshot document (efficient) - NOW from DB2
-                console.log("Dashboard: Attempting to fetch leaderboard/snapshot from secondary DB");
-                const leaderboardSnap = await getDoc(doc(db2, 'leaderboard', 'snapshot'));
-                
-                let rankedUsers = [];
-                if (leaderboardSnap.exists()) {
-                    console.log("Dashboard: Leaderboard snapshot found");
-                    rankedUsers = leaderboardSnap.data().users || [];
-                } else {
-                    console.warn("Dashboard: Snapshot missing on secondary, falling back to direct query on secondary");
-                    // Fallback source: Direct query on secondary
-                    const q = query(
-                        collection(db2, 'user_stats'), // Stats users collection on secondary
-                        orderBy('totalV6Time', 'desc'),
-                        limit(50)
-                    );
-                    const querySnap = await getDocs(q);
-                    console.log("Dashboard: Direct query returned", querySnap.size, "users");
-                    rankedUsers = querySnap.docs.map(d => ({ ...d.data(), id: d.id }));
-                }
+                // Fetch rank from Supabase profiles table
+                const { data: rankedUsers, error } = await supabase
+                    .from('profiles')
+                    .select('id, username, display_name, total_v6_time, avatar_url')
+                    .order('total_v6_time', { ascending: false })
+                    .limit(100);
+
+                if (error) throw error;
 
                 let rank = '--';
                 let userDataRankInfo = null;
 
-                if (rankedUsers.length > 0) {
-                    // Check for both .id and .uid as field names vary across collection/summary
-                    const index = rankedUsers.findIndex(u => (u.id === uid || u.uid === uid));
+                if (rankedUsers && rankedUsers.length > 0) {
+                    const index = rankedUsers.findIndex(u => u.id === uid);
                     if (index !== -1) {
                         rank = `#${index + 1}`;
-                        userDataRankInfo = rankedUsers[index];
-                        console.log("Dashboard: Rank identified:", rank);
-                    } else {
-                        console.log("Dashboard: User not found in top rankings list");
+                        userDataRankInfo = {
+                            ...rankedUsers[index],
+                            totalV6Time: rankedUsers[index].total_v6_time,
+                            displayName: rankedUsers[index].display_name
+                        };
                     }
-                } else {
-                    console.warn("Dashboard: No ranked users found in sources");
                 }
 
                 const dataToCache = { rank, userData: userDataRankInfo };
@@ -552,7 +584,7 @@
 
                 renderRankData(dataToCache);
             } catch (e) {
-                console.error("Dashboard: Failed to fetch leaderboard rank", e);
+                console.error("Dashboard: Failed to fetch Supabase stats", e);
             }
         }
 
@@ -564,16 +596,15 @@
                 const minutes = Math.floor(((rankData.totalV6Time || 0) % 3600) / 60);
                 document.getElementById('user-stats-time').textContent = `${hours}h ${minutes}m total`;
                 const avatarWidget = document.getElementById('user-avatar-widget');
-                avatarWidget.innerHTML = getAvatarHTML(rankData, "w-24 h-24", false, auth.currentUser, "rounded-[32px]");
+                avatarWidget.innerHTML = getAvatarHTML(rankData, "w-24 h-24", false, null, "rounded-[32px]");
             }
         }
 
         async function loadAnalytics(uid, pageConfig = {}, userDataPrimary = {}) {
-            // Local history from analytics.js
             let recentPages = [];
             try {
                 recentPages = JSON.parse(localStorage.getItem('v6_recent_pages') || '[]');
-            } catch (e) { console.warn("Dashboard: Local history read failed", e); }
+            } catch (e) {}
 
             const displayTime = (timeInSecs) => {
                 const hours = Math.floor(timeInSecs / 3600);
@@ -581,17 +612,17 @@
                 document.getElementById('stat-total-time').textContent = `${hours}h ${minutes}m`;
             };
 
-            // Experience time updates in real-time via user stats doc listener on SECONDARY DB
-            onSnapshot(doc(db2, 'user_stats', uid), docSnap => {
-                if (docSnap.exists()) {
-                    const d = docSnap.data();
-                    console.log("Dashboard: Real-time time update from secondary:", d.totalV6Time);
-                    displayTime(d.totalV6Time || 0);
-                } else {
-                    console.log("Dashboard: User stats not found on secondary yet");
-                    displayTime(0);
-                }
-            });
+            // Real-time time update via Supabase (if supported by project) or simple fetch
+            const { data: profile } = await supabase.from('profiles').select('total_v6_time').eq('id', uid).single();
+            displayTime(profile?.total_v6_time || 0);
+
+            // Subscribe to real-time changes on profiles table
+            supabase
+                .channel('profile-updates')
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` }, payload => {
+                    if (payload.new) displayTime(payload.new.total_v6_time || 0);
+                })
+                .subscribe();
 
             // Minimal system stats
             const uaInfo = parseUA(navigator.userAgent);

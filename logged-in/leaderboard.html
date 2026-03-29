@@ -232,10 +232,14 @@
 
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const db2 = getFirestore(app2); // Secondary DB for analytics_summary
+        const db2 = getFirestore(app2); // Secondary DB for logs/pageviews
 
-        // Initialize Supabase
-        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        // Initialize Supabase (Reuse global instance if available)
+        let supabase = window.supabase;
+        if (!supabase) {
+            const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm");
+            supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        }
 
         async function initLeaderboard() {
             // Supabase session check
@@ -260,96 +264,79 @@
         async function loadUserRankings(currentUid) {
             const rankingsEl = document.getElementById('rankings-list');
             
-            // --- OPTIMIZATION ---
-            // Removed live query on 'users' collection.
-            // Now reads a single pre-aggregated document.
-            // Cost reduced from 100+ reads to 1 read.
-            const leaderboardSnap = await getDoc(doc(db2, 'leaderboard', 'snapshot'));
+            try {
+                // Fetch rankings from Supabase profiles table
+                const { data: rankedUsers, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .order('total_v6_time', { ascending: false })
+                    .limit(50);
 
-            if (leaderboardSnap.exists()) {
-                console.log("Leaderboard: Snapshot found on secondary DB");
-                const snapData = leaderboardSnap.data();
-                rankedUsers = snapData.users || [];
-            } else {
-                console.warn("Leaderboard: Snapshot missing on secondary, falling back to direct query on secondary");
-                // Fallback source: Direct query on secondary
-                const q = query(
-                    collection(db2, 'user_stats'), // Stats users collection on secondary
-                    orderBy('totalV6Time', 'desc'),
-                    limit(50)
-                );
-                const querySnap = await getDocs(q);
-                console.log("Leaderboard: Direct query returned", querySnap.size, "users");
-                rankedUsers = querySnap.docs.map(d => ({ ...d.data(), id: d.id }));
-            }
+                if (error) throw error;
 
-            if (rankedUsers.length === 0) {
-                rankingsEl.innerHTML = '<p class="text-gray-600 italic p-4">No users have joined the leaderboard yet.</p>';
-                return;
-            }
-            
-            // Fetch current user's following list and all banned users in parallel (Primary DB)
-            let following = new Set();
-            let bannedUids = new Set();
-
-            if (currentUid) {
-                const [followSnap, banSnap] = await Promise.all([
-                    getDocs(collection(db, 'users', currentUid, 'following')),
-                    getDocs(collection(db, 'bans'))
-                ]);
-                followSnap.forEach(docSnap => following.add(docSnap.id));
-                banSnap.forEach(docSnap => bannedUids.add(docSnap.id));
-            } else {
-                 const banSnap = await getDocs(collection(db, 'bans'));
-                 banSnap.forEach(docSnap => bannedUids.add(docSnap.id));
-            }
-
-            rankingsEl.innerHTML = '';
-            let displayCount = 0;
-            
-            rankedUsers.forEach((data, index) => {
-                if (displayCount >= 50) return;
+                if (!rankedUsers || rankedUsers.length === 0) {
+                    rankingsEl.innerHTML = '<p class="text-gray-600 italic p-4">No users have joined the leaderboard yet.</p>';
+                    return;
+                }
                 
-                const uid = data.id;
-                if (bannedUids.has(uid)) return;
+                // Fetch current user's following list and all banned users in parallel (Primary DB for legacy)
+                let following = new Set();
+                let bannedUids = new Set();
 
-                const i = index + 1;
-                const hours = Math.floor((data.totalV6Time || 0) / 3600);
-                const minutes = Math.floor(((data.totalV6Time || 0) % 3600) / 60);
+                if (currentUid) {
+                    const [followSnap, banSnap] = await Promise.all([
+                        getDocs(collection(db, 'users', currentUid, 'following')),
+                        getDocs(collection(db, 'bans'))
+                    ]);
+                    followSnap.forEach(docSnap => following.add(docSnap.id));
+                    banSnap.forEach(docSnap => bannedUids.add(docSnap.id));
+                }
 
-                if (i === 1) updateChampion(data);
-
-                const item = document.createElement('div');
-                item.className = 'leader-item cursor-pointer';
+                rankingsEl.innerHTML = '';
                 
-                const isFollowing = following.has(uid);
+                rankedUsers.forEach((data, index) => {
+                    const uid = data.id;
+                    if (bannedUids.has(uid)) return;
 
-                item.innerHTML = `
-                    <div class="rank-num ${i <= 3 ? 'rank-'+i : ''}">${i}</div>
-                    ${getAvatarHTML(data, "w-16 h-16", false, auth.currentUser, "rounded-[20px]")}
-                    <div class="flex-grow ml-4">
-                        <div class="text-lg font-medium" style="color: var(--text-main);">${data.displayName || data.username || "Anonymous"}</div>
-                        <div class="text-xs opacity-60 font-mono" style="color: var(--text-muted);">${hours}h ${minutes}m</div>
-                    </div>
-                    ${uid !== currentUid ? `
-                        <button class="follow-btn ${isFollowing ? 'following' : ''}" data-uid="${uid}">
-                            ${isFollowing ? 'Following' : 'Follow'}
-                        </button>
-                    ` : '<span class="text-[10px] opacity-60 uppercase tracking-widest font-bold" style="color: var(--text-muted);">You</span>'}
-                `;
+                    const i = index + 1;
+                    const hours = Math.floor((data.total_v6_time || 0) / 3600);
+                    const minutes = Math.floor(((data.total_v6_time || 0) % 3600) / 60);
 
-                item.onclick = (e) => {
-                    if (e.target.closest('.follow-btn')) return;
-                    if (data.username) window.location.href = `/logged-in/@${data.username}`;
-                };
+                    if (i === 1) updateChampion(data);
 
-                rankingsEl.appendChild(item);
+                    const item = document.createElement('div');
+                    item.className = 'leader-item cursor-pointer';
+                    
+                    const isFollowing = following.has(uid);
 
-                const fBtn = item.querySelector('.follow-btn');
-                if (fBtn) fBtn.onclick = () => toggleFollow(fBtn, uid, currentUid);
-                
-                displayCount++;
-            });
+                    item.innerHTML = `
+                        <div class="rank-num ${i <= 3 ? 'rank-'+i : ''}">${i}</div>
+                        ${getAvatarHTML({ ...data, totalV6Time: data.total_v6_time, displayName: data.display_name }, "w-16 h-16", false, null, "rounded-[20px]")}
+                        <div class="flex-grow ml-4">
+                            <div class="text-lg font-medium" style="color: var(--text-main);">${data.display_name || data.username || "Anonymous"}</div>
+                            <div class="text-xs opacity-60 font-mono" style="color: var(--text-muted);">${hours}h ${minutes}m</div>
+                        </div>
+                        ${uid !== currentUid ? `
+                            <button class="follow-btn ${isFollowing ? 'following' : ''}" data-uid="${uid}">
+                                ${isFollowing ? 'Following' : 'Follow'}
+                            </button>
+                        ` : '<span class="text-[10px] opacity-60 uppercase tracking-widest font-bold" style="color: var(--text-muted);">You</span>'}
+                    `;
+
+                    item.onclick = (e) => {
+                        if (e.target.closest('.follow-btn')) return;
+                        if (data.username) window.location.href = `/logged-in/@${data.username}`;
+                    };
+
+                    rankingsEl.appendChild(item);
+
+                    const fBtn = item.querySelector('.follow-btn');
+                    if (fBtn) fBtn.onclick = () => toggleFollow(fBtn, uid, currentUid);
+                });
+            } catch (e) {
+                console.error("Leaderboard: Failed to load Supabase rankings", e);
+                rankingsEl.innerHTML = '<p class="text-red-500 italic p-4">Error loading rankings. Please try again later.</p>';
+            }
         }
 
         async function toggleFollow(btn, targetUid, currentUid) {
@@ -381,13 +368,13 @@
         }
 
         function updateChampion(data) {
-            document.getElementById('champion-name').textContent = data.displayName || data.username || "Anonymous";
-            const hours = Math.floor((data.totalV6Time || 0) / 3600);
-            const minutes = Math.floor(((data.totalV6Time || 0) % 3600) / 60);
+            document.getElementById('champion-name').textContent = data.display_name || data.username || "Anonymous";
+            const hours = Math.floor((data.total_v6_time || 0) / 3600);
+            const minutes = Math.floor(((data.total_v6_time || 0) % 3600) / 60);
             document.getElementById('champion-time').textContent = `${hours}h ${minutes}m total`;
             
             const champAvatarContainer = document.getElementById('champion-avatar');
-            champAvatarContainer.innerHTML = getAvatarHTML(data, "w-24 h-24", false, auth.currentUser, "rounded-[32px]");
+            champAvatarContainer.innerHTML = getAvatarHTML({ ...data, totalV6Time: data.total_v6_time, displayName: data.display_name }, "w-24 h-24", false, null, "rounded-[32px]");
             
             const championSection = document.getElementById('top-user-section');
             championSection.classList.add('cursor-pointer');
