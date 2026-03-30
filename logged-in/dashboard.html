@@ -348,7 +348,7 @@
 
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const db2 = app2.firestore(); // Secondary DB for logs/pageviews
+        const db2 = getFirestore(app2); // Secondary DB for logs/pageviews
 
         // Initialize Supabase (Reuse global instance if available)
         let supabase = window.supabase;
@@ -691,5 +691,3 @@
 </body>
 </html>
 <!-- Made with ❤️ from 4SP -->
-</body>
-</html>

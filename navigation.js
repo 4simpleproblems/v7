@@ -2245,8 +2245,22 @@ let db;
                 authCheckCompleted = true;
             }
 
-            // Only redirect if auth check is completed, user is logged out, and we are not already redirecting
-            if (authCheckCompleted && !user && !isRedirecting) {
+            // --- REDIRECT LOGIC (Enhanced for Supabase) ---
+            const isPublicPage = window.location.pathname.endsWith('authentication.html') || 
+                                window.location.pathname.endsWith('index.html') || 
+                                window.location.pathname === '/' || 
+                                window.location.pathname.endsWith('404.html');
+
+            let hasSupabaseSession = false;
+            try {
+                if (window.supabase) {
+                    const { data } = await window.supabase.auth.getSession();
+                    hasSupabaseSession = !!data.session;
+                }
+            } catch (e) { console.warn("Error checking Supabase session:", e); }
+
+            // Only redirect if auth check is completed, user is logged out (from both Firebase and Supabase), and we are not already redirecting
+            if (authCheckCompleted && !user && !hasSupabaseSession && !isRedirecting && !isPublicPage) {
                 const targetUrl = '../index.html'; 
                 console.log(`User logged out. Restricting access and redirecting to ${targetUrl}`);
                 isRedirecting = true;
