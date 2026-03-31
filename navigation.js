@@ -2130,28 +2130,24 @@ let db;
 
         allPages = pages;
 
-        auth.onAuthStateChanged(async (user) => {
+        // --- DUAL AUTH HANDLER ---
+        const handleUser = async (user, source = 'firebase') => {
             cleanupGlobalListeners();
             let isPrivilegedUser = false;
             let userData = null;
-            currentUser = user;
 
             if (user) {
+                const uid = user.uid || user.id;
+                const email = user.email;
+                
                 // Check if hardcoded privileged email
-                isPrivilegedUser = user.email === PRIVILEGED_EMAIL;
+                isPrivilegedUser = email === PRIVILEGED_EMAIL;
 
                 // Notifications Listener (Using db2 for offloading)
                 unsubNotifs = db2.collection('notifications')
-                    .where('recipientId', '==', user.uid)
+                    .where('recipientId', '==', uid)
                     .limit(50)
                     .onSnapshot(snap => {
-                        let newDocs = snap.docChanges()
-                            .filter(change => change.type === 'added')
-                            .map(change => ({ id: change.doc.id, ...change.doc.data() }));
-                        
-                        // Sort by timestamp desc client-side if needed, 
-                        // but here we just process them as they come.
-                        
                         snap.docChanges().forEach(change => {
                             if (change.type === 'added') {
                                 const data = change.doc.data();
@@ -2183,69 +2179,89 @@ let db;
                         });
                     }, err => console.warn("Notifications listener error:", err));
 
-                // Set up real-time listener for user data
-                unsubUserDoc = db.collection('users').doc(user.uid).onSnapshot(async (doc) => {
-                    userData = doc.exists ? doc.data() : null;
-                    currentUserData = userData;
+                if (source === 'supabase' && window.supabase) {
+                    try {
+                        const { data: profile } = await window.supabase.from('profiles').select('*').eq('id', uid).single();
+                        if (profile) {
+                            userData = {
+                                ...profile,
+                                displayName: profile.display_name,
+                                username: profile.username || email.split('@')[0],
+                                pfpType: profile.pfp_type,
+                                customPfp: profile.avatar_url
+                            };
 
-                    // --- DATA CORRECTION LOGIC ---
-                    if (userData) {
-                        let updated = false;
-                        const originalUsername = userData.username || user.displayName || 'user';
-                        const correctedUsername = originalUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
-                        
-                        // If username violates new strict rules, fix it
-                        if (originalUsername !== correctedUsername) {
-                            if (!userData.displayName) userData.displayName = originalUsername.slice(0, 24);
-                            userData.username = correctedUsername;
-                            updated = true;
-                        } else if (!userData.displayName) {
-                            userData.displayName = originalUsername.slice(0, 24);
-                            updated = true;
+                            // Sync theme if different
+                            if (userData.navbarTheme && JSON.stringify(userData.navbarTheme) !== JSON.stringify(savedTheme)) {
+                                window.applyTheme(userData.navbarTheme);
+                                localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(userData.navbarTheme));
+                            }
+                        }
+                    } catch (e) { console.warn("Error fetching Supabase profile:", e); }
+                } else {
+                    // Firebase Data Sync
+                    unsubUserDoc = db.collection('users').doc(uid).onSnapshot(async (doc) => {
+                        userData = doc.exists ? doc.data() : null;
+                        currentUserData = userData;
+
+                        // --- DATA CORRECTION LOGIC ---
+                        if (userData) {
+                            let updated = false;
+                            const originalUsername = userData.username || email.split('@')[0] || 'user';
+                            const correctedUsername = originalUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+                            
+                            // If username violates new strict rules, fix it
+                            if (originalUsername !== correctedUsername) {
+                                if (!userData.displayName) userData.displayName = originalUsername.slice(0, 24);
+                                userData.username = correctedUsername;
+                                updated = true;
+                            } else if (!userData.displayName) {
+                                userData.displayName = originalUsername.slice(0, 24);
+                                updated = true;
+                            }
+
+                            if (updated) {
+                                try {
+                                    await db.collection('users').doc(uid).update({
+                                        username: userData.username,
+                                        displayName: userData.displayName
+                                    });
+                                } catch (e) { console.error("Error updating user data:", e); }
+                            }
+
+                            // --- Apply Theme from Firestore ---
+                            if (userData.navbarTheme && JSON.stringify(userData.navbarTheme) !== JSON.stringify(savedTheme)) {
+                                window.applyTheme(userData.navbarTheme);
+                                localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(userData.navbarTheme));
+                            }
                         }
 
-                        if (updated) {
-                            try {
-                                await db.collection('users').doc(user.uid).update({
-                                    username: userData.username,
-                                    displayName: userData.displayName
-                                });
-                            } catch (e) { console.error("Error updating user data:", e); }
-                        }
-                    }
+                        renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
+                    });
+                }
 
-                    // --- Apply Theme from Firestore ---
-                    if (userData && userData.navbarTheme) {
-                        window.applyTheme(userData.navbarTheme);
-                        localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(userData.navbarTheme));
-                    }
-
-                    renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
-                    
-                });
-
+                // Check Admin Status
                 try {
-                    const adminDoc = await db.collection('admins').doc(user.uid).get();
+                    const adminDoc = await db.collection('admins').doc(uid).get();
                     if (!isPrivilegedUser && adminDoc.exists) {
                         isPrivilegedUser = true;
                     }
                 } catch (error) {
                     console.error("Error fetching admin data:", error);
                 }
-            } else {
-                renderNavbar(null, null, allPages, false);
-                
             }
 
+            currentUser = user;
+            currentUserData = userData;
             currentIsPrivileged = isPrivilegedUser;
+            
             renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
 
-            // Set flag after the first check
             if (!authCheckCompleted) {
                 authCheckCompleted = true;
             }
 
-            // --- REDIRECT LOGIC (Enhanced for Supabase) ---
+            // --- REDIRECT LOGIC ---
             const isPublicPage = window.location.pathname.endsWith('authentication.html') || 
                                 window.location.pathname.endsWith('index.html') || 
                                 window.location.pathname === '/' || 
@@ -2259,14 +2275,40 @@ let db;
                 }
             } catch (e) { console.warn("Error checking Supabase session:", e); }
 
-            // Only redirect if auth check is completed, user is logged out (from both Firebase and Supabase), and we are not already redirecting
             if (authCheckCompleted && !user && !hasSupabaseSession && !isRedirecting && !isPublicPage) {
                 const targetUrl = '../index.html'; 
                 console.log(`User logged out. Restricting access and redirecting to ${targetUrl}`);
                 isRedirecting = true;
                 window.location.href = targetUrl;
             }
+        };
+
+        // Firebase Listener
+        auth.onAuthStateChanged(async (user) => {
+            // If we already have a Supabase session, prefer that
+            if (window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session) return; 
+            }
+            handleUser(user, 'firebase');
         });
+
+        // Supabase Listener (if available)
+        if (window.supabase) {
+            window.supabase.auth.onAuthStateChange(async (event, session) => {
+                if (session) {
+                    handleUser(session.user, 'supabase');
+                } else {
+                    const firebaseUser = auth.currentUser;
+                    handleUser(firebaseUser, 'firebase');
+                }
+            });
+
+            // Initial Supabase Check
+            window.supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session) handleUser(session.user, 'supabase');
+            });
+        }
     };
 
     // --- Sound & Notification Logic ---

@@ -504,6 +504,7 @@
     </div>
 
     <script type="module">
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import {
@@ -513,6 +514,7 @@
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { firebaseConfig } from "/firebase-config.js";
         import { firebaseConfig2 } from "/firebase-config-2.js";
+        import { supabaseConfig } from "/supabase-config.js";
         import { getAvatarHTML } from "/profile_picture_system.js";
         import { syncGooglePhoto } from "/utils.js";
 
@@ -531,6 +533,13 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const db2 = getFirestore(app2); // Secondary DB for daily_photos
+
+        // Initialize Supabase
+        let supabase = window.supabase;
+        if (!supabase) {
+            supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+            window.supabase = supabase;
+        }
 
         window.__PAGE_KEY = 'profile';
 
@@ -625,14 +634,27 @@
         // ------------------------------------------------------------------
         // AUTH ENTRY POINT
         // ------------------------------------------------------------------
-        onAuthStateChanged(auth, async (user) => {
+        // ------------------------------------------------------------------
+        // AUTH ENTRY POINT
+        // ------------------------------------------------------------------
+        const handleUser = async (user, source = 'firebase') => {
             if (!user) {
-                window.location.href = '/authentication.html';
+                // Check if other source has session
+                if (source === 'firebase') {
+                    if (window.supabase) {
+                        const { data: { session } } = await window.supabase.auth.getSession();
+                        if (!session) window.location.href = '/authentication.html';
+                    } else {
+                        window.location.href = '/authentication.html';
+                    }
+                } else {
+                    if (!auth.currentUser) window.location.href = '/authentication.html';
+                }
                 return;
             }
 
             firebaseAuthUser = user;
-            syncGooglePhoto(user);
+            if (source === 'firebase') syncGooglePhoto(user);
 
             // ----------------------------------------------------------------
             // RESOLVE USERNAME → UID
@@ -651,47 +673,56 @@
             }
 
             try {
-                // ----------------------------------------------------------------
-                // FIX: Run ban fetch + username lookup in PARALLEL so we don't
-                // wait for bans before we even know which profile we're loading.
-                // ----------------------------------------------------------------
-                const [banSnap, usernameSnap] = await Promise.all([
-                    getDocs(collection(db, 'bans')),
-                    requestedUsername
-                        ? getDocs(query(collection(db, 'users'), where('username', '==', requestedUsername), limit(1)))
-                        : Promise.resolve(null)
-                ]);
+                const uid = user.uid || user.id;
 
-                bannedUids = new Set(banSnap.docs.map(d => d.id));
-
+                // Lookup UID across both DBs if username provided
+                let ownerId = null;
                 if (requestedUsername) {
-                    if (usernameSnap.empty) {
+                    // Try Supabase first
+                    if (window.supabase) {
+                        const { data: supUser } = await window.supabase.from('profiles').select('id').eq('username', requestedUsername).maybeSingle();
+                        if (supUser) ownerId = supUser.id;
+                    }
+                    
+                    if (!ownerId) {
+                        // Fallback to Firebase
+                        const usernameSnap = await getDocs(query(collection(db, 'users'), where('username', '==', requestedUsername), limit(1)));
+                        if (!usernameSnap.empty) ownerId = usernameSnap.docs[0].id;
+                    }
+
+                    if (!ownerId) {
                         showStateOverlay('not-found-overlay');
                         return;
                     }
-                    profileOwnerId = usernameSnap.docs[0].id;
                     if (urlParams.get('path')) {
                         window.history.replaceState({}, '', `/logged-in/@${requestedUsername}`);
                     }
                 } else {
-                    profileOwnerId = user.uid;
-                    const meSnap = await getDoc(doc(db, 'users', user.uid));
-                    if (!meSnap.exists()) {
-                        showStateOverlay('not-found-overlay');
-                        return;
-                    }
-                    if (meSnap.data().username) {
+                    ownerId = uid;
+                    const meSnap = await getDoc(doc(db, 'users', uid));
+                    if (meSnap.exists() && meSnap.data().username) {
                         window.history.replaceState({}, '', `/logged-in/@${meSnap.data().username}`);
+                    } else {
+                        // Check Supabase if Firebase record is incomplete
+                        if (window.supabase) {
+                            const { data: profile } = await window.supabase.from('profiles').select('username').eq('id', uid).maybeSingle();
+                            if (profile?.username) {
+                                window.history.replaceState({}, '', `/logged-in/@${profile.username}`);
+                            }
+                        }
                     }
                 }
 
-                // Banned profile
-                if (bannedUids.has(profileOwnerId)) {
+                profileOwnerId = ownerId;
+
+                // Banned profile check
+                const banSnap = await getDoc(doc(db, 'bans', profileOwnerId));
+                if (banSnap.exists()) {
                     showStateOverlay('banned-overlay');
                     return;
                 }
 
-                isOwnProfile = profileOwnerId === user.uid;
+                isOwnProfile = profileOwnerId === uid;
 
                 // Show/hide own-profile vs other-profile controls
                 if (isOwnProfile) {
@@ -701,27 +732,46 @@
                     followActions.classList.remove('hidden');
                 }
 
-                // ----------------------------------------------------------------
-                // FIX: Kick off follow-status check + daily photos fetch + main
-                // profile snapshot ALL in parallel rather than waiting on each.
-                // ----------------------------------------------------------------
-                if (!isOwnProfile) {
-                    checkFollowStatus(); // Sets up two getDoc calls + listeners
-                }
-
                 setupMainProfileSnapshot();
                 setupFollowModalListeners();
                 setupEditProfileListeners();
                 setupOptionsListeners();
-
-                // Daily photos fetch runs independently — doesn't block profile render
                 loadDailyPhotos();
+
+                if (!isOwnProfile) {
+                    checkFollowStatus();
+                }
 
             } catch (e) {
                 console.error("Profile Load Error:", e);
                 showStateOverlay('not-found-overlay');
             }
+        };
+
+        // Firebase Listener
+        onAuthStateChanged(auth, async (user) => {
+            if (window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session) return; 
+            }
+            handleUser(user, 'firebase');
         });
+
+        // Supabase Listener
+        if (window.supabase) {
+            window.supabase.auth.onAuthStateChange(async (event, session) => {
+                if (session) {
+                    handleUser(session.user, 'supabase');
+                } else {
+                    handleUser(auth.currentUser, 'firebase');
+                }
+            });
+
+            // Initial check
+            window.supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session) handleUser(session.user, 'supabase');
+            });
+        }
 
         // ------------------------------------------------------------------
         // MAIN PROFILE SNAPSHOT

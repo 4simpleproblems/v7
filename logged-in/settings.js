@@ -44,6 +44,8 @@
         
         // --- Import Firebase Config (Assumed to exist in a relative file) ---
         import { firebaseConfig } from "../firebase-config.js"; 
+        import { supabaseConfig } from "../supabase-config.js";
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
         
         // --- NEW: Import Site Mapping (from index.html logic) ---
         // This file MUST exist at ../site-mapping.js for import/export to work
@@ -61,10 +63,18 @@
         const storage = getStorage(app);
         const functions = getFunctions(app);
 
+        // --- Supabase Client (Reuse global instance if available) ---
+        let supabase = window.supabase;
+        if (!supabase) {
+            supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+            window.supabase = supabase;
+        }
+
         // --- Global State and Element References ---
         const sidebarTabs = document.querySelectorAll('.settings-tab');
         const mainView = document.getElementById('settings-main-view');
         let currentUser = null; // To store the authenticated user object
+        let currentSource = 'firebase';
         let isUserAdmin = false; // Stores admin status result to prevent race conditions
         
         // --- NEW: Global var for loading overlay (from index.html) ---
@@ -4539,18 +4549,15 @@ const performAccountDeletion = async () => {
 
 
 
-        function initializeAuth() {
-            onAuthStateChanged(auth, async (user) => {
-                if (!user) {
-                    // No user is logged in, redirect to authentication.html (path corrected)
-                    window.location.href = '../authentication.html'; 
-                } else {
-                    currentUser = user; 
+        async function initializeAuth() {
+            const handleUser = async (user, source = 'firebase') => {
+                if (user) {
+                    currentUser = user;
+                    currentSource = source;
+                    const uid = user.uid || user.id;
                     
-                    // --- MODIFIED: Mandatory Admin Status Check ---
-                    // We MUST await this check before proceeding to load tabs that might require admin privileges.
-                    // This prevents "Missing or insufficient permissions" errors due to race conditions.
-                    isUserAdmin = await checkAdminStatus(user.uid);
+                    // Check admin status
+                    isUserAdmin = await checkAdminStatus(uid);
 
                     if (isUserAdmin) {
                         const adminTab = document.getElementById('tab-management');
@@ -4558,9 +4565,45 @@ const performAccountDeletion = async () => {
                     }
 
                     // Set initial state to 'General' (or the first tab)
-                    switchTab('general'); 
+                    switchTab('general');
+                } else {
+                    // Check if other source has session
+                    if (source === 'firebase') {
+                        if (window.supabase) {
+                            const { data: { session } } = await window.supabase.auth.getSession();
+                            if (!session) window.location.replace('../authentication.html');
+                        } else {
+                            window.location.replace('../authentication.html');
+                        }
+                    } else {
+                        if (!auth.currentUser) window.location.replace('../authentication.html');
+                    }
                 }
+            };
+
+            // Firebase Listener
+            onAuthStateChanged(auth, async (user) => {
+                if (window.supabase) {
+                    const { data: { session } } = await window.supabase.auth.getSession();
+                    if (session) return; 
+                }
+                handleUser(user, 'firebase');
             });
+
+            // Supabase Listener
+            if (window.supabase) {
+                window.supabase.auth.onAuthStateChange(async (event, session) => {
+                    if (session) {
+                        handleUser(session.user, 'supabase');
+                    } else {
+                        handleUser(auth.currentUser, 'firebase');
+                    }
+                });
+
+                // Initial check
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session) handleUser(session.user, 'supabase');
+            }
         }
         
         // Use a short timeout to allow the rest of the script to run before auth check

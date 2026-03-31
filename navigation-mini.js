@@ -1395,8 +1395,14 @@ let db;
         
         injectStyles();
         
-        // Theme Syncing Removed - Force Default
-        window.applyTheme(DEFAULT_THEME); 
+        let savedTheme;
+        try {
+            savedTheme = JSON.parse(localStorage.getItem(THEME_STORAGE_KEY));
+        } catch (e) {
+            savedTheme = null;
+            console.warn("Could not parse saved theme from Local Storage.");
+        }
+        window.applyTheme(savedTheme || DEFAULT_THEME); 
 
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
@@ -1406,42 +1412,88 @@ let db;
 
         allPages = pages;
 
-        auth.onAuthStateChanged(async (user) => {
+        // --- DUAL AUTH HANDLER ---
+        const handleUser = async (user, source = 'firebase') => {
             let isPrivilegedUser = false;
             let userData = null;
+
             if (user) {
+                const uid = user.uid || user.id;
+                const email = user.email;
+                
                 // Check if hardcoded privileged email
-                isPrivilegedUser = user.email === PRIVILEGED_EMAIL;
+                isPrivilegedUser = email === PRIVILEGED_EMAIL;
 
                 try {
-                    // Fetch user data and check admin status in parallel
-                    const userDocPromise = db.collection('users').doc(user.uid).get();
-                    const adminDocPromise = db.collection('admins').doc(user.uid).get();
+                    if (source === 'supabase' && window.supabase) {
+                        // Fetch from Supabase profiles table
+                        const { data: profile } = await window.supabase.from('profiles').select('*').eq('id', uid).single();
+                        if (profile) {
+                            userData = {
+                                ...profile,
+                                displayName: profile.display_name,
+                                username: profile.username || email.split('@')[0],
+                                pfpType: profile.pfp_type,
+                                customPfp: profile.avatar_url
+                            };
+                        }
+                    } else {
+                        // Fetch user data and check admin status in parallel
+                        const userDocPromise = db.collection('users').doc(uid).get();
+                        const adminDocPromise = db.collection('admins').doc(uid).get();
 
-                    const [userDoc, adminDoc] = await Promise.all([userDocPromise, adminDocPromise]);
-                    
-                    userData = userDoc.exists ? userDoc.data() : null;
+                        const [userDoc, adminDoc] = await Promise.all([userDocPromise, adminDocPromise]);
+                        
+                        userData = userDoc.exists ? userDoc.data() : null;
 
-                    // If not already privileged via email, check if they are in the admins collection
-                    if (!isPrivilegedUser && adminDoc.exists) {
-                        isPrivilegedUser = true;
+                        // If not already privileged via email, check if they are in the admins collection
+                        if (!isPrivilegedUser && adminDoc.exists) {
+                            isPrivilegedUser = true;
+                        }
                     }
-
                 } catch (error) {
                     console.error("Error fetching user or admin data:", error);
                 }
             }
+
             currentUser = user;
             currentUserData = userData;
-
             currentIsPrivileged = isPrivilegedUser;
+            
             renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
 
-            // Set flag after the first check
             if (!authCheckCompleted) {
                 authCheckCompleted = true;
             }
+        };
+
+        // Firebase Listener
+        auth.onAuthStateChanged(async (user) => {
+            // If we already have a Supabase session, prefer that
+            if (window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session) return; 
+            }
+            handleUser(user, 'firebase');
         });
+
+        // Supabase Listener (if available)
+        if (window.supabase) {
+            window.supabase.auth.onAuthStateChange(async (event, session) => {
+                if (session) {
+                    handleUser(session.user, 'supabase');
+                } else {
+                    // If Supabase logs out, check if Firebase is still logged in
+                    const firebaseUser = auth.currentUser;
+                    handleUser(firebaseUser, 'firebase');
+                }
+            });
+
+            // Initial Supabase Check
+            window.supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session) handleUser(session.user, 'supabase');
+            });
+        }
     };
 
     // --- Sound & Notification Logic ---

@@ -52,7 +52,6 @@
             console.warn("Supabase: Global initialization failed", e);
         }
     };
-    loadSupabase();
 
     // 1. DEFINE YOUR SCRIPTS HERE
     // Update this array (and ONLY this array) to manage your application's scripts.
@@ -95,14 +94,19 @@
     }
 
     // 3. INITIATE LOADING PROCESS
-    const loadingPromises = scriptsToLoad.map(loadScript);
+    const start = async () => {
+        await loadSupabase();
+        
+        const loadingPromises = scriptsToLoad.map(loadScript);
 
-    Promise.all(loadingPromises)
-        .then(() => {
-            console.log('--- All application scripts loaded successfully! ---');
-        })
-        .catch(error => {
-            console.error('Loader encountered errors during script loading:', error);
-        });
+        Promise.all(loadingPromises)
+            .then(() => {
+                console.log('--- All application scripts loaded successfully! ---');
+            })
+            .catch(error => {
+                console.error('Loader encountered errors during script loading:', error);
+            });
+    };
+    start();
 
 })();

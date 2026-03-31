@@ -379,11 +379,19 @@
             }
         });
 
-       onAuthStateChanged(auth, async (user) => {
-            if (user) {
+        const checkAuthAndRedirect = async (user) => {
+            let sessionUser = user;
+            if (!sessionUser && window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session) sessionUser = session.user;
+            }
+
+            if (sessionUser) {
                 // Check for email ban immediately
-                if (await checkEmailBan(user.email)) {
-                    await signOut(auth);
+                const email = sessionUser.email;
+                if (await checkEmailBan(email)) {
+                    if (auth.currentUser) await signOut(auth);
+                    if (window.supabase) await window.supabase.auth.signOut();
                     showMessage(messageDivs.login, 'This email address is not permitted to access this network.', 'error');
                     return;
                 }
@@ -395,11 +403,13 @@
 
                 if (!hasRedirected && isAtAuthPage) {
                     // Check if they are verified OR if they are a social login user
-                    const isProviderLogin = user.providerData.some(p => 
+                    // For Supabase users, we assume they are verified if they could sign in via OAuth
+                    const isSupabase = !sessionUser.uid; 
+                    const isProviderLogin = isSupabase || (sessionUser.providerData && sessionUser.providerData.some(p => 
                         ['google.com', 'github.com', 'twitter.com', 'microsoft.com', 'apple.com'].includes(p.providerId)
-                    );
+                    ));
                     
-                    const isVerified = user.emailVerified || isProviderLogin;
+                    const isVerified = sessionUser.emailVerified || isProviderLogin;
 
                     if (isVerified) { 
                         hasRedirected = true;
@@ -412,7 +422,26 @@
                 // User is signed out.
                 hasRedirected = false;
             }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            await checkAuthAndRedirect(user);
         });
+
+        // Supabase Listener
+        if (window.supabase) {
+            window.supabase.auth.onAuthStateChange(async (event, session) => {
+                if (event === 'SIGNED_IN') {
+                    console.log("Supabase Auth: Signed in", session.user.email);
+                    await checkAuthAndRedirect(session.user);
+                }
+            });
+            
+            // Initial check
+            window.supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session) checkAuthAndRedirect(session.user);
+            });
+        }
 
 
 
