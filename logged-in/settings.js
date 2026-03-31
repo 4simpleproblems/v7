@@ -1765,6 +1765,16 @@
         // --- Mibi Avatar Creator (MAC) Logic ---
 
         // Global state for Mibi Avatar parts (persisted in this scope)
+        let currentMacSlide = 1;
+        const showMacSlide = (slide) => {
+            if (slide === 1) {
+                // If we're using a single-step "creator" where slide 1 
+                // is just opening the menu, we handle that in openMenu.
+                // If it's intended to enter orientation mode:
+                // enterOrientationMode(); 
+            }
+        };
+
         let mibiAvatarState = {
             eyes: '',
             mouths: '',
