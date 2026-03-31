@@ -19,16 +19,27 @@
             if (!authUser) return;
             
             try {
-                const googleProvider = authUser?.providerData?.find(p => p.providerId === 'google.com');
-                if (!googleProvider || !googleProvider.photoURL) return;
+                // Determine UID and Google Photo URL based on source (Firebase vs Supabase)
+                let uid = authUser.uid || authUser.id;
+                let googlePhoto = null;
 
-                const userRef = doc(db, 'users', authUser.uid);
+                // Try Firebase providerData
+                const googleProvider = authUser?.providerData?.find(p => p.providerId === 'google.com');
+                googlePhoto = googleProvider ? googleProvider.photoURL : authUser.photoURL;
+
+                // Fallback to Supabase metadata if not found in Firebase provider
+                if (!googlePhoto && authUser?.user_metadata?.avatar_url) {
+                    googlePhoto = authUser.user_metadata.avatar_url;
+                }
+
+                if (!googlePhoto) return;
+
+                const userRef = doc(db, 'users', uid);
                 const userSnap = await getDoc(userRef);
 
                 if (userSnap.exists()) {
                     const data = userSnap.data();
                     const currentPhoto = data.photoURL;
-                    const googlePhoto = googleProvider.photoURL;
 
                     // If photoURL is missing or different from Google's latest, update it
                     if (currentPhoto !== googlePhoto) {
@@ -112,10 +123,17 @@
                 let gP = userData?.photoURL;
 
                 // Fallback to authUser photo if viewing own profile and userData is partial
-                if (!gP && authUser && (userData?.uid === authUser.uid || userData?.id === authUser.uid)) {
+                if (!gP && authUser && (userData?.uid === authUser.uid || userData?.id === authUser.uid || userData?.id === authUser.id)) {
                     // Only use authUser photo if we are definitely rendering the current user
+                    
+                    // Try Firebase providerData first
                     const googleProvider = authUser?.providerData?.find(p => p.providerId === 'google.com');
                     gP = googleProvider ? googleProvider.photoURL : authUser.photoURL;
+
+                    // Try Supabase user_metadata if still no photo
+                    if (!gP && authUser?.user_metadata?.avatar_url) {
+                        gP = authUser.user_metadata.avatar_url;
+                    }
                 }
 
                 if (gP) {

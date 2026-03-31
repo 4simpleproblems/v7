@@ -634,22 +634,31 @@
         // ------------------------------------------------------------------
         // AUTH ENTRY POINT
         // ------------------------------------------------------------------
-        // ------------------------------------------------------------------
-        // AUTH ENTRY POINT
-        // ------------------------------------------------------------------
+        let firebaseChecked = false;
+        let supabaseChecked = false;
+
+        const checkAuthRedirect = async (user, source) => {
+            if (source === 'firebase') firebaseChecked = true;
+            if (source === 'supabase') supabaseChecked = true;
+
+            // Wait until both auth providers have been checked at least once
+            if (!firebaseChecked || !supabaseChecked) return;
+
+            const firebaseUser = auth.currentUser;
+            let hasSupabaseSession = false;
+            if (window.supabase) {
+                const { data } = await window.supabase.auth.getSession();
+                hasSupabaseSession = !!data.session;
+            }
+
+            if (!firebaseUser && !hasSupabaseSession) {
+                window.location.href = '/authentication.html';
+            }
+        };
+
         const handleUser = async (user, source = 'firebase') => {
             if (!user) {
-                // Check if other source has session
-                if (source === 'firebase') {
-                    if (window.supabase) {
-                        const { data: { session } } = await window.supabase.auth.getSession();
-                        if (!session) window.location.href = '/authentication.html';
-                    } else {
-                        window.location.href = '/authentication.html';
-                    }
-                } else {
-                    if (!auth.currentUser) window.location.href = '/authentication.html';
-                }
+                await checkAuthRedirect(null, source);
                 return;
             }
 
@@ -658,7 +667,6 @@
 
             // ----------------------------------------------------------------
             // RESOLVE USERNAME → UID
-            // All of this runs before we touch the DOM so there's zero flash.
             // ----------------------------------------------------------------
             const urlParams = new URLSearchParams(window.location.search);
             let path = urlParams.get('path') || window.location.pathname;
@@ -762,11 +770,18 @@
 
         // Firebase Listener
         onAuthStateChanged(auth, async (user) => {
-            if (window.supabase) {
-                const { data: { session } } = await window.supabase.auth.getSession();
-                if (session) return; 
+            if (user) {
+                handleUser(user, 'firebase');
+            } else {
+                if (window.supabase) {
+                    const { data: { session } } = await window.supabase.auth.getSession();
+                    if (session) {
+                        firebaseChecked = true;
+                        return;
+                    }
+                }
+                handleUser(null, 'firebase');
             }
-            handleUser(user, 'firebase');
         });
 
         // Supabase Listener
@@ -775,14 +790,22 @@
                 if (session) {
                     handleUser(session.user, 'supabase');
                 } else {
+                    supabaseChecked = true;
                     handleUser(auth.currentUser, 'firebase');
                 }
             });
 
             // Initial check
             window.supabase.auth.getSession().then(({ data: { session } }) => {
-                if (session) handleUser(session.user, 'supabase');
+                if (session) {
+                    handleUser(session.user, 'supabase');
+                } else {
+                    supabaseChecked = true;
+                    checkAuthRedirect(null, 'supabase');
+                }
             });
+        } else {
+            supabaseChecked = true;
         }
 
         // ------------------------------------------------------------------

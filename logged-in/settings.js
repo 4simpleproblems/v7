@@ -655,12 +655,12 @@
         /**
          * Renders the Linked Providers and Account Deletion section.
          */
-        function getAccountManagementContent(providerData) {
+        function getAccountManagementContent(providerData = []) {
             // Determine the Primary Provider (the first one in the list)
             const primaryProviderId = providerData && providerData.length > 0 ? providerData[0].providerId : null;
             const providerConfig = getProviderConfig();
             
-            let linkedProvidersHtml = providerData.map(info => {
+            let linkedProvidersHtml = (providerData || []).map(info => {
                 const id = info.providerId;
                 const config = providerConfig[id] || { name: id, icon: '<i class="fa-solid fa-puzzle-piece fa-lg mr-3"></i>' };
                 
@@ -2857,11 +2857,11 @@
             if (!currentUser) return; 
 
             // Check if user is using email/password authentication (providerId 'password')
-            const isEmailPasswordUser = currentUser.providerData.some(
+            const isEmailPasswordUser = (currentUser.providerData || []).some(
                 (info) => info.providerId === 'password'
             );
             
-            const userDocRef = getUserDocRef(currentUser.uid);
+            const userDocRef = getUserDocRef(currentUser.uid || currentUser.id);
             let userDocSnap = await getDoc(userDocRef);
 
             if (!userDocSnap.exists()) {
@@ -2897,7 +2897,7 @@
                 changesThisMonth, 
                 currentMonthName,
                 isEmailPasswordUser, 
-                currentUser.providerData // Pass provider info
+                currentUser.providerData || [] // Pass provider info
             );
             
             // 2. Element References (Username Section)
@@ -3265,7 +3265,7 @@
             const reauthenticateBtn = document.getElementById('reauthenticateBtn');
             const finalDeleteBtn = document.getElementById('finalDeleteBtn');
             const deleteMessage = document.getElementById('deleteMessage');
-            const primaryProviderId = currentUser.providerData[0].providerId;
+            const primaryProviderId = (currentUser.providerData && currentUser.providerData.length > 0) ? currentUser.providerData[0].providerId : 'unknown';
 
 
             // --- ACCOUNT DELETION LOGIC --- 
@@ -3858,7 +3858,7 @@ const performAccountDeletion = async () => {
             const activityPresenceMessage = document.getElementById('activityPresenceMessage');
 
             if (currentUser) {
-                const userDocRef = getUserDocRef(currentUser.uid);
+                const userDocRef = getUserDocRef(currentUser.uid || currentUser.id);
                 try {
                     const snap = await getDoc(userDocRef);
                     if (snap.exists()) {
@@ -3923,7 +3923,7 @@ const performAccountDeletion = async () => {
                 const openMacMenuBtn = document.getElementById('open-mac-menu-btn'); 
 
                 // --- CONDITIONAL GOOGLE OPTION ---
-                const hasGoogle = currentUser.providerData.some(p => p.providerId === 'google.com');
+                const hasGoogle = (currentUser.providerData || []).some(p => p.providerId === 'google.com');
                 if (!hasGoogle) {
                     const googleBtn = Array.from(pfpModeBtns).find(btn => btn.dataset.mode === 'google');
                     if (googleBtn) googleBtn.remove();
@@ -4546,8 +4546,27 @@ const performAccountDeletion = async () => {
 
 
         // --- AUTHENTICATION/REDIRECT LOGIC (Retained and Modified) ---
+        let firebaseChecked = false;
+        let supabaseChecked = false;
 
+        const checkAuthRedirect = async (user, source) => {
+            if (source === 'firebase') firebaseChecked = true;
+            if (source === 'supabase') supabaseChecked = true;
 
+            // Wait until both auth providers have been checked at least once
+            if (!firebaseChecked || !supabaseChecked) return;
+
+            const firebaseUser = auth.currentUser;
+            let hasSupabaseSession = false;
+            if (window.supabase) {
+                const { data } = await window.supabase.auth.getSession();
+                hasSupabaseSession = !!data.session;
+            }
+
+            if (!firebaseUser && !hasSupabaseSession) {
+                window.location.replace('../authentication.html');
+            }
+        };
 
         async function initializeAuth() {
             const handleUser = async (user, source = 'firebase') => {
@@ -4557,7 +4576,12 @@ const performAccountDeletion = async () => {
                     const uid = user.uid || user.id;
                     
                     // Check admin status
-                    isUserAdmin = await checkAdminStatus(uid);
+                    try {
+                        isUserAdmin = await checkAdminStatus(uid);
+                    } catch (e) {
+                        console.warn("Could not verify admin status via Firebase:", e.message);
+                        isUserAdmin = false;
+                    }
 
                     if (isUserAdmin) {
                         const adminTab = document.getElementById('tab-management');
@@ -4565,29 +4589,28 @@ const performAccountDeletion = async () => {
                     }
 
                     // Set initial state to 'General' (or the first tab)
-                    switchTab('general');
-                } else {
-                    // Check if other source has session
-                    if (source === 'firebase') {
-                        if (window.supabase) {
-                            const { data: { session } } = await window.supabase.auth.getSession();
-                            if (!session) window.location.replace('../authentication.html');
-                        } else {
-                            window.location.replace('../authentication.html');
-                        }
-                    } else {
-                        if (!auth.currentUser) window.location.replace('../authentication.html');
+                    if (mainView && mainView.children.length === 0) {
+                        switchTab('general');
                     }
+                } else {
+                    await checkAuthRedirect(null, source);
                 }
             };
 
             // Firebase Listener
             onAuthStateChanged(auth, async (user) => {
-                if (window.supabase) {
-                    const { data: { session } } = await window.supabase.auth.getSession();
-                    if (session) return; 
+                if (user) {
+                    handleUser(user, 'firebase');
+                } else {
+                    if (window.supabase) {
+                        const { data: { session } } = await window.supabase.auth.getSession();
+                        if (session) {
+                            firebaseChecked = true;
+                            return;
+                        }
+                    }
+                    handleUser(null, 'firebase');
                 }
-                handleUser(user, 'firebase');
             });
 
             // Supabase Listener
@@ -4596,13 +4619,21 @@ const performAccountDeletion = async () => {
                     if (session) {
                         handleUser(session.user, 'supabase');
                     } else {
+                        supabaseChecked = true;
                         handleUser(auth.currentUser, 'firebase');
                     }
                 });
 
                 // Initial check
                 const { data: { session } } = await window.supabase.auth.getSession();
-                if (session) handleUser(session.user, 'supabase');
+                if (session) {
+                    handleUser(session.user, 'supabase');
+                } else {
+                    supabaseChecked = true;
+                    checkAuthRedirect(null, 'supabase');
+                }
+            } else {
+                supabaseChecked = true;
             }
         }
         

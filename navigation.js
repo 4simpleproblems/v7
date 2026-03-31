@@ -2129,6 +2129,41 @@ let db;
 
         allPages = pages;
 
+        let firebaseChecked = false;
+        let supabaseChecked = false;
+
+        const checkAuthRedirect = async (user, source) => {
+            if (source === 'firebase') firebaseChecked = true;
+            if (source === 'supabase') supabaseChecked = true;
+
+            const isPublicPage = window.location.pathname.endsWith('authentication.html') || 
+                                window.location.pathname.endsWith('index.html') || 
+                                window.location.pathname === '/' || 
+                                window.location.pathname.endsWith('404.html');
+            
+            if (isPublicPage || isRedirecting) return;
+
+            // Wait until both auth providers have been checked at least once
+            if (!firebaseChecked || !supabaseChecked) {
+                return;
+            }
+
+            // At this point both have checked.
+            const firebaseUser = auth.currentUser;
+            let hasSupabaseSession = false;
+            if (window.supabase) {
+                const { data } = await window.supabase.auth.getSession();
+                hasSupabaseSession = !!data.session;
+            }
+
+            if (!firebaseUser && !hasSupabaseSession) {
+                const targetUrl = '../index.html'; 
+                console.log(`User logged out. Restricting access and redirecting to ${targetUrl}`);
+                isRedirecting = true;
+                window.location.href = targetUrl;
+            }
+        };
+
         // --- DUAL AUTH HANDLER ---
         const handleUser = async (user, source = 'firebase') => {
             cleanupGlobalListeners();
@@ -2232,7 +2267,6 @@ let db;
 
                 // Check Admin Status
                 try {
-                    // If we have a role from Supabase, use it
                     if (userData?.role === 'admin' || userData?.role === 'superadmin') {
                         isPrivilegedUser = true;
                     } else if (source === 'firebase') {
@@ -2255,37 +2289,24 @@ let db;
             if (!authCheckCompleted) {
                 authCheckCompleted = true;
             }
-
-            // --- REDIRECT LOGIC ---
-            const isPublicPage = window.location.pathname.endsWith('authentication.html') || 
-                                window.location.pathname.endsWith('index.html') || 
-                                window.location.pathname === '/' || 
-                                window.location.pathname.endsWith('404.html');
-
-            let hasSupabaseSession = false;
-            try {
-                if (window.supabase) {
-                    const { data } = await window.supabase.auth.getSession();
-                    hasSupabaseSession = !!data.session;
-                }
-            } catch (e) { console.warn("Error checking Supabase session:", e); }
-
-            if (authCheckCompleted && !user && !hasSupabaseSession && !isRedirecting && !isPublicPage) {
-                const targetUrl = '../index.html'; 
-                console.log(`User logged out. Restricting access and redirecting to ${targetUrl}`);
-                isRedirecting = true;
-                window.location.href = targetUrl;
-            }
+            await checkAuthRedirect(user, source);
         };
 
         // Firebase Listener
         auth.onAuthStateChanged(async (user) => {
-            // If we already have a Supabase session, prefer that
-            if (window.supabase) {
-                const { data: { session } } = await window.supabase.auth.getSession();
-                if (session) return; 
+            if (user) {
+                handleUser(user, 'firebase');
+            } else {
+                // If we have a Supabase session, wait for its listener
+                if (window.supabase) {
+                    const { data: { session } } = await window.supabase.auth.getSession();
+                    if (session) {
+                        firebaseChecked = true;
+                        return;
+                    }
+                }
+                handleUser(null, 'firebase');
             }
-            handleUser(user, 'firebase');
         });
 
         // Supabase Listener (if available)
@@ -2294,6 +2315,7 @@ let db;
                 if (session) {
                     handleUser(session.user, 'supabase');
                 } else {
+                    supabaseChecked = true;
                     const firebaseUser = auth.currentUser;
                     handleUser(firebaseUser, 'firebase');
                 }
@@ -2301,8 +2323,15 @@ let db;
 
             // Initial Supabase Check
             window.supabase.auth.getSession().then(({ data: { session } }) => {
-                if (session) handleUser(session.user, 'supabase');
+                if (session) {
+                    handleUser(session.user, 'supabase');
+                } else {
+                    supabaseChecked = true;
+                    checkAuthRedirect(null, 'supabase');
+                }
             });
+        } else {
+            supabaseChecked = true;
         }
     };
 
