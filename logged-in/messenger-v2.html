@@ -453,11 +453,29 @@
 
         // --- MAIN APP LOGIC ---
 
-        function main() {
+        async function main() {
             if (window.showLoader) window.showLoader("Messenger");
             setupEventListeners();
-            signInAnonymously(auth).catch(err => console.error("Sign-in failed:", err));
-            onAuthStateChanged(auth, handleAuthStateChange);
+            
+            // Try to see if we have a Supabase session
+            if (window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session) {
+                    currentUser = session.user;
+                    handleAuthStateChange(currentUser);
+                }
+            }
+
+            // Fallback to anonymous if no user after a short delay or if firebase listener fires null
+            signInAnonymously(auth).catch(err => console.warn("Firebase Anonymous login restricted:", err.message));
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    handleAuthStateChange(user);
+                } else if (!currentUser) {
+                    // Only redirect if no Supabase user either
+                    // handleAuthStateChange(null);
+                }
+            });
         }
 
         async function handleAuthStateChange(user) {
@@ -482,13 +500,13 @@
         }
 
         async function setupUserDocument() {
-            const userDocRef = doc(db2, 'users', currentUser.uid);
+            const userDocRef = doc(db2, 'users', (currentUser.uid || currentUser.id));
             const userDoc = await getDoc(userDocRef);
             if (!userDoc.exists()) {
                 const newId = await generateUniqueId();
                 await setDoc(userDocRef, { 
                     publicId: newId, 
-                    uid: currentUser.uid, 
+                    uid: (currentUser.uid || currentUser.id), 
                     blockedUsers: [],
                     username: `User ${newId}`,
                     typingInChatWith: null // NEW
@@ -512,7 +530,7 @@
 
         function listenForUserDocChanges() {
             unsubUserDoc();
-            const userDocRef = doc(db2, 'users', currentUser.uid);
+            const userDocRef = doc(db2, 'users', (currentUser.uid || currentUser.id));
             unsubUserDoc = onSnapshot(userDocRef, (doc) => {
                 // Future use
             });
@@ -599,7 +617,7 @@
             };
             
             unsubContacts();
-            const contactsRef = collection(db2, `users/${currentUser.uid}/contacts`);
+            const contactsRef = collection(db2, `users/${(currentUser.uid || currentUser.id)}/contacts`);
             unsubContacts = onSnapshot(query(contactsRef), (snapshot) => {
                 const friendUids = new Set(snapshot.docs.map(d => d.id));
 
@@ -634,14 +652,14 @@
             });
 
             unsubPendingIn();
-            const pendingInRef = collection(db2, `users/${currentUser.uid}/pendingIn`);
+            const pendingInRef = collection(db2, `users/${(currentUser.uid || currentUser.id)}/pendingIn`);
             unsubPendingIn = onSnapshot(query(pendingInRef), (snapshot) => {
                 state.incoming = snapshot.docs;
                 renderAll();
             });
             
             unsubPendingOut();
-            const pendingOutRef = collection(db2, `users/${currentUser.uid}/pendingOut`);
+            const pendingOutRef = collection(db2, `users/${(currentUser.uid || currentUser.id)}/pendingOut`);
             unsubPendingOut = onSnapshot(query(pendingOutRef), (snapshot) => {
                 state.outgoing = snapshot.docs;
                 renderAll();
@@ -746,7 +764,7 @@
             
             loadLocalMessages(uid);
             
-            const chatId = [currentUser.uid, currentChatPartner.uid].sort().join('_');
+            const chatId = [(currentUser.uid || currentUser.id), currentChatPartner.uid].sort().join('_');
             const chatDocRef = doc(db2, 'chats', chatId);
             const chatDoc = await getDoc(chatDocRef);
             
@@ -764,7 +782,7 @@
             listenForMessages();
             listenForPartnerTyping(uid); // NEW
             
-            const contactRef = doc(db2, `users/${currentUser.uid}/contacts`, uid);
+            const contactRef = doc(db2, `users/${(currentUser.uid || currentUser.id)}/contacts`, uid);
             try { await updateDoc(contactRef, { unread: false }); } catch (e) { /* (e) */ }
         }
 
@@ -841,7 +859,7 @@
 
         function listenForMessages() {
             unsubMessages();
-            const chatId = [currentUser.uid, currentChatPartner.uid].sort().join('_');
+            const chatId = [(currentUser.uid || currentUser.id), currentChatPartner.uid].sort().join('_');
             const chatDocRef = doc(db2, 'chats', chatId);
 
             unsubMessages = onSnapshot(chatDocRef, (doc) => {
@@ -855,7 +873,7 @@
         function renderMessage(data) {
             if (!data || (!data.text && !data.images)) return;
             const messageWrapper = document.createElement('div');
-            const isSent = data.senderId === currentUser.uid;
+            const isSent = data.senderId === (currentUser.uid || currentUser.id);
             
             // Outer wrapper for alignment (flex justify-end/start)
             messageWrapper.className = `flex ${isSent ? 'justify-end' : 'justify-start'} ${!isSent ? 'message-received' : ''}`;
@@ -956,7 +974,7 @@
         async function markMessageAsSeen(messageId) {
             if (!currentChatPartner) return;
             
-            const chatId = [currentUser.uid, currentChatPartner.uid].sort().join('_');
+            const chatId = [(currentUser.uid || currentUser.id), currentChatPartner.uid].sort().join('_');
             const chatDocRef = doc(db2, 'chats', chatId);
             
             try {
@@ -1204,7 +1222,7 @@
             
             // Tell partner we are typing
             try {
-                updateDoc(doc(db2, 'users', currentUser.uid), { typingInChatWith: currentChatPartner.uid });
+                updateDoc(doc(db2, 'users', (currentUser.uid || currentUser.id)), { typingInChatWith: currentChatPartner.uid });
             } catch(e) { console.error("Error setting typing status", e); }
 
             // Clear existing timeout
@@ -1223,7 +1241,7 @@
             }
             try {
                 // Set typing status to null in Firestore
-                updateDoc(doc(db2, 'users', currentUser.uid), { typingInChatWith: null });
+                updateDoc(doc(db2, 'users', (currentUser.uid || currentUser.id)), { typingInChatWith: null });
             } catch(e) { /* Fails silently if offline or user is gone */ }
         }
 
@@ -1233,7 +1251,7 @@
                 if (doc.exists() && currentChatPartner) {
                     const data = doc.data();
                     // Check if partner is typing in chat with *us*
-                    if (data.typingInChatWith === currentUser.uid) {
+                    if (data.typingInChatWith === (currentUser.uid || currentUser.id)) {
                         dom.typingIndicatorEl.textContent = `${currentChatPartner.name} is typing...`;
                         dom.typingIndicatorEl.style.display = 'block';
                     } else {
@@ -1267,7 +1285,7 @@
             dom.sendBtn.innerHTML = icons.spinner;
 
             const recipientDoc = await getUserDoc(currentChatPartner.uid);
-            if (recipientDoc?.blockedUsers?.includes(currentUser.uid)) {
+            if (recipientDoc?.blockedUsers?.includes((currentUser.uid || currentUser.id))) {
                 alert('You cannot send a message to this user.');
                 dom.sendBtn.disabled = false;
                 dom.sendBtn.innerHTML = icons.send;
@@ -1275,14 +1293,14 @@
             }
 
             const filteredText = await filterProfanity(text);
-            const chatId = [currentUser.uid, currentChatPartner.uid].sort().join('_');
+            const chatId = [(currentUser.uid || currentUser.id), currentChatPartner.uid].sort().join('_');
             const chatDocRef = doc(db2, 'chats', chatId);
 
             const messageData = {
                 id: doc(collection(db2, 'temp')).id, 
                 text: filteredText, 
                 images: images,
-                senderId: currentUser.uid, 
+                senderId: (currentUser.uid || currentUser.id), 
                 timestamp: new Date().toISOString(), 
                 seen: false
             };
@@ -1296,7 +1314,7 @@
                 await setDoc(chatDocRef, { messages: trimmedMessages });
                 
                 const lastMessageText = filteredText || (images.length > 0 ? 'Sent an image' : 'New Message');
-                const recipientContactRef = doc(db2, `users/${currentChatPartner.uid}/contacts`, currentUser.uid);
+                const recipientContactRef = doc(db2, `users/${currentChatPartner.uid}/contacts`, (currentUser.uid || currentUser.id));
                 
                 // --- FIX: Removed 'name' property from this update ---
                 // This prevents overwriting the contact's custom name for us.
@@ -1304,10 +1322,10 @@
                     lastMessage: lastMessageText, 
                     unread: true, 
                     timestamp: serverTimestamp()
-                    // REMOVED: name: (await getUserDoc(currentUser.uid))?.username || 'New Contact'
+                    // REMOVED: name: (await getUserDoc((currentUser.uid || currentUser.id)))?.username || 'New Contact'
                 }, { merge: true });
 
-                const senderContactRef = doc(db2, `users/${currentUser.uid}/contacts`, currentChatPartner.uid);
+                const senderContactRef = doc(db2, `users/${(currentUser.uid || currentUser.id)}/contacts`, currentChatPartner.uid);
                 await updateDoc(senderContactRef, { 
                     lastMessage: `You: ${lastMessageText}`, 
                     timestamp: serverTimestamp() 
@@ -1355,19 +1373,19 @@
             const contactUser = snapshot.docs[0].data();
             const contactUid = contactUser.uid;
             
-            const friendDoc = await getDoc(doc(db2, `users/${currentUser.uid}/contacts`, contactUid));
+            const friendDoc = await getDoc(doc(db2, `users/${(currentUser.uid || currentUser.id)}/contacts`, contactUid));
             if (friendDoc.exists()) {
                 dom.addContactMessage.textContent = 'You are already friends with this user.';
                 return;
             }
             
-            const outDoc = await getDoc(doc(db2, `users/${currentUser.uid}/pendingOut`, contactUid));
+            const outDoc = await getDoc(doc(db2, `users/${(currentUser.uid || currentUser.id)}/pendingOut`, contactUid));
             if (outDoc.exists()) {
                 dom.addContactMessage.textContent = 'Request already sent.';
                 return;
             }
             
-            const inDocRef = doc(db2, `users/${currentUser.uid}/pendingIn`, contactUid);
+            const inDocRef = doc(db2, `users/${(currentUser.uid || currentUser.id)}/pendingIn`, contactUid);
             const inDoc = await getDoc(inDocRef);
             if (inDoc.exists()) {
                 await handleAcceptRequest(contactUid, contactUser.username, contactUser.publicId);
@@ -1376,18 +1394,18 @@
                 return;
             }
 
-            const myUserDoc = await getUserDoc(currentUser.uid);
+            const myUserDoc = await getUserDoc((currentUser.uid || currentUser.id));
             
             const batch = writeBatch(db2);
             
-            const myOutRef = doc(db2, `users/${currentUser.uid}/pendingOut`, contactUid);
+            const myOutRef = doc(db2, `users/${(currentUser.uid || currentUser.id)}/pendingOut`, contactUid);
             batch.set(myOutRef, { 
                 username: contactUser.username || `User ${contactUser.publicId}`, 
                 publicId: contactUser.publicId, 
                 timestamp: serverTimestamp() 
             });
             
-            const theirInRef = doc(db2, `users/${contactUid}/pendingIn`, currentUser.uid);
+            const theirInRef = doc(db2, `users/${contactUid}/pendingIn`, (currentUser.uid || currentUser.id));
             batch.set(theirInRef, { 
                 username: myUserDoc.username || `User ${myUserDoc.publicId}`, 
                 publicId: myUserDoc.publicId, 
@@ -1400,21 +1418,21 @@
         }
         
         async function handleAcceptRequest(uid, name, publicId) {
-            const myUserDoc = await getUserDoc(currentUser.uid);
+            const myUserDoc = await getUserDoc((currentUser.uid || currentUser.id));
             
             const batch = writeBatch(db2);
             
-            batch.delete(doc(db2, `users/${currentUser.uid}/pendingIn`, uid));
-            batch.delete(doc(db2, `users/${uid}/pendingOut`, currentUser.uid));
+            batch.delete(doc(db2, `users/${(currentUser.uid || currentUser.id)}/pendingIn`, uid));
+            batch.delete(doc(db2, `users/${uid}/pendingOut`, (currentUser.uid || currentUser.id)));
             
-            const myContactRef = doc(db2, `users/${currentUser.uid}/contacts`, uid);
+            const myContactRef = doc(db2, `users/${(currentUser.uid || currentUser.id)}/contacts`, uid);
             batch.set(myContactRef, { 
                 name: name || `User ${publicId}`, 
                 unread: false, 
                 timestamp: serverTimestamp() 
             });
             
-            const theirContactRef = doc(db2, `users/${uid}/contacts`, currentUser.uid);
+            const theirContactRef = doc(db2, `users/${uid}/contacts`, (currentUser.uid || currentUser.id));
             batch.set(theirContactRef, { 
                 name: myUserDoc.username || `User ${myUserDoc.publicId}`, 
                 unread: false, 
@@ -1426,15 +1444,15 @@
         
         async function handleDeclineRequest(uid) {
             const batch = writeBatch(db2);
-            batch.delete(doc(db2, `users/${currentUser.uid}/pendingIn`, uid));
-            batch.delete(doc(db2, `users/${uid}/pendingOut`, currentUser.uid));
+            batch.delete(doc(db2, `users/${(currentUser.uid || currentUser.id)}/pendingIn`, uid));
+            batch.delete(doc(db2, `users/${uid}/pendingOut`, (currentUser.uid || currentUser.id)));
             await batch.commit();
         }
         
         async function handleCancelRequest(uid) {
             const batch = writeBatch(db2);
-            batch.delete(doc(db2, `users/${currentUser.uid}/pendingOut`, uid));
-            batch.delete(doc(db2, `users/${uid}/pendingIn`, currentUser.uid));
+            batch.delete(doc(db2, `users/${(currentUser.uid || currentUser.id)}/pendingOut`, uid));
+            batch.delete(doc(db2, `users/${uid}/pendingIn`, (currentUser.uid || currentUser.id)));
             await batch.commit();
         }
         
@@ -1449,11 +1467,11 @@
             const batch = writeBatch(db2);
             
             // Delete contacts for both users
-            batch.delete(doc(db2, `users/${currentUser.uid}/contacts`, uid));
-            batch.delete(doc(db2, `users/${uid}/contacts`, currentUser.uid));
+            batch.delete(doc(db2, `users/${(currentUser.uid || currentUser.id)}/contacts`, uid));
+            batch.delete(doc(db2, `users/${uid}/contacts`, (currentUser.uid || currentUser.id)));
 
             // Delete chat document
-            const chatId = [currentUser.uid, uid].sort().join('_');
+            const chatId = [(currentUser.uid || currentUser.id), uid].sort().join('_');
             const chatDocRef = doc(db2, 'chats', chatId);
             batch.delete(chatDocRef);
             
@@ -1469,7 +1487,7 @@
         async function handleEditName(uid, oldName) {
             const newName = prompt("Enter new name for contact:", oldName);
             if (newName && newName.trim() !== '' && newName.trim() !== oldName) {
-                await updateDoc(doc(db2, `users/${currentUser.uid}/contacts`, uid), { name: newName.trim() });
+                await updateDoc(doc(db2, `users/${(currentUser.uid || currentUser.id)}/contacts`, uid), { name: newName.trim() });
                 
                 // NEW: If this is the currently open chat, update UI
                 if (currentChatPartner && currentChatPartner.uid === uid) {
@@ -1515,7 +1533,7 @@
         async function handleClearLocalHistory() {
             if (!currentChatPartner || !confirm(`Are you sure you want to clear local-only message history for this chat? The last 5 messages will be kept.`)) return;
 
-            const chatId = [currentUser.uid, currentChatPartner.uid].sort().join('_');
+            const chatId = [(currentUser.uid || currentUser.id), currentChatPartner.uid].sort().join('_');
             const chatDocRef = doc(db2, 'chats', chatId);
             const chatDoc = await getDoc(chatDocRef);
             

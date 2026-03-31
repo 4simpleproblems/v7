@@ -1620,7 +1620,7 @@
 
             const currentUser = auth.currentUser;
             const isSuperAdmin = currentUser && currentUser.email === '4simpleproblems@gmail.com';
-            const isFullAdmin = isSuperAdmin || (currentUser && admins.has(currentUser.uid));
+            const isFullAdmin = isSuperAdmin || (currentUser && admins.has((currentUser.uid || currentUser.id)));
 
             users.forEach(user => {
                 const tr = document.createElement('tr');
@@ -1885,7 +1885,7 @@
                     role: 'admin',
                     type: adminType,
                     promotedAt: new Date(),
-                    promotedBy: auth.currentUser.uid
+                    promotedBy: (auth.currentUser.uid || auth.currentUser.id)
                 });
                 let label = "Tester";
                 if (adminType === 'full') label = "Full Admin";
@@ -1944,7 +1944,7 @@
                     // Sub-admin: Create/Submit a detailed ban request
                     await addDoc(collection(db, 'ban_requests'), {
                         targetUid: userToBan.uid,
-                        requestedBy: auth.currentUser.uid,
+                        requestedBy: (auth.currentUser.uid || auth.currentUser.id),
                         reason: reason,
                         severity: severity,
                         scope: scope,
@@ -1957,7 +1957,7 @@
                     // Full Admin: Direct Enforcement
                     const banData = { 
                         bannedAt: new Date(),
-                        bannedBy: auth.currentUser.uid,
+                        bannedBy: (auth.currentUser.uid || auth.currentUser.id),
                         reason: reason,
                         severity: severity,
                         scope: scope,
@@ -1978,7 +1978,7 @@
                         if (user && user.email) {
                             batch.set(doc(db, 'email_bans', user.email.toLowerCase()), {
                                 bannedAt: new Date(),
-                                bannedBy: auth.currentUser.uid,
+                                bannedBy: (auth.currentUser.uid || auth.currentUser.id),
                                 originalUid: userToBan.uid
                             });
                         }
@@ -1991,7 +1991,7 @@
                         hwIds.forEach(hwId => {
                             batch.set(doc(db, 'hardware_bans', hwId), {
                                 bannedAt: new Date(),
-                                bannedBy: auth.currentUser.uid,
+                                bannedBy: (auth.currentUser.uid || auth.currentUser.id),
                                 originalUid: userToBan.uid,
                                 reason: reason
                             });

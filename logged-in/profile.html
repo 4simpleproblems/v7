@@ -864,7 +864,7 @@
             }
 
             // 3. Last Resort: Metadata from auth (if viewing own profile or if we have it)
-            if (!data && firebaseAuthUser && firebaseAuthUser.uid === uid) {
+            if (!data && firebaseAuthUser && (firebaseAuthUser.uid || firebaseAuthUser.id) === uid) {
                 const meta = firebaseAuthUser.user_metadata || {};
                 data = {
                     displayName: meta.full_name || meta.name || firebaseAuthUser.email.split('@')[0],
@@ -963,8 +963,8 @@
         // firing and the loading overlay still being visible.
         // ------------------------------------------------------------------
         function checkFollowStatus() {
-            const myFollowerRef  = doc(db, 'users', profileOwnerId, 'followers', firebaseAuthUser.uid);
-            const theirFollowRef = doc(db, 'users', firebaseAuthUser.uid, 'followers', profileOwnerId);
+            const myFollowerRef  = doc(db, 'users', profileOwnerId, 'followers', (firebaseAuthUser.uid || firebaseAuthUser.id));
+            const theirFollowRef = doc(db, 'users', (firebaseAuthUser.uid || firebaseAuthUser.id), 'followers', profileOwnerId);
 
             // One-time reads first for instant UI state
             Promise.all([getDoc(myFollowerRef), getDoc(theirFollowRef)]).then(([fSnap, fbSnap]) => {
@@ -998,10 +998,10 @@
         }
 
         followBtn.onclick = async () => {
-            const meRef             = doc(db, 'users', firebaseAuthUser.uid);
+            const meRef             = doc(db, 'users', (firebaseAuthUser.uid || firebaseAuthUser.id));
             const ownerRef          = doc(db, 'users', profileOwnerId);
-            const myFollowingRef    = doc(db, 'users', firebaseAuthUser.uid, 'following', profileOwnerId);
-            const theirFollowersRef = doc(db, 'users', profileOwnerId, 'followers', firebaseAuthUser.uid);
+            const myFollowingRef    = doc(db, 'users', (firebaseAuthUser.uid || firebaseAuthUser.id), 'following', profileOwnerId);
+            const theirFollowersRef = doc(db, 'users', profileOwnerId, 'followers', (firebaseAuthUser.uid || firebaseAuthUser.id));
 
             const batch = writeBatch(db);
             if (isFollowing) {
@@ -1019,7 +1019,7 @@
                 const myUsername = meSnap.data()?.username || 'Someone';
                 await addDoc(collection(db, 'notifications'), {
                     recipientId:     profileOwnerId,
-                    senderId:        firebaseAuthUser.uid,
+                    senderId:        (firebaseAuthUser.uid || firebaseAuthUser.id),
                     senderUsername:  myUsername,
                     type:            'follow',
                     message:         `@${myUsername} followed you!`,
@@ -1054,7 +1054,7 @@
 
             const [snap, meSnap] = await Promise.all([
                 getDocs(q),
-                getDoc(doc(db, 'users', firebaseAuthUser.uid))
+                getDoc(doc(db, 'users', (firebaseAuthUser.uid || firebaseAuthUser.id)))
             ]);
 
             const myData = meSnap.data();
@@ -1182,7 +1182,7 @@
                 saveProfileBtn.textContent = 'Saving...';
                 const newName = editDisplayName.value.trim();
                 const newDesc = editDescription.value.trim();
-                const uid = firebaseAuthUser.uid || firebaseAuthUser.id;
+                const uid = (firebaseAuthUser.uid || firebaseAuthUser.id);
 
                 try {
                     // 1. Update Firestore
@@ -1238,7 +1238,7 @@
 
             blockBtn.onclick = async () => {
                 if (confirm('Block this user?')) {
-                    await updateDoc(doc(db, 'users', firebaseAuthUser.uid), {
+                    await updateDoc(doc(db, 'users', (firebaseAuthUser.uid || firebaseAuthUser.id)), {
                         blockedUsers: arrayUnion(profileOwnerId)
                     });
                     location.reload();

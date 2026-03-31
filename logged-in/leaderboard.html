@@ -256,7 +256,7 @@
                         window.location.replace('../index.html');
                         return;
                     }
-                    loadUserRankings(user ? user.uid : null);
+                    loadUserRankings(user ? (user.uid || user.id) : null);
                 }
             });
         }
@@ -284,12 +284,16 @@
                 let bannedUids = new Set();
 
                 if (currentUid) {
-                    const [followSnap, banSnap] = await Promise.all([
-                        getDocs(collection(db, 'users', currentUid, 'following')),
-                        getDocs(collection(db, 'bans'))
-                    ]);
-                    followSnap.forEach(docSnap => following.add(docSnap.id));
-                    banSnap.forEach(docSnap => bannedUids.add(docSnap.id));
+                    try {
+                        const [followSnap, banSnap] = await Promise.all([
+                            getDocs(collection(db, 'users', currentUid, 'following')),
+                            getDocs(collection(db, 'bans'))
+                        ]);
+                        followSnap.forEach(docSnap => following.add(docSnap.id));
+                        banSnap.forEach(docSnap => bannedUids.add(docSnap.id));
+                    } catch (e) {
+                        console.warn("Leaderboard: Could not fetch following or ban lists from Firestore. Proceeding without them.", e.message);
+                    }
                 }
 
                 rankingsEl.innerHTML = '';

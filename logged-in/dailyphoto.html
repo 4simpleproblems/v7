@@ -712,14 +712,24 @@
                 currentUser = user;
                 initApp();
             } else {
-                await signInAnonymously(auth);
+                // Try to see if we have a Supabase session
+                if (window.supabase) {
+                    const { data: { session } } = await window.supabase.auth.getSession();
+                    if (session) {
+                        currentUser = session.user;
+                        initApp();
+                        return;
+                    }
+                }
+                // Only try anonymous if no Supabase session
+                signInAnonymously(auth).catch(err => console.warn("Firebase Anonymous login restricted:", err.message));
             }
         });
 
         async function initApp() {
             try {
                 // Check if the current user is an admin
-                const adminSnap = await getDoc(doc(db, 'admins', currentUser.uid));
+                const adminSnap = await getDoc(doc(db, 'admins', (currentUser.uid || currentUser.id)));
                 // Also consider the hardcoded admin email as a fallback
                 isAdmin = adminSnap.exists() || (currentUser.email && currentUser.email === '4simpleproblems@gmail.com'); 
             } catch (e) { console.warn("Admin check failed:", e); }
@@ -744,8 +754,8 @@
         // -----------------------------------------------------------------------
         async function fetchSocialGraph() {
             const [followingSnap, followersSnap] = await Promise.all([
-                getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'following')),
-                getDocs(collection(db, USERS_COLLECTION, currentUser.uid, 'followers'))
+                getDocs(collection(db, USERS_COLLECTION, (currentUser.uid || currentUser.id), 'following')),
+                getDocs(collection(db, USERS_COLLECTION, (currentUser.uid || currentUser.id), 'followers'))
             ]);
             followingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
             followerUids = followersSnap.docs.map(d => d.id).filter(id => id !== '.init');
@@ -758,7 +768,7 @@
         // -----------------------------------------------------------------------
         function listenToUser() {
             if (unsubUser) unsubUser();
-            unsubUser = onSnapshot(doc(db, USERS_COLLECTION, currentUser.uid), async snap => {
+            unsubUser = onSnapshot(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)), async snap => {
                 userData = snap.data() || {};
                 blockedUsers = userData.blocked_users || [];
                 
@@ -825,7 +835,7 @@
                         const snap = await getDocs(q);
                         primaryDocs = snap.docs;
                     } else {
-                        const uids = [currentUser.uid, ...mutualUids].slice(0, 10);
+                        const uids = [(currentUser.uid || currentUser.id), ...mutualUids].slice(0, 10);
                         const q = query(DAILY_COLLECTION,
                             where('status', '==', 'active'),
                             where('creatorUid', 'in', uids),
@@ -962,8 +972,8 @@
                 try {
                     if (!snap.exists()) { window.closeModal(); return; }
                     const data = snap.data();
-                    const isHearted = data.hearts?.includes(currentUser.uid);
-                    const isOwner = data.creatorUid === currentUser.uid;
+                    const isHearted = data.hearts?.includes((currentUser.uid || currentUser.id));
+                    const isOwner = data.creatorUid === (currentUser.uid || currentUser.id);
 
                     const authorSnap = await getDoc(doc(db, USERS_COLLECTION, data.creatorUid));
                     const authorData = authorSnap.exists() ? authorSnap.data() : null;
@@ -1038,10 +1048,10 @@
                     if (heartBtn) {
                         heartBtn.onclick = async () => {
                             const newIsHearted = !isHearted;
-                            await updateDoc(doc(db2, 'daily_photos', postId), { hearts: newIsHearted ? arrayUnion(currentUser.uid) : arrayRemove(currentUser.uid) });
+                            await updateDoc(doc(db2, 'daily_photos', postId), { hearts: newIsHearted ? arrayUnion((currentUser.uid || currentUser.id)) : arrayRemove((currentUser.uid || currentUser.id)) });
                             
                             if (newIsHearted && !isOwner) {
-                                const meSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+                                const meSnap = await getDoc(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)));
                                 const myUsername = meSnap.data()?.username || "Someone";
                                 
                                 await mongoBridge({
@@ -1049,7 +1059,7 @@
                                     collection: 'notifications',
                                     payload: {
                                         recipientId: data.creatorUid,
-                                        senderId: currentUser.uid,
+                                        senderId: (currentUser.uid || currentUser.id),
                                         senderUsername: myUsername,
                                         type: 'like',
                                         postId: postId,
@@ -1109,7 +1119,7 @@
                         }
                         // --- End Profanity Check Integration ---
 
-                        const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+                        const userSnap = await getDoc(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)));
                         const myUsername = userSnap.data()?.username || "Someone";
                         
                         
@@ -1120,7 +1130,7 @@
                             payload: { 
                                 $push: {
                                     comments: {
-                                        uid: currentUser.uid, 
+                                        uid: (currentUser.uid || currentUser.id), 
                                         username: myUsername, 
                                         text: processedComment, 
                                         timestamp: new Date()
@@ -1136,7 +1146,7 @@
                                 collection: 'notifications',
                                 payload: {
                                     recipientId: data.creatorUid,
-                                    senderId: currentUser.uid,
+                                    senderId: (currentUser.uid || currentUser.id),
                                     senderUsername: myUsername,
                                     type: 'comment',
                                     postId: postId,
@@ -1307,7 +1317,7 @@
 
             window.selectSchool = async (schoolName, districtName) => {
                 if (await CustomUI.confirm(`Confirm selection: ${schoolName}?`)) {
-                    const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+                    const userRef = doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id));
                     const currentMonth = new Date().getMonth() + 1;
                     let changes = userData.schoolChangesThisMonth || 0;
                     if ((userData.lastSchoolChangeMonth || 0) !== currentMonth) changes = 0;
@@ -1336,7 +1346,7 @@
 
             document.getElementById('skip-school-btn').onclick = async () => {
                 if (await CustomUI.confirm("Skip school selection? You'll see moments from other users who also skipped.")) {
-                    await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { 
+                    await updateDoc(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)), { 
                         schoolSkipped: true,
                         schoolId: deleteField(),
                         schoolName: deleteField(),
@@ -1424,14 +1434,14 @@
                 try {
                     await CustomUI.alert("Processing image, please wait...");
                     
-                    const userSnap = await getDoc(doc(db, USERS_COLLECTION, currentUser.uid));
+                    const userSnap = await getDoc(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)));
                     const uData = userSnap.data();
                     const username = uData.username;
 
                     let finalImageData = {};
 
                     if (file.type === 'image/gif') {
-                        const storageRef = ref(storage, `daily_photos/${currentUser.uid}/${Date.now()}_${file.name}`);
+                        const storageRef = ref(storage, `daily_photos/${(currentUser.uid || currentUser.id)}/${Date.now()}_${file.name}`);
                         const metadata = {
                             customMetadata: {
                                 deleteAfter24h: 'true',
@@ -1452,7 +1462,7 @@
                         action: 'insertOne',
                         collection: 'daily_photos',
                         payload: {
-                            creatorUid: currentUser.uid,
+                            creatorUid: (currentUser.uid || currentUser.id),
                             creatorUsername: username,
                             ...finalImageData,
                             title: processedTitle,
@@ -1467,7 +1477,7 @@
                     if (!postRefRes.data.success) throw new Error("Mongo offload failed");
                     const postId = postRefRes.data.id;
 
-                    const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+                    const userRef = doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id));
                     const slots = uData.dailySlotsUsed || [];
                     while (slots.length <= slotIdx) slots.push(null);
                     slots[slotIdx] = postId;
@@ -1513,7 +1523,7 @@
         window.deletePost = async (postId, idx) => {
             if (!(await CustomUI.confirm("Delete this moment?"))) return;
             
-            const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+            const userRef = doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id));
             const userSnap = await getDoc(userRef);
             const uData = userSnap.data();
             
@@ -1535,7 +1545,7 @@
 
         window.blockUser = async (uid, username) => {
             if (await CustomUI.confirm(`Block @${username}? You won't see their posts anymore.`)) {
-                await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { 
+                await updateDoc(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)), { 
                     blocked_users: arrayUnion(uid),
                     friends: arrayRemove(uid) // Also remove from friends if blocked
                 });
@@ -1544,8 +1554,8 @@
                 const blockedUserSnap = await getDoc(blockedUserRef);
                 if (blockedUserSnap.exists()) {
                     const blockedUserData = blockedUserSnap.data();
-                    if (blockedUserData.friends && blockedUserData.friends.includes(currentUser.uid)) {
-                        await updateDoc(blockedUserRef, { friends: arrayRemove(currentUser.uid) });
+                    if (blockedUserData.friends && blockedUserData.friends.includes((currentUser.uid || currentUser.id))) {
+                        await updateDoc(blockedUserRef, { friends: arrayRemove((currentUser.uid || currentUser.id)) });
                     }
                 }
                 window.closeModal();
@@ -1560,7 +1570,7 @@
                 await mongoBridge({
                     action: 'insertOne',
                     collection: 'reports',
-                    payload: { postId, reportedBy: currentUser.uid, type: 'daily_photo' }
+                    payload: { postId, reportedBy: (currentUser.uid || currentUser.id), type: 'daily_photo' }
                 });
                 await CustomUI.alert("Thank you. Our moderators will review this post.");
             }
@@ -1623,7 +1633,7 @@
                 
                 results.innerHTML = '';
                 snap.forEach(docSnap => {
-                    if (docSnap.id === currentUser.uid) return;
+                    if (docSnap.id === (currentUser.uid || currentUser.id)) return;
                     const d = docSnap.data();
                     const div = document.createElement('div');
                     div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-xl p-2 flex items-center gap-3 cursor-pointer hover:border-[var(--accent-color)] transition-all';
@@ -1674,11 +1684,11 @@
         }
 
         window.unblock = async (uid) => {
-            await updateDoc(doc(db, USERS_COLLECTION, currentUser.uid), { blocked_users: arrayRemove(uid) });
+            await updateDoc(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)), { blocked_users: arrayRemove(uid) });
         };
 
         window.fixSlot = async (idx) => {
-            const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+            const userRef = doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id));
             const userSnap = await getDoc(userRef);
             const slots = userSnap.data().dailySlotsUsed || [];
             slots[idx] = null;
