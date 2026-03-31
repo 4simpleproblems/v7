@@ -250,6 +250,7 @@
                         customPfp: 'avatar_url',
                         pfpLetterBg: 'pfp_letter_bg',
                         pfpLetterChar: 'pfp_letter_char',
+                        letterAvatarText: 'pfp_letter_char',
                         mibiConfig: 'mibi_config',
                         showOffline: 'show_offline',
                         leaderboardOptOut: 'leaderboard_opt_out',
@@ -3832,7 +3833,10 @@
                 const openMacMenuBtn = document.getElementById('open-mac-menu-btn'); 
 
                 // --- CONDITIONAL GOOGLE OPTION ---
-                const hasGoogle = (currentUser.providerData || []).some(p => p.providerId === 'google.com');
+                const hasGoogle = (currentUser.providerData || []).some(p => p.providerId === 'google.com') || 
+                                  (currentUser.app_metadata?.provider === 'google') || 
+                                  (currentUser.user_metadata?.iss?.includes('google'));
+                
                 if (!hasGoogle) {
                     const googleBtn = Array.from(pfpModeBtns).find(btn => btn.dataset.mode === 'google');
                     if (googleBtn) googleBtn.remove();

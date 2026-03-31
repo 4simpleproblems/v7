@@ -728,10 +728,23 @@
 
         async function initApp() {
             try {
-                // Check if the current user is an admin
-                const adminSnap = await getDoc(doc(db, 'admins', (currentUser.uid || currentUser.id)));
-                // Also consider the hardcoded admin email as a fallback
-                isAdmin = adminSnap.exists() || (currentUser.email && currentUser.email === '4simpleproblems@gmail.com'); 
+                const uid = (currentUser.uid || currentUser.id);
+                // 1. Try Supabase first
+                if (window.supabase) {
+                    const { data: profile } = await window.supabase.from('profiles').select('is_admin').eq('id', uid).maybeSingle();
+                    if (profile) isAdmin = profile.is_admin;
+                }
+                
+                // 2. Fallback to Firestore admins (legacy)
+                if (!isAdmin) {
+                    try {
+                        const adminSnap = await getDoc(doc(db, 'admins', uid));
+                        isAdmin = adminSnap.exists();
+                    } catch (e) { /* Permission denied expected for users */ }
+                }
+
+                // 3. Last fallback: hardcoded email
+                if (!isAdmin && currentUser.email === '4simpleproblems@gmail.com') isAdmin = true;
             } catch (e) { console.warn("Admin check failed:", e); }
 
             // -----------------------------------------------------------------------
@@ -753,13 +766,39 @@
         // follow/unfollow action). Does NOT run on every user doc update.
         // -----------------------------------------------------------------------
         async function fetchSocialGraph() {
-            const [followingSnap, followersSnap] = await Promise.all([
-                getDocs(collection(db, USERS_COLLECTION, (currentUser.uid || currentUser.id), 'following')),
-                getDocs(collection(db, USERS_COLLECTION, (currentUser.uid || currentUser.id), 'followers'))
-            ]);
-            followingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
-            followerUids = followersSnap.docs.map(d => d.id).filter(id => id !== '.init');
-            mutualUids = followingUids.filter(id => followerUids.includes(id));
+            const uid = (currentUser.uid || currentUser.id);
+            
+            // 1. Try Supabase first
+            if (window.supabase) {
+                try {
+                    const [followingRes, followersRes] = await Promise.all([
+                        window.supabase.from('follows').select('following_id').eq('follower_id', uid),
+                        window.supabase.from('follows').select('follower_id').eq('following_id', uid)
+                    ]);
+                    
+                    if (!followingRes.error && !followersRes.error) {
+                        followingUids = followingRes.data.map(f => f.following_id);
+                        followerUids = followersRes.data.map(f => f.follower_id);
+                        mutualUids = followingUids.filter(id => followerUids.includes(id));
+                        return; // Successfully loaded from Supabase
+                    }
+                } catch (e) {
+                    console.warn("Supabase social graph fetch failed:", e);
+                }
+            }
+
+            // 2. Fallback to Firestore (Legacy)
+            try {
+                const [followingSnap, followersSnap] = await Promise.all([
+                    getDocs(collection(db, USERS_COLLECTION, uid, 'following')),
+                    getDocs(collection(db, USERS_COLLECTION, uid, 'followers'))
+                ]);
+                followingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
+                followerUids = followersSnap.docs.map(d => d.id).filter(id => id !== '.init');
+                mutualUids = followingUids.filter(id => followerUids.includes(id));
+            } catch (e) {
+                console.warn("Firestore social graph fetch failed (expected for new accounts):", e.message);
+            }
         }
 
         // -----------------------------------------------------------------------
@@ -767,10 +806,23 @@
         // NO longer fetches following/followers subcollections on every update.
         // -----------------------------------------------------------------------
         function listenToUser() {
+            const uid = (currentUser.uid || currentUser.id);
             if (unsubUser) unsubUser();
-            unsubUser = onSnapshot(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)), async snap => {
-                userData = snap.data() || {};
-                blockedUsers = userData.blocked_users || [];
+
+            // 1. Unified data handler
+            const processUserData = async (data) => {
+                if (!data) return;
+                userData = {
+                    ...data,
+                    schoolId: data.schoolId || data.school_id,
+                    schoolName: data.schoolName || data.school_name,
+                    districtId: data.districtId || data.district_id,
+                    schoolSkipped: data.schoolSkipped !== undefined ? data.schoolSkipped : data.school_skipped,
+                    schoolChangesThisMonth: data.schoolChangesThisMonth !== undefined ? data.schoolChangesThisMonth : data.school_changes_this_month,
+                    lastSchoolChangeMonth: data.lastSchoolChangeMonth !== undefined ? data.lastSchoolChangeMonth : data.last_school_change_month,
+                    dailySlotsUsed: data.dailySlotsUsed || data.daily_slots_used || []
+                };
+                blockedUsers = data.blocked_users || [];
                 
                 const schoolIndicator = document.getElementById('school-indicator-sidebar');
                 const sidebarSchoolName = document.getElementById('sidebar-school-name');
@@ -789,9 +841,9 @@
                     if (forceChange) window.history.replaceState({}, '', window.location.pathname);
                 }
 
-                renderMyPosts(userData.dailySlotsUsed || []);
+                renderMyPosts(userData.dailySlotsUsed);
 
-                // Only load feed on first real data arrival (not on every ping update)
+                // Only load feed on first real data arrival
                 if (!window._feedLoaded) {
                     window._feedLoaded = true;
                     await loadFeed();
@@ -799,7 +851,36 @@
 
                 if (!document.getElementById('friends-section-wrapper').classList.contains('hidden')) renderMutualsList();
                 if (!document.getElementById('blocked-section').classList.contains('hidden')) renderBlockedList();
-            });
+            };
+
+            // 2. Try Firestore Realtime (Legacy)
+            try {
+                unsubUser = onSnapshot(doc(db, USERS_COLLECTION, uid), async snap => {
+                    if (snap.exists()) processUserData(snap.data());
+                }, (e) => {
+                    if (e.code !== 'permission-denied') console.warn("Firestore listen error:", e);
+                });
+            } catch (e) { console.warn("Firestore real-time disabled."); }
+
+            // 3. Try Supabase Initial Fetch + Realtime
+            if (window.supabase) {
+                window.supabase.from('profiles').select('*').eq('id', uid).maybeSingle().then(({data}) => {
+                    if (data) processUserData(data);
+                });
+
+                // Setup Supabase Realtime for this profile
+                const profileChannel = window.supabase.channel(`public:profiles:id=eq.${uid}`)
+                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` }, payload => {
+                        processUserData(payload.new);
+                    })
+                    .subscribe();
+                
+                const oldUnsub = unsubUser;
+                unsubUser = () => {
+                    if (oldUnsub) oldUnsub();
+                    window.supabase.removeChannel(profileChannel);
+                };
+            }
         }
 
         // -----------------------------------------------------------------------
@@ -816,88 +897,109 @@
             refreshBtn.querySelector('i').classList.add('fa-spin');
 
             const today = new Date(); today.setHours(0,0,0,0);
+            const todayISO = today.toISOString();
 
             try {
-                let primaryDocs = [];
+                let posts = [];
                 const isNoSchool = !userData.schoolId || userData.schoolSkipped;
 
-                if (isNoSchool) {
-                    document.getElementById('feed-toggle-school').textContent = 'Mutuals';
-                    document.getElementById('feed-toggle-district').textContent = 'Public';
+                // 1. Try Supabase first
+                if (window.supabase) {
+                    let query = window.supabase.from('daily_photos').select('*').eq('status', 'active').gte('created_at', todayISO);
+                    
+                    if (isNoSchool) {
+                        document.getElementById('feed-toggle-school').textContent = 'Mutuals';
+                        document.getElementById('feed-toggle-district').textContent = 'Public';
 
-                    if (feedMode === 'district' || feedMode === 'public') {
-                        const q = query(DAILY_COLLECTION,
-                            where('status', '==', 'active'),
-                            where('schoolId', '==', null),
-                            where('createdAt', '>=', today),
-                            limit(50)
-                        );
-                        const snap = await getDocs(q);
-                        primaryDocs = snap.docs;
+                        if (feedMode === 'district' || feedMode === 'public') {
+                            query = query.is('school_id', null).limit(50);
+                        } else {
+                            // Mutuals + Self
+                            const uids = [(currentUser.uid || currentUser.id), ...mutualUids].slice(0, 10);
+                            query = query.in('creator_uid', uids);
+                        }
                     } else {
-                        const uids = [(currentUser.uid || currentUser.id), ...mutualUids].slice(0, 10);
-                        const q = query(DAILY_COLLECTION,
+                        document.getElementById('feed-toggle-school').textContent = 'School';
+                        document.getElementById('feed-toggle-district').textContent = 'District';
+
+                        if (feedMode === 'district') {
+                            query = query.eq('district_id', userData.districtId).limit(100);
+                        } else {
+                            query = query.eq('school_id', userData.schoolId).limit(50);
+                        }
+                    }
+
+                    const { data, error } = await query;
+                    if (!error && data) {
+                        posts = data.map(p => ({
+                            id: p.id,
+                            data: () => ({
+                                ...p,
+                                creatorUid: p.creator_uid,
+                                creatorUsername: p.creator_username,
+                                imageURL: p.image_url,
+                                createdAt: { toMillis: () => new Date(p.created_at).getTime() }
+                            })
+                        }));
+                    }
+                }
+
+                // 2. Fallback to Firestore (Legacy)
+                if (posts.length === 0) {
+                    let primaryDocs = [];
+                    if (isNoSchool) {
+                        if (feedMode === 'district' || feedMode === 'public') {
+                            const q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', null), where('createdAt', '>=', today), limit(50));
+                            const snap = await getDocs(q);
+                            primaryDocs = snap.docs;
+                        } else {
+                            const uids = [(currentUser.uid || currentUser.id), ...mutualUids].slice(0, 10);
+                            const q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', uids), where('createdAt', '>=', today));
+                            const snap = await getDocs(q);
+                            primaryDocs = snap.docs;
+                        }
+                    } else {
+                        if (feedMode === 'district') {
+                            const q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('districtId', '==', userData.districtId), where('createdAt', '>=', today), limit(100));
+                            const snap = await getDocs(q);
+                            primaryDocs = snap.docs;
+                        } else {
+                            const q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', userData.schoolId), where('createdAt', '>=', today), limit(50));
+                            const snap = await getDocs(q);
+                            primaryDocs = snap.docs;
+                        }
+                    }
+                    posts = primaryDocs;
+                }
+
+                // Fetch mutual friend posts separately (only if school mode and mutuals exist and we didn't get enough posts)
+                if (!isNoSchool && mutualUids.length > 0 && feedMode === 'school' && posts.length < 5) {
+                    try {
+                        const friendQ = query(DAILY_COLLECTION,
                             where('status', '==', 'active'),
-                            where('creatorUid', 'in', uids),
+                            where('creatorUid', 'in', mutualUids.slice(0, 10)),
                             where('createdAt', '>=', today)
                         );
-                        const snap = await getDocs(q);
-                        primaryDocs = snap.docs;
-                    }
-                } else {
-                    document.getElementById('feed-toggle-school').textContent = 'School';
-                    document.getElementById('feed-toggle-district').textContent = 'District';
-
-                    if (feedMode === 'district') {
-                        const q = query(DAILY_COLLECTION,
-                            where('status', '==', 'active'),
-                            where('districtId', '==', userData.districtId),
-                            where('createdAt', '>=', today),
-                            limit(100)
-                        );
-                        const snap = await getDocs(q);
-                        primaryDocs = snap.docs;
-                    } else {
-                        const q = query(DAILY_COLLECTION,
-                            where('status', '==', 'active'),
-                            where('schoolId', '==', userData.schoolId),
-                            where('createdAt', '>=', today),
-                            limit(50)
-                        );
-                        const snap = await getDocs(q);
-                        primaryDocs = snap.docs;
-                    }
+                        const friendSnap = await getDocs(friendQ);
+                        // Add unique posts
+                        const existingIds = new Set(posts.map(p => p.id));
+                        friendSnap.docs.forEach(d => {
+                            if (!existingIds.has(d.id)) posts.push(d);
+                        });
+                    } catch (e) { /* Fallback fail silent */ }
                 }
-
-                // Fetch mutual friend posts separately (only if school mode and mutuals exist)
-                let friendDocs = [];
-                if (!isNoSchool && mutualUids.length > 0 && feedMode === 'school') {
-                    const friendQ = query(DAILY_COLLECTION,
-                        where('status', '==', 'active'),
-                        where('creatorUid', 'in', mutualUids.slice(0, 10)),
-                        where('createdAt', '>=', today)
-                    );
-                    const friendSnap = await getDocs(friendQ);
-                    friendDocs = friendSnap.docs;
-                }
-
-                // Merge and deduplicate
-                const combinedMap = new Map();
-                primaryDocs.forEach(d => combinedMap.set(d.id, d));
-                friendDocs.forEach(d => combinedMap.set(d.id, d));
-                const allDocs = Array.from(combinedMap.values());
 
                 const modeLabel = isNoSchool
                     ? (feedMode === 'district' ? 'the network' : 'your mutuals')
                     : (feedMode === 'district' ? 'your district' : 'your school');
 
-                if (allDocs.length === 0) {
+                if (posts.length === 0) {
                     grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today from ${modeLabel}.</p>`;
                     return;
                 }
 
                 // Sort: mutuals first, then newest
-                const sortedDocs = allDocs
+                const sortedDocs = posts
                     .filter(d => !blockedUsers.includes(d.data().creatorUid))
                     .sort((a, b) => {
                         const da = a.data(), db_ = b.data();

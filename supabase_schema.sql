@@ -73,10 +73,10 @@ ON public.profiles
 FOR UPDATE
 USING (auth.uid() = id);
 
--- 4. POLICIES (Daily Photos)
+-- 2. DAILY PHOTOS TABLE
 CREATE TABLE IF NOT EXISTS public.daily_photos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    creator_uid UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    creator_uid UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     creator_username TEXT,
     image_url TEXT NOT NULL,
     title TEXT,
@@ -90,25 +90,41 @@ CREATE TABLE IF NOT EXISTS public.daily_photos (
 
 ALTER TABLE public.daily_photos ENABLE ROW LEVEL SECURITY;
 
+-- 2.5 FOLLOWS TABLE (Social Graph)
+CREATE TABLE IF NOT EXISTS public.follows (
+    follower_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    following_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    PRIMARY KEY (follower_id, following_id)
+);
+
+ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY;
+
+-- 2.6 POLICIES (Follows)
+DROP POLICY IF EXISTS "Follows are viewable by everyone." ON public.follows;
+CREATE POLICY "Follows are viewable by everyone." ON public.follows FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users can follow others." ON public.follows;
+CREATE POLICY "Users can follow others." ON public.follows FOR INSERT WITH CHECK (auth.uid() = follower_id);
+
+DROP POLICY IF EXISTS "Users can unfollow others." ON public.follows;
+CREATE POLICY "Users can unfollow others." ON public.follows FOR DELETE USING (auth.uid() = follower_id);
+
+-- 2.7 POLICIES (Daily Photos)
 DROP POLICY IF EXISTS "Active photos are viewable by everyone." ON public.daily_photos;
-CREATE POLICY "Active photos are viewable by everyone."
-ON public.daily_photos
-FOR SELECT
-USING (status = 'active');
+CREATE POLICY "Active photos are viewable by everyone." ON public.daily_photos FOR SELECT USING (status = 'active');
 
 DROP POLICY IF EXISTS "Users can insert their own photos." ON public.daily_photos;
-CREATE POLICY "Users can insert their own photos."
-ON public.daily_photos
-FOR INSERT
-WITH CHECK (auth.uid() = creator_uid);
+CREATE POLICY "Users can insert their own photos." ON public.daily_photos FOR INSERT WITH CHECK (auth.uid() = creator_uid);
 
 DROP POLICY IF EXISTS "Users can update their own photos." ON public.daily_photos;
-CREATE POLICY "Users can update their own photos."
-ON public.daily_photos
-FOR UPDATE
-USING (auth.uid() = creator_uid);
+CREATE POLICY "Users can update their own photos." ON public.daily_photos FOR UPDATE USING (auth.uid() = creator_uid);
 
--- 5. POLICIES (Storage)
+DROP POLICY IF EXISTS "Users can delete their own photos." ON public.daily_photos;
+CREATE POLICY "Users can delete their own photos." ON public.daily_photos FOR DELETE USING (auth.uid() = creator_uid);
+
+-- 3. POLICIES (Profiles)
+
 DROP POLICY IF EXISTS "Public Access" ON storage.objects;
 CREATE POLICY "Public Access"
 ON storage.objects
