@@ -703,51 +703,145 @@
         }
         
         /**
-         * Renders the Account Deletion section.
+         * Renders the Linked Providers and Account Deletion section.
          */
         function getAccountManagementContent(providerData = []) {
-            // Determine the Primary Provider
-            const primaryProviderId = providerData && providerData.length > 0 ? providerData[0].providerId : (currentSource === 'supabase' ? 'supabase' : null);
+            // Determine the Primary Provider (the first one in the list)
+            const primaryProviderId = providerData && providerData.length > 0 ? providerData[0].providerId : null;
             const providerConfig = getProviderConfig();
 
-            // --- Account Deletion Section ---
-            let deletionContent = '';
-            
-            if (!primaryProviderId) { 
-                deletionContent = `
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Delete Account</h3>
-                    <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
-                        <p class="text-sm font-light text-red-300 mb-3">
-                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
-                            WARNING: Deleting your account is permanent. No primary authentication method found. Please contact support.
-                        </p>
+            const isSupabase = currentSource === 'supabase';
+
+            let linkedProvidersHtml = (providerData || []).map(info => {
+                const id = info.providerId;
+                const config = providerConfig[id] || { name: id, icon: '<i class="fa-solid fa-puzzle-piece fa-lg mr-3"></i>' };
+
+                const isPrimary = (id === primaryProviderId); // Check if this is the primary provider
+                const canUnlink = providerData.length > 1 && !(id === 'password' && primaryProviderId === 'password');
+
+                const showSetPrimaryButton = !isPrimary && primaryProviderId === null && id !== 'password';
+
+                let iconHtml = config.icon.startsWith('<i') ? config.icon : `<img src="${config.icon}" alt="${config.name} Icon" class="h-6 w-auto mr-3">`;
+
+                return `
+                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[var(--border-main)] last:border-b-0" data-provider-row="${id}">
+                        <div class="flex items-center text-lg text-[var(--text-main)]">
+                            ${iconHtml}
+                            ${config.name}
+                            ${isPrimary ? '<span class="text-xs text-yellow-400 ml-2 font-normal">(Primary)</span>' : ''}
+                        </div>
+                        <div class="flex items-center gap-2"> <!-- Container for buttons -->
+                            ${showSetPrimaryButton ? 
+                                `<button class="btn-toolbar-style btn-primary-override" data-provider-id="${id}" data-action="set-primary" style="padding: 0.5rem 0.75rem;">
+                                    <i class="fa-solid fa-star mr-1"></i> Set Primary
+                                </button>` : ''
+                            }
+                            ${canUnlink ? 
+                                `<button class="btn-toolbar-style text-red-400 hover:border-red-600 hover:text-red-600" data-provider-id="${id}" data-action="unlink" style="padding: 0.5rem 0.75rem;">
+                                    <i class="fa-solid fa-unlink mr-1"></i> Unlink
+                                </button>` : 
+                                (providerData.length === 1 || (id === 'password' && primaryProviderId === 'password')) ? 
+                                    `<span class="text-xs text-[var(--text-muted)] opacity-60 font-light ml-4">Cannot Unlink</span>` : ''
+                            }
+                        </div>
                     </div>
                 `;
-            } else {
-                deletionContent = `
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Delete Account</h3>
-                    <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
-                        <p class="text-sm font-light text-red-300 mb-3">
-                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
-                            WARNING: Deleting your account is permanent and cannot be undone. All your data across the 4SP network will be removed.
-                        </p>
-                        
-                        <div id="deletionStep1">
-                            <label for="deleteConfirmText" class="block text-red-300 text-sm font-light mb-2">Type "Delete My Account" to confirm (Case-insensitive)</label>
-                            <input type="text" id="deleteConfirmText" placeholder="Delete My Account" class="input-text-style w-full bg-red-900/20 border-red-700/50">
-                            
-                            <div class="flex justify-between items-center pt-4">
-                                <p id="deleteMessage" class="general-message-area text-sm"></p>
-                                <button id="finalDeleteBtn" class="btn-toolbar-style btn-primary-override-danger w-48" disabled style="padding: 0.5rem 0.75rem;">
-                                     <i class="fa-solid fa-trash mr-1"></i> Delete Account
-                                </button>
-                            </div>
+            }).join('');
+
+            // Fallback for Supabase users who don't have Firebase providerData
+            if (isSupabase && linkedProvidersHtml === '') {
+                linkedProvidersHtml = `
+                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[var(--border-main)] last:border-b-0">
+                        <div class="flex items-center text-lg text-[var(--text-main)]">
+                            <i class="fa-solid fa-bolt-lightning fa-lg mr-3 text-yellow-400"></i>
+                            Supabase (Direct)
+                            <span class="text-xs text-yellow-400 ml-2 font-normal">(Primary)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <span class="text-xs text-[var(--text-muted)] opacity-60 font-light ml-4">Managed via Supabase</span>
                         </div>
                     </div>
                 `;
             }
+                
+            // Filter out already linked social providers for the linking list
+            const linkedIds = providerData.map(p => p.providerId);
+            const availableProviders = Object.keys(providerConfig).filter(id => id !== 'password' && !linkedIds.includes(id));
 
-            return deletionContent;
+            let availableProvidersHtml = availableProviders.map(id => {
+                const config = providerConfig[id];
+                let iconHtml = config.icon.startsWith('<i') ? config.icon : `<img src="${config.icon}" alt="${config.name} Icon" class="h-6 w-auto mr-3">`;
+
+                return `
+                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[var(--border-main)] last:border-b-0" data-provider-row="${id}">
+                        <div class="flex items-center text-lg text-[var(--text-main)]">
+                            ${iconHtml}
+                            ${config.name}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="btn-toolbar-style btn-primary-override" data-provider-id="${id}" data-action="link" style="padding: 0.5rem 0.75rem;">
+                                <i class="fa-solid fa-link mr-1"></i> Link Provider
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const hideLinkSection = (availableProviders.length === 0) || isSupabase;
+            
+            let supabaseNotice = '';
+            if (isSupabase) {
+                supabaseNotice = `
+                    <div class="settings-box w-full mb-4 p-4 bg-yellow-900/10 border-yellow-700/30">
+                        <p class="text-sm font-light text-yellow-200">
+                            <i class="fa-solid fa-circle-info mr-2"></i>
+                            Linking additional providers is currently only supported for accounts created via Email or Google.
+                        </p>
+                    </div>
+                `;
+            }
+
+            // --- Account Deletion Section ---
+            let deletionContent = `
+                <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Delete Account</h3>
+                <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
+                    <p class="text-sm font-light text-red-300 mb-3">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
+                        WARNING: Deleting your account is permanent and cannot be undone. All your data across the 4SP network will be removed.
+                    </p>
+                    
+                    <div id="deletionStep1">
+                        <label for="deleteConfirmText" class="block text-red-300 text-sm font-light mb-2">Type "Delete My Account" to confirm (Case-insensitive)</label>
+                        <input type="text" id="deleteConfirmText" placeholder="Delete My Account" class="input-text-style w-full bg-red-900/20 border-red-700/50">
+                        
+                        <div class="flex justify-between items-center pt-4">
+                            <p id="deleteMessage" class="general-message-area text-sm"></p>
+                            <button id="finalDeleteBtn" class="btn-toolbar-style btn-primary-override-danger w-48" disabled style="padding: 0.5rem 0.75rem;">
+                                 <i class="fa-solid fa-trash mr-1"></i> Delete Account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // --- Combined HTML for Account Management ---
+            return `
+                <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Linked Providers</h3>
+                <div id="linked-providers-list" class="settings-box w-full mb-4 p-0">
+                    ${linkedProvidersHtml}
+                </div>
+                
+                ${supabaseNotice}
+
+                <div id="available-providers-section" class="provider-section-fade w-full ${hideLinkSection ? 'section-hidden' : ''}">
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Link New Providers</h3>
+                    <div id="available-providers-list" class="settings-box w-full flex flex-col gap-0 p-0">
+                        ${availableProvidersHtml}
+                    </div>
+                </div>
+                
+                ${deletionContent}
+            `;
         }
 
 

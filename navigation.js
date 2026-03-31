@@ -2149,7 +2149,8 @@ let db;
                                 path.endsWith('changelog.html') ||
                                 path.endsWith('/changelog') ||
                                 path.endsWith('documentation.html') ||
-                                path.endsWith('/documentation');
+                                path.endsWith('/documentation') ||
+                                path.includes('/@'); // ALLOW VIEWING PROFILES WITHOUT LOGOUT
             
             if (isPublicPage || isRedirecting) return;
 
@@ -2222,13 +2223,19 @@ let db;
                 if (source === 'supabase' && window.supabase) {
                     try {
                         const { data: profile } = await window.supabase.from('profiles').select('*').eq('id', uid).single();
+                        
+                        // Extract metadata from Supabase user object if available
+                        const metadata = user.user_metadata || {};
+                        const metaName = metadata.full_name || metadata.name;
+                        const metaPfp = metadata.picture || metadata.avatar_url;
+
                         if (profile) {
                             userData = {
                                 ...profile,
-                                displayName: profile.display_name,
+                                displayName: profile.display_name || metaName || profile.username || email.split('@')[0],
                                 username: profile.username || email.split('@')[0],
-                                pfpType: profile.pfp_type,
-                                customPfp: profile.avatar_url,
+                                pfpType: profile.pfp_type || (metaPfp ? 'custom' : 'letter'),
+                                customPfp: profile.avatar_url || metaPfp,
                                 role: profile.role // Support role from Supabase
                             };
 
@@ -2237,6 +2244,14 @@ let db;
                                 window.applyTheme(userData.navbarTheme);
                                 localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(userData.navbarTheme));
                             }
+                        } else if (metaName || metaPfp) {
+                            // Fallback if profile row doesn't exist yet but we have metadata
+                            userData = {
+                                displayName: metaName || email.split('@')[0],
+                                username: email.split('@')[0],
+                                pfpType: metaPfp ? 'custom' : 'letter',
+                                customPfp: metaPfp
+                            };
                         }
                     } catch (e) { console.warn("Error fetching Supabase profile:", e); }
                 } else {

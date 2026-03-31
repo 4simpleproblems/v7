@@ -401,6 +401,24 @@
                     return;
                 }
 
+                // 1.5 NEW: Auto-create profile if it doesn't exist
+                if (window.supabase) {
+                    const { data: profile } = await window.supabase
+                        .from('profiles')
+                        .select('id, username')
+                        .eq('id', (sessionUser.uid || sessionUser.id))
+                        .maybeSingle();
+                    
+                    if (!profile) {
+                        console.log("Auth: Profile missing, auto-creating...");
+                        const emailUsername = sessionUser.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+                        // Generate a slightly unique username if needed, but for now just use email part
+                        const finalUsername = emailUsername || `user${Math.floor(Math.random() * 10000)}`;
+                        
+                        await createUserDocument(sessionUser, currentMethod, finalUsername);
+                    }
+                }
+
                 // 2. Check for email ban immediately
                 const email = sessionUser.email;
                 if (await checkEmailBan(email)) {

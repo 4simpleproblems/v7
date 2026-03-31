@@ -1432,7 +1432,8 @@ let db;
                                 path.endsWith('changelog.html') ||
                                 path.endsWith('/changelog') ||
                                 path.endsWith('documentation.html') ||
-                                path.endsWith('/documentation');
+                                path.endsWith('/documentation') ||
+                                path.includes('/@');
             
             if (isPublicPage || isRedirecting) return;
 
