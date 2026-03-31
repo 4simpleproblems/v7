@@ -411,9 +411,11 @@
                 }
 
                 // User is signed in.
-                const isAtAuthPage = window.location.pathname.endsWith('authentication.html') || 
-                                    window.location.pathname === '/' || 
-                                    window.location.pathname === '/index.html';
+                const path = window.location.pathname;
+                const isAtAuthPage = path.endsWith('authentication.html') || 
+                                    path.endsWith('/authentication') ||
+                                    path === '/' || 
+                                    path.endsWith('index.html');
 
                 if (!hasRedirected && isAtAuthPage) {
                     // Check if they are verified OR if they are a social login user

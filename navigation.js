@@ -2136,10 +2136,20 @@ let db;
             if (source === 'firebase') firebaseChecked = true;
             if (source === 'supabase') supabaseChecked = true;
 
-            const isPublicPage = window.location.pathname.endsWith('authentication.html') || 
-                                window.location.pathname.endsWith('index.html') || 
-                                window.location.pathname === '/' || 
-                                window.location.pathname.endsWith('404.html');
+            const path = window.location.pathname;
+            const isPublicPage = path.endsWith('authentication.html') || 
+                                path.endsWith('/authentication') ||
+                                path.endsWith('index.html') || 
+                                path === '/' || 
+                                path.endsWith('404.html') ||
+                                path.endsWith('verify.html') ||
+                                path.endsWith('/verify') ||
+                                path.endsWith('legal.html') ||
+                                path.endsWith('/legal') ||
+                                path.endsWith('changelog.html') ||
+                                path.endsWith('/changelog') ||
+                                path.endsWith('documentation.html') ||
+                                path.endsWith('/documentation');
             
             if (isPublicPage || isRedirecting) return;
 

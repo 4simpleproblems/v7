@@ -300,7 +300,16 @@ function lockPageAsBanned(banData) {
         path === '/' || 
         path.endsWith('index.html') || 
         path.endsWith('legal.html') || 
+        path.endsWith('/legal') || 
         path.endsWith('authentication.html') ||
+        path.endsWith('/authentication') ||
+        path.endsWith('verify.html') ||
+        path.endsWith('/verify') ||
+        path.endsWith('404.html') ||
+        path.endsWith('changelog.html') ||
+        path.endsWith('/changelog') ||
+        path.endsWith('documentation.html') ||
+        path.endsWith('/documentation') ||
         path.includes('messenger-v2.html');
 
     if (isExcludedPage) {
