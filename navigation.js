@@ -608,9 +608,9 @@ let db;
                 const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
                 avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 14px;">${initial}</div>`;
             } else {
-                const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
+                const googleProvider = user?.providerData?.find(p => p.providerId === 'google.com');
                 const googlePhoto = googleProvider ? googleProvider.photoURL : null;
-                const displayPhoto = googlePhoto || user.photoURL;
+                const displayPhoto = googlePhoto || user.photoURL || userData?.customPfp;
                 if (displayPhoto) {
                     avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
                 } else {
@@ -761,10 +761,9 @@ let db;
                     const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
                     avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 14px;">${initial}</div>`;
                 } else {
-                    const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
+                    const googleProvider = user?.providerData?.find(p => p.providerId === 'google.com');
                     const googlePhoto = googleProvider ? googleProvider.photoURL : null;
-                    const displayPhoto = googlePhoto || user.photoURL;
-                    if (displayPhoto) {
+                    const displayPhoto = googlePhoto || user.photoURL;                    if (displayPhoto) {
                         avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
                     } else {
                         const bg = DEFAULT_THEME['avatar-gradient'];
@@ -1456,7 +1455,7 @@ let db;
                         const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
                         newContent = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
                     } else {
-                        const googleProvider = currentUser?.providerData.find(p => p.providerId === 'google.com');
+                        const googleProvider = currentUser?.providerData?.find(p => p.providerId === 'google.com');
                         const googlePhoto = googleProvider ? googleProvider.photoURL : null;
                         const displayPhoto = googlePhoto || currentUser?.photoURL;
 
@@ -2144,40 +2143,36 @@ let db;
                 isPrivilegedUser = email === PRIVILEGED_EMAIL;
 
                 // Notifications Listener (Using db2 for offloading)
-                unsubNotifs = db2.collection('notifications')
-                    .where('recipientId', '==', uid)
-                    .limit(50)
-                    .onSnapshot(snap => {
-                        snap.docChanges().forEach(change => {
-                            if (change.type === 'added') {
-                                const data = change.doc.data();
-                                const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
-                                
-                                // Avoid showing old notifications as popups on initial load
-                                const isNew = (new Date() - timestamp) < 10000; 
-
-                                // Add to history
-                                const alreadyInHistory = notificationHistory.find(n => n.id === change.doc.id);
-                                if (!alreadyInHistory) {
-                                    notificationHistory.unshift({
-                                        message: data.message,
-                                        timestamp: timestamp,
-                                        id: change.doc.id
-                                    });
-                                    
-                                    // Keep history sorted
-                                    notificationHistory.sort((a, b) => b.timestamp - a.timestamp);
-                                    
-                                    if (notificationHistory.length > 20) notificationHistory.pop();
-                                    updateNotificationMenu();
-                                    
-                                    if (isNew) {
-                                        window.showNotification(data.message, true);
+                if (source === 'firebase') {
+                    unsubNotifs = db2.collection('notifications')
+                        .where('recipientId', '==', uid)
+                        .limit(50)
+                        .onSnapshot(snap => {
+                            snap.docChanges().forEach(change => {
+                                if (change.type === 'added') {
+                                    const data = change.doc.data();
+                                    const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
+                                    const isNew = (new Date() - timestamp) < 10000; 
+                                    const alreadyInHistory = notificationHistory.find(n => n.id === change.doc.id);
+                                    if (!alreadyInHistory) {
+                                        notificationHistory.unshift({
+                                            message: data.message,
+                                            timestamp: timestamp,
+                                            id: change.doc.id
+                                        });
+                                        notificationHistory.sort((a, b) => b.timestamp - a.timestamp);
+                                        if (notificationHistory.length > 20) notificationHistory.pop();
+                                        updateNotificationMenu();
+                                        if (isNew) {
+                                            window.showNotification(data.message, true);
+                                        }
                                     }
                                 }
-                            }
+                            });
+                        }, err => {
+                            if (err.code !== 'permission-denied') console.warn("Notifications listener error:", err);
                         });
-                    }, err => console.warn("Notifications listener error:", err));
+                }
 
                 if (source === 'supabase' && window.supabase) {
                     try {
@@ -2188,7 +2183,8 @@ let db;
                                 displayName: profile.display_name,
                                 username: profile.username || email.split('@')[0],
                                 pfpType: profile.pfp_type,
-                                customPfp: profile.avatar_url
+                                customPfp: profile.avatar_url,
+                                role: profile.role // Support role from Supabase
                             };
 
                             // Sync theme if different
@@ -2203,14 +2199,10 @@ let db;
                     unsubUserDoc = db.collection('users').doc(uid).onSnapshot(async (doc) => {
                         userData = doc.exists ? doc.data() : null;
                         currentUserData = userData;
-
-                        // --- DATA CORRECTION LOGIC ---
                         if (userData) {
                             let updated = false;
                             const originalUsername = userData.username || email.split('@')[0] || 'user';
                             const correctedUsername = originalUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
-                            
-                            // If username violates new strict rules, fix it
                             if (originalUsername !== correctedUsername) {
                                 if (!userData.displayName) userData.displayName = originalUsername.slice(0, 24);
                                 userData.username = correctedUsername;
@@ -2219,7 +2211,6 @@ let db;
                                 userData.displayName = originalUsername.slice(0, 24);
                                 updated = true;
                             }
-
                             if (updated) {
                                 try {
                                     await db.collection('users').doc(uid).update({
@@ -2228,26 +2219,30 @@ let db;
                                     });
                                 } catch (e) { console.error("Error updating user data:", e); }
                             }
-
-                            // --- Apply Theme from Firestore ---
                             if (userData.navbarTheme && JSON.stringify(userData.navbarTheme) !== JSON.stringify(savedTheme)) {
                                 window.applyTheme(userData.navbarTheme);
                                 localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(userData.navbarTheme));
                             }
                         }
-
                         renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
+                    }, err => {
+                        if (err.code !== 'permission-denied') console.warn("Firebase UserDoc error:", err);
                     });
                 }
 
                 // Check Admin Status
                 try {
-                    const adminDoc = await db.collection('admins').doc(uid).get();
-                    if (!isPrivilegedUser && adminDoc.exists) {
+                    // If we have a role from Supabase, use it
+                    if (userData?.role === 'admin' || userData?.role === 'superadmin') {
                         isPrivilegedUser = true;
+                    } else if (source === 'firebase') {
+                        const adminDoc = await db.collection('admins').doc(uid).get();
+                        if (!isPrivilegedUser && adminDoc.exists) {
+                            isPrivilegedUser = true;
+                        }
                     }
                 } catch (error) {
-                    console.error("Error fetching admin data:", error);
+                    if (error.code !== 'permission-denied') console.error("Error fetching admin data:", error);
                 }
             }
 

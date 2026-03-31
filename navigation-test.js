@@ -772,7 +772,7 @@ let db;
                     const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
                     avatarHtml = `<div class="initial-avatar w-full h-full rounded-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}">${initial}</div>`;
                 } else {
-                    const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
+                    const googleProvider = user?.providerData?.find(p => p.providerId === 'google.com');
                     const googlePhoto = googleProvider ? googleProvider.photoURL : null;
                     const displayPhoto = googlePhoto || user.photoURL;
 
@@ -1264,7 +1264,7 @@ let db;
                         const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
                         newContent = `<div class="initial-avatar w-full h-full rounded-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}">${initial}</div>`;
                     } else {
-                        const googleProvider = currentUser?.providerData.find(p => p.providerId === 'google.com');
+                        const googleProvider = currentUser?.providerData?.find(p => p.providerId === 'google.com');
                         const googlePhoto = googleProvider ? googleProvider.photoURL : null;
                         const displayPhoto = googlePhoto || currentUser?.photoURL;
 

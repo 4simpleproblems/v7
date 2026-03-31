@@ -19,7 +19,7 @@
             if (!authUser) return;
             
             try {
-                const googleProvider = authUser.providerData.find(p => p.providerId === 'google.com');
+                const googleProvider = authUser?.providerData?.find(p => p.providerId === 'google.com');
                 if (!googleProvider || !googleProvider.photoURL) return;
 
                 const userRef = doc(db, 'users', authUser.uid);

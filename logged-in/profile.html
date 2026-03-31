@@ -732,14 +732,26 @@
                     followActions.classList.remove('hidden');
                 }
 
-                setupMainProfileSnapshot();
-                setupFollowModalListeners();
-                setupEditProfileListeners();
-                setupOptionsListeners();
-                loadDailyPhotos();
+                // Only setup Firestore snapshots/follows if we are authenticated with Firebase
+                // or if the action doesn't require Firebase auth.
+                // For now, wrap in try/catch to handle permission-denied gracefully.
+                try {
+                    setupMainProfileSnapshot();
+                    setupFollowModalListeners();
+                    setupEditProfileListeners();
+                    setupOptionsListeners();
+                    loadDailyPhotos();
 
-                if (!isOwnProfile) {
-                    checkFollowStatus();
+                    if (!isOwnProfile) {
+                        checkFollowStatus();
+                    }
+                } catch (e) {
+                    if (e.code === 'permission-denied') {
+                        console.warn("Firebase restricted: Some real-time features may be disabled for Supabase-only session.");
+                        // Fallback: Manually load once from public-facing fetch if available
+                    } else {
+                        console.error("Profile Setup Error:", e);
+                    }
                 }
 
             } catch (e) {
