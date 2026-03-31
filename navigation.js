@@ -1,5 +1,5 @@
 /**
- * navigation.js
+ * navigation.js (v6.7.1 - Supabase Sync Fix)
  */
 
 // Prevent multiple loads
@@ -980,8 +980,27 @@ let db;
             if (user) {
                 const logoutButton = document.getElementById('logout-button');
                 if (logoutButton) {
-                    logoutButton.addEventListener('click', () => {
-                        auth.signOut().catch(err => console.error("Logout failed:", err));
+                    // Remove existing listeners if any (though usually not an issue with innerHTML replacement)
+                    const newLogoutButton = logoutButton.cloneNode(true);
+                    logoutButton.parentNode.replaceChild(newLogoutButton, logoutButton);
+                    
+                    newLogoutButton.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        try {
+                            console.log("Navigation: Attempting logout...");
+                            if (window.supabase) {
+                                await window.supabase.auth.signOut();
+                                console.log("Navigation: Supabase signed out.");
+                            }
+                            // Using the global firebase auth object if available, otherwise fallback
+                            const firebaseAuth = typeof firebase !== 'undefined' ? firebase.auth() : auth;
+                            await firebaseAuth.signOut();
+                            console.log("Navigation: Firebase signed out.");
+                            window.location.href = '/authentication.html';
+                        } catch (err) {
+                            console.error("Logout failed:", err);
+                        }
                     });
                 }
             }

@@ -262,7 +262,9 @@
                         stateAbbr: 'state_abbr',
                         schoolSkipped: 'school_skipped',
                         schoolChangesThisMonth: 'school_changes_this_month',
-                        lastSchoolChangeMonth: 'last_school_change_month'
+                        lastSchoolChangeMonth: 'last_school_change_month',
+                        usernameChangesThisMonth: 'username_changes_this_month',
+                        lastUsernameChangeMonth: 'last_username_change_month'
                     };
 
                     for (const key in updates) {

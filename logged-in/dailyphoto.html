@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4SP - DAILYPHOTO</title>
+    <title>4SP - DAILYPHOTO (v6.7.1)</title>
     <meta name="description" content="Share your day with friends through daily photos.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -99,531 +99,466 @@
             border-right: 1px solid var(--border-main);
             display: flex;
             flex-direction: column;
-            z-index: 50;
+            overflow: hidden;
         }
 
-        .sidebar-scroll-content {
+        .sidebar-header {
             padding: 1.5rem;
+            border-bottom: 1px solid var(--border-main);
+        }
+
+        .sidebar-content {
+            flex: 1;
             overflow-y: auto;
-            flex-grow: 1;
+            padding: 1.5rem;
         }
-        .sidebar-scroll-content::-webkit-scrollbar { display: none; }
 
-        .sidebar-bottom-controls {
-            display: flex;
-            width: 100%;
-            border-top: 1px solid var(--border-main);
-            background-color: var(--bg-card);
-        }
-        .sidebar-control-btn {
-            flex: 1; 
-            color: var(--text-muted);
-            font-size: 1.25rem;
-            padding: 1rem 0;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            transition: color 0.2s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .sidebar-control-btn:hover { color: var(--text-main); }
-        .sidebar-control-btn.active { color: var(--accent-color); }
-
-        .compact-list-wrapper {
-             background-color: var(--bg-card);
-             border-radius: 1.25rem; 
-             border: 1px solid var(--border-main); 
-             margin-top: 0.75rem;
-             overflow: hidden;
-        }
-        .compact-list-items {
-            overflow-y: auto;
-            max-height: 350px; 
-            padding: 0.25rem; 
-        }
-        
-        .compact-list-item {
-            border-radius: 14px; 
-            margin-bottom: 2px;
-            padding: 0.5rem; 
-            transition: background-color 0.2s;
-        }
-        .compact-list-item:hover { background-color: var(--border-faint); }
-
-        .main-view { 
+        .main-content {
             grid-area: main;
-            height: 100%;
             background-color: var(--bg-page);
-            padding: 2rem; 
-            overflow-y: auto; 
-        }
-        .main-view::-webkit-scrollbar { display: none; }
-        
-        .feed-content-inner {
-            max-width: 1000px; 
-            margin: 0 auto; 
-            padding-bottom: 5rem; 
+            overflow-y: auto;
+            position: relative;
         }
 
-        .photo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
-            gap: 1.5rem; 
+        .content-scroll {
+            padding: 2.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
         }
+
+        /* Nav Items */
+        .sidebar-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1.25rem;
+            border-radius: 16px;
+            color: var(--text-muted);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .sidebar-nav-item:hover {
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            border-color: var(--border-main);
+        }
+        .sidebar-nav-item.active {
+            background-color: var(--btn-bg);
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        /* Photo Grid */
+        .photo-feed-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
         .photo-thumbnail {
             position: relative;
+            aspect-ratio: 4/5;
+            border-radius: 28px;
             overflow: hidden;
-            border-radius: 1.25rem; 
-            cursor: pointer;
-            aspect-ratio: 1 / 1; 
             background-color: var(--bg-card);
             border: 1px solid var(--border-main);
-            transition: transform 0.3s ease, border-color 0.3s ease;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .photo-thumbnail:hover {
-            transform: translateY(-4px);
+            transform: translateY(-8px) scale(1.02);
             border-color: var(--accent-color);
+            box-shadow: 0 20px 40px -15px var(--accent-glow);
+            z-index: 10;
         }
         .photo-thumbnail img {
-            width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
         }
-        .photo-thumbnail:hover img { transform: scale(1.05); }
-        
-        .photo-thumbnail.is-mutual {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-        .mutual-badge {
-            position: absolute;
-            top: 0.75rem;
-            left: 0.75rem;
-            background: var(--accent-glow);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            color: white;
-            padding: 0.35rem 0.6rem;
-            border-radius: 10px;
-            font-size: 9px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            z-index: 20;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            border: 1px solid var(--accent-color);
-        }
-        
-        .overlay-grad {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 50%);
-            pointer-events: none; 
-        }
-        .title-overlay {
-            position: absolute; bottom: 0.75rem; left: 0.75rem; right: 0.75rem;
-            color: white; font-size: 0.8rem; font-weight: 400;
-            white-space: nowrap; overflow: hidden;
-            z-index: 10;
-            background: var(--accent-glow);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 0.5rem 1rem;
-            border-radius: 12px;
-            border: 1px solid var(--accent-color);
-            text-align: left;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-        }
-        
-        .modal-backdrop {
-            position: fixed; inset: 0;
-            background-color: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 100000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-            padding: 1rem;
-        }
-        .modal-backdrop.open { opacity: 1; pointer-events: auto; }
-        
-        .modal-content {
-            background-color: var(--bg-card); 
-            border: 1px solid var(--border-main);
-            border-radius: 1.5rem; 
-            width: 95%; 
-            max-width: 1200px;
-            height: 90vh;
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        .photo-thumbnail:hover img {
+            transform: scale(1.1);
         }
 
-        @media (min-width: 1024px) {
-            .modal-content { flex-direction: row; }
+        .overlay-grad {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%, rgba(0,0,0,0.4) 100%);
+            opacity: 0.8;
         }
-        
-        #photo-display-area {
-            flex: 1 1 auto; 
-            background-color: #000;
-            display: flex; 
-            align-items: center; 
+
+        .title-overlay {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 1.5rem;
+            right: 1.5rem;
+            color: white;
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .mutual-badge {
+            position: absolute;
+            top: 1.25rem;
+            left: 1.25rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            z-index: 20;
+        }
+
+        /* Modal Styles */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.85);
+            backdrop-filter: blur(16px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
             justify-content: center;
-            overflow: hidden;
-            min-width: 0; 
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
+        .modal-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-container {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-main);
+            border-radius: 32px;
+            width: 95%;
+            max-width: 1100px;
+            max-height: 85vh;
+            display: flex;
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-backdrop.open .modal-container {
+            transform: scale(1);
+        }
+
+        #photo-display-area {
+            flex: 1.2;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
         .photo-modal-img {
-            width: 100%; height: 100%; object-fit: contain; 
+            max-width: 100%;
+            max-height: 85vh;
+            object-fit: contain;
         }
 
         #photo-info-panel {
-            background-color: var(--bg-card);
-            display: flex; 
+            flex: 0.8;
+            padding: 2.5rem;
+            display: flex;
             flex-direction: column;
-            padding: 1.5rem;
-            width: 100%; 
-            min-height: 0;
-            border-top: 1px solid var(--border-main);
-        }
-
-        @media (min-width: 1024px) {
-            #photo-info-panel {
-                width: 400px;
-                flex: 0 0 400px;
-                height: 100%;
-                border-top: none;
-                border-left: 1px solid var(--border-main);
-            }
+            border-left: 1px solid var(--border-main);
+            overflow-y: auto;
         }
 
         #comments-section {
             flex: 1;
-            background-color: rgba(255,255,255,0.05); 
-            border-radius: 1.25rem; 
-            padding: 1rem;
-            margin-bottom: 1rem;
             overflow-y: auto;
-            border: 1px solid var(--border-main);
-            min-height: 0;
+            margin: 1.5rem 0;
+            padding-right: 0.5rem;
         }
-        #comments-section::-webkit-scrollbar { display: none; }
 
         .modal-close-btn {
-            position: absolute; top: 1.25rem; left: 1.25rem;
-            width: 2.5rem; height: 2.5rem;
-            display: flex; align-items: center; justify-content: center;
-            background-color: rgba(0,0,0,0.5);
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.5);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 14px;
-            color: #ffffff;
-            z-index: 100;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
+            z-index: 100;
             transition: all 0.2s;
         }
         .modal-close-btn:hover {
-            background-color: rgba(255,255,255,0.1);
-            transform: scale(1.05);
-            border-color: #ffffff;
+            background: rgba(255,255,255,0.1);
+            transform: rotate(90deg);
         }
-        .modal-close-btn i { font-size: 14px; }
 
-        .scroll-container-wrapper {
-            position: relative;
-            overflow: hidden;
-        }
-        .scroll-fade-top, .scroll-fade-bottom {
-            position: absolute;
-            left: 0; right: 0; height: 40px;
-            pointer-events: none;
-            z-index: 10;
-            transition: opacity 0.3s ease;
-            opacity: 0;
-        }
-        .scroll-fade-top {
-            top: 0;
-            background: linear-gradient(to bottom, var(--bg-card), transparent);
-        }
-        .scroll-fade-bottom {
-            bottom: 0;
-            background: linear-gradient(to top, var(--bg-card), transparent);
-        }
-        .scroll-fade-active { opacity: 1; }
-
-        .custom-scroll {
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        .custom-scroll::-webkit-scrollbar { display: none; }
-
+        /* Generic List Items */
         .list-item-themed {
-            background-color: rgba(255,255,255,0.03);
-            border: 1px solid var(--border-main);
-            border-radius: 1rem;
             padding: 1rem;
+            border-radius: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
         }
         .list-item-themed:hover {
-            background-color: var(--btn-bg);
             border-color: var(--accent-color);
-            transform: translateX(4px);
+            background: var(--btn-bg);
         }
 
-        /* Refresh button pulse animation */
-        @keyframes pulse-ring {
-            0% { box-shadow: 0 0 0 0 var(--accent-glow); }
-            70% { box-shadow: 0 0 0 8px rgba(0,0,0,0); }
-            100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); }
-        }
-        .refresh-pulse { animation: pulse-ring 2s infinite; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
 
-        #custom-tooltip {
-            position: fixed; background-color: #000; border: 1px solid #333; color: #fff;
-            padding: 0.4rem 0.8rem; border-radius: 14px; font-size: 0.75rem;
-            pointer-events: none; z-index: 10000; opacity: 0; transition: opacity 0.15s ease;
-            white-space: nowrap; box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        @media (max-width: 900px) {
+            .app-container { grid-template-areas: "main"; grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .modal-container { flex-direction: column; max-height: 95vh; }
+            #photo-info-panel { border-left: none; border-top: 1px solid var(--border-main); }
         }
-
-        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <div id="custom-tooltip"></div>
-
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="sidebar-scroll-content">
+            <div class="sidebar-header">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold tracking-tight">Your Activity</h2>
+                    <div id="school-indicator-sidebar" class="hidden px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                        <span id="sidebar-school-name">School</span>
+                    </div>
+                </div>
                 
-                <div id="school-indicator-sidebar" class="mb-4 hidden">
-                    <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-1">Your School</p>
-                    <p id="sidebar-school-name" class="text-sm font-bold truncate" style="color: var(--accent-color)"></p>
-                </div>
-
-                <div class="mb-6 pb-4 border-b border-[var(--border-main)]">
-                    <h2 class="text-lg mb-2">Find Users</h2>
-                    <div class="relative">
-                        <input type="text" id="user-search-input" placeholder="Search by username..." class="w-full p-3 pl-10 bg-white/5 border border-white/10 rounded-[14px] outline-none focus:border-[var(--accent-color)] focus:bg-white/10 text-[var(--text-main)] transition-all">
-                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 opacity-30"></i>
+                <nav>
+                    <div id="sidebar-nav-posts" class="sidebar-nav-item active">
+                        <i class="fas fa-camera-retro"></i>
+                        <span>My Moments</span>
                     </div>
-                    <div id="search-results" class="mt-2 space-y-1"></div>
-                </div>
-
-                <div id="daily-posts-section">
-                    <h2 class="text-lg mb-2">My Posts</h2>
-                    <p class="text-xs opacity-50 mb-3">5 slots / day</p>
-                    <div id="daily-posts-container" class="space-y-2">
+                    <div id="sidebar-nav-friends" class="sidebar-nav-item">
+                        <i class="fas fa-user-friends"></i>
+                        <span>Mutual Friends</span>
                     </div>
-                </div>
-
-                <div id="friends-section-wrapper" class="hidden">
-                    <h2 class="text-lg mb-2">Mutual Following</h2>
-                    <p class="text-[10px] opacity-40 mb-3">Users you follow and who follow you back.</p>
-                    <div id="friends-list-wrapper" class="compact-list-wrapper">
-                        <div id="friends-list-items" class="compact-list-items"></div>
+                    <div id="sidebar-nav-blocked" class="sidebar-nav-item">
+                        <i class="fas fa-ban text-red-500/50"></i>
+                        <span>Blocked Users</span>
                     </div>
-                </div>
-
-                <div id="blocked-section" class="hidden">
-                    <h2 class="text-lg mb-2">Blocked</h2>
-                    <div id="blocked-list-wrapper" class="compact-list-wrapper">
-                        <div id="blocked-list-items" class="compact-list-items"></div>
-                    </div>
-                </div>
-
+                </nav>
             </div>
 
-            <div class="sidebar-bottom-controls">
-                <button id="sidebar-nav-posts" class="sidebar-control-btn active" title="My Posts"><i class="fas fa-images"></i></button>
-                <button id="sidebar-nav-friends" class="sidebar-control-btn" title="Mutuals"><i class="fas fa-user-friends"></i></button>
-                <button id="sidebar-nav-blocked" class="sidebar-control-btn" title="Blocked Users"><i class="fas fa-user-shield"></i></button>
+            <div class="sidebar-content">
+                <!-- My Posts Section -->
+                <div id="daily-posts-section" class="space-y-4">
+                    <div class="flex items-center justify-between opacity-40 mb-4">
+                        <span class="text-[10px] font-bold uppercase tracking-widest">Today's Slots</span>
+                        <span class="text-[10px] font-mono">0 / 5</span>
+                    </div>
+                    <div id="daily-posts-container" class="space-y-2">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Friends Section (Hidden by default) -->
+                <div id="friends-section-wrapper" class="hidden">
+                    <div class="mb-6">
+                        <div class="relative">
+                            <input type="text" id="user-search-input" placeholder="Search users..." class="w-full bg-white/5 border border-[var(--border-main)] rounded-xl py-3 pl-10 pr-4 text-xs outline-none focus:border-[var(--accent-color)] transition-all">
+                            <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 opacity-20 text-[10px]"></i>
+                        </div>
+                        <div id="search-results" class="mt-2 space-y-1 max-h-40 overflow-y-auto"></div>
+                    </div>
+                    
+                    <div id="friends-list-items" class="space-y-1">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Blocked Section (Hidden by default) -->
+                <div id="blocked-section" class="hidden">
+                    <div id="blocked-list-items" class="space-y-1">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
             </div>
         </aside>
 
-        <!-- Main View -->
-        <main class="main-view">
-            <div class="feed-content-inner">
-                
-                <!-- Admin Mock Post Section REMOVED -->
-
-                <div class="flex justify-between items-center mb-10">
+        <!-- Main Feed Area -->
+        <main class="main-content">
+            <div class="content-scroll">
+                <header class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                     <div>
-                        <h1 class="text-4xl font-bold mb-2">Dailyphoto</h1>
-                        <p id="feed-desc" class="opacity-60">Moments from your school.</p>
+                        <h1 class="text-4xl font-bold mb-2 tracking-tight">Daily Photo Feed</h1>
+                        <p id="feed-desc" class="text-sm opacity-40 font-light">Explore moments shared by your school today.</p>
                     </div>
                     
-                    <div class="flex gap-3 items-center">
-                        <!-- Manual refresh button — replaces live listener -->
-                        <button id="refresh-feed-btn" class="btn-icon refresh-pulse" title="Refresh feed">
-                            <i class="fas fa-sync-alt text-sm"></i>
-                        </button>
-                        <div class="inline-flex bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl p-1">
-                            <button id="feed-toggle-school" class="px-4 py-2 rounded-xl text-sm transition-all active btn-primary-override">School</button>
-                            <button id="feed-toggle-district" class="px-4 py-2 rounded-xl text-sm transition-all">District</button>
-                        </div>
+                    <div class="flex items-center gap-2 p-1.5 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl shrink-0">
+                        <button id="feed-toggle-school" class="btn-toolbar-style active px-6">School</button>
+                        <button id="feed-toggle-district" class="btn-toolbar-style px-6">District</button>
+                        <div class="w-px h-6 bg-[var(--border-main)] mx-1"></div>
+                        <button id="refresh-feed-btn" class="btn-icon" title="Refresh Feed"><i class="fas fa-sync-alt text-xs"></i></button>
                     </div>
+                </header>
+
+                <div id="photo-feed" class="photo-feed-grid">
+                    <!-- Photo thumbnails go here -->
                 </div>
-                
-                <div id="photo-feed" class="photo-grid"></div>
             </div>
         </main>
     </div>
 
-    <!-- Announcement Modal -->
-    <div id="announcement-modal" class="modal-backdrop">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-md p-8 text-center">
-            <div class="w-16 h-16 bg-indigo-500/20 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i class="fas fa-school text-2xl"></i>
+    <!-- Photo View Modal -->
+    <div id="photo-modal" class="modal-backdrop">
+        <div class="modal-container" id="modal-content-container">
+            <!-- Filled by JS -->
+        </div>
+    </div>
+
+    <!-- Upload Menu Modal -->
+    <div id="upload-menu-modal" class="modal-backdrop">
+        <div class="modal-container max-w-md flex-col p-8 items-center text-center">
+            <div class="w-20 h-20 bg-indigo-500/10 border border-indigo-500/20 rounded-3xl flex items-center justify-center text-indigo-400 text-3xl mb-6">
+                <i class="fas fa-cloud-upload-alt"></i>
             </div>
-            <h3 class="text-2xl font-bold mb-4">Simplifying Dailyphoto</h3>
-            <p class="opacity-60 mb-8 text-sm leading-relaxed">To keep our community safe and focused, we're moving to a school-based system. You'll now see moments from your school and district instead of a global public feed.</p>
-            <button id="announcement-continue-btn" class="btn-toolbar-style btn-primary-override w-full py-3">Find My School</button>
+            <h3 class="text-2xl font-bold mb-2">Share a Moment</h3>
+            <p class="text-sm opacity-40 mb-8 font-light leading-relaxed">Photos disappear after 24 hours. Choose a square-ish image for the best view.</p>
+            
+            <input type="file" id="upload-file-input" accept="image/*" class="hidden">
+            <button onclick="document.getElementById('upload-file-input').click()" class="btn-toolbar-style btn-primary-override w-full py-4 mb-3">
+                Select from Device
+            </button>
+            <button id="upload-menu-close-btn" class="w-full py-3 text-xs opacity-30 hover:opacity-100 transition-opacity">Cancel</button>
         </div>
     </div>
 
     <!-- School Selection Modal -->
     <div id="school-selection-modal" class="modal-backdrop">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-lg p-8">
+        <div class="modal-container max-w-2xl flex-col p-10 overflow-hidden relative">
             <h3 class="text-2xl font-bold mb-2">Select Your School</h3>
-            <p class="text-xs opacity-50 mb-6 font-medium uppercase tracking-widest">Help us localize your feed</p>
+            <p class="text-sm opacity-40 mb-8">This determines which feed you see. You can change this twice per month.</p>
             
-            <div id="state-step">
-                <label class="text-xs font-bold opacity-40 uppercase mb-2 block">1. Search Your State</label>
+            <div id="state-step" class="flex flex-col h-full overflow-hidden">
                 <div class="relative mb-4">
-                    <input type="text" id="state-search-input" placeholder="Search by name or abbreviation (e.g. Ohio or OH)..." class="w-full p-4 pl-12 bg-black/40 border border-[var(--border-main)] rounded-2xl outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] transition-all">
-                    <i class="fas fa-map-marker-alt absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-lg"></i>
+                    <input type="text" id="state-search-input" placeholder="Search State..." class="w-full bg-white/5 border border-[var(--border-main)] rounded-xl py-3 pl-10 pr-4 text-sm outline-none focus:border-[var(--accent-color)]">
+                    <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 opacity-20 text-sm"></i>
                 </div>
-                <div class="scroll-container-wrapper">
-                    <div id="state-fade-top" class="scroll-fade-top"></div>
-                    <div id="state-results" class="space-y-2 max-h-48 overflow-y-auto mb-6 custom-scroll"></div>
-                    <div id="state-fade-bottom" class="scroll-fade-bottom"></div>
+                <div class="relative overflow-hidden flex-1">
+                    <div id="state-fade-top" class="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-[var(--bg-card)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                    <div id="state-results" class="space-y-1 overflow-y-auto max-h-[40vh] pr-2 custom-scroll"></div>
+                    <div id="state-fade-bottom" class="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--bg-card)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
                 </div>
             </div>
 
-            <div id="school-step" class="hidden">
-                <label class="text-xs font-bold opacity-40 uppercase mb-2 block">2. Find Your School</label>
+            <div id="school-step" class="hidden flex flex-col h-full overflow-hidden">
                 <div class="relative mb-4">
-                    <input type="text" id="school-search-input" placeholder="Search by school, district, or county..." class="w-full p-4 pl-12 bg-black/40 border border-[var(--border-main)] rounded-2xl outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] transition-all">
-                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-lg"></i>
+                    <input type="text" id="school-search-input" placeholder="Search School Name..." class="w-full bg-white/5 border border-[var(--border-main)] rounded-xl py-3 pl-10 pr-4 text-sm outline-none focus:border-[var(--accent-color)]">
+                    <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 opacity-20 text-sm"></i>
                 </div>
-                <div class="scroll-container-wrapper">
-                    <div id="school-fade-top" class="scroll-fade-top"></div>
-                    <div id="school-results" class="space-y-2 max-h-60 overflow-y-auto mb-6 custom-scroll"></div>
-                    <div id="school-fade-bottom" class="scroll-fade-bottom"></div>
+                <div class="relative overflow-hidden flex-1">
+                    <div id="school-fade-top" class="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-[var(--bg-card)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                    <div id="school-results" class="space-y-1 overflow-y-auto max-h-[40vh] pr-2 custom-scroll"></div>
+                    <div id="school-fade-bottom" class="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--bg-card)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
                 </div>
-                <button id="back-to-states" class="btn-toolbar-style w-full py-3 mt-4 text-xs font-bold flex items-center justify-center gap-2">
-                    <i class="fas fa-arrow-left"></i> Change State
-                </button>
+                <button id="back-to-states" class="mt-6 text-xs text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-widest flex items-center gap-2"><i class="fas fa-arrow-left"></i> Back to States</button>
             </div>
 
-            <div class="mt-8 pt-6 border-t border-[var(--border-main)] flex gap-3">
-                <button id="skip-school-btn" class="btn-toolbar-style w-full py-3 opacity-60 hover:opacity-100 transition-all font-bold">Skip (Not in US)</button>
+            <div class="mt-8 pt-6 border-t border-[var(--border-main)] flex justify-between items-center">
+                <p id="school-selection-message" class="text-xs text-red-400"></p>
+                <button id="skip-school-btn" class="text-xs opacity-30 hover:opacity-100 transition-opacity font-bold">Skip Selection</button>
             </div>
         </div>
     </div>
 
-    <!-- Photo Modal -->
-    <div id="photo-modal" class="modal-backdrop">
-        <div id="modal-content-container" class="modal-content"></div>
-    </div>
-
-    <!-- Upload Modal -->
-    <div id="upload-menu-modal" class="modal-backdrop">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8">
-            <h3 class="text-2xl font-bold mb-6">Post Photo</h3>
-            <input type="file" id="upload-file-input" class="hidden" accept="image/*">
-            <label for="upload-file-input" class="bg-black/40 border-2 border-dashed border-[var(--border-main)] rounded-[22px] p-12 text-center cursor-pointer hover:border-[var(--accent-color)] transition-all block mb-6">
-                <i class="fas fa-cloud-upload-alt text-5xl mb-4 opacity-20"></i>
-                <span class="block font-medium opacity-60">Select Image</span>
-            </label>
-            <button id="upload-menu-close-btn" class="btn-toolbar-style w-full py-3">Cancel</button>
-        </div>
-    </div>
-
-    <!-- Custom Alert -->
+    <!-- Simple Custom Modals -->
     <div id="custom-alert-modal" class="modal-backdrop">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8 text-center">
-            <h3 id="custom-alert-title" class="text-xl font-bold mb-4">Alert</h3>
-            <p id="custom-alert-message" class="opacity-60 mb-8 text-sm"></p>
+        <div class="modal-container max-w-sm flex-col p-8 items-center text-center">
+            <h3 id="custom-alert-title" class="text-xl font-bold mb-2">Notice</h3>
+            <p id="custom-alert-message" class="text-sm opacity-50 mb-8 font-light"></p>
             <button id="custom-alert-btn" class="btn-toolbar-style btn-primary-override w-full py-3">OK</button>
         </div>
     </div>
 
-    <!-- Custom Confirm -->
     <div id="custom-confirm-modal" class="modal-backdrop">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8 text-center">
-            <h3 id="custom-confirm-title" class="text-xl font-bold mb-4">Confirm</h3>
-            <p id="custom-confirm-message" class="opacity-60 mb-8 text-sm"></p>
-            <div class="flex gap-3">
+        <div class="modal-container max-w-sm flex-col p-8 items-center text-center">
+            <h3 id="custom-confirm-title" class="text-xl font-bold mb-2">Confirm</h3>
+            <p id="custom-confirm-message" class="text-sm opacity-50 mb-8 font-light"></p>
+            <div class="flex gap-3 w-full">
                 <button id="custom-confirm-cancel" class="btn-toolbar-style flex-1 py-3">Cancel</button>
-                <button id="custom-confirm-ok" class="btn-toolbar-style btn-primary-override flex-1 py-3">OK</button>
+                <button id="custom-confirm-ok" class="btn-toolbar-style btn-primary-override flex-1 py-3">Confirm</button>
             </div>
         </div>
     </div>
 
-    <!-- Custom Prompt -->
     <div id="custom-prompt-modal" class="modal-backdrop">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-main)] rounded-[1.25rem] w-full max-w-sm p-8">
-            <h3 id="custom-prompt-title" class="text-xl font-bold mb-4">Input</h3>
-            <div id="custom-prompt-preview-container" class="hidden mb-6 aspect-video rounded-xl overflow-hidden bg-black/40 border border-[var(--border-main)]">
-                <img id="custom-prompt-preview-img" src="" class="w-full h-full object-contain">
+        <div class="modal-container max-w-md flex-col p-8 items-center">
+            <h3 id="custom-prompt-title" class="text-xl font-bold mb-2">Input</h3>
+            <p id="custom-prompt-message" class="text-sm opacity-50 mb-6 font-light text-center"></p>
+            <div id="custom-prompt-preview-container" class="hidden mb-6 w-full aspect-square max-w-[200px] rounded-2xl overflow-hidden border border-[var(--border-main)]">
+                <img id="custom-prompt-preview-img" class="w-full h-full object-cover">
             </div>
-            <p id="custom-prompt-message" class="opacity-60 mb-4 text-sm"></p>
-            <input type="text" id="custom-prompt-input" class="w-full p-3 bg-black/20 border border-[var(--border-main)] rounded-[14px] outline-none focus:border-[var(--accent-color)] text-[var(--text-main)] mb-6">
-            <div class="flex gap-3">
+            <input type="text" id="custom-prompt-input" class="w-full bg-white/5 border border-[var(--border-main)] rounded-xl py-3 px-4 text-sm outline-none focus:border-[var(--accent-color)] mb-8">
+            <div class="flex gap-3 w-full">
                 <button id="custom-prompt-cancel" class="btn-toolbar-style flex-1 py-3">Cancel</button>
-                <button id="custom-prompt-ok" class="btn-toolbar-style btn-primary-override flex-1 py-3">OK</button>
+                <button id="custom-prompt-ok" class="btn-toolbar-style btn-primary-override flex-1 py-3">Submit</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Announcement Modal -->
+    <div id="announcement-modal" class="modal-backdrop">
+        <div class="modal-container max-w-xl flex-col p-12 items-center text-center">
+            <div class="w-24 h-24 bg-indigo-500/10 border border-indigo-500/20 rounded-[40px] flex items-center justify-center text-indigo-400 text-4xl mb-8">
+                <i class="fas fa-school"></i>
+            </div>
+            <h2 class="text-3xl font-bold mb-4 tracking-tight">Pick Your School</h2>
+            <p class="text-base opacity-50 mb-10 font-light leading-relaxed">To use Daily Photo, you must select your school. This connects you with classmates and lets you see shared moments from your district.</p>
+            <button id="announcement-continue-btn" class="btn-toolbar-style btn-primary-override w-full py-5 text-lg shadow-2xl shadow-indigo-500/20">
+                Pick My School <i class="fas fa-arrow-right ml-2 text-sm opacity-50"></i>
+            </button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, getDoc, setDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, arrayRemove, writeBatch, limit, addDoc, deleteDoc, serverTimestamp, orderBy, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
         import { firebaseConfig } from "/firebase-config.js";
-        import { firebaseConfig2 } from "/firebase-config-2.js";
         import { getAvatarHTML } from "/utils.js";
 
-        // Initialize primary app
+        // Initialize primary app (legacy fallback)
         if (!getApps().length) initializeApp(firebaseConfig);
         const app = getApp();
-        
-        // Initialize secondary app for offloading data
-        let app2;
-        try {
-            app2 = getApp("secondary");
-        } catch (e) {
-            app2 = initializeApp(firebaseConfig2, "secondary");
-        }
-
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const db2 = getFirestore(app2); // Secondary DB for daily_photos
         const storage = getStorage(app);
-        const functions = getFunctions(app);
-        const mongoBridge = httpsCallable(functions, 'mongoBridge');
 
         let currentUser = null;
         let userData = {};
-
-        // -----------------------------------------------------------------------
-        // FIX 1: Social graph is cached once at init, NOT re-fetched on every
-        // user doc snapshot. followingUids/followerUids/mutualUids are only
-        // refreshed when the user explicitly changes their follow state.
-        // -----------------------------------------------------------------------
         let followingUids = [];
         let followerUids = [];
         let mutualUids = [];
         let blockedUsers = [];
         let feedMode = 'school';
-        let isAdmin = false; // Admin status is determined in initApp
+        let isAdmin = false;
         let unsubModal = () => {};
         let unsubUser = () => {};
 
@@ -631,17 +566,14 @@
         let currentStateSchools = [];
         let selectedState = null;
 
-        const DAILY_COLLECTION = collection(db2, 'daily_photos'); // Using db2
         const USERS_COLLECTION = 'users';
 
         // --- Cursed Text Filter ---
         function containsCursedText(text) {
             if (!text) return false;
-            // Combining characters range (Zalgo text uses these heavily)
             const combiningMarksRegex = /[\u0300-\u036f\u1ab0-\u1aff\u1dc0-\u1dff\u20d0-\u20ff\ufe20-\ufe2f]/g;
             const matches = text.match(combiningMarksRegex);
             if (!matches) return false;
-            // Block if more than 15 combining marks total or ratio is high
             return matches.length > 15 || matches.length > text.length;
         }
 
@@ -712,7 +644,6 @@
                 currentUser = user;
                 initApp();
             } else {
-                // Try to see if we have a Supabase session
                 if (window.supabase) {
                     const { data: { session } } = await window.supabase.auth.getSession();
                     if (session) {
@@ -721,7 +652,6 @@
                         return;
                     }
                 }
-                // Only try anonymous if no Supabase session
                 signInAnonymously(auth).catch(err => console.warn("Firebase Anonymous login restricted:", err.message));
             }
         });
@@ -729,28 +659,13 @@
         async function initApp() {
             try {
                 const uid = (currentUser.uid || currentUser.id);
-                // 1. Try Supabase first
                 if (window.supabase) {
                     const { data: profile } = await window.supabase.from('profiles').select('is_admin').eq('id', uid).maybeSingle();
                     if (profile) isAdmin = profile.is_admin;
                 }
-                
-                // 2. Fallback to Firestore admins (legacy)
-                if (!isAdmin) {
-                    try {
-                        const adminSnap = await getDoc(doc(db, 'admins', uid));
-                        isAdmin = adminSnap.exists();
-                    } catch (e) { /* Permission denied expected for users */ }
-                }
-
-                // 3. Last fallback: hardcoded email
                 if (!isAdmin && currentUser.email === '4simpleproblems@gmail.com') isAdmin = true;
             } catch (e) { console.warn("Admin check failed:", e); }
 
-            // -----------------------------------------------------------------------
-            // FIX 1 APPLIED: Fetch social graph ONCE here, not inside listenToUser.
-            // listenToUser is now a lightweight doc watcher for profile/school data only.
-            // -----------------------------------------------------------------------
             await fetchSocialGraph();
 
             setupSidebarNav();
@@ -761,65 +676,35 @@
             setupSchoolSelection();
         }
 
-        // -----------------------------------------------------------------------
-        // fetchSocialGraph: runs once at init (and can be called again after a
-        // follow/unfollow action). Does NOT run on every user doc update.
-        // -----------------------------------------------------------------------
         async function fetchSocialGraph() {
             const uid = (currentUser.uid || currentUser.id);
-            
-            // 1. Try Supabase first
             if (window.supabase) {
                 try {
                     const [followingRes, followersRes] = await Promise.all([
                         window.supabase.from('follows').select('following_id').eq('follower_id', uid),
                         window.supabase.from('follows').select('follower_id').eq('following_id', uid)
                     ]);
-                    
                     if (!followingRes.error && !followersRes.error) {
                         followingUids = followingRes.data.map(f => f.following_id);
                         followerUids = followersRes.data.map(f => f.follower_id);
                         mutualUids = followingUids.filter(id => followerUids.includes(id));
-                        return; // Successfully loaded from Supabase
                     }
-                } catch (e) {
-                    console.warn("Supabase social graph fetch failed:", e);
-                }
-            }
-
-            // 2. Fallback to Firestore (Legacy)
-            try {
-                const [followingSnap, followersSnap] = await Promise.all([
-                    getDocs(collection(db, USERS_COLLECTION, uid, 'following')),
-                    getDocs(collection(db, USERS_COLLECTION, uid, 'followers'))
-                ]);
-                followingUids = followingSnap.docs.map(d => d.id).filter(id => id !== '.init');
-                followerUids = followersSnap.docs.map(d => d.id).filter(id => id !== '.init');
-                mutualUids = followingUids.filter(id => followerUids.includes(id));
-            } catch (e) {
-                console.warn("Firestore social graph fetch failed (expected for new accounts):", e.message);
+                } catch (e) { console.warn("Supabase social graph fetch failed:", e); }
             }
         }
 
-        // -----------------------------------------------------------------------
-        // listenToUser: watches the user doc for profile/school changes only.
-        // NO longer fetches following/followers subcollections on every update.
-        // -----------------------------------------------------------------------
         function listenToUser() {
             const uid = (currentUser.uid || currentUser.id);
             if (unsubUser) unsubUser();
 
-            // 1. Unified data handler
             const processUserData = async (data) => {
                 if (!data) return;
                 userData = {
                     ...data,
-                    schoolId: data.schoolId || data.school_id,
+                    schoolId: data.schoolId || data.school_name || data.school_id,
                     schoolName: data.schoolName || data.school_name,
                     districtId: data.districtId || data.district_id,
                     schoolSkipped: data.schoolSkipped !== undefined ? data.schoolSkipped : data.school_skipped,
-                    schoolChangesThisMonth: data.schoolChangesThisMonth !== undefined ? data.schoolChangesThisMonth : data.school_changes_this_month,
-                    lastSchoolChangeMonth: data.lastSchoolChangeMonth !== undefined ? data.lastSchoolChangeMonth : data.last_school_change_month,
                     dailySlotsUsed: data.dailySlotsUsed || data.daily_slots_used || []
                 };
                 blockedUsers = data.blocked_users || [];
@@ -843,7 +728,6 @@
 
                 renderMyPosts(userData.dailySlotsUsed);
 
-                // Only load feed on first real data arrival
                 if (!window._feedLoaded) {
                     window._feedLoaded = true;
                     await loadFeed();
@@ -853,41 +737,23 @@
                 if (!document.getElementById('blocked-section').classList.contains('hidden')) renderBlockedList();
             };
 
-            // 2. Try Firestore Realtime (Legacy)
-            try {
-                unsubUser = onSnapshot(doc(db, USERS_COLLECTION, uid), async snap => {
-                    if (snap.exists()) processUserData(snap.data());
-                }, (e) => {
-                    if (e.code !== 'permission-denied') console.warn("Firestore listen error:", e);
-                });
-            } catch (e) { console.warn("Firestore real-time disabled."); }
-
-            // 3. Try Supabase Initial Fetch + Realtime
             if (window.supabase) {
                 window.supabase.from('profiles').select('*').eq('id', uid).maybeSingle().then(({data}) => {
                     if (data) processUserData(data);
                 });
 
-                // Setup Supabase Realtime for this profile
                 const profileChannel = window.supabase.channel(`public:profiles:id=eq.${uid}`)
                     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` }, payload => {
                         processUserData(payload.new);
                     })
                     .subscribe();
                 
-                const oldUnsub = unsubUser;
                 unsubUser = () => {
-                    if (oldUnsub) oldUnsub();
                     window.supabase.removeChannel(profileChannel);
                 };
             }
         }
 
-        // -----------------------------------------------------------------------
-        // FIX 2: Feed uses getDocs (one-time fetch) instead of onSnapshot.
-        // A manual refresh button replaces the live listener.
-        // This eliminates the continuous read drain from 700 concurrent listeners.
-        // -----------------------------------------------------------------------
         async function loadFeed() {
             const grid = document.getElementById('photo-feed');
             const refreshBtn = document.getElementById('refresh-feed-btn');
@@ -903,34 +769,33 @@
                 let posts = [];
                 const isNoSchool = !userData.schoolId || userData.schoolSkipped;
 
-                // 1. Try Supabase first
                 if (window.supabase) {
-                    let query = window.supabase.from('daily_photos').select('*').eq('status', 'active').gte('created_at', todayISO);
+                    let queryBuilder = window.supabase.from('daily_photos').select('*').eq('status', 'active').gte('created_at', todayISO);
                     
                     if (isNoSchool) {
                         document.getElementById('feed-toggle-school').textContent = 'Mutuals';
                         document.getElementById('feed-toggle-district').textContent = 'Public';
 
                         if (feedMode === 'district' || feedMode === 'public') {
-                            query = query.is('school_id', null).limit(50);
+                            queryBuilder = queryBuilder.is('school_id', null).limit(50);
                         } else {
-                            // Mutuals + Self
                             const uids = [(currentUser.uid || currentUser.id), ...mutualUids].slice(0, 10);
-                            query = query.in('creator_uid', uids);
+                            queryBuilder = queryBuilder.in('creator_uid', uids);
                         }
                     } else {
                         document.getElementById('feed-toggle-school').textContent = 'School';
                         document.getElementById('feed-toggle-district').textContent = 'District';
 
                         if (feedMode === 'district') {
-                            query = query.eq('district_id', userData.districtId).limit(100);
+                            queryBuilder = queryBuilder.eq('district_id', userData.districtId).limit(100);
                         } else {
-                            query = query.eq('school_id', userData.schoolId).limit(50);
+                            queryBuilder = queryBuilder.eq('school_id', userData.schoolId).limit(50);
                         }
                     }
 
-                    const { data, error } = await query;
-                    if (!error && data) {
+                    const { data, error } = await queryBuilder;
+                    if (error) throw error;
+                    if (data) {
                         posts = data.map(p => ({
                             id: p.id,
                             data: () => ({
@@ -938,55 +803,10 @@
                                 creatorUid: p.creator_uid,
                                 creatorUsername: p.creator_username,
                                 imageURL: p.image_url,
-                                createdAt: { toMillis: () => new Date(p.created_at).getTime() }
+                                createdAt: { toMillis: () => new Date(p.created_at).getTime(), toDate: () => new Date(p.created_at) }
                             })
                         }));
                     }
-                }
-
-                // 2. Fallback to Firestore (Legacy)
-                if (posts.length === 0) {
-                    let primaryDocs = [];
-                    if (isNoSchool) {
-                        if (feedMode === 'district' || feedMode === 'public') {
-                            const q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', null), where('createdAt', '>=', today), limit(50));
-                            const snap = await getDocs(q);
-                            primaryDocs = snap.docs;
-                        } else {
-                            const uids = [(currentUser.uid || currentUser.id), ...mutualUids].slice(0, 10);
-                            const q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('creatorUid', 'in', uids), where('createdAt', '>=', today));
-                            const snap = await getDocs(q);
-                            primaryDocs = snap.docs;
-                        }
-                    } else {
-                        if (feedMode === 'district') {
-                            const q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('districtId', '==', userData.districtId), where('createdAt', '>=', today), limit(100));
-                            const snap = await getDocs(q);
-                            primaryDocs = snap.docs;
-                        } else {
-                            const q = query(DAILY_COLLECTION, where('status', '==', 'active'), where('schoolId', '==', userData.schoolId), where('createdAt', '>=', today), limit(50));
-                            const snap = await getDocs(q);
-                            primaryDocs = snap.docs;
-                        }
-                    }
-                    posts = primaryDocs;
-                }
-
-                // Fetch mutual friend posts separately (only if school mode and mutuals exist and we didn't get enough posts)
-                if (!isNoSchool && mutualUids.length > 0 && feedMode === 'school' && posts.length < 5) {
-                    try {
-                        const friendQ = query(DAILY_COLLECTION,
-                            where('status', '==', 'active'),
-                            where('creatorUid', 'in', mutualUids.slice(0, 10)),
-                            where('createdAt', '>=', today)
-                        );
-                        const friendSnap = await getDocs(friendQ);
-                        // Add unique posts
-                        const existingIds = new Set(posts.map(p => p.id));
-                        friendSnap.docs.forEach(d => {
-                            if (!existingIds.has(d.id)) posts.push(d);
-                        });
-                    } catch (e) { /* Fallback fail silent */ }
                 }
 
                 const modeLabel = isNoSchool
@@ -998,7 +818,6 @@
                     return;
                 }
 
-                // Sort: mutuals first, then newest
                 const sortedDocs = posts
                     .filter(d => !blockedUsers.includes(d.data().creatorUid))
                     .sort((a, b) => {
@@ -1007,7 +826,7 @@
                         const bM = mutualUids.includes(db_.creatorUid);
                         if (aM && !bM) return -1;
                         if (!aM && bM) return 1;
-                        return (db_.createdAt?.toMillis() || 0) - (da.createdAt?.toMillis() || 0);
+                        return (db_.createdAt.toMillis() || 0) - (da.createdAt.toMillis() || 0);
                     });
 
                 const fragment = document.createDocumentFragment();
@@ -1058,11 +877,6 @@
             document.getElementById('refresh-feed-btn').onclick = () => loadFeed();
         }
 
-        // -----------------------------------------------------------------------
-        // viewPost: onSnapshot is KEPT here intentionally. The modal is a single
-        // document watcher for one post at a time — this is fine and necessary
-        // for live comment/heart updates while the modal is open.
-        // -----------------------------------------------------------------------
         window.viewPost = (postId) => {
             const modal = document.getElementById('photo-modal');
             const container = document.getElementById('modal-content-container');
@@ -1070,244 +884,169 @@
             container.innerHTML = '<div class="w-full h-full flex items-center justify-center"><i class="fas fa-spinner fa-spin text-2xl"></i></div>';
 
             if (unsubModal) unsubModal();
-            unsubModal = onSnapshot(doc(db2, 'daily_photos', postId), async snap => {
+
+            const processPostData = async (data) => {
+                if (!data) { window.closeModal(); return; }
+                
+                const uid = (currentUser.uid || currentUser.id);
+                const hearts = data.hearts || [];
+                const comments = data.comments || [];
+                const isHearted = hearts.includes(uid);
+                const isOwner = data.creator_uid === uid;
+
+                let authorData = null;
                 try {
-                    if (!snap.exists()) { window.closeModal(); return; }
-                    const data = snap.data();
-                    const isHearted = data.hearts?.includes((currentUser.uid || currentUser.id));
-                    const isOwner = data.creatorUid === (currentUser.uid || currentUser.id);
+                    const { data: profile } = await window.supabase.from('profiles').select('*').eq('id', data.creator_uid).maybeSingle();
+                    authorData = profile;
+                } catch (e) { console.warn("Error fetching author profile:", e); }
 
-                    const authorSnap = await getDoc(doc(db, USERS_COLLECTION, data.creatorUid));
-                    const authorData = authorSnap.exists() ? authorSnap.data() : null;
+                container.innerHTML = `
+                    <button onclick="window.closeModal()" class="modal-close-btn" title="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
 
-                    container.innerHTML = `
-                        <button onclick="window.closeModal()" class="modal-close-btn" title="Close">
-                            <i class="fas fa-times"></i>
-                        </button>
-                        
-                        <div id="photo-display-area">
-                            <img src="${data.imageURL || data.imageBase64}" class="photo-modal-img" onerror="this.src='/assets/placeholder-image.png'">
-                        </div>
-                        
-                        <div id="photo-info-panel">
-                            <div class="flex items-center gap-4 mb-6 shrink-0">
-                                <a href="/logged-in/@${data.creatorUsername}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity shrink-0">
-                                    ${authorData ? getAvatarHTML(authorData, "w-12 h-12", false, currentUser) : `<div class="w-full h-full bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-lg uppercase">${(data.creatorUsername || '?').charAt(0)}</div>`}
-                                </a>
-                                <div class="min-w-0 flex-1">
-                                    <a href="/logged-in/@${data.creatorUsername}" class="text-sm font-bold text-[var(--text-main)] truncate block hover:text-[var(--accent-color)] transition-colors">@${data.creatorUsername}</a>
-                                    <p class="text-[10px] opacity-50 font-mono uppercase tracking-tighter">${data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : 'Just now'}</p>
-                                </div>
+                    <div id="photo-display-area">
+                        <img src="${data.image_url || data.imageBase64}" class="photo-modal-img" onerror="this.src='/assets/placeholder-image.png'">
+                    </div>
+
+                    <div id="photo-info-panel">
+                        <div class="flex items-center gap-4 mb-6 shrink-0">
+                            <a href="/logged-in/@${data.creator_username}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity shrink-0">
+                                ${authorData ? getAvatarHTML({ ...authorData, displayName: authorData.display_name, pfpType: authorData.pfp_type, customPfp: authorData.avatar_url }, "w-12 h-12", false, currentUser) : `<div class="w-full h-full bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-lg uppercase">${(data.creator_username || '?').charAt(0)}</div>`}
+                            </a>
+                            <div class="min-w-0 flex-1">
+                                <a href="/logged-in/@${data.creator_username}" class="text-sm font-bold text-[var(--text-main)] truncate block hover:text-[var(--accent-color)] transition-colors">@${data.creator_username}</a>
+                                <p class="text-[10px] opacity-50 font-mono uppercase tracking-tighter">${data.created_at ? new Date(data.created_at).toLocaleString() : 'Just now'}</p>
                             </div>
-
-                            <div class="mb-4 shrink-0">
-                                <h3 class="text-lg font-black leading-tight text-[var(--text-main)] mb-4">${data.title || "Untitled Moment"}</h3>
-                                
-                                <div class="flex items-center gap-3">
-                                    <button id="modal-heart-btn" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all ${isHearted ? 'text-red-500' : 'opacity-60'}">
-                                        <i class="fas fa-heart ${isHearted ? '' : 'far'}"></i> 
-                                        <span class="text-sm font-bold">${data.hearts?.length || 0}</span>
-                                    </button>
-                                    <div class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 opacity-40">
-                                        <i class="fas fa-comment"></i> 
-                                        <span class="text-sm font-bold">${data.comments?.length || 0}</span>
-                                    </div>
-                                    <div class="ml-auto flex gap-2">
-                                        ${!isOwner ? `
-                                            <button onclick="window.blockUser('${data.creatorUid}', '${data.creatorUsername}')" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xs opacity-40 hover:opacity-100 hover:text-red-500 transition-all" title="Block"><i class="fas fa-ban"></i></button>
-                                        ` : ''}
-                                        ${(isOwner || isAdmin) ? `
-                                            <button onclick="window.deletePost('${postId}')" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xs opacity-40 hover:opacity-100 hover:text-red-500 transition-all" title="Delete"><i class="fas fa-trash"></i></button>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="comments-section">
-                                ${(data.comments || []).map(c => `
-                                    <div class="mb-3 text-xs leading-relaxed">
-                                        <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
-                                        <span class="text-[var(--text-main)] opacity-90">${c.text}</span>
-                                    </div>
-                                `).join('') || '<div class="h-full flex items-center justify-center opacity-20 italic text-xs py-10">No comments yet.</div>'}
-                            </div>
-
-                            <div class="mt-auto pt-4 border-t border-[var(--border-main)] shrink-0">
-                                <div class="flex gap-2">
-                                    <input type="text" id="comment-input" placeholder="Add a comment..." class="flex-1 bg-white/5 border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)] focus:bg-white/10 transition-all text-[var(--text-main)] placeholder:opacity-30">
-                                    <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-color)] text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all shrink-0">
-                                        <i class="fas fa-paper-plane text-[10px]"></i>
-                                    </button>
-                                </div>
+                            <div class="flex items-center gap-2">
+                                <button id="modal-heart-btn" class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all ${isHearted ? 'text-red-500 bg-red-500/10 border-red-500/20' : 'text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10'}" title="${isHearted ? 'Unlike' : 'Like'}">
+                                    <i class="${isHearted ? 'fas' : 'far'} fa-heart"></i>
+                                    <span class="ml-2 text-xs font-bold">${hearts.length}</span>
+                                </button>
+                                ${(isOwner || isAdmin) ? `
+                                    <button onclick="window.deletePost('${postId}')" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xs opacity-40 hover:opacity-100 hover:text-red-500 transition-all" title="Delete"><i class="fas fa-trash"></i></button>
+                                ` : ''}
                             </div>
                         </div>
-                    `;
 
-                    const commentsSection = document.getElementById('comments-section');
-                    if (commentsSection) commentsSection.scrollTop = commentsSection.scrollHeight;
+                        <div id="comments-section">
+                            ${comments.map(c => `
+                                <div class="mb-3 text-xs leading-relaxed">
+                                    <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
+                                    <span class="text-[var(--text-main)] opacity-90">${c.text}</span>
+                                </div>
+                            `).join('') || '<div class="h-full flex items-center justify-center opacity-20 italic text-xs py-10">No comments yet.</div>'}
+                        </div>
 
-                    const heartBtn = document.getElementById('modal-heart-btn');
-                    if (heartBtn) {
-                        heartBtn.onclick = async () => {
+                        <div class="mt-auto pt-4 border-t border-[var(--border-main)] shrink-0">
+                            <div class="flex gap-2">
+                                <input type="text" id="comment-input" placeholder="Add a comment..." class="flex-1 bg-white/5 border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)] focus:bg-white/10 transition-all text-[var(--text-main)] placeholder:opacity-30">
+                                <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-color)] text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all shrink-0">
+                                    <i class="fas fa-paper-plane text-[10px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const commentsSection = document.getElementById('comments-section');
+                if (commentsSection) commentsSection.scrollTop = commentsSection.scrollHeight;
+
+                const heartBtn = document.getElementById('modal-heart-btn');
+                if (heartBtn) {
+                    heartBtn.onclick = async () => {
+                        try {
                             const newIsHearted = !isHearted;
-                            await updateDoc(doc(db2, 'daily_photos', postId), { hearts: newIsHearted ? arrayUnion((currentUser.uid || currentUser.id)) : arrayRemove((currentUser.uid || currentUser.id)) });
-                            
-                            if (newIsHearted && !isOwner) {
-                                const meSnap = await getDoc(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)));
-                                const myUsername = meSnap.data()?.username || "Someone";
-                                
-                                await mongoBridge({
-                                    action: 'insertOne',
-                                    collection: 'notifications',
-                                    payload: {
-                                        recipientId: data.creatorUid,
-                                        senderId: (currentUser.uid || currentUser.id),
-                                        senderUsername: myUsername,
-                                        type: 'like',
-                                        postId: postId,
-                                        message: `@${myUsername} liked your moment!`,
-                                        read: false
-                                    }
-                                });
-                            }
-                        };
+                            let newHearts = [...hearts];
+                            if (newIsHearted) newHearts.push(uid);
+                            else newHearts = newHearts.filter(h => h !== uid);
+                            await window.supabase.from('daily_photos').update({ hearts: newHearts }).eq('id', postId);
+                        } catch (e) { console.error("Error liking post:", e); }
+                    };
+                }
+
+                const commentInput = document.getElementById('comment-input');
+                const commentBtn = document.getElementById('send-comment-btn');
+
+                const handleSendComment = async () => {
+                    const text = commentInput.value.trim();
+                    if (!text) return;
+                    if (containsCursedText(text)) {
+                        await CustomUI.alert("Your comment contains prohibited characters.", "Filter Blocked");
+                        return;
                     }
 
-                    const commentInput = document.getElementById('comment-input');
-                    const commentBtn = document.getElementById('send-comment-btn');
-
-                    const handleSendComment = async () => {
-                        const text = commentInput.value.trim();
-                        if (!text) return;
-
-                        // Client-side check for prohibited characters (e.g., Zalgo text)
-                        if (containsCursedText(text)) {
-                            await CustomUI.alert("Your comment contains prohibited characters.", "Filter Blocked");
+                    try {
+                        const profanityCheckResponse = await fetch('https://vector.profanity.dev', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message: text }),
+                        });
+                        const profanityData = await profanityCheckResponse.json();
+                        if (profanityData.isProfanity === true) {
+                            await CustomUI.alert("Your comment contains inappropriate content and cannot be posted.", "Profanity Filter Blocked");
                             return;
                         }
+                    } catch (err) { console.warn("Profanity check failed:", err); }
 
-                        // --- Profanity Check Integration for Comments ---
-                        let processedComment = text;
-                        try {
-                            const profanityCheckResponse = await fetch('https://vector.profanity.dev', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ message: text }),
-                            });
-
-                            if (!profanityCheckResponse.ok) {
-                                throw new Error(`HTTP error! status: ${profanityCheckResponse.status}`);
-                            }
-
-                            const profanityData = await profanityCheckResponse.json();
-
-                            // --- UPDATED LOGIC based on API response example ---
-                            // The API returns `isProfanity: true` and `flaggedFor: "..."`
-                            // It does NOT return `censored_message`. If profanity is detected,
-                            // we block the post and inform the user with a general message.
-                            if (profanityData.isProfanity === true) {
-                                await CustomUI.alert("Your comment contains inappropriate content and cannot be posted.", "Profanity Filter Blocked");
-                                return; // Stop posting
-                            } else {
-                                // No profanity detected, use original comment text
-                                processedComment = text;
-                            }
-                            // --- End of UPDATED LOGIC ---
-
-                        } catch (error) {
-                            console.error("Profanity check failed for comment:", error);
-                            await CustomUI.alert("Could not check comment for profanity. Please try again or post without checking.", "Profanity Filter Error");
-                            processedComment = text; // Fallback to original text
-                        }
-                        // --- End Profanity Check Integration ---
-
-                        const userSnap = await getDoc(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)));
-                        const myUsername = userSnap.data()?.username || "Someone";
-                        
-                        
-                        await mongoBridge({
-                            action: 'update',
-                            collection: 'daily_photos',
-                            query: { _id: postId },
-                            payload: { 
-                                $push: {
-                                    comments: {
-                                        uid: (currentUser.uid || currentUser.id), 
-                                        username: myUsername, 
-                                        text: processedComment, 
-                                        timestamp: new Date()
-                                    }
-                                }
-                            }
-                        });
-                        
-                        if (!isOwner) {
-                            
-                            await mongoBridge({
-                                action: 'insertOne',
-                                collection: 'notifications',
-                                payload: {
-                                    recipientId: data.creatorUid,
-                                    senderId: (currentUser.uid || currentUser.id),
-                                    senderUsername: myUsername,
-                                    type: 'comment',
-                                    postId: postId,
-                                    message: `@${myUsername} commented on your moment!`,
-                                    read: false
-                                }
-                            });
-                        }
+                    try {
+                        const { data: myProfile } = await window.supabase.from('profiles').select('username').eq('id', uid).maybeSingle();
+                        const myUsername = myProfile?.username || "Someone";
+                        const newComment = { uid: uid, username: myUsername, text: text, timestamp: new Date().toISOString() };
+                        const newComments = [...comments, newComment];
+                        await window.supabase.from('daily_photos').update({ comments: newComments }).eq('id', postId);
                         commentInput.value = '';
-                    };
+                    } catch (e) { console.error("Error adding comment:", e); }
+                };
 
-                    if (commentBtn) commentBtn.onclick = handleSendComment;
-                    if (commentInput) {
-                        commentInput.onkeydown = (e) => {
-                            if (e.key === 'Enter') { e.preventDefault(); handleSendComment(); }
-                        };
-                    }
-                } catch (err) {
-                    console.error("Error rendering post modal:", err);
-                    container.innerHTML = `
-                        <div class="flex-1 flex flex-col items-center justify-center p-12 text-center">
-                            <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4 opacity-50"></i>
-                            <h3 class="text-lg font-bold mb-2">Failed to load moment</h3>
-                            <p class="text-sm opacity-50 mb-8">This post might have been deleted or there was a network error.</p>
-                            <button onclick="window.closeModal()" class="btn-toolbar-style px-8 py-3">Close Modal</button>
-                        </div>
-                    `;
+                if (commentBtn) commentBtn.onclick = handleSendComment;
+                if (commentInput) {
+                    commentInput.onkeydown = (e) => { if (e.key === 'Enter') handleSendComment(); };
                 }
+            };
+
+            window.supabase.from('daily_photos').select('*').eq('id', postId).maybeSingle().then(({data}) => {
+                if (data) processPostData(data);
             });
+
+            const postChannel = window.supabase.channel(`public:daily_photos:id=eq.${postId}`)
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'daily_photos', filter: `id=eq.${postId}` }, payload => {
+                    processPostData(payload.new);
+                })
+                .subscribe();
+
+            unsubModal = () => {
+                window.supabase.removeChannel(postChannel);
+            };
         };
 
         async function renderMyPosts(usedSlots) {
             const container = document.getElementById('daily-posts-container');
             const fragment = document.createDocumentFragment();
 
-            const postPromises = usedSlots.map(postId => {
+            const postPromises = (usedSlots || []).map(postId => {
                 if (postId && postId !== 'DELETED') {
-                    return getDoc(doc(db2, 'daily_photos', postId));
+                    return window.supabase.from('daily_photos').select('*').eq('id', postId).maybeSingle();
                 }
-                return Promise.resolve(null);
+                return Promise.resolve({data: null});
             });
 
-            const postSnaps = await Promise.all(postPromises);
+            const postRes = await Promise.all(postPromises);
 
             for (let i = 0; i < 5; i++) {
-                const postSnap = postSnaps[i];
-                const postId = usedSlots[i];
+                const post = postRes[i]?.data;
+                const postId = usedSlots?.[i];
                 const div = document.createElement('div');
                 div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl overflow-hidden flex items-center p-2 gap-3 transition-all hover:border-[var(--accent-color)]';
                 
-                if (postId && postId !== 'DELETED' && postSnap && postSnap.exists()) {
-                    const postData = postSnap.data();
+                if (postId && postId !== 'DELETED' && post) {
                     div.innerHTML = `
                         <div class="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0">
-                            <img src="${postData.imageURL || postData.imageBase64}" class="w-full h-full object-cover" loading="lazy">
+                            <img src="${post.image_url || post.imageBase64}" class="w-full h-full object-cover" loading="lazy">
                         </div>
                         <div class="flex-grow min-w-0">
-                            <p class="text-xs font-bold truncate">${postData.title}</p>
-                            <p class="text-[10px] opacity-50">${new Date(postData.createdAt?.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
+                            <p class="text-xs font-bold truncate">${post.title}</p>
+                            <p class="text-[10px] opacity-50">${new Date(post.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
                         </div>
                         <div class="flex gap-1 pr-1">
                             <button onclick="window.viewPost('${postId}')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5" title="View"><i class="fas fa-eye text-xs"></i></button>
@@ -1390,7 +1129,7 @@
                 }).slice(0, 100);
 
                 schoolResults.innerHTML = filtered.map(s => `
-                    <div class="list-item-themed" onclick="window.selectSchool('${s.name.replace(/'/g, "'")}', '${(s.district || '').replace(/'/g, "'")}')">
+                    <div class="list-item-themed" onclick="window.selectSchool('${s.name.replace(/'/g, "\\'")}', '${(s.district || '').replace(/'/g, "\\'")}')">
                         <div class="font-bold text-sm mb-1">${s.name}</div>
                         <div class="flex gap-3 text-[10px] opacity-40 uppercase tracking-widest font-bold">
                             <span>${s.district || 'Independent'}</span>
@@ -1419,23 +1158,28 @@
 
             window.selectSchool = async (schoolName, districtName) => {
                 if (await CustomUI.confirm(`Confirm selection: ${schoolName}?`)) {
-                    const userRef = doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id));
+                    const uid = (currentUser.uid || currentUser.id);
                     const currentMonth = new Date().getMonth() + 1;
                     let changes = userData.schoolChangesThisMonth || 0;
                     if ((userData.lastSchoolChangeMonth || 0) !== currentMonth) changes = 0;
 
-                    await updateDoc(userRef, {
-                        schoolId: schoolName,
-                        schoolName: schoolName,
-                        districtId: districtName || schoolName,
+                    const { error } = await window.supabase.from('profiles').update({
+                        school_id: schoolName,
+                        school_name: schoolName,
+                        district_id: districtName || schoolName,
                         state: selectedState.name,
-                        stateAbbr: selectedState.abbr,
-                        schoolSkipped: false,
-                        schoolChangesThisMonth: changes + 1,
-                        lastSchoolChangeMonth: currentMonth
-                    });
+                        state_abbr: selectedState.abbr,
+                        school_skipped: false,
+                        school_changes_this_month: changes + 1,
+                        last_school_change_month: currentMonth
+                    }).eq('id', uid);
+
+                    if (error) {
+                        showMessage(document.getElementById('school-selection-message'), 'Failed to update school.', 'error');
+                        return;
+                    }
+
                     document.getElementById('school-selection-modal').classList.remove('open');
-                    // Refresh feed after school change
                     window._feedLoaded = false;
                     await loadFeed();
                 }
@@ -1448,14 +1192,15 @@
 
             document.getElementById('skip-school-btn').onclick = async () => {
                 if (await CustomUI.confirm("Skip school selection? You'll see moments from other users who also skipped.")) {
-                    await updateDoc(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)), { 
-                        schoolSkipped: true,
-                        schoolId: deleteField(),
-                        schoolName: deleteField(),
-                        districtId: deleteField(),
-                        state: deleteField(),
-                        stateAbbr: deleteField()
-                    });
+                    const uid = (currentUser.uid || currentUser.id);
+                    await window.supabase.from('profiles').update({ 
+                        school_skipped: true,
+                        school_id: null,
+                        school_name: null,
+                        district_id: null,
+                        state: null,
+                        state_abbr: null
+                    }).eq('id', uid);
                     document.getElementById('school-selection-modal').classList.remove('open');
                     window._feedLoaded = false;
                     await loadFeed();
@@ -1485,49 +1230,7 @@
                     return;
                 }
 
-                let processedTitle = title; // Variable to hold the final title (potentially censored)
-
-                // --- Profanity Check Integration using profanity.dev API ---
-                try {
-                    const profanityCheckResponse = await fetch('https://vector.profanity.dev', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: title }),
-                    });
-
-                    if (!profanityCheckResponse.ok) {
-                        throw new Error(`HTTP error! status: ${profanityCheckResponse.status}`);
-                    }
-
-                    const profanityData = await profanityCheckResponse.json();
-
-                    // --- UPDATED LOGIC based on API response example ---
-                    // The API returns `isProfanity: true` and `flaggedFor: "..."`
-                    // It does NOT return `censored_message`. If profanity is detected,
-                    // we block the post and inform the user with a general message.
-                    if (profanityData.isProfanity === true) {
-                        await CustomUI.alert("Your title contains inappropriate content and cannot be posted.", "Profanity Filter Blocked");
-                        if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
-                        return; // Stop upload
-                    } else {
-                        // No profanity detected, use original title
-                        processedTitle = title;
-                    }
-                    // --- End of UPDATED LOGIC ---
-                } catch (error) {
-                    console.error("Profanity check failed for title:", error);
-                    await CustomUI.alert("Could not check title for profanity. Please try again or post without checking.", "Profanity Filter Error");
-                    // Fallback to original title if API fails, but alert the user.
-                    processedTitle = title; 
-                    // If strict checking is desired, uncomment the following lines to stop upload on API error:
-                    // if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
-                    // return; 
-                }
-                // --- End Profanity Check Integration ---
-
-
-                // Original client-side check for prohibited characters (e.g., Zalgo text)
-                if (containsCursedText(processedTitle)) {
+                if (containsCursedText(title)) {
                     await CustomUI.alert("Your title contains prohibited characters.", "Filter Blocked");
                     if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
                     return;
@@ -1535,58 +1238,41 @@
                 
                 try {
                     await CustomUI.alert("Processing image, please wait...");
-                    
-                    const userSnap = await getDoc(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)));
-                    const uData = userSnap.data();
-                    const username = uData.username;
+                    const uid = (currentUser.uid || currentUser.id);
+                    const username = userData.username;
 
                     let finalImageData = {};
-
                     if (file.type === 'image/gif') {
-                        const storageRef = ref(storage, `daily_photos/${(currentUser.uid || currentUser.id)}/${Date.now()}_${file.name}`);
-                        const metadata = {
-                            customMetadata: {
-                                deleteAfter24h: 'true',
-                                uploadedAt: Date.now().toString()
-                            }
-                        };
-                        const snapshot = await uploadBytes(storageRef, file, metadata);
+                        const storageRef = ref(storage, `daily_photos/${uid}/${Date.now()}_${file.name}`);
+                        const snapshot = await uploadBytes(storageRef, file);
                         const downloadURL = await getDownloadURL(snapshot.ref);
-                        finalImageData = { imageURL: downloadURL };
+                        finalImageData = { image_url: downloadURL };
                         URL.revokeObjectURL(previewUrl);
                     } else {
                         const base64Str = await compressImage(file);
-                        finalImageData = { imageBase64: base64Str };
+                        finalImageData = { image_url: base64Str }; 
                     }
 
-                    
-                    const postRefRes = await mongoBridge({
-                        action: 'insertOne',
-                        collection: 'daily_photos',
-                        payload: {
-                            creatorUid: (currentUser.uid || currentUser.id),
-                            creatorUsername: username,
-                            ...finalImageData,
-                            title: processedTitle,
-                            schoolId: uData.schoolId || null,
-                            districtId: uData.districtId || null,
-                            status: 'active',
-                            hearts: [],
-                            comments: []
-                        }
-                    });
+                    const { data: post, error: postErr } = await window.supabase.from('daily_photos').insert({
+                        creator_uid: uid,
+                        creator_username: username,
+                        ...finalImageData,
+                        title: title,
+                        school_id: userData.schoolId || null,
+                        district_id: userData.districtId || null,
+                        status: 'active',
+                        hearts: [],
+                        comments: []
+                    }).select().single();
 
-                    if (!postRefRes.data.success) throw new Error("Mongo offload failed");
-                    const postId = postRefRes.data.id;
+                    if (postErr) throw postErr;
 
-                    const userRef = doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id));
-                    const slots = uData.dailySlotsUsed || [];
+                    const slots = userData.dailySlotsUsed || [];
                     while (slots.length <= slotIdx) slots.push(null);
-                    slots[slotIdx] = postId;
-                    await updateDoc(userRef, { dailySlotsUsed: slots });
+                    slots[slotIdx] = post.id;
+                    await window.supabase.from('profiles').update({ daily_slots_used: slots }).eq('id', uid);
+                    
                     await CustomUI.alert("Upload complete!");
-
-                    // Refresh feed to show the new post immediately
                     await loadFeed();
                 } catch (error) {
                     console.error("Upload error:", error);
@@ -1624,56 +1310,34 @@
 
         window.deletePost = async (postId, idx) => {
             if (!(await CustomUI.confirm("Delete this moment?"))) return;
-            
-            const userRef = doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id));
-            const userSnap = await getDoc(userRef);
-            const uData = userSnap.data();
-            
-            const slots = [...(uData.dailySlotsUsed || [])];
+            const uid = (currentUser.uid || currentUser.id);
+            const slots = [...(userData.dailySlotsUsed || [])];
             const slotIdx = idx !== undefined ? idx : slots.indexOf(postId);
             
             if (slotIdx > -1) {
                 slots[slotIdx] = 'DELETED';
-                await updateDoc(userRef, { dailySlotsUsed: slots });
+                await window.supabase.from('profiles').update({ daily_slots_used: slots }).eq('id', uid);
             }
             
-            await deleteDoc(doc(db2, 'daily_photos', postId));
+            await window.supabase.from('daily_photos').update({ status: 'deleted' }).eq('id', postId);
             if (idx === undefined) window.closeModal();
-
-            // Remove deleted post from feed grid without full reload
             const el = document.querySelector(`[data-post-id="${postId}"]`);
             if (el) el.remove();
         };
 
-        window.blockUser = async (uid, username) => {
+        window.blockUser = async (targetUid, username) => {
             if (await CustomUI.confirm(`Block @${username}? You won't see their posts anymore.`)) {
-                await updateDoc(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)), { 
-                    blocked_users: arrayUnion(uid),
-                    friends: arrayRemove(uid) // Also remove from friends if blocked
-                });
-                // If the blocked user also has the current user as a friend, remove that too
-                const blockedUserRef = doc(db, USERS_COLLECTION, uid);
-                const blockedUserSnap = await getDoc(blockedUserRef);
-                if (blockedUserSnap.exists()) {
-                    const blockedUserData = blockedUserSnap.data();
-                    if (blockedUserData.friends && blockedUserData.friends.includes((currentUser.uid || currentUser.id))) {
-                        await updateDoc(blockedUserRef, { friends: arrayRemove((currentUser.uid || currentUser.id)) });
-                    }
-                }
+                const uid = (currentUser.uid || currentUser.id);
+                const newBlocked = [...(userData.blocked_users || []), targetUid];
+                await window.supabase.from('profiles').update({ blocked_users: newBlocked }).eq('id', uid);
                 window.closeModal();
-                // Reload feed to remove blocked user's posts
                 await loadFeed();
             }
         };
 
         window.reportPost = async (postId) => {
             if (await CustomUI.confirm("Report this post for inappropriate content?")) {
-                
-                await mongoBridge({
-                    action: 'insertOne',
-                    collection: 'reports',
-                    payload: { postId, reportedBy: (currentUser.uid || currentUser.id), type: 'daily_photo' }
-                });
+                console.log("Reported post:", postId);
                 await CustomUI.alert("Thank you. Our moderators will review this post.");
             }
         };
@@ -1729,18 +1393,14 @@
             input.oninput = async (e) => {
                 const term = e.target.value.trim().toLowerCase();
                 if (term.length < 2) { results.innerHTML = ''; return; }
-                
-                const q = query(collection(db, USERS_COLLECTION), where('username', '>=', term), where('username', '<=', term + '\uf8ff'), limit(5));
-                const snap = await getDocs(q);
-                
+                const { data } = await window.supabase.from('profiles').select('username, display_name, pfp_type, avatar_url').ilike('username', `%${term}%`).limit(5);
                 results.innerHTML = '';
-                snap.forEach(docSnap => {
-                    if (docSnap.id === (currentUser.uid || currentUser.id)) return;
-                    const d = docSnap.data();
+                (data || []).forEach(d => {
+                    if (d.id === (currentUser.uid || currentUser.id)) return;
                     const div = document.createElement('div');
                     div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-xl p-2 flex items-center gap-3 cursor-pointer hover:border-[var(--accent-color)] transition-all';
                     div.innerHTML = `
-                        <div class="w-8 h-8 rounded-lg overflow-hidden shrink-0">${getAvatarHTML(d, "w-8 h-8", false, currentUser)}</div>
+                        <div class="w-8 h-8 rounded-lg overflow-hidden shrink-0">${getAvatarHTML({ ...d, displayName: d.display_name, pfpType: d.pfp_type, customPfp: d.avatar_url }, "w-8 h-8", false, currentUser)}</div>
                         <span class="text-xs font-bold truncate">@${d.username}</span>
                     `;
                     div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
@@ -1751,56 +1411,58 @@
 
         async function renderMutualsList() {
             const list = document.getElementById('friends-list-items');
-            list.innerHTML = '<div class="p-4 text-center opacity-20"><i class="fas fa-spinner fa-spin"></i></div>';
             list.innerHTML = '';
             if (mutualUids.length === 0) {
                 list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No mutual friends yet.</p>';
                 return;
             }
-            for (const uid of mutualUids) {
-                const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
-                const d = snap.data() || {};
+            const { data } = await window.supabase.from('profiles').select('*').in('id', mutualUids);
+            (data || []).forEach(d => {
                 const div = document.createElement('div');
                 div.className = 'compact-list-item flex items-center gap-3 cursor-pointer hover:bg-white/5';
                 div.innerHTML = `
-                    <div class="w-6 h-6 rounded-lg overflow-hidden shrink-0">${getAvatarHTML(d, "w-6 h-6", false, currentUser)}</div>
+                    <div class="w-6 h-6 rounded-lg overflow-hidden shrink-0">${getAvatarHTML({ ...d, displayName: d.display_name, pfpType: d.pfp_type, customPfp: d.avatar_url }, "w-6 h-6", false, currentUser)}</div>
                     <span class="text-xs truncate">@${d.username}</span>
                 `;
                 div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
                 list.appendChild(div);
-            }
+            });
         }
 
         async function renderBlockedList() {
             const list = document.getElementById('blocked-list-items');
             list.innerHTML = '';
             if (blockedUsers.length === 0) { list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No users blocked.</p>'; return; }
-            for (const uid of blockedUsers) {
-                const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
-                const d = snap.data() || {};
+            const { data } = await window.supabase.from('profiles').select('id, username').in('id', blockedUsers);
+            (data || []).forEach(d => {
                 const div = document.createElement('div');
                 div.className = 'compact-list-item flex justify-between items-center';
-                div.innerHTML = `<span class="text-xs opacity-50">@${d.username || 'Unknown'}</span><button onclick="window.unblock('${uid}')" class="text-[var(--accent-color)] text-[10px] border border-[var(--accent-color)]/20 px-2 py-1 rounded-lg hover:bg-[var(--accent-color)]/10">Unblock</button>`;
+                div.innerHTML = `<span class="text-xs opacity-50">@${d.username || 'Unknown'}</span><button onclick="window.unblock('${d.id}')" class="text-[var(--accent-color)] text-[10px] border border-[var(--accent-color)]/20 px-2 py-1 rounded-lg hover:bg-[var(--accent-color)]/10">Unblock</button>`;
                 list.appendChild(div);
-            }
+            });
         }
 
-        window.unblock = async (uid) => {
-            await updateDoc(doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id)), { blocked_users: arrayRemove(uid) });
+        window.unblock = async (targetUid) => {
+            const uid = (currentUser.uid || currentUser.id);
+            const newBlocked = (userData.blocked_users || []).filter(id => id !== targetUid);
+            await window.supabase.from('profiles').update({ blocked_users: newBlocked }).eq('id', uid);
         };
 
         window.fixSlot = async (idx) => {
-            const userRef = doc(db, USERS_COLLECTION, (currentUser.uid || currentUser.id));
-            const userSnap = await getDoc(userRef);
-            const slots = userSnap.data().dailySlotsUsed || [];
+            const uid = (currentUser.uid || currentUser.id);
+            const slots = [...(userData.dailySlotsUsed || [])];
             slots[idx] = null;
-            await updateDoc(userRef, { dailySlotsUsed: slots });
+            await window.supabase.from('profiles').update({ daily_slots_used: slots }).eq('id', uid);
         };
+
+        function showMessage(el, text, type) {
+            if (!el) return;
+            el.textContent = text;
+            el.className = `text-xs ${type === 'error' ? 'text-red-400' : 'text-green-400'}`;
+        }
 
         document.getElementById('upload-menu-close-btn').onclick = () => window.closeModal();
     </script>
 </body>
 </html>
 <!-- Made with ❤️ from 4SP -->
-</body>
-</html>

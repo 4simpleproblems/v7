@@ -1,5 +1,5 @@
 /**
- * navigation.js
+ * navigation-mini.js (v6.7.1 - Supabase Sync Fix)
  * * This is a fully self-contained script to create a dynamic, authentication-aware
  * navigation bar for your website. It handles everything from Firebase initialization
  * to rendering user-specific information. It now includes a horizontally scrollable
@@ -635,8 +635,26 @@ let db;
             if (user) {
                 const logoutButton = document.getElementById('logout-button');
                 if (logoutButton) {
-                    logoutButton.addEventListener('click', () => {
-                        auth.signOut().catch(err => console.error("Logout failed:", err));
+                    // Remove existing listeners if any
+                    const newLogoutButton = logoutButton.cloneNode(true);
+                    logoutButton.parentNode.replaceChild(newLogoutButton, logoutButton);
+
+                    newLogoutButton.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        try {
+                            console.log("Navigation-Mini: Attempting logout...");
+                            if (window.supabase) {
+                                await window.supabase.auth.signOut();
+                                console.log("Navigation-Mini: Supabase signed out.");
+                            }
+                            const firebaseAuth = typeof firebase !== 'undefined' ? firebase.auth() : auth;
+                            await firebaseAuth.signOut();
+                            console.log("Navigation-Mini: Firebase signed out.");
+                            window.location.href = '/authentication.html';
+                        } catch (err) {
+                            console.error("Logout failed:", err);
+                        }
                     });
                 }
             }

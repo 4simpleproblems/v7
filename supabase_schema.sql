@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     state_abbr TEXT,
     school_changes_this_month INTEGER DEFAULT 0,
     last_school_change_month INTEGER DEFAULT 0,
+    username_changes_this_month INTEGER DEFAULT 0,
+    last_username_change_month INTEGER DEFAULT 0,
     daily_slots_used JSONB DEFAULT '[]'::jsonb,
     blocked_users UUID[] DEFAULT '{}',
     is_admin BOOLEAN DEFAULT FALSE,
@@ -47,6 +49,8 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS state TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS state_abbr TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS school_changes_this_month INTEGER DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_school_change_month INTEGER DEFAULT 0;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username_changes_this_month INTEGER DEFAULT 0;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_username_change_month INTEGER DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS daily_slots_used JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS blocked_users UUID[] DEFAULT '{}';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
