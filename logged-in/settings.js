@@ -703,107 +703,17 @@
         }
         
         /**
-         * Renders the Linked Providers and Account Deletion section.
+         * Renders the Account Deletion section.
          */
         function getAccountManagementContent(providerData = []) {
-            // Determine the Primary Provider (the first one in the list)
-            const primaryProviderId = providerData && providerData.length > 0 ? providerData[0].providerId : null;
+            // Determine the Primary Provider
+            const primaryProviderId = providerData && providerData.length > 0 ? providerData[0].providerId : (currentSource === 'supabase' ? 'supabase' : null);
             const providerConfig = getProviderConfig();
 
-            const isSupabase = currentSource === 'supabase';
-
-            let linkedProvidersHtml = (providerData || []).map(info => {
-                const id = info.providerId;
-                const config = providerConfig[id] || { name: id, icon: '<i class="fa-solid fa-puzzle-piece fa-lg mr-3"></i>' };
-
-                const isPrimary = (id === primaryProviderId); // Check if this is the primary provider
-                const canUnlink = providerData.length > 1 && !(id === 'password' && primaryProviderId === 'password');
-
-                const showSetPrimaryButton = !isPrimary && primaryProviderId === null && id !== 'password';
-
-                let iconHtml = config.icon.startsWith('<i') ? config.icon : `<img src="${config.icon}" alt="${config.name} Icon" class="h-6 w-auto mr-3">`;
-
-                return `
-                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[var(--border-main)] last:border-b-0" data-provider-row="${id}">
-                        <div class="flex items-center text-lg text-[var(--text-main)]">
-                            ${iconHtml}
-                            ${config.name}
-                            ${isPrimary ? '<span class="text-xs text-yellow-400 ml-2 font-normal">(Primary)</span>' : ''}
-                        </div>
-                        <div class="flex items-center gap-2"> <!-- Container for buttons -->
-                            ${showSetPrimaryButton ? 
-                                `<button class="btn-toolbar-style btn-primary-override" data-provider-id="${id}" data-action="set-primary" style="padding: 0.5rem 0.75rem;">
-                                    <i class="fa-solid fa-star mr-1"></i> Set Primary
-                                </button>` : ''
-                            }
-                            ${canUnlink ? 
-                                `<button class="btn-toolbar-style text-red-400 hover:border-red-600 hover:text-red-600" data-provider-id="${id}" data-action="unlink" style="padding: 0.5rem 0.75rem;">
-                                    <i class="fa-solid fa-unlink mr-1"></i> Unlink
-                                </button>` : 
-                                (providerData.length === 1 || (id === 'password' && primaryProviderId === 'password')) ? 
-                                    `<span class="text-xs text-[var(--text-muted)] opacity-60 font-light ml-4">Cannot Unlink</span>` : ''
-                            }
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            // Fallback for Supabase users who don't have Firebase providerData
-            if (isSupabase && linkedProvidersHtml === '') {
-                linkedProvidersHtml = `
-                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[var(--border-main)] last:border-b-0">
-                        <div class="flex items-center text-lg text-[var(--text-main)]">
-                            <i class="fa-solid fa-bolt-lightning fa-lg mr-3 text-yellow-400"></i>
-                            Supabase (Direct)
-                            <span class="text-xs text-yellow-400 ml-2 font-normal">(Primary)</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                             <span class="text-xs text-[var(--text-muted)] opacity-60 font-light ml-4">Managed via Supabase</span>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Filter out already linked social providers for the linking list
-            const linkedIds = providerData.map(p => p.providerId);
-            const availableProviders = Object.keys(providerConfig).filter(id => id !== 'password' && !linkedIds.includes(id));
-
-            let availableProvidersHtml = availableProviders.map(id => {
-                const config = providerConfig[id];
-                let iconHtml = config.icon.startsWith('<i') ? config.icon : `<img src="${config.icon}" alt="${config.name} Icon" class="h-6 w-auto mr-3">`;
-
-                return `
-                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[var(--border-main)] last:border-b-0" data-provider-row="${id}">
-                        <div class="flex items-center text-lg text-[var(--text-main)]">
-                            ${iconHtml}
-                            ${config.name}
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button class="btn-toolbar-style btn-primary-override" data-provider-id="${id}" data-action="link" style="padding: 0.5rem 0.75rem;">
-                                <i class="fa-solid fa-link mr-1"></i> Link Provider
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            const hideLinkSection = (availableProviders.length === 0) || isSupabase;
-
-            let supabaseNotice = '';
-            if (isSupabase) {
-                supabaseNotice = `
-                    <div class="settings-box w-full mb-4 p-4 bg-yellow-900/10 border-yellow-700/30">
-                        <p class="text-sm font-light text-yellow-200">
-                            <i class="fa-solid fa-circle-info mr-2"></i>
-                            Linking additional providers is currently only supported for accounts created via Email or Google.
-                        </p>
-                    </div>
-                `;
-            }
             // --- Account Deletion Section ---
             let deletionContent = '';
             
-            if (!primaryProviderId) { // No primary provider found
+            if (!primaryProviderId) { 
                 deletionContent = `
                     <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Delete Account</h3>
                     <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
@@ -813,19 +723,16 @@
                         </p>
                     </div>
                 `;
-            } else if (primaryProviderId === 'password') {
+            } else {
                 deletionContent = `
                     <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Delete Account</h3>
                     <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
                         <p class="text-sm font-light text-red-300 mb-3">
                             <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
-                            WARNING: Deleting your account is permanent and cannot be undone.
+                            WARNING: Deleting your account is permanent and cannot be undone. All your data across the 4SP network will be removed.
                         </p>
                         
-                        <div id="passwordDeletionStep1">
-                            <label for="deletePasswordInput" class="block text-red-300 text-sm font-light mb-2">Confirm Current Password</label>
-                            <input type="password" id="deletePasswordInput" placeholder="Current Password" class="input-text-style w-full bg-red-900/20 border-red-700/50 mb-3">
-                            
+                        <div id="deletionStep1">
                             <label for="deleteConfirmText" class="block text-red-300 text-sm font-light mb-2">Type "Delete My Account" to confirm (Case-insensitive)</label>
                             <input type="text" id="deleteConfirmText" placeholder="Delete My Account" class="input-text-style w-full bg-red-900/20 border-red-700/50">
                             
@@ -838,46 +745,9 @@
                         </div>
                     </div>
                 `;
-            } else {
-                deletionContent = `
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Delete Account</h3>
-                    <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
-                        <p class="text-sm font-light text-red-300 mb-3">
-                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
-                            WARNING: Deleting your account is permanent. You must re-authenticate with ${providerConfig[primaryProviderId].name} to proceed.
-                        </p>
-                        
-                        <div class="flex justify-between items-center pt-2">
-                            <p id="deleteMessage" class="general-message-area text-sm"></p>
-                            <button id="reauthenticateBtn" class="btn-toolbar-style w-48 btn-primary-override" data-provider-id="${primaryProviderId}" style="padding: 0.5rem 0.75rem;">
-                                 <i class="fa-solid fa-key mr-1"></i> Re-authenticate
-                            </button>
-                            <button id="finalDeleteBtn" class="btn-toolbar-style btn-primary-override-danger w-48 hidden" style="padding: 0.5rem 0.75rem;">
-                                 <i class="fa-solid fa-trash mr-1"></i> Delete Account
-                            </button>
-                        </div>
-                    </div>
-                `;
             }
 
-            // --- Combined HTML for Account Management ---
-            return `
-                <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Linked Providers</h3>
-                <div id="linked-providers-list" class="settings-box w-full mb-4 p-0">
-                    ${linkedProvidersHtml}
-                </div>
-                
-                ${supabaseNotice}
-
-                <div id="available-providers-section" class="provider-section-fade w-full ${hideLinkSection ? 'section-hidden' : ''}">
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Link New Providers</h3>
-                    <div id="available-providers-list" class="settings-box w-full flex flex-col gap-0 p-0">
-                        ${availableProvidersHtml}
-                    </div>
-                </div>
-                
-                ${deletionContent}
-            `;
+            return deletionContent;
         }
 
 
@@ -1834,13 +1704,6 @@
             `;
         }
         
-        // Helper for refreshing the General Tab
-        const refreshGeneralTab = () => {
-            // Clear the current view state and re-render the General tab
-            // This is necessary because currentUser.providerData needs to be fresh
-            switchTab('general');
-        };
-
         // --- Mibi Avatar Creator (MAC) Logic ---
 
         // Global state for Mibi Avatar parts (persisted in this scope)
@@ -3230,277 +3093,55 @@
             }
             
             // =================================================================
-            // --- LINKING / UNLINKING PROVIDERS LOGIC (NEW) ---
+            // --- ACCOUNT DELETION LOGIC (Supabase) ---
             // =================================================================
-
-            const linkProviderButtons = mainView.querySelectorAll('button[data-action="link"]');
-            const unlinkProviderButtons = mainView.querySelectorAll('button[data-action="unlink"]');
-            const setPrimaryProviderButtons = mainView.querySelectorAll('button[data-action="set-primary"]');
-
-            // --- LINKING Providers ---
-            linkProviderButtons.forEach(button => {
-                button.addEventListener('click', async () => {
-                    const providerId = button.dataset.providerId;
-                    const providerConfig = getProviderConfig();
-                    const config = providerConfig[providerId];
-                    const providerInstance = config.instance();
-                    
-                    showMessage(messageElement, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Attempting to link with ${config.name}...`, 'warning');
-                    
-                    if (!auth.currentUser) {
-                        showMessage(messageElement, "Linking providers is not available for Supabase-authenticated accounts.", 'error');
-                        return;
-                    }
-                    
-                    try {
-                        await linkWithPopup(auth.currentUser, providerInstance);
-                        
-                        // Animation before refresh
-                        const row = mainView.querySelector(`[data-provider-row="${providerId}"]`);
-                        if (row) row.classList.add('provider-exit');
-                        
-                        showMessage(messageElement, `${config.name} successfully linked to your account!`, 'success');
-                        
-                        setTimeout(() => {
-                            refreshGeneralTab();
-                            // The new item in "Linked" will naturally appear, we could add entry anim here if needed
-                        }, 400);
-                    } catch (error) {
-                        console.error("Error linking provider:", error);
-                        let msg = `Failed to link ${config.name}.`;
-                        if (error.code === 'auth/credential-already-in-use') {
-                            msg = `This ${config.name} account is already linked to another user.`;
-                        } else if (error.code === 'auth/popup-closed-by-user') {
-                            msg = 'Link cancelled by user.';
-                        } else if (error.code === 'auth/requires-recent-login') {
-                            msg = 'Please sign out and sign in again to link a new provider.';
-                        } else if (error.code === 'auth/invalid-credential') {
-                            msg = `Configuration Error: The Client ID or Secret for ${config.name} is incorrect in the Firebase Console.`;
-                        }
-                        showMessage(messageElement, msg, 'error');
-                    }
-                });
-            });
-
-            // --- UNLINKING Providers ---
-            unlinkProviderButtons.forEach(button => {
-                button.addEventListener('click', async () => {
-                    const providerId = button.dataset.providerId;
-                    const providerConfig = getProviderConfig();
-                    const config = providerConfig[providerId];
-                    
-                    showMessage(messageElement, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Unlinking ${config.name}...`, 'warning');
-                    
-                    if (!auth.currentUser) {
-                        showMessage(messageElement, "Unlinking providers is not available for Supabase-authenticated accounts.", 'error');
-                        return;
-                    }
-
-                    try {
-                        await unlink(auth.currentUser, providerId);
-                        
-                        // Animation before refresh
-                        const row = mainView.querySelector(`[data-provider-row="${providerId}"]`);
-                        if (row) row.classList.add('provider-exit');
-
-                        showMessage(messageElement, `${config.name} successfully unlinked.`, 'success');
-                        
-                        setTimeout(() => {
-                            refreshGeneralTab();
-                            // Apply entry animation to the newly unlinked provider in the available list
-                            setTimeout(() => {
-                                const newRow = mainView.querySelector(`#available-providers-list [data-provider-row="${providerId}"]`);
-                                if (newRow) newRow.classList.add('provider-enter');
-                            }, 50);
-                        }, 400);
-                    } catch (error) {
-                        console.error("Error unlinking provider:", error);
-                        let msg = `Failed to unlink ${config.name}.`;
-                        if (error.code === 'auth/no-such-provider') {
-                            msg = 'Provider not found on this account.';
-                        } else if (error.code === 'auth/requires-recent-login') {
-                             msg = 'Please sign out and sign in again to unlink this provider.';
-                        } else if (error.code === 'auth/provider-already-linked') {
-                            msg = "Cannot unlink the last remaining sign-in method.";
-                        }
-                        
-                        showMessage(messageElement, msg, 'error');
-                    }
-                });
-            });
-            
-            // --- SET PRIMARY Provider ---
-            setPrimaryProviderButtons.forEach(button => {
-                button.addEventListener('click', async () => {
-                    const providerId = button.dataset.providerId;
-                    const providerConfig = getProviderConfig();
-                    const config = providerConfig[providerId];
-                    const providerInstance = config.instance();
-                    
-                    showMessage(messageElement, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Attempting to set ${config.name} as primary...`, 'warning');
-                    
-                    if (!auth.currentUser) {
-                        showMessage(messageElement, "This operation is not available for Supabase-authenticated accounts.", 'error');
-                        return;
-                    }
-
-                    try {
-                        // Re-authenticate with the desired provider to make it primary
-                        await reauthenticateWithPopup(auth.currentUser, providerInstance);
-                        showMessage(messageElement, `${config.name} successfully set as primary!`, 'success');
-                        setTimeout(refreshGeneralTab, 1500); // Refresh UI
-                    } catch (error) {
-                        console.error("Error setting primary provider:", error);
-                        let msg = `Failed to set ${config.name} as primary.`;
-                        if (error.code === 'auth/popup-closed-by-user') {
-                            msg = 'Operation cancelled by user.';
-                        } else if (error.code === 'auth/requires-recent-login') {
-                            msg = 'Please sign out and sign in again to set a new primary provider.';
-                        } else if (error.code === 'auth/invalid-credential') {
-                            msg = `Configuration Error: Invalid Client ID/Secret. Check Firebase Console settings for ${config.name}.`;
-                        }
-                        showMessage(messageElement, msg, 'error');
-                    }
-                });
-            });
-
-            // =================================================================
-            // --- ACCOUNT DELETION LOGIC (NEW) ---
-            // =================================================================
-            const deletePasswordInput = document.getElementById('deletePasswordInput');
             const deleteConfirmText = document.getElementById('deleteConfirmText');
-            const reauthenticateBtn = document.getElementById('reauthenticateBtn');
             const finalDeleteBtn = document.getElementById('finalDeleteBtn');
             const deleteMessage = document.getElementById('deleteMessage');
-            const primaryProviderId = (currentUser.providerData && currentUser.providerData.length > 0) ? currentUser.providerData[0].providerId : 'unknown';
 
+            /**
+             * Orchestrates the deletion of a user's account and data via Supabase RPC.
+             */
+            const performAccountDeletion = async () => {
+                try {
+                    const userId = (currentUser.uid || currentUser.id);
+                    showLoading("Permanently deleting your account and all associated data...");
 
-            // --- ACCOUNT DELETION LOGIC --- 
+                    // 1. Call the Supabase RPC function to delete user data and account
+                    // This assumes a Postgres function 'delete_user' exists that handles
+                    // cascading deletes across profiles, firestore-mirrored data, etc.
+                    const { error } = await supabase.rpc('delete_user');
 
-/**
- * Orchestrates the deletion of a user's account and data via Cloud Functions.
- */
-const performAccountDeletion = async () => {
-    try {
-        const userId = (currentUser.uid || currentUser.id);
-        showLoading("Permanently deleting your account and all associated data...");
+                    if (error) throw error;
 
-        // Call the Cloud Function
-        const deleteUserFn = httpsCallable(functions, 'deleteUser');
-        const result = await deleteUserFn({ uid: userId });
+                    // --- 2. Local Storage Cleanup ---
+                    localStorage.clear();
 
-        if (!result.data || !result.data.success) {
-            throw new Error('Deletion failed on server');
-        }
+                    // --- 3. Sign Out & Redirect ---
+                    if (window.supabase) await window.supabase.auth.signOut();
+                    await signOut(auth);
+                    window.location.href = '../authentication.html';
 
-        // --- 3. Local Storage Cleanup ---
-        localStorage.clear();
-
-        // --- 4. Sign Out & Redirect ---
-        await signOut(auth);
-        window.location.href = '../authentication.html';
-
-    } catch (error) {
-        console.error("Error deleting account:", error);
-        let msg = "Failed to delete account completely. Please try again or contact support.";
-
-        if (error.code === 'auth/requires-recent-login') {
-            msg = 'Deletion failed: For security, please sign out, sign in again, and then immediately try the deletion process.';
-        } else if (error.message.includes('permission-denied')) {
-            msg = 'Deletion failed: Permission denied.';
-        }
-
-        const deleteMessage = document.getElementById('deleteMessage');
-        if (deleteMessage) showMessage(deleteMessage, msg, 'error');
-
-        // Re-enable/reset UI elements
-        const reauthenticateBtn = document.getElementById('reauthenticateBtn');
-        const finalDeleteBtn = document.getElementById('finalDeleteBtn');
-        if (reauthenticateBtn) {
-            reauthenticateBtn.disabled = false;
-            reauthenticateBtn.classList.remove('hidden');
-        }
-        if (finalDeleteBtn) finalDeleteBtn.classList.add('hidden');
-        hideLoading();
-    }
-};
-
-
-            // --- Email/Password Primary Deletion Logic ---
-            if (primaryProviderId === 'password' && deletePasswordInput) {
-                const checkDeletionInputs = () => {
-                    const passwordMatch = deletePasswordInput.value.length > 0;
-                    const textConfirmed = deleteConfirmText.value.trim().toLowerCase() === 'delete my account';
+                } catch (error) {
+                    console.error("Error deleting account:", error);
+                    let msg = "Failed to delete account completely. Please try again or contact support.";
                     
-                    finalDeleteBtn.disabled = !(passwordMatch && textConfirmed);
-                };
-
-                deletePasswordInput.addEventListener('input', checkDeletionInputs);
-                deleteConfirmText.addEventListener('input', checkDeletionInputs);
-                
-                finalDeleteBtn.addEventListener('click', async () => {
-                    if (finalDeleteBtn.disabled) return;
-                    
-                    finalDeleteBtn.disabled = true;
-                    showMessage(deleteMessage, '', 'success');
-                    showMessage(deleteMessage, '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Re-authenticating...', 'warning');
-                    
-                    try {
-                        // Re-authenticate using email/password credential
-                        const credential = EmailAuthProvider.credential(auth.currentUser.email, deletePasswordInput.value);
-                        await reauthenticateWithCredential(auth.currentUser, credential);
-
-                        // If re-auth is successful, proceed to final deletion
-                        await performAccountDeletion();
-
-                    } catch (error) {
-                        console.error("Error during password re-authentication for deletion:", error);
-                        let msg = 'Re-authentication failed. Incorrect password.';
-                        if (error.code === 'auth/requires-recent-login') {
-                             msg = 'Please sign out and sign in again immediately to proceed with deletion.';
-                        }
-                        showMessage(deleteMessage, msg, 'error');
-                        finalDeleteBtn.disabled = false;
+                    if (error.message.includes('permission-denied')) {
+                        msg = 'Deletion failed: Permission denied.';
+                    } else if (error.message) {
+                        msg = `Deletion failed: ${error.message}`;
                     }
+
+                    if (deleteMessage) showMessage(deleteMessage, msg, 'error');
+                    hideLoading();
+                }
+            };
+
+            if (deleteConfirmText && finalDeleteBtn) {
+                deleteConfirmText.addEventListener('input', () => {
+                    finalDeleteBtn.disabled = deleteConfirmText.value.trim().toLowerCase() !== 'delete my account';
                 });
-            } 
-            // --- Social Provider Primary Deletion Logic ---
-            else if (reauthenticateBtn) {
-                
-                reauthenticateBtn.addEventListener('click', async () => {
-                    const providerConfig = getProviderConfig();
-                    const providerInstance = providerConfig[primaryProviderId].instance();
-                    
-                    reauthenticateBtn.disabled = true;
-                    showMessage(deleteMessage, '', 'success');
-                    showMessage(deleteMessage, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Re-authenticating with ${providerConfig[primaryProviderId].name}...`, 'warning');
-                    
-                    try {
-                        // Re-authenticate using the social provider popup
-                        await reauthenticateWithPopup(auth.currentUser, providerInstance);
-                        
-                        // Re-authentication successful: change button to final delete button
-                        reauthenticateBtn.classList.add('hidden');
-                        finalDeleteBtn.classList.remove('hidden');
-                        showMessage(deleteMessage, 'Authentication successful. Click "Delete Account" one last time to confirm.', 'success');
 
-                    } catch (error) {
-                        console.error("Error during social re-authentication for deletion:", error);
-                        let msg = 'Re-authentication failed. Please try again.';
-                         if (error.code === 'auth/popup-closed-by-user') {
-                            msg = 'Re-authentication cancelled by user.';
-                        } else if (error.code === 'auth/requires-recent-login') {
-                             msg = 'Please sign out and sign in again immediately to proceed with deletion.';
-                        }
-                        showMessage(deleteMessage, msg, 'error');
-                        reauthenticateBtn.disabled = false;
-                    }
-                    if (reauthenticateBtn.classList.contains('hidden') === false) {
-                        reauthenticateBtn.disabled = false;
-                    }
-                });
-                
-                // Final Delete button click
                 finalDeleteBtn.addEventListener('click', performAccountDeletion);
             }
         }

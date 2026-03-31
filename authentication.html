@@ -387,7 +387,21 @@
             }
 
             if (sessionUser) {
-                // Check for email ban immediately
+                // 1. Check if they are using the correct provider for this account
+                const currentMethod = sessionUser.app_metadata?.provider || (sessionUser.uid ? 'email' : 'email'); 
+                // Note: sessionUser.app_metadata is Supabase specific. 
+                // For Firebase users, it's more complex, but we mainly care about Supabase here.
+                
+                const requiredMethod = await checkUserAuthMethod(sessionUser.email, currentMethod);
+                if (requiredMethod && requiredMethod !== currentMethod) {
+                    console.warn(`Auth Mismatch: User used ${currentMethod} but account requires ${requiredMethod}`);
+                    if (auth.currentUser) await signOut(auth);
+                    if (window.supabase) await window.supabase.auth.signOut();
+                    showMessage(messageDivs.login, `This account was created using <b>${requiredMethod}</b>. Please sign in with that instead.`, 'warning');
+                    return;
+                }
+
+                // 2. Check for email ban immediately
                 const email = sessionUser.email;
                 if (await checkEmailBan(email)) {
                     if (auth.currentUser) await signOut(auth);
@@ -506,12 +520,41 @@
                 const usernameRef = doc(db, "usernames", username.toLowerCase());
                 batch.set(usernameRef, { uid: (user.uid || user.id) });
 
+                // 3. Store auth method in Supabase profile as well
+                if (window.supabase) {
+                    await window.supabase.from('profiles').upsert({
+                        id: (user.uid || user.id),
+                        email: user.email,
+                        username: username,
+                        auth_method: authMethod
+                    });
+                }
+
                 await batch.commit();
                 return true;
             } catch (error) { 
                 console.error("Error creating user document:", error); 
                 return false; 
             }
+        };
+
+        /**
+         * Checks if the user is trying to log in with the same method they used to sign up.
+         */
+        const checkUserAuthMethod = async (email, currentMethod) => {
+            // Check Supabase first
+            if (window.supabase) {
+                const { data, error } = await window.supabase
+                    .from('profiles')
+                    .select('auth_method')
+                    .eq('email', email.toLowerCase())
+                    .maybeSingle();
+                
+                if (data && data.auth_method && data.auth_method !== currentMethod) {
+                    return data.auth_method;
+                }
+            }
+            return null;
         };
 
         const handleSuccessfulLogin = async (user) => {
@@ -593,6 +636,13 @@
                 if (!email || !password) { showMessage(messageDivs.login, 'Please enter both email and password.'); return; }
 
                 try {
+                    // Pre-check auth method
+                    const requiredMethod = await checkUserAuthMethod(email, 'email');
+                    if (requiredMethod && requiredMethod !== 'email') {
+                        showMessage(messageDivs.login, `This account uses <b>${requiredMethod}</b>. Please sign in with that instead.`, 'warning');
+                        return;
+                    }
+
                     const { data, error } = await supabase.auth.signInWithPassword({
                         email: email,
                         password: password,
@@ -715,11 +765,20 @@
                         provider: providerName,
                         options: {
                             redirectTo: redirectUrl,
-                            skipBrowserRedirect: false
+                            skipBrowserRedirect: true // Manual redirect to handle checks
                         }
                     });
 
                     if (error) throw error;
+
+                    if (data.url) {
+                        // For Supabase OAuth, the redirect happens to their URL.
+                        // To enforce provider choice, we really need to check AFTER they return
+                        // but Supabase doesn't easily allow "pre-check" by email for OAuth.
+                        // However, we can use the 'skipBrowserRedirect: false' default and 
+                        // check in the onAuthStateChange listener.
+                        window.location.href = data.url;
+                    }
                 } catch (error) {
                     console.error("Supabase Auth Error:", error.message);
                     const visibleMessageDiv = messageDivs.login.offsetParent ? messageDivs.login : messageDivs.username;
