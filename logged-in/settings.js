@@ -709,14 +709,16 @@
             // Determine the Primary Provider (the first one in the list)
             const primaryProviderId = providerData && providerData.length > 0 ? providerData[0].providerId : null;
             const providerConfig = getProviderConfig();
-            
+
+            const isSupabase = currentSource === 'supabase';
+
             let linkedProvidersHtml = (providerData || []).map(info => {
                 const id = info.providerId;
                 const config = providerConfig[id] || { name: id, icon: '<i class="fa-solid fa-puzzle-piece fa-lg mr-3"></i>' };
-                
+
                 const isPrimary = (id === primaryProviderId); // Check if this is the primary provider
                 const canUnlink = providerData.length > 1 && !(id === 'password' && primaryProviderId === 'password');
-                
+
                 const showSetPrimaryButton = !isPrimary && primaryProviderId === null && id !== 'password';
 
                 let iconHtml = config.icon.startsWith('<i') ? config.icon : `<img src="${config.icon}" alt="${config.name} Icon" class="h-6 w-auto mr-3">`;
@@ -746,10 +748,26 @@
                 `;
             }).join('');
 
+            // Fallback for Supabase users who don't have Firebase providerData
+            if (isSupabase && linkedProvidersHtml === '') {
+                linkedProvidersHtml = `
+                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[var(--border-main)] last:border-b-0">
+                        <div class="flex items-center text-lg text-[var(--text-main)]">
+                            <i class="fa-solid fa-bolt-lightning fa-lg mr-3 text-yellow-400"></i>
+                            Supabase (Direct)
+                            <span class="text-xs text-yellow-400 ml-2 font-normal">(Primary)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <span class="text-xs text-[var(--text-muted)] opacity-60 font-light ml-4">Managed via Supabase</span>
+                        </div>
+                    </div>
+                `;
+            }
+
             // Filter out already linked social providers for the linking list
             const linkedIds = providerData.map(p => p.providerId);
             const availableProviders = Object.keys(providerConfig).filter(id => id !== 'password' && !linkedIds.includes(id));
-            
+
             let availableProvidersHtml = availableProviders.map(id => {
                 const config = providerConfig[id];
                 let iconHtml = config.icon.startsWith('<i') ? config.icon : `<img src="${config.icon}" alt="${config.name} Icon" class="h-6 w-auto mr-3">`;
@@ -768,9 +786,20 @@
                     </div>
                 `;
             }).join('');
-                
-            const hideLinkSection = (availableProviders.length === 0);
 
+            const hideLinkSection = (availableProviders.length === 0) || isSupabase;
+
+            let supabaseNotice = '';
+            if (isSupabase) {
+                supabaseNotice = `
+                    <div class="settings-box w-full mb-4 p-4 bg-yellow-900/10 border-yellow-700/30">
+                        <p class="text-sm font-light text-yellow-200">
+                            <i class="fa-solid fa-circle-info mr-2"></i>
+                            Linking additional providers is currently only supported for accounts created via Email or Google.
+                        </p>
+                    </div>
+                `;
+            }
             // --- Account Deletion Section ---
             let deletionContent = '';
             
@@ -838,6 +867,8 @@
                     ${linkedProvidersHtml}
                 </div>
                 
+                ${supabaseNotice}
+
                 <div id="available-providers-section" class="provider-section-fade w-full ${hideLinkSection ? 'section-hidden' : ''}">
                     <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Link New Providers</h3>
                     <div id="available-providers-list" class="settings-box w-full flex flex-col gap-0 p-0">
@@ -3216,6 +3247,11 @@
                     
                     showMessage(messageElement, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Attempting to link with ${config.name}...`, 'warning');
                     
+                    if (!auth.currentUser) {
+                        showMessage(messageElement, "Linking providers is not available for Supabase-authenticated accounts.", 'error');
+                        return;
+                    }
+                    
                     try {
                         await linkWithPopup(auth.currentUser, providerInstance);
                         
@@ -3255,6 +3291,11 @@
                     
                     showMessage(messageElement, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Unlinking ${config.name}...`, 'warning');
                     
+                    if (!auth.currentUser) {
+                        showMessage(messageElement, "Unlinking providers is not available for Supabase-authenticated accounts.", 'error');
+                        return;
+                    }
+
                     try {
                         await unlink(auth.currentUser, providerId);
                         
@@ -3298,6 +3339,11 @@
                     
                     showMessage(messageElement, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Attempting to set ${config.name} as primary...`, 'warning');
                     
+                    if (!auth.currentUser) {
+                        showMessage(messageElement, "This operation is not available for Supabase-authenticated accounts.", 'error');
+                        return;
+                    }
+
                     try {
                         // Re-authenticate with the desired provider to make it primary
                         await reauthenticateWithPopup(auth.currentUser, providerInstance);
