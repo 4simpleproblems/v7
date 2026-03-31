@@ -1,15 +1,20 @@
 -- SUPABASE COMPREHENSIVE SCHEMA SETUP FOR PROJECT NIOBIUM
--- Run this in your Supabase SQL Editor (https://supabase.com/dashboard/project/_/sql)
+-- Run this in your Supabase SQL Editor
 
 -- 1. PROFILES TABLE
--- This creates the table if it doesn't exist.
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     username TEXT UNIQUE,
     display_name TEXT,
     avatar_url TEXT,
     email TEXT,
-    auth_method TEXT, -- NEW: Stores the original provider used (e.g. 'email', 'google')
+    auth_method TEXT,
+    pfp_type TEXT DEFAULT 'letter',
+    pfp_letter_bg TEXT,
+    pfp_letter_char TEXT,
+    mibi_config JSONB,
+    show_offline BOOLEAN DEFAULT FALSE,
+    navbar_theme JSONB,
     points INTEGER DEFAULT 0,
     total_v6_time INTEGER DEFAULT 0,
     last_active TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -30,9 +35,14 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- REPAIR / MIGRATION: 
--- In case the table already existed, these statements ensure every required column is added.
+-- REPAIR / MIGRATION:
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS auth_method TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS pfp_type TEXT DEFAULT 'letter';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS pfp_letter_bg TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS pfp_letter_char TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS mibi_config JSONB;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS show_offline BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS navbar_theme JSONB;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS state TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS state_abbr TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS school_changes_this_month INTEGER DEFAULT 0;
@@ -42,10 +52,28 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS blocked_users UUID[] DEFAUL
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_tester BOOLEAN DEFAULT FALSE;
 
--- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- 2. DAILY PHOTOS TABLE
+-- 3. POLICIES (Profiles)
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone." ON public.profiles;
+CREATE POLICY "Public profiles are viewable by everyone."
+ON public.profiles
+FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "Users can insert their own profile." ON public.profiles;
+CREATE POLICY "Users can insert their own profile."
+ON public.profiles
+FOR INSERT
+WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update their own profile." ON public.profiles;
+CREATE POLICY "Users can update their own profile."
+ON public.profiles
+FOR UPDATE
+USING (auth.uid() = id);
+
+-- 4. POLICIES (Daily Photos)
 CREATE TABLE IF NOT EXISTS public.daily_photos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     creator_uid UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -54,55 +82,55 @@ CREATE TABLE IF NOT EXISTS public.daily_photos (
     title TEXT,
     school_id TEXT,
     district_id TEXT,
-    status TEXT DEFAULT 'active', -- 'active', 'deleted', 'flagged'
-    hearts UUID[] DEFAULT '{}', -- Array of user IDs who liked
+    status TEXT DEFAULT 'active',
+    hearts UUID[] DEFAULT '{}',
     comments JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS on Daily Photos
 ALTER TABLE public.daily_photos ENABLE ROW LEVEL SECURITY;
 
--- 3. POLICIES (Profiles)
-DROP POLICY IF EXISTS "Public profiles are viewable by everyone." ON public.profiles;
-CREATE POLICY "Public profiles are viewable by everyone." ON public.profiles FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Users can insert their own profile." ON public.profiles;
-CREATE POLICY "Users can insert their own profile." ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can update their own profile." ON public.profiles;
-CREATE POLICY "Users can update their own profile." ON public.profiles FOR UPDATE USING (auth.uid() = id);
-
--- 4. POLICIES (Daily Photos)
 DROP POLICY IF EXISTS "Active photos are viewable by everyone." ON public.daily_photos;
-CREATE POLICY "Active photos are viewable by everyone." ON public.daily_photos FOR SELECT USING (status = 'active');
+CREATE POLICY "Active photos are viewable by everyone."
+ON public.daily_photos
+FOR SELECT
+USING (status = 'active');
 
 DROP POLICY IF EXISTS "Users can insert their own photos." ON public.daily_photos;
-CREATE POLICY "Users can insert their own photos." ON public.daily_photos FOR INSERT WITH CHECK (auth.uid() = creator_uid);
+CREATE POLICY "Users can insert their own photos."
+ON public.daily_photos
+FOR INSERT
+WITH CHECK (auth.uid() = creator_uid);
 
 DROP POLICY IF EXISTS "Users can update their own photos." ON public.daily_photos;
-CREATE POLICY "Users can update their own photos." ON public.daily_photos FOR UPDATE USING (auth.uid() = creator_uid);
+CREATE POLICY "Users can update their own photos."
+ON public.daily_photos
+FOR UPDATE
+USING (auth.uid() = creator_uid);
 
 -- 5. POLICIES (Storage)
--- NOTE: These policies apply to storage.objects. 
--- Ensure you have created 'daily_photos' and 'profile_pictures' buckets first.
-
--- Allow public access to read files in these buckets
 DROP POLICY IF EXISTS "Public Access" ON storage.objects;
-CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id IN ('daily_photos', 'profile_pictures'));
+CREATE POLICY "Public Access"
+ON storage.objects
+FOR SELECT
+USING (bucket_id IN ('daily_photos', 'profile_pictures'));
 
--- Allow authenticated users to upload files
 DROP POLICY IF EXISTS "Authenticated Upload" ON storage.objects;
-CREATE POLICY "Authenticated Upload" ON storage.objects FOR INSERT WITH CHECK (
-    bucket_id IN ('daily_photos', 'profile_pictures') AND 
-    auth.role() = 'authenticated'
+CREATE POLICY "Authenticated Upload"
+ON storage.objects
+FOR INSERT
+WITH CHECK (
+    bucket_id IN ('daily_photos', 'profile_pictures')
+    AND auth.role() = 'authenticated'
 );
 
--- Allow users to delete their own files
 DROP POLICY IF EXISTS "User Delete" ON storage.objects;
-CREATE POLICY "User Delete" ON storage.objects FOR DELETE USING (
-    bucket_id IN ('daily_photos', 'profile_pictures') AND 
-    (storage.foldername(name))[1] = auth.uid()::text
+CREATE POLICY "User Delete"
+ON storage.objects
+FOR DELETE
+USING (
+    bucket_id IN ('daily_photos', 'profile_pictures')
+    AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
 -- 6. CONFIG TABLE (For Admin Toggles)
@@ -113,20 +141,36 @@ CREATE TABLE IF NOT EXISTS public.config (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS
 ALTER TABLE public.config ENABLE ROW LEVEL SECURITY;
 
--- Config Policies
-CREATE POLICY "Everyone can view config." ON public.config
-    FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Everyone can view config." ON public.config;
+CREATE POLICY "Everyone can view config."
+ON public.config
+FOR SELECT
+TO authenticated
+USING (true);
 
-CREATE POLICY "Admins can update config." ON public.config
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND (email = '4simpleproblems@gmail.com' OR is_admin = true)
-        )
-    );
+DROP POLICY IF EXISTS "Admins can update config." ON public.config;
+CREATE POLICY "Admins can update config."
+ON public.config
+FOR ALL
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.profiles
+    WHERE id = auth.uid()
+      AND (email = '4simpleproblems@gmail.com' OR is_admin = true)
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM public.profiles
+    WHERE id = auth.uid()
+      AND (email = '4simpleproblems@gmail.com' OR is_admin = true)
+  )
+);
 
 -- 7. TRAFFIC LOGS (For Analytics)
 CREATE TABLE IF NOT EXISTS public.traffic_logs (
@@ -141,42 +185,45 @@ CREATE TABLE IF NOT EXISTS public.traffic_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS
 ALTER TABLE public.traffic_logs ENABLE ROW LEVEL SECURITY;
 
--- Traffic Policies
-CREATE POLICY "Admins can view traffic logs." ON public.traffic_logs
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND (email = '4simpleproblems@gmail.com' OR is_admin = true)
-        )
-    );
+-- IMPORTANT FIX: drop the policy before recreating it (prevents 42710)
+DROP POLICY IF EXISTS "Admins can view traffic logs." ON public.traffic_logs;
+CREATE POLICY "Admins can view traffic logs."
+ON public.traffic_logs
+FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.profiles
+    WHERE id = auth.uid()
+      AND (email = '4simpleproblems@gmail.com' OR is_admin = true)
+  )
+);
 
-CREATE POLICY "Users can insert their own logs." ON public.traffic_logs
-    FOR INSERT WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+DROP POLICY IF EXISTS "Users can insert their own logs." ON public.traffic_logs;
+CREATE POLICY "Users can insert their own logs."
+ON public.traffic_logs
+FOR INSERT
+WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
 
 -- 8. REALTIME SETUP
--- This enables live updates for the leaderboard and photo modal.
 BEGIN;
   DROP PUBLICATION IF EXISTS supabase_realtime;
   CREATE PUBLICATION supabase_realtime;
 COMMIT;
+
 ALTER PUBLICATION supabase_realtime ADD TABLE public.daily_photos;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
 
 -- 9. DELETE USER FUNCTION (RPC)
--- This allows users to delete their own account from the settings page.
--- Since it modifies auth.users, it must be a 'security definer' function.
 CREATE OR REPLACE FUNCTION public.delete_user()
 RETURNS void
 LANGUAGE plpgsql
-SECURITY DEFINER -- Runs with owner privileges
+SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  -- Deleting from auth.users triggers the CASCADE delete on public.profiles
-  -- which in turn triggers CASCADE on daily_photos, etc.
   DELETE FROM auth.users WHERE id = auth.uid();
 END;
 $$;

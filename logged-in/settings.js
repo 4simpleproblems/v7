@@ -218,10 +218,85 @@
             }
 
             return data;
+            }
+
+            /**
+            * Saves user data to Firestore and mirrors to Supabase profiles.
+            */
+            async function saveUserData(uid, updates) {
+            let firestoreSuccess = false;
+            let supabaseSuccess = false;
+
+            // 1. Try Firestore
+            try {
+                const userDocRef = getUserDocRef(uid);
+                await updateDoc(userDocRef, updates);
+                firestoreSuccess = true;
+            } catch (e) {
+                if (e.code === 'permission-denied') {
+                    console.warn("Firestore save denied. Relying on Supabase.");
+                } else {
+                    console.error("Firestore save error:", e);
+                }
+            }
+
+            // 2. Mirror to Supabase
+            if (window.supabase) {
+                try {
+                    // Map Firestore field names to Supabase snake_case if they differ
+                    const supabaseUpdates = {};
+                    const mapping = {
+                        pfpType: 'pfp_type',
+                        customPfp: 'avatar_url',
+                        pfpLetterBg: 'pfp_letter_bg',
+                        pfpLetterChar: 'pfp_letter_char',
+                        mibiConfig: 'mibi_config',
+                        showOffline: 'show_offline',
+                        leaderboardOptOut: 'leaderboard_opt_out',
+                        navbarTheme: 'navbar_theme',
+                        schoolId: 'school_id',
+                        schoolName: 'school_name',
+                        districtId: 'district_id',
+                        state: 'state',
+                        stateAbbr: 'state_abbr',
+                        schoolSkipped: 'school_skipped',
+                        schoolChangesThisMonth: 'school_changes_this_month',
+                        lastSchoolChangeMonth: 'last_school_change_month'
+                    };
+
+                    for (const key in updates) {
+                        const sbKey = mapping[key] || key;
+                        const value = updates[key];
+
+                        // Handle potential FieldValue types (Firestore specific)
+                        if (value && typeof value === 'object') {
+                            if (value._methodName === 'deleteField') {
+                                supabaseUpdates[sbKey] = null;
+                                continue;
+                            }
+                        }
+
+                        supabaseUpdates[sbKey] = value;
+                    }
+
+                    const { error } = await window.supabase
+                        .from('profiles')
+                        .update(supabaseUpdates)
+                        .eq('id', uid);
+
+                    if (error) throw error;
+                    supabaseSuccess = true;
+                } catch (e) {
+                    console.error("Supabase sync error:", e);
+                }
+            }
+
+            if (!firestoreSuccess && !supabaseSuccess) {
+                throw new Error("Failed to save data to both Firestore and Supabase.");
+            }
         }
-        
+
         import { checkAdminStatus } from '../utils.js';
-        
         const showMessage = (element, text, type = 'error') => {
             // Prevent clearing a success message if a warning is generated elsewhere
             if (element && element.innerHTML.includes('success') && type !== 'error') return;
@@ -2729,10 +2804,10 @@
                 showMessage(pfpMessage, '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving Mibi Avatar...', 'warning');
                 
                 try {
-                    const userDocRef = getUserDocRef(currentUser.uid || currentUser.id);
+                    const uid = currentUser.uid || currentUser.id;
                     
-                    // Save to Firestore
-                    await updateDoc(userDocRef, {
+                    // Save to Firestore & Supabase
+                    await saveUserData(uid, {
                         pfpType: 'mibi',
                         mibiConfig: mibiAvatarState
                     });
@@ -2927,13 +3002,13 @@
             // --- Monthly Reset Logic (Only if Firestore is accessible) ---
             if (currentMonthNumber !== lastChangeMonth) {
                 try {
-                    await updateDoc(userDocRef, {
+                    await saveUserData(uid, {
                         usernameChangesThisMonth: 0,
                         lastUsernameChangeMonth: currentMonthNumber
                     });
                     changesThisMonth = 0;
                 } catch (e) {
-                    console.warn("Could not reset monthly changes in Firestore:", e);
+                    console.warn("Could not reset monthly changes:", e);
                 }
             }
             
@@ -3058,7 +3133,7 @@
                     batch.set(newUsernameRef, { uid: (currentUser.uid || currentUser.id) });
 
                     // 3. Update User Document
-                    batch.update(userDocRef, {
+                    await saveUserData(uid, {
                         username: newUsername,
                         usernameChangesThisMonth: newChangesCount,
                         lastUsernameChangeMonth: currentMonthNumber 
@@ -3645,7 +3720,7 @@
                 window.settingsConfirmSchool = async (schoolName, districtName) => {
                     if (confirm(`Confirm change to: ${schoolName}?`)) {
                         try {
-                            await updateDoc(userDocRef, {
+                            await saveUserData(uid, {
                                 schoolId: schoolName,
                                 schoolName: schoolName,
                                 districtId: districtName || schoolName,
@@ -3675,7 +3750,7 @@
 
                     if (confirm('Are you sure you want to remove your school and district affiliation?')) {
                         try {
-                            await updateDoc(userDocRef, {
+                            await saveUserData(uid, {
                                 schoolId: deleteField(),
                                 schoolName: deleteField(),
                                 districtId: deleteField(),
@@ -3712,7 +3787,7 @@
                         saveActivityPresenceBtn.disabled = true;
                         showMessage(activityPresenceMessage, '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...', 'warning');
 
-                        await updateDoc(userDocRef, {
+                        await saveUserData(uid, {
                             showOffline: showOfflineToggle.checked,
                             leaderboardOptOut: !leaderboardToggle.checked
                         });
@@ -3797,6 +3872,17 @@
                         previewImg.src = userData.customPfp;
                         previewImg.style.display = 'block';
                         previewPlaceholder.style.display = 'none';
+                    } else if (type === 'google') {
+                        const googlePfp = userData.avatar_url || (currentUser.user_metadata?.picture);
+                        if (googlePfp) {
+                            previewImg.src = googlePfp;
+                            previewImg.style.display = 'block';
+                            previewPlaceholder.style.display = 'none';
+                        } else {
+                            previewImg.style.display = 'none';
+                            previewPlaceholder.style.display = 'flex';
+                            previewPlaceholder.innerHTML = '<i class="fa-solid fa-user"></i>';
+                        }
                     } else if (type === 'letter') {
                         previewImg.style.display = 'none';
                         previewPlaceholder.style.display = 'flex';
@@ -3817,7 +3903,7 @@
                         const type = btn.dataset.mode;
                         updatePfpUi(type);
                         try {
-                            await updateDoc(userDocRef, { pfpType: type });
+                            await saveUserData(uid, { pfpType: type });
                             userData.pfpType = type;
                             triggerNavbarUpdate();
                             showMessage(pfpMessage, 'Preference saved!', 'success');
@@ -3869,7 +3955,7 @@
                         const text = pfpLetterInput.value.trim().toUpperCase();
                         showMessage(pfpMessage, 'Saving...', 'warning');
                         try {
-                            await updateDoc(userDocRef, {
+                            await saveUserData(uid, {
                                 pfpType: 'letter',
                                 pfpLetterBg: selectedLetterColor,
                                 letterAvatarText: text
@@ -4074,7 +4160,7 @@
                     try {
                         submitCropBtn.disabled = true;
                         submitCropBtn.textContent = "Saving...";
-                        await updateDoc(userDocRef, { customPfp: base64, pfpType: 'custom' });
+                        await saveUserData(uid, { customPfp: base64, pfpType: 'custom' });
                         userData.customPfp = base64;
                         userData.pfpType = 'custom';
                         triggerNavbarUpdate();
@@ -4265,14 +4351,12 @@
                                 return;
                             }
 
-                            // 3. Save to Firestore (Persistence)
+                            // 3. Save to Firestore & Supabase (Persistence)
                             if (currentUser) {
                                 try {
-                                    const userDocRef = getUserDocRef(currentUser.uid || currentUser.id);
-                                    // Ensure we're only saving valid data
-                                    await updateDoc(userDocRef, { navbarTheme: themeToApply });
+                                    await saveUserData(uid, { navbarTheme: themeToApply });
                                 } catch (error) {
-                                    console.error("Error saving theme to Firestore:", error);
+                                    console.error("Error saving theme:", error);
                                     // Don't block UI feedback for this
                                 }
                             }
