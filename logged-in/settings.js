@@ -169,8 +169,56 @@
 
         
         // --- Shared Helper Functions ---
-        // --- Shared Helper Functions ---
         const getUserDocRef = (userId) => doc(db, 'users', userId);
+
+        /**
+         * Fetches user data from Firestore with a fallback to Supabase profiles.
+         */
+        async function getUserData(uid) {
+            let data = null;
+
+            // 1. Try Firestore
+            try {
+                const userDocRef = getUserDocRef(uid);
+                const snap = await getDoc(userDocRef);
+                if (snap.exists()) {
+                    data = snap.data();
+                }
+            } catch (e) {
+                if (e.code === 'permission-denied') {
+                    console.warn("Firestore access denied. Falling back to Supabase if available.");
+                } else {
+                    console.error("Firestore error:", e);
+                }
+            }
+
+            // 2. Try Supabase Fallback if no data or firestore failed
+            if (!data && window.supabase) {
+                try {
+                    const { data: profile, error } = await window.supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', uid)
+                        .maybeSingle();
+                    
+                    if (profile) {
+                        // Map Supabase fields to Firestore fields if they differ
+                        data = {
+                            ...profile,
+                            pfpType: profile.pfp_type || profile.pfpType,
+                            customPfp: profile.custom_pfp || profile.customPfp,
+                            pfpLetterBg: profile.pfp_letter_bg || profile.pfpLetterBg,
+                            pfpLetterChar: profile.pfp_letter_char || profile.pfpLetterChar,
+                            mibiConfig: profile.mibi_config || profile.mibiConfig
+                        };
+                    }
+                } catch (e) {
+                    console.error("Supabase fallback error:", e);
+                }
+            }
+
+            return data;
+        }
         
         import { checkAdminStatus } from '../utils.js';
         
@@ -2868,20 +2916,19 @@
         async function loadGeneralTab() {
             if (!currentUser) return; 
 
-            // Check if user is using email/password authentication (providerId 'password')
             const isEmailPasswordUser = (currentUser.providerData || []).some(
                 (info) => info.providerId === 'password'
             );
             
-            const userDocRef = getUserDocRef(currentUser.uid || currentUser.id);
-            let userDocSnap = await getDoc(userDocRef);
+            const uid = currentUser.uid || currentUser.id;
+            const userData = await getUserData(uid);
 
-            if (!userDocSnap.exists()) {
+            if (!userData) {
                 mainView.innerHTML = `<h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">General Settings</h2><p class="text-red-400">Error: User data not found. Please log out and back in.</p>`;
                 return;
             }
 
-            let userData = userDocSnap.data();
+            const userDocRef = getUserDocRef(uid);
             const today = new Date();
             const currentMonthNumber = today.getMonth() + 1; 
             const currentMonthName = today.toLocaleDateString('en-US', { month: 'long' }); 
@@ -2889,15 +2936,17 @@
             let changesThisMonth = userData.usernameChangesThisMonth || 0;
             let lastChangeMonth = userData.lastUsernameChangeMonth || 0;
 
-            // --- Monthly Reset Logic ---
+            // --- Monthly Reset Logic (Only if Firestore is accessible) ---
             if (currentMonthNumber !== lastChangeMonth) {
-                changesThisMonth = 0;
-                await updateDoc(userDocRef, {
-                    usernameChangesThisMonth: 0,
-                    lastUsernameChangeMonth: currentMonthNumber
-                });
-                userDocSnap = await getDoc(userDocRef);
-                userData = userDocSnap.data(); 
+                try {
+                    await updateDoc(userDocRef, {
+                        usernameChangesThisMonth: 0,
+                        lastUsernameChangeMonth: currentMonthNumber
+                    });
+                    changesThisMonth = 0;
+                } catch (e) {
+                    console.warn("Could not reset monthly changes in Firestore:", e);
+                }
             }
             
             const changesRemaining = MAX_CHANGES - changesThisMonth;
@@ -3704,9 +3753,9 @@ const performAccountDeletion = async () => {
             const schoolStep = document.getElementById('settings-school-step');
 
             if (currentUser) {
-                const userDocRef = getUserDocRef(currentUser.uid || currentUser.id);
-                const snap = await getDoc(userDocRef);
-                const userData = snap.data();
+                const uid = currentUser.uid || currentUser.id;
+                const userData = await getUserData(uid);
+                if (!userData) return;
 
                 const currentMonth = new Date().getMonth() + 1;
                 let schoolChangesThisMonth = userData?.schoolChangesThisMonth || 0;
@@ -3870,15 +3919,12 @@ const performAccountDeletion = async () => {
             const activityPresenceMessage = document.getElementById('activityPresenceMessage');
 
             if (currentUser) {
-                const userDocRef = getUserDocRef(currentUser.uid || currentUser.id);
-                try {
-                    const snap = await getDoc(userDocRef);
-                    if (snap.exists()) {
-                        const userData = snap.data();
-                        showOfflineToggle.checked = !!userData.showOffline;
-                        leaderboardToggle.checked = !userData.leaderboardOptOut;
-                    }
-                } catch (e) { console.error("Error loading activity presence:", e); }
+                const uid = currentUser.uid || currentUser.id;
+                const userData = await getUserData(uid);
+                if (userData) {
+                    showOfflineToggle.checked = !!userData.showOffline;
+                    leaderboardToggle.checked = !userData.leaderboardOptOut;
+                }
 
                 saveActivityPresenceBtn.addEventListener('click', async () => {
                     try {
@@ -3911,18 +3957,13 @@ const performAccountDeletion = async () => {
             
             // --- 1. PROFILE PICTURE LOGIC ---
             if (currentUser) {
-                const userDocRef = getUserDocRef(currentUser.uid || currentUser.id);
-                let userData = {};
-                try {
-                    const snap = await getDoc(userDocRef);
-                    if (snap.exists()) {
-                        userData = snap.data();
-                        // Initialize mibiAvatarState with saved config if available
-                        if (userData.mibiConfig) {
-                            mibiAvatarState = { ...mibiAvatarState, ...userData.mibiConfig };
-                        }
-                    }
-                } catch (e) { console.error("Error fetching PFP settings:", e); }
+                const uid = currentUser.uid || currentUser.id;
+                const userData = await getUserData(uid) || {};
+                
+                // Initialize mibiAvatarState with saved config if available
+                if (userData.mibiConfig) {
+                    mibiAvatarState = { ...mibiAvatarState, ...userData.mibiConfig };
+                }
 
                 const currentPfpType = userData.pfpType || 'google';
                 const pfpModeBtns = document.querySelectorAll('.pfp-mode-btn');
@@ -4611,6 +4652,7 @@ const performAccountDeletion = async () => {
 
             // Firebase Listener
             onAuthStateChanged(auth, async (user) => {
+                firebaseChecked = true;
                 if (user) {
                     handleUser(user, 'firebase');
                 } else {
@@ -4618,9 +4660,7 @@ const performAccountDeletion = async () => {
                     if (window.supabase) {
                         const { data: { session } } = await window.supabase.auth.getSession();
                         if (session) {
-                            // If we have a Supabase session but NO Firebase user, sign in anonymously to Firebase
-                            // This allows reading public data from Firestore (like user profile/rankings)
-                            signInAnonymously(auth).catch(err => console.error("Firebase Anonymous login failed:", err));
+                            // Supabase is enough for most data via fallback
                             return;
                         }
                     }
