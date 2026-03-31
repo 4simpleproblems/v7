@@ -192,7 +192,11 @@
                 }
                 return false;
             } catch (e) {
-                console.error("Error checking admin status:", e);
+                if (e.code === 'permission-denied') {
+                    console.warn("Permission denied checking admin status. This is expected if you are not an admin.");
+                } else {
+                    console.error("Error checking admin status:", e);
+                }
                 return false;
             }
         }

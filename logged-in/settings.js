@@ -1,8 +1,10 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { 
-            getAuth, 
-            onAuthStateChanged, 
+            getAuth,
+            onAuthStateChanged,
+            signInAnonymously,
             signOut,
+
             EmailAuthProvider, 
             reauthenticateWithCredential, 
             updatePassword,
@@ -1442,7 +1444,7 @@
                 allAdmins.forEach(admin => {
                     const isAdminUser = admin.isAdmin; // true for all entries in allAdmins
                     const isSuperadmin = admin.isSuperadmin;
-                    const isCurrentUser = admin.uid === currentUser.uid;
+                    const isCurrentUser = admin.uid === (currentUser.uid || currentUser.id);
 
                     let actionsHtml = '';
                     if (isPrimarySuperadmin && !isCurrentUser) { // Primary superadmin can manage other admins/superadmins
@@ -1572,7 +1574,7 @@
 
                         await setDoc(doc(db, 'admins', uid), {
                             role: 'admin',
-                            addedBy: currentUser.uid,
+                            addedBy: (currentUser.uid || currentUser.id),
                             addedAt: serverTimestamp(),
                             username: username,
                             email: email
@@ -1604,7 +1606,7 @@
                 try {
                     await updateDoc(doc(db, 'admins', uid), {
                         role: 'admin', // Revert to regular admin
-                        superadminRemovedBy: currentUser.uid,
+                        superadminRemovedBy: (currentUser.uid || currentUser.id),
                         superadminRemovedAt: serverTimestamp()
                     });
                     showMessage(superadminMessage, `${email}'s superadmin privileges have been removed.`, 'success');
@@ -1655,7 +1657,7 @@
                             // Already an admin, just upgrade role
                             await updateDoc(adminDocRef, {
                                 role: 'superadmin',
-                                superadminAddedBy: currentUser.uid,
+                                superadminAddedBy: (currentUser.uid || currentUser.id),
                                 superadminAddedAt: serverTimestamp()
                             });
                             showMessage(superadminMessage, `${username} has been promoted to superadmin.`, 'success');
@@ -1663,7 +1665,7 @@
                             // Not an admin yet, add as superadmin
                             await setDoc(adminDocRef, {
                                 role: 'superadmin',
-                                addedBy: currentUser.uid,
+                                addedBy: (currentUser.uid || currentUser.id),
                                 addedAt: serverTimestamp(),
                                 username: username,
                                 email: email
@@ -2681,7 +2683,7 @@
                 showMessage(pfpMessage, '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving Mibi Avatar...', 'warning');
                 
                 try {
-                    const userDocRef = getUserDocRef(currentUser.uid);
+                    const userDocRef = getUserDocRef(currentUser.uid || currentUser.id);
                     
                     // Save to Firestore
                     await updateDoc(userDocRef, {
@@ -3006,7 +3008,7 @@
 
                     // 2. Create new username reservation
                     const newUsernameRef = doc(db, 'usernames', newUsername.toLowerCase());
-                    batch.set(newUsernameRef, { uid: currentUser.uid });
+                    batch.set(newUsernameRef, { uid: (currentUser.uid || currentUser.id) });
 
                     // 3. Update User Document
                     batch.update(userDocRef, {
@@ -3275,7 +3277,7 @@
  */
 const performAccountDeletion = async () => {
     try {
-        const userId = auth.currentUser.uid;
+        const userId = (currentUser.uid || currentUser.id);
         showLoading("Permanently deleting your account and all associated data...");
 
         // Call the Cloud Function
@@ -3692,7 +3694,7 @@ const performAccountDeletion = async () => {
             const schoolStep = document.getElementById('settings-school-step');
 
             if (currentUser) {
-                const userDocRef = getUserDocRef(currentUser.uid);
+                const userDocRef = getUserDocRef(currentUser.uid || currentUser.id);
                 const snap = await getDoc(userDocRef);
                 const userData = snap.data();
 
@@ -3899,7 +3901,7 @@ const performAccountDeletion = async () => {
             
             // --- 1. PROFILE PICTURE LOGIC ---
             if (currentUser) {
-                const userDocRef = getUserDocRef(currentUser.uid);
+                const userDocRef = getUserDocRef(currentUser.uid || currentUser.id);
                 let userData = {};
                 try {
                     const snap = await getDoc(userDocRef);
@@ -4434,7 +4436,7 @@ const performAccountDeletion = async () => {
                             // 3. Save to Firestore (Persistence)
                             if (currentUser) {
                                 try {
-                                    const userDocRef = getUserDocRef(currentUser.uid);
+                                    const userDocRef = getUserDocRef(currentUser.uid || currentUser.id);
                                     // Ensure we're only saving valid data
                                     await updateDoc(userDocRef, { navbarTheme: themeToApply });
                                 } catch (error) {
@@ -4602,10 +4604,13 @@ const performAccountDeletion = async () => {
                 if (user) {
                     handleUser(user, 'firebase');
                 } else {
+                    // Try to see if we have a Supabase session
                     if (window.supabase) {
                         const { data: { session } } = await window.supabase.auth.getSession();
                         if (session) {
-                            firebaseChecked = true;
+                            // If we have a Supabase session but NO Firebase user, sign in anonymously to Firebase
+                            // This allows reading public data from Firestore (like user profile/rankings)
+                            signInAnonymously(auth).catch(err => console.error("Firebase Anonymous login failed:", err));
                             return;
                         }
                     }

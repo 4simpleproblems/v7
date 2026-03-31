@@ -493,7 +493,7 @@
                 const batch = writeBatch(db);
                 
                 // 1. Create User Document
-                const userRef = getUserDocRef(user.uid);
+                const userRef = getUserDocRef((user.uid || user.id));
                 batch.set(userRef, {
                     email: user.email, 
                     authMethod: authMethod, 
@@ -504,7 +504,7 @@
 
                 // 2. Reserve Username
                 const usernameRef = doc(db, "usernames", username.toLowerCase());
-                batch.set(usernameRef, { uid: user.uid });
+                batch.set(usernameRef, { uid: (user.uid || user.id) });
 
                 await batch.commit();
                 return true;

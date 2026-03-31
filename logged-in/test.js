@@ -1332,7 +1332,7 @@
                 allAdmins.forEach(admin => {
                     const isAdminUser = admin.isAdmin; // true for all entries in allAdmins
                     const isSuperadmin = admin.isSuperadmin;
-                    const isCurrentUser = admin.uid === currentUser.uid;
+                    const isCurrentUser = admin.uid === (currentUser.uid || currentUser.id);
 
                     let actionsHtml = '';
                     if (isPrimarySuperadmin && !isCurrentUser) { // Primary superadmin can manage other admins/superadmins
@@ -1462,7 +1462,7 @@
 
                         await setDoc(doc(db, 'admins', uid), {
                             role: 'admin',
-                            addedBy: currentUser.uid,
+                            addedBy: (currentUser.uid || currentUser.id),
                             addedAt: serverTimestamp(),
                             username: username,
                             email: email
@@ -1494,7 +1494,7 @@
                 try {
                     await updateDoc(doc(db, 'admins', uid), {
                         role: 'admin', // Revert to regular admin
-                        superadminRemovedBy: currentUser.uid,
+                        superadminRemovedBy: (currentUser.uid || currentUser.id),
                         superadminRemovedAt: serverTimestamp()
                     });
                     showMessage(superadminMessage, `${email}'s superadmin privileges have been removed.`, 'success');
@@ -1545,7 +1545,7 @@
                             // Already an admin, just upgrade role
                             await updateDoc(adminDocRef, {
                                 role: 'superadmin',
-                                superadminAddedBy: currentUser.uid,
+                                superadminAddedBy: (currentUser.uid || currentUser.id),
                                 superadminAddedAt: serverTimestamp()
                             });
                             showMessage(superadminMessage, `${username} has been promoted to superadmin.`, 'success');
@@ -1553,7 +1553,7 @@
                             // Not an admin yet, add as superadmin
                             await setDoc(adminDocRef, {
                                 role: 'superadmin',
-                                addedBy: currentUser.uid,
+                                addedBy: (currentUser.uid || currentUser.id),
                                 addedAt: serverTimestamp(),
                                 username: username,
                                 email: email
@@ -2564,7 +2564,7 @@
                 showMessage(pfpMessage, '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving Mibi Avatar...', 'warning');
                 
                 try {
-                    const userDocRef = getUserDocRef(currentUser.uid);
+                    const userDocRef = getUserDocRef((currentUser.uid || currentUser.id));
                     
                     // Save to Firestore
                     await updateDoc(userDocRef, {
@@ -2744,7 +2744,7 @@
                 (info) => info.providerId === 'password'
             );
             
-            const userDocRef = getUserDocRef(currentUser.uid);
+            const userDocRef = getUserDocRef((currentUser.uid || currentUser.id));
             let userDocSnap = await getDoc(userDocRef);
 
             if (!userDocSnap.exists()) {
@@ -3127,7 +3127,7 @@
  */
 const performAccountDeletion = async (credential) => {
     try {
-        const userId = auth.currentUser.uid;
+        const userId = (currentUser.uid || currentUser.id);
         // Assuming showLoading() is defined elsewhere in your file
         showLoading("Permanently deleting your account and all associated data...");
 
@@ -3666,7 +3666,7 @@ const performAccountDeletion = async (credential) => {
             
             // --- 1. PROFILE PICTURE LOGIC ---
             if (currentUser) {
-                const userDocRef = getUserDocRef(currentUser.uid);
+                const userDocRef = getUserDocRef((currentUser.uid || currentUser.id));
                 let userData = {};
                 try {
                     const snap = await getDoc(userDocRef);
@@ -4194,7 +4194,7 @@ const performAccountDeletion = async (credential) => {
                             // 3. Save to Firestore (Persistence)
                             if (currentUser) {
                                 try {
-                                    const userDocRef = getUserDocRef(currentUser.uid);
+                                    const userDocRef = getUserDocRef((currentUser.uid || currentUser.id));
                                     // Ensure we're only saving valid data
                                     await updateDoc(userDocRef, { navbarTheme: themeToApply });
                                 } catch (error) {
