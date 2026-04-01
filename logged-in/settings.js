@@ -248,6 +248,7 @@
                     const supabaseUpdates = {};
                     const mapping = {
                         pfpType: 'pfp_type',
+                        pfp_type: 'pfp_type',
                         customPfp: 'avatar_url',
                         photoURL: 'avatar_url',
                         displayName: 'display_name',
@@ -283,6 +284,11 @@
                         }
 
                         supabaseUpdates[sbKey] = value;
+                    }
+
+                    // Logic: If we are switching to letter or mibi, clear avatar_url
+                    if (supabaseUpdates.pfp_type === 'letter' || supabaseUpdates.pfp_type === 'mibi') {
+                        supabaseUpdates.avatar_url = null;
                     }
 
                     const { error } = await window.supabase
@@ -3946,14 +3952,19 @@
                 };
                 // Function to dispatch instant update event
                 const triggerNavbarUpdate = () => {
-                    window.dispatchEvent(new CustomEvent('pfp-updated', { 
-                        detail: { 
-                            pfpType: userData.pfpType || userData.pfp_type, 
-                            customPfp: userData.customPfp || userData.avatar_url,
-                            pfpLetterBg: userData.pfpLetterBg || userData.pfp_letter_bg,
-                            letterAvatarText: userData.letterAvatarText || userData.pfp_letter_char
-                        }
-                    }));
+                    const detail = { 
+                        pfpType: userData.pfpType || userData.pfp_type, 
+                        pfp_type: userData.pfpType || userData.pfp_type,
+                        customPfp: userData.customPfp || userData.avatar_url,
+                        avatar_url: userData.customPfp || userData.avatar_url,
+                        pfpLetterBg: userData.pfpLetterBg || userData.pfp_letter_bg,
+                        pfp_letter_bg: userData.pfpLetterBg || userData.pfp_letter_bg,
+                        letterAvatarText: userData.letterAvatarText || userData.pfp_letter_char,
+                        pfp_letter_char: userData.letterAvatarText || userData.pfp_letter_char,
+                        displayName: userData.displayName || userData.display_name,
+                        display_name: userData.displayName || userData.display_name
+                    };
+                    window.dispatchEvent(new CustomEvent('pfp-updated', { detail }));
                 };
 
                 // --- CONDITIONAL GOOGLE OPTION ---
