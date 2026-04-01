@@ -3909,7 +3909,25 @@
                         const type = btn.dataset.mode;
                         updatePfpUi(type);
                         try {
-                            await saveUserData(uid, { pfpType: type });
+                            const updates = { pfpType: type };
+                            
+                            // If switching to Google, ensure we have the URL
+                            if (type === 'google') {
+                                let googlePhoto = userData.avatar_url || userData.photoURL;
+                                
+                                // Try Supabase Metadata if missing
+                                if (!googlePhoto && window.supabase) {
+                                    const { data: { session } } = await window.supabase.auth.getSession();
+                                    googlePhoto = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture;
+                                }
+
+                                if (googlePhoto) {
+                                    updates.photoURL = googlePhoto; // Mirror for legacy
+                                    userData.photoURL = googlePhoto;
+                                }
+                            }
+
+                            await saveUserData(uid, updates);
                             userData.pfpType = type;
                             triggerNavbarUpdate();
                             showMessage(pfpMessage, 'Preference saved!', 'success');

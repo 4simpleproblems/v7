@@ -726,6 +726,10 @@
                     if (forceChange) window.history.replaceState({}, '', window.location.pathname);
                 }
 
+                const slotsUsed = (userData.dailySlotsUsed || []).filter(id => id && id !== 'DELETED').length;
+                const slotCounter = document.querySelector('#daily-posts-section .text-mono');
+                if (slotCounter) slotCounter.textContent = `${slotsUsed} / 5`;
+
                 renderMyPosts(userData.dailySlotsUsed);
 
                 if (!window._feedLoaded) {
@@ -886,13 +890,36 @@
             if (unsubModal) unsubModal();
 
             const processPostData = async (data) => {
-                if (!data) { window.closeModal(); return; }
+                if (!data || data.status === 'deleted') { window.closeModal(); return; }
                 
                 const uid = (currentUser.uid || currentUser.id);
                 const hearts = data.hearts || [];
                 const comments = data.comments || [];
                 const isHearted = hearts.includes(uid);
                 const isOwner = data.creator_uid === uid;
+
+                // If modal is already showing this post, just update counters/comments/etc
+                const existingDisplay = document.getElementById('photo-display-area');
+                if (existingDisplay && container.getAttribute('data-viewing-id') === postId) {
+                    const heartBtn = document.getElementById('modal-heart-btn');
+                    if (heartBtn) {
+                        heartBtn.className = `w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all ${isHearted ? 'text-red-500 bg-red-500/10 border-red-500/20' : 'text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10'}`;
+                        heartBtn.innerHTML = `<i class="${isHearted ? 'fas' : 'far'} fa-heart"></i><span class="ml-2 text-xs font-bold">${hearts.length}</span>`;
+                    }
+                    
+                    const commentsSection = document.getElementById('comments-section');
+                    if (commentsSection) {
+                        commentsSection.innerHTML = comments.map(c => `
+                            <div class="mb-3 text-xs leading-relaxed">
+                                <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
+                                <span class="text-[var(--text-main)] opacity-90">${c.text}</span>
+                            </div>
+                        `).join('') || '<div class="h-full flex items-center justify-center opacity-20 italic text-xs py-10">No comments yet.</div>';
+                    }
+                    return;
+                }
+
+                container.setAttribute('data-viewing-id', postId);
 
                 let authorData = null;
                 try {
@@ -905,11 +932,11 @@
                         <i class="fas fa-times"></i>
                     </button>
 
-                    <div id="photo-display-area">
-                        <img src="${data.image_url || data.imageBase64}" class="photo-modal-img" onerror="this.src='/assets/placeholder-image.png'">
+                    <div id="photo-display-area" class="bg-[#050505]">
+                        <img src="${data.image_url || data.imageBase64}" class="photo-modal-img rounded-2xl shadow-2xl" onerror="this.src='/assets/placeholder-image.png'">
                     </div>
 
-                    <div id="photo-info-panel">
+                    <div id="photo-info-panel" class="bg-[var(--bg-card)]">
                         <div class="flex items-center gap-4 mb-6 shrink-0">
                             <a href="/logged-in/@${data.creator_username}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity shrink-0">
                                 ${authorData ? getAvatarHTML({ ...authorData, displayName: authorData.display_name, pfpType: authorData.pfp_type, customPfp: authorData.avatar_url }, "w-12 h-12", false, currentUser) : `<div class="w-full h-full bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-lg uppercase">${(data.creator_username || '?').charAt(0)}</div>`}
@@ -929,7 +956,7 @@
                             </div>
                         </div>
 
-                        <div id="comments-section">
+                        <div id="comments-section" class="bg-black/20 p-4 rounded-2xl border border-white/5">
                             ${comments.map(c => `
                                 <div class="mb-3 text-xs leading-relaxed">
                                     <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
@@ -938,7 +965,7 @@
                             `).join('') || '<div class="h-full flex items-center justify-center opacity-20 italic text-xs py-10">No comments yet.</div>'}
                         </div>
 
-                        <div class="mt-auto pt-4 border-t border-[var(--border-main)] shrink-0">
+                        <div class="mt-auto pt-4 shrink-0">
                             <div class="flex gap-2">
                                 <input type="text" id="comment-input" placeholder="Add a comment..." class="flex-1 bg-white/5 border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)] focus:bg-white/10 transition-all text-[var(--text-main)] placeholder:opacity-30">
                                 <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-color)] text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all shrink-0">
@@ -1309,7 +1336,7 @@
         }
 
         window.deletePost = async (postId, idx) => {
-            if (!(await CustomUI.confirm("Delete this moment?"))) return;
+            if (!(await CustomUI.confirm("Delete this moment? This cannot be undone."))) return;
             const uid = (currentUser.uid || currentUser.id);
             const slots = [...(userData.dailySlotsUsed || [])];
             const slotIdx = idx !== undefined ? idx : slots.indexOf(postId);
@@ -1319,7 +1346,7 @@
                 await window.supabase.from('profiles').update({ daily_slots_used: slots }).eq('id', uid);
             }
             
-            await window.supabase.from('daily_photos').update({ status: 'deleted' }).eq('id', postId);
+            await window.supabase.from('daily_photos').delete().eq('id', postId);
             if (idx === undefined) window.closeModal();
             const el = document.querySelector(`[data-post-id="${postId}"]`);
             if (el) el.remove();
