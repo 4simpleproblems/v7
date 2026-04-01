@@ -154,14 +154,14 @@
         /* Photo Grid */
         .photo-feed-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.25rem;
         }
 
         .photo-thumbnail {
             position: relative;
-            aspect-ratio: 4/5;
-            border-radius: 28px;
+            aspect-ratio: 1 / 1;
+            border-radius: 24px;
             overflow: hidden;
             background-color: var(--bg-card);
             border: 1px solid var(--border-main);
@@ -246,37 +246,39 @@
             border: 1px solid var(--border-main);
             border-radius: 32px;
             width: 95%;
-            max-width: 1100px;
-            max-height: 85vh;
+            max-width: 1000px;
+            max-height: 90vh;
             display: flex;
             overflow: hidden;
             transform: scale(0.95);
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
         }
         .modal-backdrop.open .modal-container {
             transform: scale(1);
         }
 
         #photo-display-area {
-            flex: 1.2;
+            flex: 1.4;
             background-color: #000;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
+            border-right: 1px solid var(--border-main);
         }
         .photo-modal-img {
-            max-width: 100%;
-            max-height: 70vh;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
         }
 
         #photo-info-panel {
-            flex: 0.8;
-            padding: 2.5rem;
+            flex: 1;
+            padding: 2rem;
             display: flex;
             flex-direction: column;
-            border-left: 1px solid var(--border-main);
+            background-color: var(--bg-card);
             overflow-y: auto;
         }
 
@@ -284,9 +286,9 @@
             flex: 1;
             overflow-y: auto;
             margin: 1.5rem 0;
-            padding: 1rem;
-            border-radius: 20px;
-            background-color: rgba(0,0,0,0.3);
+            padding: 1.25rem;
+            border-radius: 24px;
+            background-color: rgba(0,0,0,0.2);
             border: 1px solid var(--border-faint);
         }
 
