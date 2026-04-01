@@ -1253,17 +1253,17 @@
                 <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">Personalization</h2>
                 
                 <div class="w-full">
-                    <!-- USERNAME SECTION -->
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Username</h3>
+                    <!-- DISPLAY NAME SECTION -->
+                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Display Name</h3>
                     <div class="settings-box transition-all duration-300 p-4 mb-8">
                         <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
-                            You can change your username once per month.
+                            Update your public display name. There are no limits on how often you can change this.
                         </p>
                         <div class="flex gap-2">
-                            <input type="text" id="username-input" class="flex-1 bg-white/5 border border-[var(--border-main)] rounded-xl p-3 text-sm outline-none focus:border-[var(--accent-color)] transition-all" placeholder="New username...">
-                            <button id="save-username-btn" class="btn-toolbar-style btn-primary-override px-6">Save</button>
+                            <input type="text" id="display-name-input" class="flex-1 bg-white/5 border border-[var(--border-main)] rounded-xl p-3 text-sm outline-none focus:border-[var(--accent-color)] transition-all" placeholder="New display name...">
+                            <button id="save-display-name-btn" class="btn-toolbar-style btn-primary-override px-6">Save</button>
                         </div>
-                        <p id="username-message" class="text-[10px] mt-2"></p>
+                        <p id="display-name-message" class="text-[10px] mt-2"></p>
                     </div>
 
                     <!-- PROFILE PICTURE SECTION -->
@@ -3829,75 +3829,55 @@
             const themePickerContainer = document.getElementById('theme-picker-container');
             const themeMessage = document.getElementById('themeMessage');
             const pfpMessage = document.getElementById('pfpMessage');
-            const usernameMessage = document.getElementById('username-message');
-            const usernameInput = document.getElementById('username-input');
-            const saveUsernameBtn = document.getElementById('save-username-btn');
+            const displayNameMessage = document.getElementById('display-name-message');
+            const displayNameInput = document.getElementById('display-name-input');
+            const saveDisplayNameBtn = document.getElementById('save-display-name-btn');
 
             // --- 1. USER DATA LOADING (Supabase Primary) ---
             if (currentUser) {
                 const uid = currentUser.uid || currentUser.id;
                 const userData = await getUserData(uid) || {};
 
-                if (usernameInput) usernameInput.value = userData.username || "";
+                if (displayNameInput) displayNameInput.value = userData.displayName || userData.display_name || "";
 
-                // Username Logic
-                if (saveUsernameBtn) {
-                    saveUsernameBtn.onclick = async () => {
-                        const newUsername = usernameInput.value.trim().toLowerCase();
-                        if (!newUsername || newUsername === userData.username) return;
+                // Display Name Logic
+                if (saveDisplayNameBtn) {
+                    saveDisplayNameBtn.onclick = async () => {
+                        const newDisplayName = displayNameInput.value.trim();
+                        if (!newDisplayName || newDisplayName === (userData.displayName || userData.display_name)) return;
 
                         // Simple validation
-                        if (newUsername.length < 3) {
-                            showMessage(usernameMessage, 'Username too short (min 3).', 'error');
-                            return;
-                        }
-                        if (!/^[a-z0-9_.]+$/.test(newUsername)) {
-                            showMessage(usernameMessage, 'Invalid characters (a-z, 0-9, _, . only).', 'error');
+                        if (newDisplayName.length < 2) {
+                            showMessage(displayNameMessage, 'Name too short (min 2).', 'error');
                             return;
                         }
 
-                        saveUsernameBtn.disabled = true;
-                        showMessage(usernameMessage, 'Checking availability...', 'warning');
+                        saveDisplayNameBtn.disabled = true;
+                        showMessage(displayNameMessage, 'Saving...', 'warning');
 
                         try {
-                            // Check if taken
-                            const { data: taken } = await window.supabase.from('profiles').select('id').eq('username', newUsername).maybeSingle();
-                            if (taken && taken.id !== uid) {
-                                showMessage(usernameMessage, 'Username already taken.', 'error');
-                                return;
-                            }
-
-                            // Month limit check
-                            const currentMonth = new Date().getMonth() + 1;
-                            let changes = userData.usernameChangesThisMonth || 0;
-                            if ((userData.lastUsernameChangeMonth || 0) !== currentMonth) changes = 0;
-
-                            if (changes >= 1 && !isAdmin) {
-                                showMessage(usernameMessage, 'You can only change your username once per month.', 'error');
-                                return;
-                            }
-
                             await saveUserData(uid, {
-                                username: newUsername,
-                                usernameChangesThisMonth: changes + 1,
-                                lastUsernameChangeMonth: currentMonth
+                                displayName: newDisplayName
                             });
 
-                            userData.username = newUsername;
-                            userData.usernameChangesThisMonth = changes + 1;
-                            userData.lastUsernameChangeMonth = currentMonth;
+                            userData.displayName = newDisplayName;
+                            showMessage(displayNameMessage, 'Display name updated!', 'success');
 
-                            showMessage(usernameMessage, 'Username updated successfully!', 'success');
+                            // Instant update for local UI
+                            window.dispatchEvent(new CustomEvent('pfp-updated', {
+                                detail: { ...userData, displayName: newDisplayName }
+                            }));
                         } catch (err) {
-                            console.error("Username update error:", err);
-                            showMessage(usernameMessage, 'Error updating username.', 'error');
+                            console.error("Display Name update error:", err);
+                            showMessage(displayNameMessage, 'Error updating display name.', 'error');
                         } finally {
-                            saveUsernameBtn.disabled = false;
+                            saveDisplayNameBtn.disabled = false;
                         }
                     };
                 }
 
                 // --- 2. PROFILE PICTURE LOGIC ---
+
                 // Initialize mibiAvatarState with saved config if available
                 if (userData.mibiConfig) {
                     mibiAvatarState = { ...mibiAvatarState, ...userData.mibiConfig };

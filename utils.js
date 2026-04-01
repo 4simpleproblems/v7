@@ -122,10 +122,10 @@
                 // 2. Default Case (user, google, or undefined) -> Use photoURL if available
                 let gP = userData?.photoURL || userData?.avatar_url;
 
-                // Priority 1: Direct Metadata from User Object (Supabase structure)
-                const meta = userData?.user_metadata || userData?.raw_user_meta_data || authUser?.user_metadata || authUser?.raw_user_meta_data;
-                if (!gP && meta) {
-                    gP = meta.picture || meta.avatar_url;
+                // Priority 1: Supabase Raw Metadata (based on user JSON provided)
+                const rawMeta = userData?.raw_user_meta_data || authUser?.raw_user_meta_data || userData?.user_metadata || authUser?.user_metadata;
+                if (!gP && rawMeta) {
+                    gP = rawMeta.picture || rawMeta.avatar_url;
                 }
 
                 // Priority 2: Firebase Provider fallback

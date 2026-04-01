@@ -609,8 +609,10 @@ let db;
                 avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 14px;">${initial}</div>`;
             } else {
                 const googleProvider = user?.providerData?.find(p => p.providerId === 'google.com');
-                const googlePhoto = googleProvider ? googleProvider.photoURL : (user.photoURL || userData?.avatar_url || (user.user_metadata?.avatar_url));
-                const displayPhoto = googlePhoto || userData?.customPfp;
+                const rawMeta = user?.raw_user_meta_data || user?.user_metadata || userData?.raw_user_meta_data || userData?.user_metadata;
+                
+                let displayPhoto = rawMeta?.picture || rawMeta?.avatar_url || googleProvider?.photoURL || user.photoURL || userData?.customPfp || (userData?.avatar_url);
+                
                 if (displayPhoto) {
                     avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
                 } else {
