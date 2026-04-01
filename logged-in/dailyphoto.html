@@ -548,7 +548,6 @@
         if (!getApps().length) initializeApp(firebaseConfig);
         const app = getApp();
         const auth = getAuth(app);
-        const db = getFirestore(app);
         const storage = getStorage(app);
 
         let currentUser = null;
@@ -565,8 +564,6 @@
         let allStates = [];
         let currentStateSchools = [];
         let selectedState = null;
-
-        const USERS_COLLECTION = 'users';
 
         // --- Cursed Text Filter ---
         function containsCursedText(text) {
