@@ -825,19 +825,8 @@
             let data = null;
             const uid = profileOwnerId;
 
-            // 1. Try Firestore First
-            try {
-                const userDocRef = doc(db, 'users', uid);
-                const snap = await getDoc(userDocRef);
-                if (snap.exists()) {
-                    data = snap.data();
-                }
-            } catch (e) {
-                console.warn("Firestore profile fetch failed, trying Supabase.");
-            }
-
-            // 2. Try Supabase Fallback
-            if (!data && window.supabase) {
+            // 1. Try Supabase First (Modern Primary)
+            if (window.supabase) {
                 try {
                     const { data: profile } = await window.supabase
                         .from('profiles')
@@ -846,7 +835,6 @@
                         .maybeSingle();
                     
                     if (profile) {
-                        // Map Supabase to common schema
                         data = {
                             ...profile,
                             displayName: profile.display_name || profile.username || 'Anonymous',
@@ -855,23 +843,27 @@
                             customPfp: profile.avatar_url,
                             followerCount: profile.follower_count || 0,
                             followingCount: profile.following_count || 0,
-                            description: profile.description || ''
+                            description: profile.description || '',
+                            isOnline: profile.is_online,
+                            currentActivity: profile.current_activity
                         };
                     }
                 } catch (e) {
-                    console.error("Supabase fallback failed:", e);
+                    console.error("Supabase profile fetch failed:", e);
                 }
             }
 
-            // 3. Last Resort: Metadata from auth (if viewing own profile or if we have it)
-            if (!data && firebaseAuthUser && (firebaseAuthUser.uid || firebaseAuthUser.id) === uid) {
-                const meta = firebaseAuthUser.user_metadata || {};
-                data = {
-                    displayName: meta.full_name || meta.name || firebaseAuthUser.email.split('@')[0],
-                    username: firebaseAuthUser.email.split('@')[0],
-                    pfpType: meta.picture ? 'custom' : 'letter',
-                    customPfp: meta.picture
-                };
+            // 2. Try Firestore Fallback
+            if (!data) {
+                try {
+                    const userDocRef = doc(db, 'users', uid);
+                    const snap = await getDoc(userDocRef);
+                    if (snap.exists()) {
+                        data = snap.data();
+                    }
+                } catch (e) {
+                    console.warn("Firestore profile fallback failed.");
+                }
             }
 
             if (data) {
@@ -885,10 +877,10 @@
             userDocData = data;
             userDocData.uid = profileOwnerId;
 
-            // Blocked by this user?
-            if (data.blockedUsers?.includes(firebaseAuthUser?.uid || firebaseAuthUser?.id)) {
+            // Blocked?
+            if (data.is_blocked) { // Assumes a view/RPC check for block status
                 document.getElementById('profile-main-content').classList.add('blur-2xl', 'pointer-events-none');
-                showStateOverlay('blocked-overlay', 'This user has blocked you.');
+                showStateOverlay('blocked-overlay', 'You are blocked from viewing this profile.');
                 return;
             }
 
@@ -902,7 +894,7 @@
 
             updateStatusUI(data);
 
-            if (isOwnProfile && editModal.classList.contains('open') === false) {
+            if (isOwnProfile && !editModal.classList.contains('open')) {
                 editDisplayName.value = data.displayName || data.display_name || '';
                 editDescription.value = data.description || '';
             }
@@ -913,24 +905,35 @@
         }
 
         function setupMainProfileSnapshot() {
-            const userDocRef = doc(db, 'users', profileOwnerId);
-
-            // One-time load first for robustness
             loadProfileData();
 
-            // Try to set up real-time listener if permissions allow
-            try {
-                unsubMainProfile = onSnapshot(userDocRef, (snap) => {
-                    if (snap.exists()) {
-                        renderProfileUI(snap.data());
-                    }
-                }, (error) => {
-                    if (error.code !== 'permission-denied') {
-                        console.warn('Profile Snapshot Error (Expected if not synced):', error);
-                    }
-                });
-            } catch (e) {
-                console.warn("Real-time profile updates disabled.");
+            if (window.supabase) {
+                supabase
+                    .channel(`profile-view-${profileOwnerId}`)
+                    .on('postgres_changes', { 
+                        event: 'UPDATE', 
+                        schema: 'public', 
+                        table: 'profiles', 
+                        filter: `id=eq.${profileOwnerId}` 
+                    }, payload => {
+                        if (payload.new) {
+                            const profile = payload.new;
+                            const mapped = {
+                                ...profile,
+                                displayName: profile.display_name || profile.username || 'Anonymous',
+                                username: profile.username || 'user',
+                                pfpType: profile.pfp_type || (profile.avatar_url ? 'custom' : 'letter'),
+                                customPfp: profile.avatar_url,
+                                followerCount: profile.follower_count || 0,
+                                followingCount: profile.following_count || 0,
+                                description: profile.description || '',
+                                isOnline: profile.is_online,
+                                currentActivity: profile.current_activity
+                            };
+                            renderProfileUI(mapped);
+                        }
+                    })
+                    .subscribe();
             }
         }
 
@@ -957,38 +960,36 @@
 
         // ------------------------------------------------------------------
         // FOLLOW STATUS
-        // FIX: Uses two getDoc (one-time) calls first to set initial state
-        // immediately, then sets up onSnapshot for live updates only after
-        // the initial render. This eliminates the race between the listener
-        // firing and the loading overlay still being visible.
         // ------------------------------------------------------------------
-        function checkFollowStatus() {
-            const myFollowerRef  = doc(db, 'users', profileOwnerId, 'followers', (firebaseAuthUser.uid || firebaseAuthUser.id));
-            const theirFollowRef = doc(db, 'users', (firebaseAuthUser.uid || firebaseAuthUser.id), 'followers', profileOwnerId);
+        async function checkFollowStatus() {
+            if (!firebaseAuthUser) return;
+            const myUid = (firebaseAuthUser.uid || firebaseAuthUser.id);
+            if (myUid === profileOwnerId) return;
 
-            // One-time reads first for instant UI state
-            Promise.all([getDoc(myFollowerRef), getDoc(theirFollowRef)]).then(([fSnap, fbSnap]) => {
-                isFollowing  = fSnap.exists();
-                isFollowedBy = fbSnap.exists();
-                isMutual     = isFollowing && isFollowedBy;
-                updateFollowBtn();
-                if (userDocData) updateStatusUI(userDocData);
-            });
+            const { data: follow } = await supabase
+                .from('follows')
+                .select('*')
+                .eq('follower_id', myUid)
+                .eq('following_id', profileOwnerId)
+                .maybeSingle();
 
-            // Then keep live listeners for changes while on page
-            onSnapshot(myFollowerRef, snap => {
-                isFollowing = snap.exists();
-                isMutual    = isFollowing && isFollowedBy;
-                updateFollowBtn();
-            });
-            onSnapshot(theirFollowRef, snap => {
-                isFollowedBy = snap.exists();
-                isMutual     = isFollowing && isFollowedBy;
-                if (userDocData) updateStatusUI(userDocData);
-            });
+            const { data: followedBy } = await supabase
+                .from('follows')
+                .select('*')
+                .eq('follower_id', profileOwnerId)
+                .eq('following_id', myUid)
+                .maybeSingle();
+
+            isFollowing  = !!follow;
+            isFollowedBy = !!followedBy;
+            isMutual     = isFollowing && isFollowedBy;
+            
+            updateFollowBtn();
+            if (userDocData) updateStatusUI(userDocData);
         }
 
         function updateFollowBtn() {
+            if (!followBtn) return;
             followBtn.textContent = isFollowing ? 'Following' : 'Follow';
             if (isFollowing) {
                 followBtn.classList.remove('btn-primary-override');
@@ -998,68 +999,74 @@
         }
 
         followBtn.onclick = async () => {
-            const meRef             = doc(db, 'users', (firebaseAuthUser.uid || firebaseAuthUser.id));
-            const ownerRef          = doc(db, 'users', profileOwnerId);
-            const myFollowingRef    = doc(db, 'users', (firebaseAuthUser.uid || firebaseAuthUser.id), 'following', profileOwnerId);
-            const theirFollowersRef = doc(db, 'users', profileOwnerId, 'followers', (firebaseAuthUser.uid || firebaseAuthUser.id));
+            if (!firebaseAuthUser) return;
+            const myUid = (firebaseAuthUser.uid || firebaseAuthUser.id);
+            
+            followBtn.disabled = true;
 
-            const batch = writeBatch(db);
-            if (isFollowing) {
-                batch.delete(myFollowingRef);
-                batch.delete(theirFollowersRef);
-                batch.update(meRef,    { followingCount: increment(-1) });
-                batch.update(ownerRef, { followerCount:  increment(-1) });
-            } else {
-                batch.set(myFollowingRef,    { followedAt: new Date() });
-                batch.set(theirFollowersRef, { followedAt: new Date() });
-                batch.update(meRef,    { followingCount: increment(1) });
-                batch.update(ownerRef, { followerCount:  increment(1) });
+            try {
+                if (isFollowing) {
+                    await supabase.from('follows').delete().eq('follower_id', myUid).eq('following_id', profileOwnerId);
+                    
+                    // Update counts via RPC or manual decrement if triggers aren't set
+                    await supabase.rpc('decrement_follower_count', { user_id: profileOwnerId });
+                    await supabase.rpc('decrement_following_count', { user_id: myUid });
+                } else {
+                    await supabase.from('follows').insert({ follower_id: myUid, following_id: profileOwnerId });
+                    
+                    await supabase.rpc('increment_follower_count', { user_id: profileOwnerId });
+                    await supabase.rpc('increment_following_count', { user_id: myUid });
 
-                const meSnap = await getDoc(meRef);
-                const myUsername = meSnap.data()?.username || 'Someone';
-                await addDoc(collection(db, 'notifications'), {
-                    recipientId:     profileOwnerId,
-                    senderId:        (firebaseAuthUser.uid || firebaseAuthUser.id),
-                    senderUsername:  myUsername,
-                    type:            'follow',
-                    message:         `@${myUsername} followed you!`,
-                    timestamp:       serverTimestamp(),
-                    read:            false
-                });
+                    // Notification (Legacy Firestore support if still needed, or Supabase notifications table)
+                    try {
+                        const { data: me } = await supabase.from('profiles').select('username').eq('id', myUid).single();
+                        await addDoc(collection(db, 'notifications'), {
+                            recipientId:     profileOwnerId,
+                            senderId:        myUid,
+                            senderUsername:  me?.username || 'Someone',
+                            type:            'follow',
+                            message:         `@${me?.username || 'Someone'} followed you!`,
+                            timestamp:       serverTimestamp(),
+                            read:            false
+                        });
+                    } catch (e) { console.warn("Legacy notification failed:", e); }
+                }
+                
+                await checkFollowStatus();
+            } catch (e) {
+                console.error("Follow action failed:", e);
+            } finally {
+                followBtn.disabled = false;
             }
-            await batch.commit();
         };
 
         // ------------------------------------------------------------------
         // DAILY PHOTOS
-        // FIX: Runs in parallel with the profile snapshot — not sequentially
-        // after it. Skeleton placeholders show while it loads so the grid
-        // doesn't look empty and broken before data arrives.
         // ------------------------------------------------------------------
         async function loadDailyPhotos() {
-            // Wait for isMutual to settle (max 1.5s) since it comes from
-            // an async getDoc — we need it for the restriction check
-            await new Promise(resolve => setTimeout(resolve, 400));
+            // Wait for isMutual to settle
+            await new Promise(resolve => setTimeout(resolve, 600));
 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const { data: posts, error } = await supabase
+                .from('daily_photos')
+                .select('*')
+                .eq('creator_id', profileOwnerId)
+                .eq('status', 'active')
+                .order('created_at', { ascending: false })
+                .limit(12);
 
-            const q = query(
-                collection(db2, 'daily_photos'),
-                where('creatorUid', '==', profileOwnerId),
-                where('status', '==', 'active'),
-                where('createdAt', '>=', today),
-                limit(6)
-            );
+            if (error) {
+                console.error("Supabase DailyPhoto load error:", error);
+                return;
+            }
 
-            const [snap, meSnap] = await Promise.all([
-                getDocs(q),
-                getDoc(doc(db, 'users', (firebaseAuthUser.uid || firebaseAuthUser.id)))
-            ]);
-
-            const myData = meSnap.data();
-            const sameDistrict = myData?.districtId && myData.districtId === userDocData?.districtId;
-            const isRestricted = !isOwnProfile && !isMutual && !sameDistrict;
+            // Check relationship restrictions (District or Mutual)
+            let isRestricted = false;
+            if (!isOwnProfile) {
+                const { data: me } = await supabase.from('profiles').select('district_id').eq('id', (firebaseAuthUser.uid || firebaseAuthUser.id)).single();
+                const sameDistrict = me?.district_id && me.district_id === userDocData?.district_id;
+                isRestricted = !isMutual && !sameDistrict;
+            }
 
             dailyphotoContainer.innerHTML = '';
 
@@ -1076,23 +1083,22 @@
                 return;
             }
 
-            if (snap.empty) {
+            if (!posts || posts.length === 0) {
                 dailyphotoContainer.innerHTML = `
-                    <p class="col-span-full text-center py-12 italic text-sm" style="color: var(--text-muted); opacity: 0.4;">No moments shared today yet.</p>
+                    <p class="col-span-full text-center py-12 italic text-sm" style="color: var(--text-muted); opacity: 0.4;">No moments shared yet.</p>
                 `;
                 return;
             }
 
-            snap.forEach(docSnap => {
-                const data = docSnap.data();
+            posts.forEach(post => {
                 const div = document.createElement('div');
                 div.className = 'photo-grid-item';
                 div.innerHTML = `
-                    <img src="${data.imageURL || data.imageBase64}" loading="lazy">
+                    <img src="${post.image_url}" loading="lazy">
                     <div class="overlay-grad"></div>
-                    <div class="title-chip">${data.title || 'Moment'}</div>
+                    <div class="title-chip">${post.title || 'Moment'}</div>
                 `;
-                div.onclick = () => window.location.href = `/logged-in/dailyphoto.html?post=${docSnap.id}`;
+                div.onclick = () => window.location.href = `/logged-in/dailyphoto.html?post=${post.id}`;
                 dailyphotoContainer.appendChild(div);
             });
         }
@@ -1129,23 +1135,41 @@
             followListContainer.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin" style="color: var(--accent-color);"></i></div>';
             openModal(followListModal);
 
-            const listSnap = await getDocs(collection(db, 'users', profileOwnerId, type));
-            const validIds = listSnap.docs
-                .map(d => d.id)
-                .filter(id => id !== '.init' && !bannedUids.has(id));
+            const column = type === 'followers' ? 'follower_id' : 'following_id';
+            const filterColumn = type === 'followers' ? 'following_id' : 'follower_id';
 
-            if (validIds.length === 0) {
+            const { data: followRecords, error } = await supabase
+                .from('follows')
+                .select(`
+                    ${column},
+                    profiles:${column} (
+                        id,
+                        username,
+                        display_name,
+                        pfp_type,
+                        avatar_url
+                    )
+                `)
+                .eq(filterColumn, profileOwnerId);
+
+            if (error || !followRecords || followRecords.length === 0) {
                 followListContainer.innerHTML = `<p class="text-center py-8 italic text-sm" style="color: var(--text-muted); opacity: 0.4;">No ${type} yet.</p>`;
                 return;
             }
 
-            // Batch fetch all user docs in parallel — not one-by-one
-            const userSnaps = await Promise.all(validIds.map(id => getDoc(doc(db, 'users', id))));
-
             followListContainer.innerHTML = '';
-            userSnaps.forEach(uSnap => {
-                if (!uSnap.exists()) return;
-                const uData = uSnap.data();
+            followRecords.forEach(record => {
+                const uData = record.profiles;
+                if (!uData) return;
+
+                // Map Supabase names to getAvatarHTML expectations
+                const avatarData = {
+                    ...uData,
+                    displayName: uData.display_name,
+                    pfpType: uData.pfp_type,
+                    customPfp: uData.avatar_url
+                };
+
                 const item = document.createElement('div');
                 item.className = 'flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition';
                 item.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid var(--border-main);';
@@ -1154,9 +1178,9 @@
                 item.onmouseleave = () => item.style.background = 'rgba(255,255,255,0.03)';
                 item.onclick = () => window.location.href = `/logged-in/@${uData.username}`;
                 item.innerHTML = `
-                    <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0">${getAvatarHTML(uData, 'w-full h-full', false, firebaseAuthUser)}</div>
+                    <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0">${getAvatarHTML(avatarData, 'w-full h-full', false, firebaseAuthUser)}</div>
                     <div class="flex-grow min-w-0">
-                        <p class="text-sm font-medium truncate" style="color: var(--text-main);">${uData.displayName || uData.username}</p>
+                        <p class="text-sm font-medium truncate" style="color: var(--text-main);">${uData.display_name || uData.username}</p>
                         <p class="text-[10px] font-mono" style="color: var(--text-muted); opacity: 0.5;">@${uData.username}</p>
                     </div>
                     <i class="fas fa-chevron-right text-xs opacity-20"></i>
@@ -1238,10 +1262,13 @@
 
             blockBtn.onclick = async () => {
                 if (confirm('Block this user?')) {
-                    await updateDoc(doc(db, 'users', (firebaseAuthUser.uid || firebaseAuthUser.id)), {
-                        blockedUsers: arrayUnion(profileOwnerId)
+                    const myUid = (firebaseAuthUser.uid || firebaseAuthUser.id);
+                    const { error } = await supabase.from('blocks').insert({
+                        blocker_id: myUid,
+                        blocked_id: profileOwnerId
                     });
-                    location.reload();
+                    if (error) alert("Failed to block: " + error.message);
+                    else location.reload();
                 }
             };
         }

@@ -73,8 +73,86 @@
         scriptsToLoad.push({ url: '/navigation.js' });
     }
 
+    // --- V6.5 Announcement Modal ---
+    const showV65Announcement = () => {
+        if (localStorage.getItem('v65_seen')) return;
+
+        const modalOverlay = document.createElement('div');
+        modalOverlay.id = 'v65-announcement-modal';
+        modalOverlay.style.cssText = `
+            position: fixed; inset: 0; z-index: 999999;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 2rem; transition: opacity 0.4s ease;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: #080808; border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 40px; width: 100%; max-width: 900px;
+            padding: 4rem; position: relative; overflow: hidden;
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
+            color: #fff; font-family: 'Geist', sans-serif;
+        `;
+
+        modalContent.innerHTML = `
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #4f46e5, #818cf8);"></div>
+            <div style="display: flex; gap: 4rem; align-items: flex-start;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+                        <div style="width: 48px; height: 48px; background: rgba(79, 70, 229, 0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #4f46e5; border: 1px solid rgba(79, 70, 229, 0.2);">
+                            <i class="fas fa-sparkles"></i>
+                        </div>
+                        <div>
+                            <h2 style="font-size: 2.5rem; font-weight: 200; letter-spacing: -0.05em; margin: 0; line-height: 1;">4SP V6.5</h2>
+                            <p style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; color: #4f46e5; margin-top: 0.5rem;">Infrastructure Evolution</p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+                        <div>
+                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">🚀 Supabase Migration</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">We've moved almost everything to Supabase for better performance. This <b>resets</b> the global leaderboard status to keep things fresh and fast.</p>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">👾 Discord Login</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">You can now sign in using your Discord account! Connect with friends more easily across the network.</p>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">📸 Redesigned DailyPhoto</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">DailyPhoto has been completely rebuilt with a modern, focus-driven UI. Experience sharing in a whole new way.</p>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">🛡️ Still in Beta</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">We are continuously optimizing. Expect bugs and frequent updates as we scale to V7.</p>
+                        </div>
+                    </div>
+
+                    <div style="padding: 1.5rem; background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 3rem;">
+                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin: 0; line-height: 1.5;">Found a bug? Help us improve by emailing <a href="mailto:4simpleproblems+feedback@gmail.com" style="color: #4f46e5; text-decoration: none; font-weight: 600;">4simpleproblems+feedback@gmail.com</a></p>
+                    </div>
+
+                    <button id="close-v65-btn" style="width: 100%; padding: 1.25rem; background: #4f46e5; border: none; border-radius: 20px; color: #fff; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 10px 30px rgba(79, 70, 229, 0.2);">
+                        Enter V6.5
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modalOverlay);
+        modalOverlay.appendChild(modalContent);
+
+        document.getElementById('close-v65-btn').onclick = () => {
+            modalOverlay.style.opacity = '0';
+            setTimeout(() => {
+                modalOverlay.remove();
+                localStorage.setItem('v65_seen', 'true');
+            }, 400);
+        };
+    };
+
     // 2. CORE DYNAMIC LOADING FUNCTION
-    function loadScript(config) {
+    async function loadScript(config) {
         const url = typeof config === 'string' ? config : config.url;
         const type = config.type || 'text/javascript';
 
@@ -97,6 +175,13 @@
     const start = async () => {
         await loadSupabase();
         
+        // Show announcement after Supabase is ready but before scripts (or parallel)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', showV65Announcement);
+        } else {
+            showV65Announcement();
+        }
+
         const loadingPromises = scriptsToLoad.map(loadScript);
 
         Promise.all(loadingPromises)
@@ -110,3 +195,4 @@
     start();
 
 })();
+// Made with ❤️ from 4SP
