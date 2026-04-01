@@ -104,27 +104,27 @@
                             <i class="fas fa-sparkles"></i>
                         </div>
                         <div>
-                            <h2 style="font-size: 2.5rem; font-weight: 200; letter-spacing: -0.05em; margin: 0; line-height: 1;">4SP V6.5</h2>
-                            <p style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; color: #4f46e5; margin-top: 0.5rem;">Infrastructure Evolution</p>
+                            <h2 style="font-size: 2.5rem; font-weight: 200; letter-spacing: -0.05em; margin: 0; line-height: 1;">4SP V6.5 Release Notes</h2>
+                            <p style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; color: #4f46e5; margin-top: 0.5rem;">Evolutionary Efficiency</p>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
                         <div>
                             <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">🚀 Supabase Migration</h3>
-                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">We've moved almost everything to Supabase for better performance. This <b>resets</b> the global leaderboard status to keep things fresh and fast.</p>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">We’ve transitioned nearly all infrastructure to Supabase for enhanced speed and reliability. This migration resets the global leaderboard to provide a fresh and optimized experience for everyone.</p>
                         </div>
                         <div>
                             <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">👾 Discord Login</h3>
-                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">You can now sign in using your Discord account! Connect with friends more easily across the network.</p>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">Sign in seamlessly with your Discord account! Effortlessly connect and share with friends across the 4SP network.</p>
                         </div>
                         <div>
                             <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">📸 Redesigned DailyPhoto</h3>
-                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">DailyPhoto has been completely rebuilt with a modern, focus-driven UI. Experience sharing in a whole new way.</p>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">DailyPhoto is now rebuilt from the ground up with a sleek, modern UI that puts your content front and center. Enjoy a smoother, more engaging sharing experience.</p>
                         </div>
                         <div>
-                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">🛡️ Still in Beta</h3>
-                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">We are continuously optimizing. Expect bugs and frequent updates as we scale to V7.</p>
+                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">🛡️ Beta Status</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">4SP remains in beta as we continue to launch frequent updates and improvements. Some bugs may persist as we ramp up toward V7.</p>
                         </div>
                     </div>
 
