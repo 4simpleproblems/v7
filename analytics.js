@@ -111,20 +111,29 @@
         }
 
         totalDuration    = parseInt(sessionStorage.getItem('an_total_dur')  || '0');
-        activeDuration   = 0; 
-        pageViews        = [];
+        let lastActivityTime = Date.now();
+        const INACTIVITY_THRESHOLD_MS = 60000; // 1 minute
 
-        trackPageView();
+        function updateUserActivity() {
+            lastActivityTime = Date.now();
+            isDirty = true;
+        }
 
-        setInterval(() => {
-            if (document.visibilityState === 'visible') {
-                activeDuration += 5;
-                totalDuration  += 5;
-                isDirty = true;
-            }
-        }, TICK_MS);
+        // Add event listeners for user activity
+        document.addEventListener('mousemove', updateUserActivity);
+        document.addEventListener('mousedown', updateUserActivity);
+        document.addEventListener('keydown', updateUserActivity);
+        document.addEventListener('touchstart', updateUserActivity);
+        document.addEventListener('scroll', updateUserActivity);
 
-        setInterval(() => {
+            setInterval(() => {
+                if (document.visibilityState === 'visible' && (Date.now() - lastActivityTime < INACTIVITY_THRESHOLD_MS)) {
+                    activeDuration += 5;
+                    totalDuration  += 5;
+                    isDirty = true;
+                }
+            }, TICK_MS);
+
             if (isDirty) syncToFirebase();
         }, SYNC_INTERVAL_MS);
 

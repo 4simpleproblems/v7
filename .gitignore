@@ -1,4 +1,7 @@
-.gemini/
+.gemini
 .vercel
 .env*.local
 functions/
+service-account-key.json
+export_users.py
+users_migration_export.json
