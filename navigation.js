@@ -2302,6 +2302,29 @@ let db;
             currentUserData = userData;
             currentIsPrivileged = isPrivilegedUser;
             
+            // --- Sync Online Status (Supabase) ---
+            if (currentUser && window.supabase && !window._presenceInitialized) {
+                window._presenceInitialized = true;
+                const uid = currentUser.uid || currentUser.id;
+                window.supabase.from('profiles').update({ is_online: true }).eq('id', uid);
+                
+                // Set offline on tab close
+                window.addEventListener('beforeunload', () => {
+                    const url = `${supabaseConfig.url}/rest/v1/profiles?id=eq.${uid}`;
+                    fetch(url, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': supabaseConfig.anonKey,
+                            'Authorization': `Bearer ${supabaseConfig.anonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ is_online: false }),
+                        keepalive: true
+                    });
+                });
+            }
+
             renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
 
             if (!authCheckCompleted) {

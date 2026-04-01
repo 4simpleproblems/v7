@@ -399,7 +399,27 @@
                 currentUser = user;
                 await initApp();
             } else {
-                signInAnonymously(auth).catch(err => console.warn("Firebase Anonymous login restricted:", err.message));
+                // Try Supabase first if firebase is missing
+                if (window.supabase) {
+                    const { data: { session } } = await window.supabase.auth.getSession();
+                    if (session) {
+                        currentUser = session.user;
+                        await initApp();
+                        return;
+                    }
+                }
+
+                // If no supabase, try anonymous firebase
+                signInAnonymously(auth)
+                    .then(async (cred) => {
+                        currentUser = cred.user;
+                        await initApp();
+                    })
+                    .catch(err => {
+                        console.warn("Firebase Anonymous login restricted:", err.message);
+                        // Force visibility even on failure
+                        document.getElementById('daily-feed-container').classList.remove('invisible');
+                    });
             }
         });
 

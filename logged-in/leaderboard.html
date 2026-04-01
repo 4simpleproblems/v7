@@ -147,6 +147,25 @@
             border-color: var(--accent-color);
         }
 
+        .nav-link-box {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: 16px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .nav-link-box i { width: 1.25rem; text-align: center; font-size: 1rem; }
+        .nav-link-box:hover {
+            background: var(--btn-bg);
+            color: var(--accent-color);
+            border-color: var(--accent-glow);
+        }
+
         .custom-scroll::-webkit-scrollbar { width: 0; }
     </style>
 </head>
@@ -191,6 +210,17 @@
                         <h2 id="champion-name" class="text-3xl font-medium text-white truncate w-full px-2">---</h2>
                         <p id="champion-time" class="text-xs font-mono opacity-50 mt-2">0h 0m total</p>
                     </div>
+                </div>
+
+                <!-- Quick Navigation -->
+                <div class="w-full flex flex-col gap-1 mb-8">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 mb-4 px-2">Navigation</p>
+                    <a href="/logged-in/dailyphoto.html" class="nav-link-box">
+                        <i class="fa-solid fa-camera-retro"></i> Social Feed
+                    </a>
+                    <a href="/logged-in/dashboard.html" class="nav-link-box">
+                        <i class="fa-solid fa-house"></i> Dashboard
+                    </a>
                 </div>
 
                 <!-- Final Action (Profile) -->
@@ -250,15 +280,16 @@
 
         async function initLeaderboard() {
             onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    loadUserRankings(user.uid || user.id);
-                } else {
+                let uid = user ? (user.uid || user.id) : null;
+                if (!uid && window.supabase) {
                     const { data: { session } } = await supabase.auth.getSession();
-                    if (session) {
-                        loadUserRankings(session.user.id);
-                    } else {
-                        window.location.replace('/authentication.html');
-                    }
+                    if (session) uid = session.user.id;
+                }
+
+                if (uid) {
+                    loadUserRankings(uid);
+                } else if (!window._LOCAL_MODE) {
+                    window.location.replace('/authentication.html');
                 }
             });
             
@@ -291,9 +322,12 @@
 
                 rankingsEl.innerHTML = '';
                 
+                let myRank = 0;
                 rankedUsers.forEach((data, index) => {
                     const uid = data.id;
                     const i = index + 1;
+                    if (uid === currentUid) myRank = i;
+                    
                     const hours = Math.floor((data.total_v6_time || 0) / 3600);
                     const minutes = Math.floor(((data.total_v6_time || 0) % 3600) / 60);
 
@@ -329,10 +363,51 @@
                     const fBtn = item.querySelector('.follow-btn');
                     if (fBtn) fBtn.onclick = () => toggleFollow(fBtn, uid, currentUid);
                 });
+
+                if (myRank > 0) updateGlobalNavRank(myRank);
             } catch (e) {
                 console.error("Leaderboard error:", e);
                 rankingsEl.innerHTML = '<p class="text-center text-red-400 italic py-20">Error synchronizing ranking data.</p>';
             }
+        }
+
+        function updateGlobalNavRank(rank) {
+            // Wait for navigation to finish rendering
+            setTimeout(() => {
+                const navTabs = window.parent.document.querySelectorAll('.nav-tab') || document.querySelectorAll('.nav-tab');
+                const leaderboardTab = Array.from(navTabs).find(tab => tab.textContent.includes('Leaderboard'));
+                
+                if (leaderboardTab) {
+                    if (rank <= 3) {
+                        const colors = { 1: '#fbbf24', 2: '#cbd5e1', 3: '#d97706' };
+                        const color = colors[rank];
+                        
+                        leaderboardTab.style.position = 'relative';
+                        leaderboardTab.innerHTML += `
+                            <span class="absolute top-1 right-1 w-4 h-4 bg-[${color}] rounded-full flex items-center justify-center border-2 border-black animate-pulse shadow-[0_0_10px_${color}]">
+                                <span class="text-[8px] font-black text-black">#${rank}</span>
+                            </span>
+                        `;
+                        
+                        // Add glow animation
+                        const styleId = 'top-3-rank-style';
+                        if (!document.getElementById(styleId)) {
+                            const style = document.createElement('style');
+                            style.id = styleId;
+                            style.innerHTML = `
+                                @keyframes rank-glow {
+                                    0% { box-shadow: 0 0 5px ${color}; }
+                                    50% { box-shadow: 0 0 20px ${color}; }
+                                    100% { box-shadow: 0 0 5px ${color}; }
+                                }
+                                .rank-top-3 { animation: rank-glow 2s infinite ease-in-out; border-color: ${color} !important; }
+                            `;
+                            document.head.appendChild(style);
+                        }
+                        leaderboardTab.classList.add('rank-top-3');
+                    }
+                }
+            }, 1000);
         }
 
         async function toggleFollow(btn, targetUid, currentUid) {
