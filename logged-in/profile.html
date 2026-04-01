@@ -384,7 +384,7 @@
                 </div>
 
                 <!-- Name + username -->
-                <div class="text-center w-full mb-6">
+                <div class="text-center w-full mb-2">
                     <div id="self-indicator" class="hidden mb-3">
                         <span class="rank-tag" style="color: var(--accent-color); border-color: var(--accent-color); background: var(--btn-bg);">
                             <i class="fas fa-user text-[8px]"></i> Your Profile
@@ -392,6 +392,12 @@
                     </div>
                     <h1 id="display-name" class="text-3xl font-light tracking-tight mb-1" style="color: var(--text-main);">--</h1>
                     <p id="username" class="font-mono text-sm" style="color: var(--text-muted); opacity: 0.5;">@--</p>
+                </div>
+
+                <!-- School Info -->
+                <div id="school-info-container" class="hidden mb-6 flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/5 max-w-full">
+                    <i class="fas fa-school text-[10px] opacity-40"></i>
+                    <p id="school-name-display" class="text-[10px] font-bold uppercase tracking-widest truncate" style="color: var(--text-muted);"></p>
                 </div>
 
                 <!-- Follower / following counts -->
@@ -883,6 +889,18 @@
             descriptionEl.textContent = data.description || '';
             followersCountEl.textContent = data.followerCount || data.follower_count || 0;
             followingCountEl.textContent = data.followingCount || data.following_count || 0;
+
+            const schoolInfo = document.getElementById('school-info-container');
+            const schoolName = document.getElementById('school-name-display');
+            if (schoolInfo && schoolName) {
+                const sName = data.school_name || data.schoolName;
+                if (sName) {
+                    schoolName.textContent = sName;
+                    schoolInfo.classList.remove('hidden');
+                } else {
+                    schoolInfo.classList.add('hidden');
+                }
+            }
 
             updateStatusUI(data);
 
