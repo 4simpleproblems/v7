@@ -908,32 +908,33 @@
             loadProfileData();
 
             if (window.supabase) {
-                supabase
-                    .channel(`profile-view-${profileOwnerId}`)
-                    .on('postgres_changes', { 
-                        event: 'UPDATE', 
-                        schema: 'public', 
-                        table: 'profiles', 
-                        filter: `id=eq.${profileOwnerId}` 
-                    }, payload => {
-                        if (payload.new) {
-                            const profile = payload.new;
-                            const mapped = {
-                                ...profile,
-                                displayName: profile.display_name || profile.username || 'Anonymous',
-                                username: profile.username || 'user',
-                                pfpType: profile.pfp_type || (profile.avatar_url ? 'custom' : 'letter'),
-                                customPfp: profile.avatar_url,
-                                followerCount: profile.follower_count || 0,
-                                followingCount: profile.following_count || 0,
-                                description: profile.description || '',
-                                isOnline: profile.is_online,
-                                currentActivity: profile.current_activity
-                            };
-                            renderProfileUI(mapped);
-                        }
-                    })
-                    .subscribe();
+                const channel = supabase.channel(`profile-view-${profileOwnerId}`);
+                
+                channel.on('postgres_changes', { 
+                    event: 'UPDATE', 
+                    schema: 'public', 
+                    table: 'profiles', 
+                    filter: `id=eq.${profileOwnerId}` 
+                }, payload => {
+                    if (payload.new) {
+                        const profile = payload.new;
+                        const mapped = {
+                            ...profile,
+                            displayName: profile.display_name || profile.username || 'Anonymous',
+                            username: profile.username || 'user',
+                            pfpType: profile.pfp_type || (profile.avatar_url ? 'custom' : 'letter'),
+                            customPfp: profile.avatar_url,
+                            followerCount: profile.follower_count || 0,
+                            followingCount: profile.following_count || 0,
+                            description: profile.description || '',
+                            isOnline: profile.is_online,
+                            currentActivity: profile.current_activity
+                        };
+                        renderProfileUI(mapped);
+                    }
+                });
+
+                channel.subscribe();
             }
         }
 
@@ -1050,7 +1051,7 @@
             const { data: posts, error } = await supabase
                 .from('daily_photos')
                 .select('*')
-                .eq('creator_id', profileOwnerId)
+                .eq('creator_uid', profileOwnerId)
                 .eq('status', 'active')
                 .order('created_at', { ascending: false })
                 .limit(12);

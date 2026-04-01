@@ -16,5 +16,23 @@
   },
   "storage": {
     "rules": "storage.rules"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/@:username",
+        "destination": "/logged-in/profile.html"
+      },
+      {
+        "source": "/logged-in/@:username",
+        "destination": "/logged-in/profile.html"
+      }
+    ]
   }
 }
