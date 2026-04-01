@@ -64,7 +64,7 @@
             'dashboard.html': 'Dashboard',
             'soundboard.html': 'Soundboard',
             'notes.html': 'Notes',
-            'dailyphoto.html': 'DailyPhoto',
+            'dailyphoto.html': 'Dailyphoto',
             'dictionary.html': 'Dictionary',
             'schedule.html': 'Schedule',
             'games.html': 'Games',
@@ -227,4 +227,4 @@
     }
 
     waitForFirebase();
-})();
+})();// Made with ❤️ from 4SP

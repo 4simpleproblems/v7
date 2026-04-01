@@ -116,8 +116,8 @@
                             <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">Sign in seamlessly with your Discord account! Effortlessly connect and share with friends across the 4SP network.</p>
                         </div>
                         <div>
-                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">📸 Redesigned DailyPhoto</h3>
-                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">DailyPhoto is now rebuilt from the ground up with a sleek, modern UI that puts your content front and center. Enjoy a smoother, more engaging sharing experience.</p>
+                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">📸 Redesigned Dailyphoto</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">Dailyphoto is now rebuilt from the ground up with a sleek, modern UI that puts your content front and center. Enjoy a smoother, more engaging sharing experience.</p>
                         </div>
                         <div>
                             <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">🛡️ Beta Status</h3>

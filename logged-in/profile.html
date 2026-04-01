@@ -38,7 +38,7 @@
             font-weight: 300;
         }
 
-        /* Subtle dot grid — matches DailyPhoto vibe */
+        /* Subtle dot grid — matches Dailyphoto vibe */
         .grid-bg {
             background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
             background-size: 24px 24px;
@@ -53,7 +53,7 @@
         }
 
         /* ------------------------------------------------------------------ */
-        /* CARD — matches DailyPhoto modal card style                          */
+        /* CARD — matches Dailyphoto modal card style                          */
         /* ------------------------------------------------------------------ */
         .feature-card {
             border-radius: 1.5rem;
@@ -64,7 +64,7 @@
         }
 
         /* ------------------------------------------------------------------ */
-        /* BUTTONS — exact same tokens as DailyPhoto                          */
+        /* BUTTONS — exact same tokens as Dailyphoto                          */
         /* ------------------------------------------------------------------ */
         .btn-toolbar-style {
             background: var(--bg-card);
@@ -141,7 +141,7 @@
         .status-offline { background-color: var(--border-main); }
 
         /* ------------------------------------------------------------------ */
-        /* PHOTO GRID — DailyPhoto thumbnail style                            */
+        /* PHOTO GRID — Dailyphoto thumbnail style                            */
         /* ------------------------------------------------------------------ */
         .photo-grid-item {
             aspect-ratio: 1/1;
@@ -182,7 +182,7 @@
         }
 
         /* ------------------------------------------------------------------ */
-        /* MODALS — same backdrop style as DailyPhoto                         */
+        /* MODALS — same backdrop style as Dailyphoto                         */
         /* ------------------------------------------------------------------ */
         .modal-backdrop {
             position: fixed; inset: 0;
@@ -276,7 +276,7 @@
             border: 1px solid;
         }
 
-        /* Input fields — consistent with DailyPhoto modals */
+        /* Input fields — consistent with Dailyphoto modals */
         .modal-input {
             width: 100%;
             background: rgba(255,255,255,0.05);
@@ -431,7 +431,7 @@
             </div>
 
             <!-- ---------------------------------------------------------- -->
-            <!-- CONTENT — DailyPhoto grid                                  -->
+            <!-- CONTENT — Dailyphoto grid                                  -->
             <!-- ---------------------------------------------------------- -->
             <div class="lg:col-span-2">
                 <div class="flex justify-between items-end mb-6">
@@ -620,7 +620,7 @@
         }
 
         // ------------------------------------------------------------------
-        // MODAL HELPERS (same open/close pattern as DailyPhoto)
+        // MODAL HELPERS (same open/close pattern as Dailyphoto)
         // ------------------------------------------------------------------
         function openModal(modalEl) {
             modalEl.classList.add('open');
@@ -753,7 +753,7 @@
                     setupFollowModalListeners();
                     setupEditProfileListeners();
                     setupOptionsListeners();
-                    loadDailyPhotos();
+                    loadDailyphotos();
 
                     if (!isOwnProfile) {
                         checkFollowStatus();
@@ -1043,7 +1043,7 @@
         // ------------------------------------------------------------------
         // DAILY PHOTOS
         // ------------------------------------------------------------------
-        async function loadDailyPhotos() {
+        async function loadDailyphotos() {
             // Wait for isMutual to settle
             await new Promise(resolve => setTimeout(resolve, 600));
 
@@ -1056,7 +1056,7 @@
                 .limit(12);
 
             if (error) {
-                console.error("Supabase DailyPhoto load error:", error);
+                console.error("Supabase Dailyphoto load error:", error);
                 return;
             }
 
