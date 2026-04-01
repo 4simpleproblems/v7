@@ -122,25 +122,20 @@
                 // 2. Default Case (user, google, or undefined) -> Use photoURL if available
                 let gP = userData?.photoURL || userData?.avatar_url;
 
-                // Check Supabase metadata if provided directly in userData
-                if (!gP && userData?.user_metadata?.avatar_url) {
-                    gP = userData.user_metadata.avatar_url;
-                }
-                if (!gP && userData?.raw_user_meta_data?.avatar_url) {
-                    gP = userData.raw_user_meta_data.avatar_url;
+                // Priority 1: Direct Metadata from User Object (Supabase structure)
+                const meta = userData?.user_metadata || userData?.raw_user_meta_data || authUser?.user_metadata || authUser?.raw_user_meta_data;
+                if (!gP && meta) {
+                    gP = meta.picture || meta.avatar_url;
                 }
 
-                // Fallback to authUser photo if viewing own profile and userData is partial
-                if (!gP && authUser && (userData?.uid === authUser.uid || userData?.id === authUser.uid || userData?.id === authUser.id)) {
-                    // Try Supabase user_metadata/raw_user_meta_data first
-                    gP = authUser?.user_metadata?.avatar_url || authUser?.raw_user_meta_data?.avatar_url;
-
-                    // Try Firebase providerData next
-                    if (!gP) {
-                        const googleProvider = authUser?.providerData?.find(p => p.providerId === 'google.com');
-                        gP = googleProvider ? googleProvider.photoURL : authUser.photoURL;
-                    }
+                // Priority 2: Firebase Provider fallback
+                if (!gP && authUser?.providerData) {
+                    const googleProvider = authUser.providerData.find(p => p.providerId === 'google.com');
+                    if (googleProvider) gP = googleProvider.photoURL;
                 }
+
+                // Priority 3: Root photoURL fallback
+                if (!gP && authUser?.photoURL) gP = authUser.photoURL;
 
                 if (gP) {
                     // Ensure high quality Google PFPs

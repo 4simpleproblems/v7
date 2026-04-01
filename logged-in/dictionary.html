@@ -387,8 +387,14 @@
             if (event.target.classList.contains('audio-icon') && event.target.dataset.audio) new Audio(event.target.dataset.audio).play();
         });
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
+        onAuthStateChanged(auth, async (user) => {
+            let authed = !!user;
+            if (!authed && window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session) authed = true;
+            }
+
+            if (authed) {
                 if (window.hideLoader) window.hideLoader();
                 pageContent.classList.remove('hidden');
                 pageContent.style.display = 'flex'; 
