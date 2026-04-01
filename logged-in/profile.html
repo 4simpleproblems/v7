@@ -63,6 +63,35 @@
             transition: border-color 0.2s;
         }
 
+        /* Options Menu - Match Auth Menu */
+        #profile-options-menu {
+            background: #000000;
+            border: 1px solid rgb(55 65 81);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8);
+            width: 240px;
+            padding: 0.75rem;
+        }
+        .profile-menu-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 14px;
+            color: #d1d5db;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: none;
+        }
+        .profile-menu-link:hover {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+
         /* ------------------------------------------------------------------ */
         /* BUTTONS — exact same tokens as Dailyphoto                          */
         /* ------------------------------------------------------------------ */
@@ -80,21 +109,25 @@
             justify-content: center;
             gap: 0.5rem;
             font-size: 0.85rem;
+            outline: 1px solid transparent;
         }
         .btn-toolbar-style:hover {
             border-color: var(--accent-color);
             color: var(--text-main);
             background: var(--btn-bg);
+            outline: 1px solid var(--accent-glow);
         }
         .btn-primary-override {
             background-color: var(--btn-bg) !important;
             border: 1px solid var(--accent-color) !important;
             color: var(--accent-color) !important;
+            outline: 1px solid var(--accent-glow);
         }
         .btn-primary-override:hover {
             background-color: var(--accent-color) !important;
             color: #fff !important;
             transform: scale(1.02);
+            outline: 1px solid rgba(255,255,255,0.2);
         }
         .btn-icon {
             display: inline-flex;
@@ -282,32 +315,6 @@
             -webkit-backdrop-filter: blur(20px);
         }
 
-        /* ------------------------------------------------------------------ */
-        /* SIDEBAR STICKY                                                      */
-        /* ------------------------------------------------------------------ */
-        .sidebar-extended {
-            height: calc(100vh - 8rem);
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ------------------------------------------------------------------ */
-        /* COUNTS — pill style                                                 */
-        /* ------------------------------------------------------------------ */
-        .count-pill {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border-main);
-            border-radius: 1rem;
-            padding: 1rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .count-pill:hover {
-            background: var(--btn-bg);
-            border-color: var(--accent-color);
-        }
-
         .custom-scroll::-webkit-scrollbar { width: 0; }
 
         /* Profile tag badge */
@@ -413,11 +420,11 @@
                             <i class="fas fa-ellipsis-h text-sm"></i>
                         </button>
                         <div id="profile-options-menu" class="hidden absolute top-full right-0 mt-3 w-52 feature-card shadow-2xl z-50 p-2 overflow-hidden border-white/10">
-                            <button id="btn-share-profile" class="w-full text-left p-3.5 hover:bg-white/5 rounded-xl transition flex items-center gap-3 text-sm" style="color: var(--text-muted);">
-                                <i class="fas fa-share-nodes w-4" style="color: var(--accent-color);"></i> Share Profile
+                            <button id="btn-share-profile" class="profile-menu-link">
+                                <i class="fas fa-share-nodes w-4 text-indigo-400"></i> Share Profile
                             </button>
-                            <button id="btn-block-user" class="hidden w-full text-left p-3.5 hover:bg-red-900/20 rounded-xl transition flex items-center gap-3 text-sm text-red-500">
-                                <i class="fas fa-ban w-4"></i> Block User
+                            <button id="btn-block-user" class="hidden profile-menu-link text-red-400 hover:bg-red-900/20">
+                                <i class="fas fa-ban w-4 text-red-500"></i> Block User
                             </button>
                         </div>
                     </div>
@@ -443,7 +450,7 @@
                     <p id="description" class="text-sm leading-relaxed italic opacity-60 px-4" style="color: var(--text-muted);"></p>
                 </div>
 
-                <!-- School Info -->
+                <!-- School Info (Alternative Slot) -->
                 <div id="school-info-container" class="hidden mb-8 flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/5 border border-white/5 w-full">
                     <i class="fas fa-school text-xs opacity-40"></i>
                     <p id="school-name-display" class="text-xs font-bold uppercase tracking-widest truncate" style="color: var(--text-muted);"></p>
@@ -498,10 +505,11 @@
                 </div>
 
                 <div id="dailyphoto-container" class="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                    <!-- skeleton placeholders -->
-                    <div class="photo-grid-item skeleton h-[350px]"></div>
-                    <div class="photo-grid-item skeleton h-[350px]"></div>
-                    <div class="photo-grid-item skeleton h-[350px]"></div>
+                    <!-- Loading State -->
+                    <div class="col-span-full py-20 flex flex-col items-center justify-center opacity-20">
+                        <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
+                        <p class="text-xs font-black uppercase tracking-[0.2em]">Retrieving Archive</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -569,8 +577,7 @@
         import { firebaseConfig } from "/firebase-config.js";
         import { firebaseConfig2 } from "/firebase-config-2.js";
         import { supabaseConfig } from "/supabase-config.js";
-        import { getAvatarHTML } from "/profile_picture_system.js";
-        import { syncGooglePhoto } from "/utils.js";
+        import { getAvatarHTML, checkAdminStatus } from "/utils.js";
 
         // Initialize primary app
         if (!getApps().length) initializeApp(firebaseConfig);
@@ -637,7 +644,7 @@
         let isFollowing      = false;
         let isFollowedBy     = false;
         let isMutual         = false;
-        let bannedUids       = new Set();
+        let isAdmin          = false;
 
         // --- FIX: Unsubscribe variables for all listeners ---
         let unsubMainProfile = () => {};
@@ -823,11 +830,6 @@
             supabaseChecked = true;
         }
 
-        // ------------------------------------------------------------------
-        // MAIN PROFILE SNAPSHOT
-        // onSnapshot is kept here intentionally — we need live online status
-        // and avatar updates. The loading overlay hides on first emission.
-        // ------------------------------------------------------------------
         // ------------------------------------------------------------------
         // MAIN PROFILE DATA LOADING
         // ------------------------------------------------------------------
@@ -1291,7 +1293,7 @@
             shareBtn.onclick = () => {
                 navigator.clipboard.writeText(window.location.href);
                 shareBtn.textContent = 'Copied!';
-                setTimeout(() => { shareBtn.innerHTML = '<i class="fas fa-share-nodes w-4" style="color: var(--accent-color);"></i> Share Profile'; }, 1500);
+                setTimeout(() => { shareBtn.innerHTML = '<i class="fas fa-share-nodes w-4 text-indigo-400"></i> Share Profile'; }, 1500);
             };
 
             blockBtn.onclick = async () => {
