@@ -3883,7 +3883,7 @@
                     mibiAvatarState = { ...mibiAvatarState, ...userData.mibiConfig };
                 }
 
-                const currentPfpType = userData.pfpType || 'google';
+                const currentPfpType = userData.pfpType || userData.pfp_type || 'google';
                 const pfpModeBtns = document.querySelectorAll('.pfp-mode-btn');
                 const pfpLetterSettings = document.getElementById('pfpLetterSettings');
                 const mibiSettings = document.getElementById('pfpMibiSettings');
@@ -3893,52 +3893,34 @@
                 const macMenu = document.getElementById('mibi-mac-menu'); 
                 const openMacMenuBtn = document.getElementById('open-mac-menu-btn'); 
 
-                // --- CONDITIONAL GOOGLE OPTION ---
-                const hasGoogle = (currentUser.providerData || []).some(p => p.providerId === 'google.com') || 
-                                  (currentUser.app_metadata?.provider === 'google') || 
-                                  (currentUser.user_metadata?.iss?.includes('google'));
-                
-                if (!hasGoogle) {
-                    const googleBtn = Array.from(pfpModeBtns).find(btn => btn.dataset.mode === 'google');
-                    if (googleBtn) googleBtn.remove();
-                }
-
-                // Function to dispatch instant update event
-                const triggerNavbarUpdate = () => {
-                    window.dispatchEvent(new CustomEvent('pfp-updated', { 
-                        detail: { 
-                            pfpType: userData.pfpType, 
-                            customPfp: userData.customPfp,
-                            pfpLetterBg: userData.pfpLetterBg,
-                            letterAvatarText: userData.letterAvatarText
-                        }
-                    }));
-                };
-
                 // Function to update UI visibility
                 const updatePfpUi = (type) => {
-                    pfpModeBtns.forEach(btn => {
-                        btn.classList.toggle('active', btn.dataset.mode === type);
-                        if (btn.dataset.mode === type) {
-                            btn.style.backgroundColor = 'var(--btn-bg)';
-                            btn.style.borderColor = 'var(--accent-color)';
-                        } else {
-                            btn.style.backgroundColor = '';
-                            btn.style.borderColor = '';
-                        }
-                    });
+                    if (pfpModeBtns) {
+                        pfpModeBtns.forEach(btn => {
+                            btn.classList.toggle('active', btn.dataset.mode === type);
+                            if (btn.dataset.mode === type) {
+                                btn.style.backgroundColor = 'var(--btn-bg)';
+                                btn.style.borderColor = 'var(--accent-color)';
+                            } else {
+                                btn.style.backgroundColor = '';
+                                btn.style.borderColor = '';
+                            }
+                        });
+                    }
 
-                    pfpLetterSettings.classList.toggle('hidden', type !== 'letter');
-                    mibiSettings.classList.toggle('hidden', type !== 'mibi');
-                    customSettings.classList.toggle('hidden', type !== 'custom');
+                    if (pfpLetterSettings) pfpLetterSettings.classList.toggle('hidden', type !== 'letter');
+                    if (mibiSettings) mibiSettings.classList.toggle('hidden', type !== 'mibi');
+                    if (customSettings) customSettings.classList.toggle('hidden', type !== 'custom');
 
                     // Update preview if possible
-                    if (type === 'custom' && userData.customPfp) {
-                        previewImg.src = userData.customPfp;
+                    if (!previewImg || !previewPlaceholder) return;
+
+                    if (type === 'custom' && (userData.customPfp || userData.avatar_url)) {
+                        previewImg.src = userData.customPfp || userData.avatar_url;
                         previewImg.style.display = 'block';
                         previewPlaceholder.style.display = 'none';
                     } else if (type === 'google') {
-                        const googlePfp = userData.avatar_url || (currentUser.user_metadata?.picture);
+                        const googlePfp = userData.avatar_url || userData.photoURL || (currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture);
                         if (googlePfp) {
                             previewImg.src = googlePfp;
                             previewImg.style.display = 'block';
@@ -3951,9 +3933,9 @@
                     } else if (type === 'letter') {
                         previewImg.style.display = 'none';
                         previewPlaceholder.style.display = 'flex';
-                        const text = userData.letterAvatarText || (userData.username || 'U').charAt(0).toUpperCase();
+                        const text = userData.letterAvatarText || userData.pfp_letter_char || (userData.username || 'U').charAt(0).toUpperCase();
                         previewPlaceholder.innerText = text;
-                        previewPlaceholder.style.background = userData.pfpLetterBg || '#3B82F6';
+                        previewPlaceholder.style.background = userData.pfpLetterBg || userData.pfp_letter_bg || '#3B82F6';
                         previewPlaceholder.style.color = '#FFFFFF';
                     } else {
                         previewImg.style.display = 'none';
@@ -3962,37 +3944,71 @@
                         previewPlaceholder.style.background = '';
                     }
                 };
+                // Function to dispatch instant update event
+                const triggerNavbarUpdate = () => {
+                    window.dispatchEvent(new CustomEvent('pfp-updated', { 
+                        detail: { 
+                            pfpType: userData.pfpType || userData.pfp_type, 
+                            customPfp: userData.customPfp || userData.avatar_url,
+                            pfpLetterBg: userData.pfpLetterBg || userData.pfp_letter_bg,
+                            letterAvatarText: userData.letterAvatarText || userData.pfp_letter_char
+                        }
+                    }));
+                };
+
+                // --- CONDITIONAL GOOGLE OPTION ---
+                const hasGoogle = (currentUser.providerData || []).some(p => p.providerId === 'google.com') || 
+                                  (currentUser.app_metadata?.provider === 'google') || 
+                                  (currentUser.user_metadata?.iss?.includes('google')) ||
+                                  (currentUser.user_metadata?.avatar_url?.includes('googleusercontent.com'));
+                
+                if (!hasGoogle) {
+                    const googleBtn = Array.from(pfpModeBtns).find(btn => btn.dataset.mode === 'google');
+                    if (googleBtn) googleBtn.remove();
+                }
+
                 // Mode Button Clicks
-                pfpModeBtns.forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        const type = btn.dataset.mode;
-                        updatePfpUi(type);
-                        try {
-                            const updates = { pfpType: type };
-                            
-                            // If switching to Google, ensure we have the URL
-                            if (type === 'google') {
-                                let googlePhoto = userData.avatar_url || userData.photoURL;
+                if (pfpModeBtns) {
+                    pfpModeBtns.forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            const type = btn.dataset.mode;
+                            updatePfpUi(type);
+                            try {
+                                const updates = { 
+                                    pfp_type: type,
+                                    pfpType: type // Keep for legacy
+                                };
                                 
-                                // Try Supabase Metadata if missing
-                                if (!googlePhoto && window.supabase) {
-                                    const { data: { session } } = await window.supabase.auth.getSession();
-                                    googlePhoto = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture;
+                                // If switching to Google, ensure we have the URL
+                                if (type === 'google') {
+                                    let googlePhoto = userData.avatar_url || userData.photoURL;
+                                    
+                                    // Try Supabase Metadata if missing
+                                    if (!googlePhoto && window.supabase) {
+                                        const { data: { session } } = await window.supabase.auth.getSession();
+                                        googlePhoto = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture;
+                                    }
+
+                                    if (googlePhoto) {
+                                        updates.avatar_url = googlePhoto;
+                                        updates.photoURL = googlePhoto;
+                                        userData.avatar_url = googlePhoto;
+                                        userData.photoURL = googlePhoto;
+                                    }
                                 }
 
-                                if (googlePhoto) {
-                                    updates.photoURL = googlePhoto; // Mirror for legacy
-                                    userData.photoURL = googlePhoto;
-                                }
+                                await saveUserData(uid, updates);
+                                userData.pfp_type = type;
+                                userData.pfpType = type;
+                                triggerNavbarUpdate();
+                                showMessage(pfpMessage, 'Preference saved!', 'success');
+                            } catch (e) { 
+                                console.error("PFP Preference Save Error:", e);
+                                showMessage(pfpMessage, 'Error saving preference.', 'error'); 
                             }
-
-                            await saveUserData(uid, updates);
-                            userData.pfpType = type;
-                            triggerNavbarUpdate();
-                            showMessage(pfpMessage, 'Preference saved!', 'success');
-                        } catch (e) { showMessage(pfpMessage, 'Error saving preference.', 'error'); }
+                        });
                     });
-                });
+                }
 
                 // Initial UI state
                 updatePfpUi(currentPfpType);

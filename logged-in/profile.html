@@ -56,10 +56,10 @@
         /* CARD — matches Dailyphoto modal card style                          */
         /* ------------------------------------------------------------------ */
         .feature-card {
-            border-radius: 1.5rem;
+            border-radius: 2rem;
             border: 1px solid var(--border-main);
             background: var(--bg-card);
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
             transition: border-color 0.2s;
         }
 
@@ -69,9 +69,9 @@
         .btn-toolbar-style {
             background: var(--bg-card);
             border: 1px solid var(--border-main);
-            border-radius: 14px;
+            border-radius: 16px;
             color: var(--text-muted);
-            padding: 0.5rem 1rem;
+            padding: 0.6rem 1.25rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
@@ -82,8 +82,9 @@
             font-size: 0.85rem;
         }
         .btn-toolbar-style:hover {
-            border-color: var(--text-main);
+            border-color: var(--accent-color);
             color: var(--text-main);
+            background: var(--btn-bg);
         }
         .btn-primary-override {
             background-color: var(--btn-bg) !important;
@@ -93,14 +94,15 @@
         .btn-primary-override:hover {
             background-color: var(--accent-color) !important;
             color: #fff !important;
+            transform: scale(1.02);
         }
         .btn-icon {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 14px;
+            width: 2.75rem;
+            height: 2.75rem;
+            border-radius: 16px;
             background-color: var(--bg-card);
             border: 1px solid var(--border-main);
             color: var(--text-muted);
@@ -108,7 +110,7 @@
             transition: all 0.2s;
         }
         .btn-icon:hover {
-            border-color: var(--text-main);
+            border-color: var(--accent-color);
             color: var(--text-main);
         }
 
@@ -116,68 +118,69 @@
         /* AVATAR                                                              */
         /* ------------------------------------------------------------------ */
         #avatar-preview {
-            border-radius: 28px;
+            border-radius: 32px;
             overflow: hidden;
             width: 100%;
             height: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
         #avatar-preview img, #avatar-preview div {
-            border-radius: 28px !important;
+            border-radius: 32px !important;
         }
 
         /* ------------------------------------------------------------------ */
         /* STATUS                                                              */
         /* ------------------------------------------------------------------ */
         .status-dot {
-            width: 12px; height: 12px;
+            width: 14px; height: 14px;
             border-radius: 50%;
             display: inline-block;
-            border: 2px solid var(--bg-card);
+            border: 3px solid var(--bg-card);
         }
         .status-online {
             background-color: var(--accent-color);
-            box-shadow: 0 0 8px var(--accent-glow);
+            box-shadow: 0 0 12px var(--accent-glow);
         }
-        .status-offline { background-color: var(--border-main); }
+        .status-offline { background-color: #333; }
 
         /* ------------------------------------------------------------------ */
-        /* PHOTO GRID — Dailyphoto thumbnail style                            */
+        /* PHOTO GRID — Dailyphoto square thumbnail style                     */
         /* ------------------------------------------------------------------ */
         .photo-grid-item {
             aspect-ratio: 1/1;
             overflow: hidden;
-            border-radius: 1.25rem;
+            border-radius: 1.5rem;
             background: var(--bg-card);
             border: 1px solid var(--border-main);
             cursor: pointer;
-            transition: transform 0.3s ease, border-color 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
         }
         .photo-grid-item:hover {
-            transform: translateY(-4px);
+            transform: scale(1.02) translateY(-4px);
             border-color: var(--accent-color);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
         }
         .photo-grid-item img {
             width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.3s ease;
+            transition: transform 0.5s ease;
         }
-        .photo-grid-item:hover img { transform: scale(1.05); }
+        .photo-grid-item:hover img { transform: scale(1.1); }
         .photo-grid-item .overlay-grad {
             position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent 50%);
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 60%);
             pointer-events: none;
         }
         .photo-grid-item .title-chip {
-            position: absolute; bottom: 0.6rem; left: 0.6rem; right: 0.6rem;
-            color: #fff; font-size: 0.7rem;
-            background: var(--accent-glow);
+            position: absolute; bottom: 0.75rem; left: 0.75rem; right: 0.75rem;
+            color: #fff; font-size: 0.75rem; font-weight: 600;
+            background: rgba(255,255,255,0.1);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            padding: 0.35rem 0.75rem;
-            border-radius: 10px;
-            border: 1px solid var(--accent-color);
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             z-index: 10;
         }
 
@@ -1086,11 +1089,13 @@
 
             posts.forEach(post => {
                 const div = document.createElement('div');
-                div.className = 'photo-grid-item';
+                div.className = 'photo-grid-item group';
                 div.innerHTML = `
-                    <img src="${post.image_url}" loading="lazy">
-                    <div class="overlay-grad"></div>
-                    <div class="title-chip">${post.title || 'Moment'}</div>
+                    <img src="${post.image_url}" loading="lazy" class="w-full h-full object-cover">
+                    <div class="overlay-grad opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="title-chip opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                        ${post.title || 'Moment'}
+                    </div>
                 `;
                 div.onclick = () => window.location.href = `/logged-in/dailyphoto.html?post=${post.id}`;
                 dailyphotoContainer.appendChild(div);
