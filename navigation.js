@@ -582,27 +582,29 @@ let db;
             } catch (e) { return '#FFFFFF'; }
         };
 
-        const getProfileButtonHtml = (user, userData) => {
-            if (!user) return '';
-            
-            // Normalize field access
-            const pT = userData?.pfp_type || userData?.pfpType || 'google';
-            const dN = userData?.display_name || userData?.displayName || user.displayName || userData?.username || "user";
-            const username = userData?.username || user.displayName?.toLowerCase().replace(/[^a-z0-9]/g, "") || "user";
+        const getAvatarHTML = (userData, sizeClass = "w-10 h-10", forceCSS = false, authUser = null, roundedClass = "rounded-xl", scaleClass = "", clipOuterContainer = true) => {
+            const pT = userData?.pfp_type || userData?.pfpType || 'user';
+            const dN = userData?.display_name || userData?.displayName || userData?.username || authUser?.displayName || 'User';
             const customPfp = userData?.avatar_url || userData?.customPfp || userData?.photoURL;
             const letterBg = userData?.pfp_letter_bg || userData?.pfpLetterBg || DEFAULT_THEME['avatar-gradient'];
             const letterChar = userData?.pfp_letter_char || userData?.pfpLetterChar || (userData?.letterAvatarText) || dN;
+            
+            const sizeMap = { "w-10 h-10": 40, "w-full h-full": 128 };
+            let px = 40;
+            const match = sizeClass.match(/w-(\d+)/);
+            if (match) px = parseInt(match[1]) * 4; 
+            else px = sizeMap[sizeClass] || 40;
 
-            let avatarHtml = '';
-            const initial = letterChar.charAt(0).toUpperCase();
+            let innerHTML = '';
+            const innerClasses = `block min-w-full min-h-full w-full h-full object-cover ${scaleClass}`;
 
             if (pT === 'custom' && customPfp) {
-                avatarHtml = `<img src="${customPfp}" class="w-full h-full object-cover" style="border-radius: 12px;" alt="Profile">`;
+                innerHTML = `<img src="${customPfp}" class="${innerClasses}">`;
             } else if (pT === 'mibi' && (userData?.mibi_config || userData?.mibiConfig)) {
                 const config = userData.mibi_config || userData.mibiConfig;
                 const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = config;
-                avatarHtml = `
-                    <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 12px;">
+                innerHTML = `
+                    <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'};">
                          <div class="absolute inset-0 w-full h-full" style="transform: translate(${offsetX || 0}%, ${offsetY || 0}%) rotate(${rotation || 0}deg) scale(${(size || 100) / 100}); transform-origin: center;">
                              <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
                              ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
@@ -612,29 +614,54 @@ let db;
                     </div>
                 `;
             } else if (pT === 'letter') {
-                const textColor = getLetterAvatarTextColor(letterBg); 
-                const fontSizeClass = initial.length >= 3 ? 'text-[10px]' : (initial.length === 2 ? 'text-xs' : 'text-sm'); 
-                avatarHtml = `<div class="initial-avatar w-full h-full font-bold ${fontSizeClass} flex items-center justify-center" style="background: ${letterBg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
+                const letter = letterChar.charAt(0).toUpperCase();
+                const fontSize = px * 0.35;
+                const tC = getLetterAvatarTextColor(letterBg);
+                innerHTML = `<div class="${innerClasses} flex items-center justify-center font-bold" style="background:${letterBg}; color: ${tC}; font-size: ${fontSize}px; line-height: 1;">${letter}</div>`;
             } else {
-                const googleProvider = user?.providerData?.find(p => p.providerId === 'google.com');
-                const rawMeta = user?.raw_user_meta_data || user?.user_metadata || userData?.raw_user_meta_data || userData?.user_metadata;
-                
-                let displayPhoto = customPfp || rawMeta?.picture || rawMeta?.avatar_url || googleProvider?.photoURL || user.photoURL;
-                
-                if (displayPhoto) {
-                    avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 12px;" alt="Profile">`;
-                } else {
-                    const textColor = getLetterAvatarTextColor(letterBg);
-                    const fontSizeClass = initial.length >= 3 ? 'text-[10px]' : (initial.length === 2 ? 'text-xs' : 'text-sm');
-                    avatarHtml = `<div class="initial-avatar w-full h-full font-bold ${fontSizeClass} flex items-center justify-center" style="background: ${letterBg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
+                let gP = customPfp;
+                const rawMeta = userData?.raw_user_meta_data || authUser?.raw_user_meta_data || userData?.user_metadata || authUser?.user_metadata;
+                if (!gP && rawMeta) gP = rawMeta.picture || rawMeta.avatar_url;
+                if (!gP && authUser?.providerData) {
+                    const googleProvider = authUser.providerData.find(p => p.providerId === 'google.com');
+                    if (googleProvider) gP = googleProvider.photoURL;
+                }
+
+                if (gP) {
+                    if (gP.includes('googleusercontent.com')) {
+                        gP = gP.replace(/lh\d+\.googleusercontent\.com/g, 'lh3.googleusercontent.com');
+                        if (gP.includes('=')) gP = gP.split('=')[0] + '=s500-c';
+                        else if (!gP.includes('=s500-c')) gP = gP + '=s500-c';
+                    }
+                    const letter = letterChar.charAt(0).toUpperCase();
+                    const fontSizeLetter = px * 0.35;
+                    const tC = getLetterAvatarTextColor(letterBg);
+                    const fallbackHTML = `<div class='flex items-center justify-center font-bold w-full h-full' style='background:${letterBg}; color: ${tC}; font-size: ${fontSizeLetter}px; line-height: 1;'>${letter}</div>`;
+                    innerHTML = `<img src="${gP}" class="${innerClasses}" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.parentElement.innerHTML=\`${fallbackHTML}\` ">`;
+                }
+                if (!innerHTML) {
+                    const fontSizeIcon = px * 0.4;
+                    innerHTML = `<div class="${innerClasses} flex items-center justify-center bg-indigo-600/20 text-indigo-500" style="font-size: ${fontSizeIcon}px;"><i class="fa-solid fa-user"></i></div>`;
                 }
             }
+            const outerClasses = `${sizeClass} aspect-square ${roundedClass} shrink-0 flex items-center justify-center overflow-hidden border border-white/5`;
+            return `<div class="${outerClasses}">${innerHTML}</div>`;
+        };
+
+        const getProfileButtonHtml = (user, userData) => {
+            if (!user) return '';
+            
+            // Normalize field access
+            const username = userData?.username || user.displayName?.toLowerCase().replace(/[^a-z0-9]/g, "") || "user";
+            const dN = userData?.display_name || userData?.displayName || user.displayName || userData?.username || "user";
+            
+            const avatarHtml = getAvatarHTML(userData, "w-10 h-10", false, user, "rounded-xl");
+            const isOnline = userData?.isOnline || (userData?.is_online) || false;
 
             const followers = userData?.followerCount || 0;
             const following = userData?.followingCount || 0;
             const followersDisplay = followers > 999 ? (followers / 1000).toFixed(1) + 'k' : followers;
             const followingDisplay = following > 999 ? (following / 1000).toFixed(1) + 'k' : following;
-            const isOnline = userData?.isOnline || (userData?.is_online) || false;
 
             const userTagHtml = (userData?.userTag) 
                 ? `<div class="text-xs font-italic" style="color: ${userData.userTag.color}; font-style: italic; margin-top: 2px;">${userData.userTag.text}</div>`
@@ -652,9 +679,9 @@ let db;
 
             return `
                 <div id="profile-area-wrapper" class="relative flex-shrink-0 flex items-center">
-                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 14px; position: relative; background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));">
-                        <i class="fa-solid fa-address-card text-gray-300"></i>
-                        ${isOnline ? '<span class="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[var(--accent-color)] border-2 border-black rounded-full shadow-[0_0_5px_var(--accent-glow)]"></span>' : ''}
+                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition overflow-hidden p-0" style="border-radius: 14px; position: relative; background: var(--bg-secondary);">
+                        ${avatarHtml}
+                        ${isOnline ? '<span class="absolute bottom-0 right-0 w-3 h-3 bg-[var(--accent-color)] border-2 border-black rounded-full shadow-[0_0_5px_var(--accent-glow)]"></span>' : ''}
                     </button>
                     <div id="profile-menu-container" class="auth-menu-container closed">
                         <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center gap-3 pb-2 cursor-pointer hover:bg-white/5 transition rounded-2xl p-1" onclick="window.location.href='/logged-in/@${username}'">
