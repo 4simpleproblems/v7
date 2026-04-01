@@ -258,16 +258,69 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { firebaseConfig } from "../firebase-config.js"; 
+        // Remove Firebase imports
+        // import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        // import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        // Remove Firebase config import
+        // import { firebaseConfig } from "../firebase-config.js"; 
 
-        const DICT_KEY = 'e9433acb-a413-4034-b379-c04f65ba4728';
-        const THES_KEY = '14361996-c9fa-4e29-ac53-bb70eb0647e7';
+        // Add Supabase imports and initialization
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js';
+        import { supabaseConfig } from "../supabase-config.js";
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        window.supabase = supabase;
 
+        // Remove Firebase app and auth initialization
+        // const app = initializeApp(firebaseConfig);
+        // const auth = getAuth(app);
+
+        let DICT_KEY;
+        let THES_KEY;
+
+        async function loadApiKeys() {
+            try {
+                // Fetch keys from Supabase Vault
+                const { data: dictData, error: dictError } = await supabase.from('vault').select('value').eq('key', 'Dictionary Key').single();
+                if (dictError) throw dictError;
+                DICT_KEY = dictData.value;
+
+                const { data: thesData, error: thesError } = await supabase.from('vault').select('value').eq('key', 'Thesaurus Key').single();
+                if (thesError) throw thesError;
+                THES_KEY = thesData.value;
+
+                console.log("API keys loaded successfully from Supabase Vault.");
+                
+                // Enable the page content once keys are loaded and user is auth'd
+                if (window.hideLoader) window.hideLoader(); 
+                pageContent.classList.remove('hidden');
+                pageContent.style.display = 'flex'; 
+
+                // If there was a word in the hash, fetch it now
+                checkUrlHashForWord();
+
+            } catch (error) {
+                console.error("Error loading API keys from Supabase Vault:", error);
+                definitionOutput.innerHTML = `<div class="text-center pt-12"><p class="text-red-400 mb-2">Could not load API keys. Please check Supabase configuration.</p></div>`;
+            }
+        }
+
+        // Modified authentication check using Supabase session
+        async function checkSupabaseAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            const authed = !!session;
+
+            if (authed) {
+                await loadApiKeys(); // Load keys here
+            } else {
+                window.location.href = '../index.html'; 
+            }
+        }
+
+        // Trigger auth check when the script loads
+        checkSupabaseAuth();
+
+        // --- Existing functions remain the same ---
         const pageContent = document.getElementById('page-content');
         const searchInput = document.getElementById('search-input');
         const searchButton = document.getElementById('search-button');
@@ -308,6 +361,7 @@
                 </div>
             `;
             try {
+                // Use the loaded DICT_KEY and THES_KEY
                 const [dictResponse, thesResponse] = await Promise.all([
                     fetch(`https://www.dictionaryapi.com/api/v3/references/sd3/json/${encodeURIComponent(trimmedWord)}?key=${DICT_KEY}`),
                     fetch(`https://www.dictionaryapi.com/api/v3/references/ithesaurus/json/${encodeURIComponent(trimmedWord)}?key=${THES_KEY}`)
@@ -385,23 +439,6 @@
         definitionOutput.addEventListener('click', (event) => {
             if (event.target.dataset.word) fetchDefinition(event.target.dataset.word);
             if (event.target.classList.contains('audio-icon') && event.target.dataset.audio) new Audio(event.target.dataset.audio).play();
-        });
-
-        onAuthStateChanged(auth, async (user) => {
-            let authed = !!user;
-            if (!authed && window.supabase) {
-                const { data: { session } } = await window.supabase.auth.getSession();
-                if (session) authed = true;
-            }
-
-            if (authed) {
-                if (window.hideLoader) window.hideLoader();
-                pageContent.classList.remove('hidden');
-                pageContent.style.display = 'flex'; 
-                checkUrlHashForWord(); 
-            } else {
-                window.location.href = '../index.html'; 
-            }
         });
     </script>
 </body>

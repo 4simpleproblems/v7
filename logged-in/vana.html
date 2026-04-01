@@ -63,18 +63,21 @@
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+    <!-- Supabase Imports and Initialization -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
-        
-        // Import Config from external file
-        import { firebaseConfig } from "../firebase-config.js";
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js';
+        import { supabaseConfig } from "../supabase-config.js";
 
-        const app = initializeApp(firebaseConfig);
-        const functions = getFunctions(app); // Defaults to us-central1
-        
-        // Make the function available globally
-        window.chatWithGroq = httpsCallable(functions, 'chatWithGroq');
+        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        window.supabase = supabase;
+
+        // Removed Firebase initialization and imports
+        // import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        // import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
+        // import { firebaseConfig } from "../firebase-config.js"; 
+        // const app = initializeApp(firebaseConfig);
+        // const functions = getFunctions(app); 
+        // window.chatWithGroq = httpsCallable(functions, 'chatWithGroq');
     </script>
 
     <style>
@@ -504,7 +507,6 @@
 
     <script>
         // --- CONFIGURATION ---
-        // Model IDs
         const MODELS = {
             FAST: 'llama-3.1-8b-instant',
             SMART: 'llama-3.3-70b-versatile',
@@ -518,17 +520,98 @@
         };
         
         let currentModel = MODELS.FAST;
-        let currentModelName = MODEL_NAMES[MODELS.FAST];
         const MAX_CHARS = 5000;
         
         // --- STATE ---
         let conversationHistory = [];
 
+        // --- Supabase Configuration and Auth ---
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js';
+        import { supabaseConfig } from "../supabase-config.js";
+
+        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        window.supabase = supabase;
+
+        // --- REMOVED Firebase initialization and imports ---
+
+        // Function to get Groq API Key from Supabase Vault
+        async function getGroqApiKey() {
+            try {
+                // This is a hypothetical call to Supabase Vault.
+                // Adjust 'Vana Key 1' if the actual key name in Vault is different.
+                const { data, error } = await supabase.from('vault').select('value').eq('key', 'Vana Key 1').single();
+                if (error) throw error;
+                if (!data || !data.value) throw new Error("Groq API Key not found in Supabase Vault.");
+                return data.value;
+            } catch (e) {
+                console.error("Error fetching Groq API key from Supabase Vault:", e);
+                throw new Error("Failed to retrieve Groq API key. Please check Supabase Vault configuration.");
+            }
+        }
+
+        // --- SYSTEM PROMPT ---
+        const SYSTEM_PROMPT = `
+You are Vana, a highly capable AI assistant.
+
+**Capabilities:**
+1. **Math**: Use LaTeX for equations. Inline: $...$, Block: $$...$$.
+2. **Coding**: Provide code blocks with language specifiers.
+3. **Files**: If the user asks for a file, use the <CREATE_FILE> tag.
+4. **Charts**: To visualize data, use a ```chart``` block with the JSON schema below.
+6.  **Web Search**: If you need real-time information, latest news, or details you are unsure of, use the <SEARCH>query</SEARCH> tag. I will perform the search and provide you with results to help you answer.
+
+**JSON Schema for Charts:**
+```json
+{
+  "type": "line" | "bar" | "scatter",
+  "data": {
+    "labels": ["X1", "X2"],
+    "datasets": [
+      {
+        "label": "Series Name",
+        "data": [10, 20],
+        "borderColor": "#4f46e5",
+        "tension": 0.4 
+      }
+    ]
+  }
+}
+```
+For curved lines (functions), set "tension": 0.4. For straight lines, set 0.
+
+**File Creation Syntax:**
+<CREATE_FILE FILENAME="script.py" MIMETYPE="text/x-python">
+print("Hello World")
+</CREATE_FILE>
+`;
+
+        // --- Supabase Authentication Check ---
+        async function checkSupabaseAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            const authed = !!session;
+
+            if (authed) {
+                console.log("User authenticated with Supabase.");
+                // Load API keys and initialize page components
+                await loadApiKeys(); 
+                // Initialize conversation history with system prompt if not already loaded
+                if (conversationHistory.length === 0) {
+                    conversationHistory.push({ role: "system", content: SYSTEM_PROMPT });
+                }
+            } else {
+                console.log("User not authenticated with Supabase. Redirecting to index.");
+                window.location.href = '../index.html'; 
+            }
+        }
+
+        // Trigger auth check when the script loads
+        checkSupabaseAuth();
+
         // --- SEARCH ---
         async function searchWeb(query) {
+            // ... (rest of searchWeb function remains the same)
             const baseUrl = "https://api.duckduckgo.com/?q=" + encodeURIComponent(query) + "&format=json";
             
-            // Construct absolute prefix to ensure SW interception
             let prefix = (self.__uv$config && self.__uv$config.prefix) || "/logged-in/uv/service/";
             if (prefix.startsWith('/')) {
                 prefix = window.location.origin + prefix;
@@ -549,19 +632,28 @@
 
                 const data = await response.json();
                 
-                let result = `Search Results for "${query}":\n\n`;
+                let result = `Search Results for "${query}":
+
+`;
                 if (data.AbstractText) {
-                    result += `Abstract: ${data.AbstractText}\nSource: ${data.AbstractSource}\nURL: ${data.AbstractURL}\n\n`;
+                    result += `Abstract: ${data.AbstractText}
+Source: ${data.AbstractSource}
+URL: ${data.AbstractURL}
+
+`;
                 }
                 
                 if (data.RelatedTopics && data.RelatedTopics.length > 0) {
-                    result += "Related Topics:\n";
+                    result += "Related Topics:
+";
                     data.RelatedTopics.slice(0, 5).forEach(topic => {
                         if (topic.Text) {
-                            result += `- ${topic.Text} (${topic.FirstURL})\n`;
+                            result += `- ${topic.Text} (${topic.FirstURL})
+`;
                         } else if (topic.Topics) {
                             topic.Topics.slice(0, 3).forEach(subTopic => {
-                                result += `- ${subTopic.Text} (${subTopic.FirstURL})\n`;
+                                result += `- ${subTopic.Text} (${subTopic.FirstURL})
+`;
                             });
                         }
                     });
@@ -578,49 +670,12 @@
             }
         }
 
-        // --- SYSTEM PROMPT ---
-        const SYSTEM_PROMPT = `
-You are Vana, a highly capable AI assistant.
-
-**Capabilities:**
-1. **Math**: Use LaTeX for equations. Inline: $...$, Block: $$...$$.
-2. **Coding**: Provide code blocks with language specifiers.
-3. **Files**: If the user asks for a file, use the <CREATE_FILE> tag.
-4. **Charts**: To visualize data, use a \`\`\`chart\`\`\` block with the JSON schema below.
-6.  **Web Search**: If you need real-time information, latest news, or details you are unsure of, use the <SEARCH>query</SEARCH> tag. I will perform the search and provide you with results to help you answer.
-
-**JSON Schema for Charts:**
-\`\`\`json
-{
-  "type": "line" | "bar" | "scatter",
-  "data": {
-    "labels": ["X1", "X2"],
-    "datasets": [
-      {
-        "label": "Series Name",
-        "data": [10, 20],
-        "borderColor": "#4f46e5",
-        "tension": 0.4 
-      }
-    ]
-  }
-}
-\`\`\`
-For curved lines (functions), set "tension": 0.4. For straight lines, set 0.
-
-**File Creation Syntax:**
-<CREATE_FILE FILENAME="script.py" MIMETYPE="text/x-python">
-print("Hello World")
-</CREATE_FILE>
-`;
-
         conversationHistory.push({ role: "system", content: SYSTEM_PROMPT });
 
         // --- DROPDOWN LOGIC (Navigation.js Style) ---
         const modelToggle = document.getElementById('model-toggle');
         const modelMenu = document.getElementById('model-menu');
 
-        // Helper to close with animation
         function closeMenuWithAnimation() {
             modelMenu.classList.remove('open');
             modelMenu.classList.add('closing');
@@ -630,10 +685,9 @@ print("Hello World")
             }, { once: true });
         }
 
-        // Toggle Listener
         if (modelToggle && modelMenu) {
             modelToggle.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent bubbling to document
+                e.stopPropagation(); 
                 
                 if (modelMenu.classList.contains('open')) {
                     closeMenuWithAnimation();
@@ -645,21 +699,17 @@ print("Hello World")
             });
         }
 
-        // Document Click Listener (Outside Click)
         document.addEventListener('click', (e) => {
             if (modelMenu && modelMenu.classList.contains('open')) {
-                // If click is NOT inside menu AND NOT on toggle button
                 if (!modelMenu.contains(e.target) && !modelToggle.contains(e.target)) {
                     closeMenuWithAnimation();
                 }
             }
         });
 
-        // Update Selection Logic
         window.setModel = (modelId, displayName, element) => {
             if (currentModel !== modelId) {
                 currentModel = modelId;
-                currentModelName = displayName;
                 updateHeaderUI(modelId);
                 addSystemBadge(`Switched to ${displayName}`);
             }
@@ -668,11 +718,9 @@ print("Hello World")
 
         // --- INPUT HANDLING ---
         function handleInput(el) {
-            // Auto-grow
             el.style.height = 'auto';
             el.style.height = el.scrollHeight + 'px';
             
-            // Character Counter
             const count = el.value.length;
             const counterEl = document.getElementById('char-counter');
             counterEl.textContent = `${count} / ${MAX_CHARS}`;
@@ -727,59 +775,56 @@ print("Hello World")
             sendBtn.disabled = true;
 
             try {
-                // Wait for the window.chatWithGroq function to be available (from module script)
-                if (!window.chatWithGroq) throw new Error("Firebase not initialized yet. Please wait.");
-
-                // 1. First Attempt
+                // Call the re-implemented callCloudFunction
                 let response = await callCloudFunction(currentModel);
 
-                // 2. Carousel Logic
+                // --- Carousel Logic (handling resource-exhausted errors) ---
                 if (response.error && response.code === 'resource-exhausted') {
                     let nextModel = null;
                     
-                    // Carousel Order Logic
                     if (currentModel === MODELS.FAST) nextModel = MODELS.SMART;
                     else if (currentModel === MODELS.SMART) nextModel = MODELS.FAST;
-                    else if (currentModel === MODELS.GPT) nextModel = MODELS.SMART;
+                    // If current model is GPT, and it failed, try SMART (assuming GPT is most expensive/limited)
+                    // This logic might need refinement based on actual API error codes/behavior
+                    else if (currentModel === MODELS.GPT) nextModel = MODELS.SMART; 
 
                     if (nextModel) {
                         aiBubble.remove();
-                        addSystemBadge(`Rate Limit on ${MODEL_NAMES[currentModel]}. Switching to ${MODEL_NAMES[nextModel]}...`);
+                        addSystemBadge(`Rate Limit or issue with ${MODEL_NAMES[currentModel]}. Switching to ${MODEL_NAMES[nextModel]}...`);
                         
                         currentModel = nextModel;
                         updateHeaderUI(currentModel);
                         
                         aiBubble = addMessageToUI('ai', '<i class="fa-solid fa-circle-notch fa-spin"></i> Retrying...', true);
-                        
                         response = await callCloudFunction(currentModel);
 
-                        // 3. Third Step (GPT -> Smart -> Fast)
+                        // Third attempt if still failing (e.g., if GPT was tried and failed, and SMART failed)
                         if (response.error && response.code === 'resource-exhausted' && currentModel === MODELS.SMART) {
+                             // Fallback to FAST if SMART also failed in a retry scenario
                             nextModel = MODELS.FAST;
                             
                             aiBubble.remove();
-                            addSystemBadge(`Rate Limit on Smart. Switching to ${MODEL_NAMES[nextModel]}...`);
+                            addSystemBadge(`Rate Limit or issue with ${MODEL_NAMES[currentModel]}. Switching to ${MODEL_NAMES[nextModel]}...`);
                             
                             currentModel = nextModel;
                             updateHeaderUI(currentModel);
                             
                             aiBubble = addMessageToUI('ai', '<i class="fa-solid fa-circle-notch fa-spin"></i> Retrying...', true);
-                            
                             response = await callCloudFunction(currentModel);
                         }
                     }
                 }
 
-                // 4. Final Check
+                // Final check for errors after retries
                 if (response.error) {
                     if (response.code === 'resource-exhausted') {
-                        throw new Error("Rate limit reached. Please wait 1 minute before trying again.");
+                        throw new Error("Rate limit reached or API temporarily unavailable. Please wait a moment.");
                     } else {
-                        throw new Error(response.message || "Unknown error");
+                        throw new Error(response.message || "Unknown error occurred.");
                     }
                 }
 
-                // Success
+                // Success case
                 let aiText = response.data.choices[0].message.content;
 
                 // --- SEARCH LOOP ---
@@ -789,12 +834,12 @@ print("Hello World")
                     aiBubble.innerHTML = `<i class="fa-solid fa-magnifying-glass fa-spin mr-2"></i> Searching for "${query}"...`;
                     
                     const searchResults = await searchWeb(query);
-                    conversationHistory.push({ role: "assistant", content: aiText });
-                    conversationHistory.push({ role: "system", content: `Search Results: ${searchResults}` });
+                    conversationHistory.push({ role: "assistant", content: aiText }); // Keep original AI response with search tag for context
+                    conversationHistory.push({ role: "system", content: `Search Results for "${query}": ${searchResults}` }); // Add search results as a system message for the AI to use
                     
-                    // Call AI again with search results
+                    // Call AI again with search results incorporated into history
                     response = await callCloudFunction(currentModel);
-                    if (response.error) throw new Error(response.message || "Error after search");
+                    if (response.error) throw new Error(response.message || "Error after search integration.");
                     aiText = response.data.choices[0].message.content;
                 }
 
@@ -802,42 +847,68 @@ print("Hello World")
                 aiBubble.innerHTML = parsedContent;
                 renderUnifiedCharts(aiBubble);
                 renderKaTeX(aiBubble);
-                conversationHistory.push({ role: "assistant", content: aiText });
+                conversationHistory.push({ role: "assistant", content: aiText }); // Add final AI response to history
 
             } catch (error) {
                 aiBubble.innerHTML = `<span class="text-red-500"><i class="fa-solid fa-triangle-exclamation mr-2"></i> ${error.message}</span>`;
+                console.error("Main Send Error:", error);
             } finally {
                 sendBtn.disabled = false;
                 scrollToBottom();
             }
         }
 
-        // Wrapper to handle Firebase errors cleanly
+        // Wrapper to handle API call errors cleanly and return a consistent format
         async function callCloudFunction(model) {
             try {
-                const result = await window.chatWithGroq({
-                    messages: conversationHistory,
-                    model: model
+                const groqApiKey = await getGroqApiKey(); // Get the key first
+
+                // Making a direct fetch to Groq API
+                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${groqApiKey}`
+                    },
+                    body: JSON.stringify({
+                        messages: conversationHistory, // Use the full conversation history
+                        model: model, // Use the selected model
+                        // Optional: Add other parameters like temperature, max_tokens if needed
+                    })
                 });
-                return { data: result.data };
+
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    // Handle specific Groq API errors
+                    if (response.status === 429) { // Rate limit error
+                        return { error: true, code: 'resource-exhausted', message: "Rate limit reached. Please wait 1 minute before trying again." };
+                    } else if (response.status === 401) { // Unauthorized
+                        throw new Error("Authentication error. Please check your API key or Supabase Vault configuration.");
+                    } else {
+                        throw new Error(errorBody.error?.message || `HTTP error! status: ${response.status}`);
+                    }
+                }
+
+                const data = await response.json();
+                return { data: data }; // Return data in a structure that matches previous expectation
             } catch (e) {
-                return { error: true, code: e.code, message: e.message };
+                console.error("Groq API call failed:", e);
+                // Return error in a format compatible with carousel logic
+                return { error: true, code: e.code || 'unknown_error', message: e.message || "An unknown error occurred during the Groq API call." };
             }
         }
 
         function updateHeaderUI(modelId) {
-            currentModelName = MODEL_NAMES[modelId];
-            let icon = 'fa-brain';
+            const displayName = MODEL_NAMES[modelId] || 'Unknown Model';
+            let icon = 'fa-brain'; // Default icon
             if(modelId.includes('8b')) icon = 'fa-bolt';
             if(modelId.includes('gpt-oss')) icon = 'fa-code-branch';
             
             const display = document.getElementById('current-model-display');
-            display.innerHTML = `<i class="fa-solid ${icon} mr-2"></i>${currentModelName}`;
+            display.innerHTML = `<i class="fa-solid ${icon} mr-2"></i>${displayName}`;
             
-            // Update menu active state
             document.querySelectorAll('.auth-menu-link').forEach(btn => {
                 btn.classList.remove('active');
-                // Use data-model attribute instead of text content matching to allow distinct Llama models
                 if(btn.getAttribute('data-model') === modelId) btn.classList.add('active'); 
             });
         }
@@ -866,8 +937,8 @@ print("Hello World")
         function parseAIResponse(text) {
             let html = text.replace(/<SEARCH>.*?<\/SEARCH>/gi, '');
             
-            // Charts
-            html = html.replace(/```chart\n([\s\S]*?)```/g, (match, json) => {
+            html = html.replace(/```chart
+([\s\S]*?)```/g, (match, json) => {
                 return `<div class="chart-block-wrapper">
                     <div class="unified-chart-placeholder" data-chart-data='${escapeHTML(json)}'>
                         <canvas class="chart-canvas"></canvas>
@@ -876,7 +947,6 @@ print("Hello World")
                 </div>`;
             });
 
-            // Files
             html = html.replace(/<CREATE_FILE FILENAME="([^"]+)" MIMETYPE="([^"]+)">([\s\S]*?)<\/CREATE_FILE>/g, (m, f, t, c) => {
                 const blob = new Blob([c], {type:t});
                 return `<div class="gemini-file-creation-card">
@@ -891,7 +961,7 @@ print("Hello World")
         }
 
         function escapeHTML(str) {
-            return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#039;'}[m]));
+            return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',''':'&#039;'}[m]));
         }
 
         function renderKaTeX(c) {
@@ -910,23 +980,17 @@ print("Hello World")
             });
         }
 
-        // Simplified Chart Engine
         function renderChartJSClone(canvas, config, legend) {
             const ctx = canvas.getContext('2d');
             const dpr = window.devicePixelRatio||1;
             const rect = canvas.getBoundingClientRect();
             
-            // Handle hidden or 0-size canvas
-            if (rect.width === 0 || rect.height === 0) {
-                // Retry a few times if layout is pending? For now just return.
-                return; 
-            }
+            if (rect.width === 0 || rect.height === 0) return;
 
             canvas.width = rect.width*dpr;
             canvas.height = rect.height*dpr;
             ctx.scale(dpr,dpr);
             
-            // Fill background
             ctx.fillStyle = '#111'; // Dark gray background for chart area
             ctx.fillRect(0,0, rect.width, rect.height);
 
@@ -948,7 +1012,6 @@ print("Hello World")
             const mapY = v => P.t + H - ((v-min)/rng)*H;
             const mapX = (i,n) => P.l + (i*(W/(n-1||1)));
 
-            // Grid / Axes - Lighter color for visibility
             ctx.strokeStyle='#444'; 
             ctx.lineWidth = 1;
             ctx.beginPath();
