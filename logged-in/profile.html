@@ -354,14 +354,14 @@
     <!-- ================================================================== -->
     <!-- MAIN CONTENT                                                        -->
     <!-- ================================================================== -->
-    <main id="profile-main-content" class="invisible flex gap-8 p-8 pt-24 mx-auto max-w-[1600px] min-h-screen">
+    <main id="profile-main-content" class="invisible flex min-h-screen">
         
-        <!-- SIDEBAR (Sticky) -->
-        <aside class="w-[320px] shrink-0">
-            <div class="feature-card p-8 sticky top-24 flex flex-col items-center">
+        <!-- SIDEBAR (Sticky, Full Height) -->
+        <aside class="w-[340px] shrink-0 border-r border-[var(--border-main)] bg-[var(--bg-card)] sticky top-0 h-screen overflow-y-auto custom-scroll">
+            <div class="p-8 pt-24 flex flex-col items-center min-h-full">
                 
                 <!-- Options menu -->
-                <div class="absolute top-5 right-5 flex gap-2">
+                <div class="absolute top-20 right-5 flex gap-2">
                     <div class="relative">
                         <button id="profile-options-btn" class="btn-icon w-9 h-9">
                             <i class="fas fa-ellipsis-vertical text-xs"></i>
@@ -425,23 +425,25 @@
         </aside>
 
         <!-- MAIN FEED -->
-        <section class="flex-1 min-w-0">
-            <div class="flex justify-between items-center mb-8">
-                <div>
-                    <h2 class="text-4xl font-light tracking-tight" style="color: var(--text-main);">Dailyphoto Feed</h2>
-                    <p class="text-sm mt-1" style="color: var(--text-muted); opacity: 0.5;">A collection of shared moments.</p>
+        <section class="flex-1 min-w-0 p-12 pt-24">
+            <div class="max-w-5xl">
+                <div class="flex justify-between items-center mb-12">
+                    <div>
+                        <h2 class="text-5xl font-light tracking-tight" style="color: var(--text-main);">Shared Moments</h2>
+                        <p class="text-lg mt-2" style="color: var(--text-muted); opacity: 0.5;">Dailyphoto history and highlights.</p>
+                    </div>
+                    <a href="/logged-in/dailyphoto.html" class="btn-toolbar-style text-[10px] font-bold uppercase tracking-widest">
+                        Go to Global Feed <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
                 </div>
-                <a href="/logged-in/dailyphoto.html" class="btn-toolbar-style text-[10px] font-bold uppercase tracking-widest">
-                    Go to Global Feed <i class="fas fa-arrow-right ml-1"></i>
-                </a>
-            </div>
 
-            <div id="dailyphoto-container" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <!-- skeleton placeholders -->
-                <div class="photo-grid-item skeleton"></div>
-                <div class="photo-grid-item skeleton"></div>
-                <div class="photo-grid-item skeleton"></div>
-                <div class="photo-grid-item skeleton"></div>
+                <div id="dailyphoto-container" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- skeleton placeholders -->
+                    <div class="photo-grid-item skeleton"></div>
+                    <div class="photo-grid-item skeleton"></div>
+                    <div class="photo-grid-item skeleton"></div>
+                    <div class="photo-grid-item skeleton"></div>
+                </div>
             </div>
         </section>
     </main>
