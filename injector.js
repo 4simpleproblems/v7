@@ -96,13 +96,10 @@
         `;
 
         modalContent.innerHTML = `
-            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #4f46e5, #818cf8);"></div>
             <div style="display: flex; gap: 4rem; align-items: flex-start;">
                 <div style="flex: 1;">
                     <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
-                        <div style="width: 48px; height: 48px; background: rgba(79, 70, 229, 0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #4f46e5; border: 1px solid rgba(79, 70, 229, 0.2);">
-                            <i class="fas fa-sparkles"></i>
-                        </div>
+                        <img src="/images/logo.png" style="width: 48px; height: 48px; object-fit: contain;">
                         <div>
                             <h2 style="font-size: 2.5rem; font-weight: 200; letter-spacing: -0.05em; margin: 0; line-height: 1;">4SP V6.5 Release Notes</h2>
                             <p style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; color: #4f46e5; margin-top: 0.5rem;">Evolutionary Efficiency</p>
@@ -132,8 +129,8 @@
                         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin: 0; line-height: 1.5;">Found a bug? Help us improve by emailing <a href="mailto:4simpleproblems+feedback@gmail.com" style="color: #4f46e5; text-decoration: none; font-weight: 600;">4simpleproblems+feedback@gmail.com</a></p>
                     </div>
 
-                    <button id="close-v65-btn" style="width: 100%; padding: 1.25rem; background: #4f46e5; border: none; border-radius: 20px; color: #fff; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 10px 30px rgba(79, 70, 229, 0.2);">
-                        Enter V6.5
+                    <button id="close-v65-btn" style="width: 100%; padding: 1rem 2rem; background: rgba(79, 70, 229, 0.1); border: 1px solid #4f46e5; border-radius: 12px; color: #4f46e5; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        Enter V6.5 <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
                     </button>
                 </div>
             </div>
