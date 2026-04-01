@@ -679,9 +679,9 @@ let db;
 
             return `
                 <div id="profile-area-wrapper" class="relative flex-shrink-0 flex items-center">
-                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition overflow-hidden p-0" style="border-radius: 14px; position: relative; background: var(--bg-secondary);">
-                        ${avatarHtml}
-                        ${isOnline ? '<span class="absolute bottom-0 right-0 w-3 h-3 bg-[var(--accent-color)] border-2 border-black rounded-full shadow-[0_0_5px_var(--accent-glow)]"></span>' : ''}
+                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 14px; position: relative; background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));">
+                        <i class="fa-solid fa-address-card text-gray-300"></i>
+                        ${isOnline ? '<span class="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[var(--accent-color)] border-2 border-black rounded-full shadow-[0_0_5px_var(--accent-glow)]"></span>' : ''}
                     </button>
                     <div id="profile-menu-container" class="auth-menu-container closed">
                         <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center gap-3 pb-2 cursor-pointer hover:bg-white/5 transition rounded-2xl p-1" onclick="window.location.href='/logged-in/@${username}'">
@@ -771,43 +771,7 @@ let db;
             `;
 
             const loggedInView = (user, userData) => {
-                const displayName = userData?.displayName || user.displayName || userData?.username || 'User';
-                let avatarHtml = '';
-                const pfpType = userData?.pfpType || 'google'; 
-
-                if (pfpType === 'custom' && userData?.customPfp) {
-                    avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
-                } else if (pfpType === 'mibi' && userData?.mibiConfig) {
-                    const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = userData.mibiConfig;
-                    avatarHtml = `
-                        <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 14px;">
-                             <div class="absolute inset-0 w-full h-full" style="transform: translate(${offsetX || 0}%, ${offsetY || 0}%) rotate(${rotation || 0}deg) scale(${(size || 100) / 100}); transform-origin: center;">
-                                 <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
-                                 ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                 ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                 ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                             </div>
-                        </div>
-                    `;
-                } else if (pfpType === 'letter') {
-                    const bg = userData?.pfpLetterBg || DEFAULT_THEME['avatar-gradient'];
-                    const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
-                    const textColor = getLetterAvatarTextColor(bg); 
-                    const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
-                    avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 14px;">${initial}</div>`;
-                } else {
-                    const googleProvider = user?.providerData?.find(p => p.providerId === 'google.com');
-                    const googlePhoto = googleProvider ? googleProvider.photoURL : null;
-                    const displayPhoto = googlePhoto || user.photoURL;                    if (displayPhoto) {
-                        avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
-                    } else {
-                        const bg = DEFAULT_THEME['avatar-gradient'];
-                        const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
-                        const textColor = getLetterAvatarTextColor(bg);
-                        const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
-                        avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 14px;">${initial}</div>`;
-                    }
-                }
+                const avatarHtml = getAvatarHTML(userData, "w-10 h-10", false, user, "rounded-xl");
                 
                 const isPinHidden = localStorage.getItem(PIN_BUTTON_HIDDEN_KEY) === 'true';
                 const showPinOption = isPinHidden 
@@ -816,7 +780,7 @@ let db;
 
                 return `
                     <div id="auth-button-container" class="relative flex-shrink-0 flex items-center">
-                        <button id="auth-toggle" class="w-10 h-10 border border-gray-600 overflow-hidden" style="border-radius: 16px;">
+                        <button id="auth-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition overflow-hidden p-0" style="border-radius: 14px; position: relative; background: var(--bg-secondary);">
                             ${avatarHtml}
                         </button>
                         <div id="auth-menu-container" class="auth-menu-container closed">
