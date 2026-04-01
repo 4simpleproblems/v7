@@ -454,19 +454,22 @@
                 </div>
 
                 <!-- Quick Navigation -->
-                <div class="w-full flex flex-col gap-1 mb-10 border-t border-[var(--border-main)] pt-8">
+                <div class="w-full flex flex-col gap-1 mb-6">
                     <a href="/logged-in/leaderboard.html" class="nav-link-box">
                         <i class="fa-solid fa-trophy"></i> Global Leaderboard
+                    </a>
+                    <a href="/logged-in/dailyphoto.html" id="nav-social-feed" class="hidden nav-link-box">
+                        <i class="fa-solid fa-camera-retro"></i> Social Feed
                     </a>
                 </div>
 
                 <!-- Bio -->
-                <div class="text-center w-full mb-10 px-4">
+                <div class="text-center w-full mb-6 px-4">
                     <p id="description" class="text-sm leading-relaxed italic" style="color: var(--text-muted); opacity: 0.6;"></p>
                 </div>
 
                 <!-- Final Actions -->
-                <div class="mt-auto w-full pt-10 border-t border-[var(--border-main)] pb-4">
+                <div class="mt-auto w-full pb-4">
                     <div id="edit-profile-btn-container" class="hidden w-full">
                         <button id="open-edit-modal-btn" class="btn-toolbar-style btn-primary-override w-full py-3.5 text-[10px] font-black uppercase tracking-[0.25em]">
                             Edit My Profile
@@ -791,6 +794,8 @@
                     editBtnContainer.classList.remove('hidden');
                 } else {
                     followActions.classList.remove('hidden');
+                    const socialFeedLink = document.getElementById('nav-social-feed');
+                    if (socialFeedLink) socialFeedLink.classList.remove('hidden');
                 }
 
                 // Only setup Firestore snapshots/follows if we are authenticated with Firebase
