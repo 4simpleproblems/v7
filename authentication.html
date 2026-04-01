@@ -401,21 +401,41 @@
                     return;
                 }
 
-                // 1.5 NEW: Auto-create profile if it doesn't exist
+                // 1.5 NEW: Sync/Create profile
                 if (window.supabase) {
                     const { data: profile } = await window.supabase
                         .from('profiles')
-                        .select('id, username')
+                        .select('*')
                         .eq('id', (sessionUser.uid || sessionUser.id))
                         .maybeSingle();
                     
+                    const meta = sessionUser.user_metadata || sessionUser.raw_user_meta_data || {};
+                    const googlePfp = meta.picture || meta.avatar_url;
+                    const discordPfp = meta.avatar_url;
+                    const oauthPfp = googlePfp || discordPfp;
+                    const oauthName = meta.full_name || meta.name;
+
                     if (!profile) {
                         console.log("Auth: Profile missing, auto-creating...");
                         const emailUsername = sessionUser.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-                        // Generate a slightly unique username if needed, but for now just use email part
                         const finalUsername = emailUsername || `user${Math.floor(Math.random() * 10000)}`;
                         
+                        // Create via helper which handles both DBs
                         await createUserDocument(sessionUser, currentMethod, finalUsername);
+                        
+                        // Add metadata if available
+                        if (oauthPfp || oauthName) {
+                            await window.supabase.from('profiles').update({
+                                avatar_url: oauthPfp,
+                                display_name: oauthName
+                            }).eq('id', (sessionUser.uid || sessionUser.id));
+                        }
+                    } else if (oauthPfp && !profile.avatar_url) {
+                        // Sync PFP if missing in profile but present in metadata
+                        console.log("Auth: Syncing OAuth PFP to profile...");
+                        await window.supabase.from('profiles').update({
+                            avatar_url: oauthPfp
+                        }).eq('id', (sessionUser.uid || sessionUser.id));
                     }
                 }
 

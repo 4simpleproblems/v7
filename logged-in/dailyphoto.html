@@ -548,6 +548,7 @@
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
         import { firebaseConfig } from "/firebase-config.js";
         import { getAvatarHTML, checkAdminStatus } from "/utils.js";
+        import { checkProfanity } from "/profanity.js";
 
         // Initialize primary app (legacy fallback)
         if (!getApps().length) initializeApp(firebaseConfig);
@@ -999,18 +1000,11 @@
                         return;
                     }
 
-                    try {
-                        const profanityCheckResponse = await fetch('https://vector.profanity.dev', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ message: text }),
-                        });
-                        const profanityData = await profanityCheckResponse.json();
-                        if (profanityData.isProfanity === true) {
-                            await CustomUI.alert("Your comment contains inappropriate content and cannot be posted.", "Profanity Filter Blocked");
-                            return;
-                        }
-                    } catch (err) { console.warn("Profanity check failed:", err); }
+                    const isProfane = await checkProfanity(text);
+                    if (isProfane) {
+                        await CustomUI.alert("Your comment contains inappropriate content and cannot be posted.", "Profanity Filter Blocked");
+                        return;
+                    }
 
                     try {
                         const { data: myProfile } = await window.supabase.from('profiles').select('username').eq('id', uid).maybeSingle();
@@ -1255,6 +1249,13 @@
 
                 if (containsCursedText(title)) {
                     await CustomUI.alert("Your title contains prohibited characters.", "Filter Blocked");
+                    if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
+                    return;
+                }
+
+                const isProfane = await checkProfanity(title);
+                if (isProfane) {
+                    await CustomUI.alert("Your title contains inappropriate content and cannot be posted.", "Profanity Filter Blocked");
                     if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
                     return;
                 }
