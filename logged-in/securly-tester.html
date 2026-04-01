@@ -247,19 +247,27 @@
             let userEmail = '';
             
             // 1. Try Firebase Auth Direct
-            if (auth.currentUser) {
+            if (auth.currentUser && !auth.currentUser.isAnonymous) {
                 userEmail = auth.currentUser.email;
             }
-            // 2. Try injected window.currentUser (from navigation.js injection)
+            // 2. Try Supabase session
+            else if (window.supabase) {
+                window.supabase.auth.getSession().then(({data}) => {
+                    if (data?.session?.user?.email) {
+                        emailInput.value = data.session.user.email;
+                    }
+                });
+            }
+            // 3. Try injected window.currentUser (from navigation.js injection)
             else if (window.currentUser && window.currentUser.email) {
                 userEmail = window.currentUser.email;
             } 
-            // 3. Try parent scope if accessible
+            // 4. Try parent scope if accessible
             else if (window.parent && window.parent.currentUser && window.parent.currentUser.email) {
                 userEmail = window.parent.currentUser.email;
             }
-            // 4. Fallback
-            else {
+            
+            if (!userEmail) {
                 userEmail = 'client@4sp'; 
             }
 
