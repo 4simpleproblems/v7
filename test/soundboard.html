@@ -1,355 +1,17 @@
 <!DOCTYPE html>
-
-<html class="dark" lang="en">
+<html lang="en" class="dark">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>4SP - SOUNDBOARD</title>
-<meta content="A simple soundboard application for the 4SP website." name="description"/>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="/injector.js"></script>
-<style>
-        /* --- FONT & BASE STYLING --- */
-        :root {
-            --bg-page: var(--bg-primary, #040404);
-            --bg-card: var(--bg-secondary, #0a0a0a);
-            --text-main: var(--text-primary, #ffffff);
-            --text-muted: var(--text-secondary, #c0c0c0);
-            --accent-color: var(--accent-primary, #4f46e5);
-            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
-            --border-main: var(--border-primary, #333);
-            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
-            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
-            --btn-text: var(--button-text, #4f46e5);
-        }
-
-        body { 
-            font-family: 'Geist', sans-serif; 
-            background-color: var(--bg-page); 
-            color: var(--text-muted); 
-            transition: all 0.3s ease;
-            font-size: 16px;
-            overflow-x: hidden;
-            font-weight: 300;
-        }
-
-        h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-widest {
-            font-weight: 400 !important;
-        }
-
-        /* --- UI COMPONENTS --- */
-        .btn-toolbar-style {
-            background: var(--bg-card);
-            border: 1px solid var(--border-main);
-            border-radius: 14px;
-            color: var(--text-muted);
-            padding: 0.5rem 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none; /* For anchor tags */
-        }
-        .btn-toolbar-style:hover {
-            background-color: var(--bg-card);
-            border-color: var(--text-main);
-            color: var(--text-main);
-        }
-        
-        .btn-toolbar-style.btn-primary-override {
-            background-color: var(--btn-bg);
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
-        }
-        .btn-toolbar-style.btn-primary-override:hover {
-            background-color: var(--accent-glow);
-            border-color: var(--accent-color);
-            color: var(--text-main);
-        }
-
-        /* --- Search Bar (Adapted from Games) --- */
-        #bottom-fixed-bar {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            width: auto;
-            max-width: 400px;
-            background-color: var(--bg-card);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-main);
-            border-radius: 1.25rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            z-index: 900;
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s ease;
-            display: flex;
-            align-items: center;
-            padding: 0.5rem;
-        }
-
-        #bottom-fixed-bar:focus-within {
-            transform: translateY(-2px);
-            border-color: var(--accent-color);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 0 2px var(--accent-glow);
-        }
-
-        .search-results-container {
-            max-height: 300px;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border-main) transparent;
-            transition: opacity 0.3s ease;
-        }
-        .search-item {
-            display: flex;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: var(--text-muted);
-            text-decoration: none;
-            padding: 10px 15px;
-        }
-        .search-item:hover { 
-            background-color: var(--accent-glow); 
-            padding-left: 20px;
-        }
-
-        .category-badge {
-            font-size: 0.6rem;
-            border-radius: 0.375rem;
-            font-weight: 400;
-            margin-top: 4px;
-            border: 1px solid currentColor;
-            background: transparent !important;
-            display: inline-block;
-        }
-
-        #sound-search {
-            background: transparent;
-            border: none;
-            outline: none;
-            color: var(--text-main);
-            padding: 0.5rem 0.75rem;
-            font-size: 1rem;
-            width: 12rem;
-            transition: width 0.3s ease;
-        }
-        #sound-search::placeholder { color: var(--text-muted); opacity: 0.5; }
-        #sound-search:focus { width: 16rem; }
-
-        /* Options Button Integration */
-        #options-menu-btn {
-            background-color: var(--btn-bg);
-            color: var(--accent-color);
-            border: 1px solid transparent;
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-left: 0.5rem;
-            flex-shrink: 0;
-        }
-        #options-menu-btn:hover {
-            background-color: var(--accent-glow);
-            color: var(--accent-color);
-            transform: scale(1.05);
-        }
-
-        /* Dropdown Styling - Repositioned & Styled like Bar */
-        .dropdown-menu {
-            position: absolute;
-            bottom: calc(100% + 10px);
-            right: 0;
-            background-color: var(--bg-card);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--border-main);
-            border-radius: 1.25rem;
-            padding: 1rem;
-            min-width: 280px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
-            z-index: 1000;
-            display: none;
-            transform-origin: bottom right;
-        }
-        .dropdown-menu.show { 
-            display: block; 
-            animation: menuPopup 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        }
-        
-        @keyframes menuPopup { 
-            from { opacity: 0; transform: scale(0.95) translateY(10px); } 
-            to { opacity: 1; transform: scale(1) translateY(0); } 
-        }
-
-        .dropdown-item {
-            padding: 0.75rem 1rem;
-            color: var(--text-muted);
-            border-radius: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-        .dropdown-item:hover { 
-            background-color: var(--accent-glow); 
-            color: var(--text-main); 
-            transform: translateX(4px);
-        }
-        
-        .dropdown-header {
-            padding: 0.5rem 1rem;
-            color: var(--text-muted);
-            opacity: 0.6;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 0.5rem;
-        }
-        
-        .dropdown-divider {
-            height: 1px;
-            background: var(--border-main);
-            margin: 0.5rem 0;
-        }
-
-        /* --- CUSTOM CHECKBOX STYLE --- */
-        .custom-checkbox {
-            appearance: none;
-            -webkit-appearance: none;
-            background-color: var(--bg-page);
-            border: 1px solid var(--border-main);
-            border-radius: 0.375rem;
-            width: 1.25rem;
-            height: 1.25rem;
-            cursor: pointer;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-
-        .custom-checkbox:checked {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-
-        .custom-checkbox:checked::after {
-            content: '\f00c';
-            font-family: 'Font Awesome 6 Free'; 
-            font-weight: 900;
-            color: #ffffff;
-            font-size: 0.75rem;
-        }
-        /* --- END CUSTOM CHECKBOX STYLE --- */
-
-        .custom-input {
-            background: var(--bg-page);
-            border: 1px solid var(--border-main);
-            color: var(--text-main);
-            border-radius: 0.375rem;
-            width: 70px;
-            font-size: 0.875rem;
-        }
-
-        /* --- Page Layout --- */
-        #page-content {
-            min-height: calc(100vh - 4rem);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .section-header {
-            font-size: 1.25rem;
-            border-bottom: 1px solid var(--border-main);
-            padding-bottom: 0.5rem;
-            margin-bottom: 1rem;
-            margin-top: 2rem;
-            color: var(--text-main);
-        }
-
-        /* --- Sound Buttons Grid --- */
-        .sound-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 1rem;
-            padding: 0 1rem;
-        }
-
-        /* --- Sound Button Style (Highly Rounded) --- */
-        .sound-btn {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-main);
-            color: var(--text-muted);
-            border-radius: 1.25rem;
-            padding: 1rem;
-            min-height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.9rem;
-            word-break: break-word;
-            user-select: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        .sound-btn:hover {
-            background-color: var(--bg-card);
-            border-color: var(--accent-color);
-            color: var(--text-main);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-        
-        .sound-btn:active,
-        .sound-btn.sound-btn-playing {
-            background-color: var(--accent-glow);
-            border-color: var(--accent-color);
-            transform: translateY(0);
-            box-shadow: none;
-            color: var(--text-main);
-        }
-
-        /* --- Toaster/Status --- */
-        #status-toaster {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            background-color: var(--bg-card);
-            backdrop-filter: blur(5px);
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            border: 1px solid var(--border-main);
-            font-size: 0.85rem;
-            color: var(--text-main);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        #status-toaster.visible {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-    </style><style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4SP - SOUNDBOARD</title>
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/injector.js"></script>
+    <style>
         :root {
             --bg-page: var(--bg-primary, #000000);
             --bg-card: var(--bg-secondary, #0d0d0d);
@@ -360,19 +22,16 @@
             --border-main: var(--border-primary, #1a1a1a);
             --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
             --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
-            --btn-text: var(--button-text, #4f46e5);
         }
-
-        * { box-sizing: border-box; }
 
         body { 
             font-family: 'Geist', sans-serif; 
             color: var(--text-main);
             background-color: var(--bg-page);
             font-weight: 300;
+            overflow: hidden;
         }
 
-        /* Subtle dot grid */
         .grid-bg {
             background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
             background-size: 24px 24px;
@@ -385,387 +44,211 @@
             pointer-events: none;
             z-index: -1;
         }
-</style>
+
+        #soundboard-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #soundboard-sidebar {
+            width: 380px;
+            flex-shrink: 0;
+            border-right: 1px solid var(--border-main);
+            background: var(--bg-card);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        #soundboard-main-view {
+            flex-grow: 1;
+            padding: 64px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: 16px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+        }
+        .category-item:hover { background: var(--btn-bg); color: var(--accent-color); }
+        .category-item.active { background: var(--btn-bg); color: var(--accent-color); border-color: var(--accent-glow); }
+
+        .sound-btn {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-main);
+            color: var(--text-muted);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+            font-weight: 500;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .sound-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--text-main);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            background: var(--btn-bg);
+        }
+        
+        .sound-btn.playing {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+            transform: scale(0.98);
+        }
+
+        .custom-checkbox {
+            appearance: none;
+            width: 1.25rem; height: 1.25rem;
+            border: 1px solid var(--border-main);
+            border-radius: 6px;
+            background: var(--bg-page);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .custom-checkbox:checked { background: var(--accent-color); border-color: var(--accent-color); }
+        .custom-checkbox:checked::after { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: white; font-size: 0.7rem; }
+
+        .custom-scroll::-webkit-scrollbar { width: 0; }
+    </style>
 </head>
-<body class="min-h-screen grid-bg relative"><div id="dynamic-background"></div><div id="navbar-container"></div>
-<div class="hidden" id="page-content">
-<header class="flex justify-between items-center p-4 border-b border-[var(--border-main)] sticky top-0 bg-[var(--bg-page)] z-40">
-<h1 class="text-2xl font-bold text-[var(--text-main)]">4SP Soundboard</h1>
-</header>
-<main class="flex-grow p-5 md:p-8 max-w-7xl mx-auto w-full relative flex h-screen">
-<div class="mb-10">
-<h2 class="section-header text-[var(--text-main)]">Normal Sounds</h2>
-<div class="sound-grid" id="normalSoundsContainer"></div>
-</div>
-<div class="mb-10" id="explicitSectionWrapper" style="display: none;">
-<h2 class="section-header text-red-400/80 border-red-900/30">Explicit Sounds</h2>
-<div class="sound-grid" id="explicitSoundsContainer"></div>
-</div>
-<div class="mb-10" id="thirdPartySectionWrapper">
-<h2 class="section-header text-blue-400/80 border-blue-900/30">Third Party Sounds</h2>
-<div class="sound-grid" id="thirdPartySoundsContainer">
-<div class="text-gray-500 italic col-span-full text-center p-10">Loading sounds from CDN...</div>
-</div>
-</div>
-</main>
-<div class="flex-col" id="bottom-fixed-bar">
-<div class="flex items-center w-full p-1">
-<div class="pl-3 pr-2 text-[var(--text-muted)] opacity-60"><i class="fa-solid fa-magnifying-glass"></i></div>
-<input autocomplete="off" class="w-full py-3 pr-4 bg-transparent text-[var(--text-main)] placeholder-[var(--text-muted)] opacity-80 focus:outline-none focus:ring-0 text-base" id="sound-search" placeholder="Search sounds..." type="text"/>
-<div class="h-6 w-[1px] bg-[#333] mx-2"></div>
-<div class="relative flex-shrink-0">
-<button id="options-menu-btn" title="Options">
-<i class="fa-solid fa-sliders"></i>
-</button>
-<div class="dropdown-menu" id="options-dropdown">
-<div class="dropdown-header">Playback Settings</div>
-<label class="dropdown-item">
-<span><i class="fa-solid fa-layer-group w-5 text-accent-indigo"></i> Overlay Mode</span>
-<input class="custom-checkbox" id="soundOverlayCheckbox" type="checkbox"/>
-</label>
-<label class="dropdown-item">
-<span><i class="fa-solid fa-computer-mouse w-5 text-accent-indigo"></i> Auto Clicker</span>
-<input class="custom-checkbox" id="autoClickerCheckbox" type="checkbox"/>
-</label>
-<div class="dropdown-item hidden bg-[#111] mt-1 border border-[#333]" id="delay-settings">
-<span class="text-sm">Interval (ms)</span>
-<div class="flex gap-2">
-<input class="custom-input" id="autoClickDelay" min="0" type="number" value="1000"/>
-<button class="btn-toolbar-style" id="applyDelayBtn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">Set</button>
-</div>
-</div>
-<div class="my-2 border-t border-[#333]"></div>
-<div class="dropdown-item text-red-400 hover:bg-red-900/20 hover:text-red-300" id="clear-sounds-btn">
-<span><i class="fa-solid fa-volume-xmark w-5"></i> Stop All</span>
-<span class="text-xs text-gray-500 border border-[#333] px-1 rounded">SHIFT+C</span>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div id="status-toaster"></div>
-<script type="module">
-        
-        // Import Third Party Sounds from CDN
+<body class="grid-bg min-h-screen relative">
+    <div id="dynamic-background"></div>
+    <div id="navbar-container"></div>
+
+    <main id="soundboard-container">
+        <aside id="soundboard-sidebar" class="custom-scroll">
+            <div class="mb-12">
+                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2">Audio Tools</p>
+                <h2 class="text-4xl font-light tracking-tight">Soundboard</h2>
+            </div>
+
+            <div class="mb-10">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-xs"></i>
+                    <input type="text" id="searchInput" placeholder="Search sounds..." 
+                        class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-[var(--accent-color)] transition-colors text-white">
+                </div>
+            </div>
+
+            <nav id="category-nav" class="flex flex-col gap-2 mb-10">
+                <button class="category-item active" data-cat="normal"><i class="fa-solid fa-volume-high"></i> Normal</button>
+                <button class="category-item" data-cat="explicit" id="explicitNavItem"><i class="fa-solid fa-triangle-exclamation"></i> Explicit</button>
+                <button class="category-item" data-cat="thirdparty"><i class="fa-solid fa-globe"></i> Third Party</button>
+            </nav>
+
+            <div class="p-6 rounded-2xl bg-white/5 border border-white/10 mt-auto">
+                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-4">Playback Settings</p>
+                <div class="flex flex-col gap-4">
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="text-xs font-medium opacity-60">Overlay Mode</span>
+                        <input type="checkbox" id="overlayCheckbox" class="custom-checkbox">
+                    </label>
+                    <button id="stopAllBtn" class="w-full py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-xs font-bold uppercase tracking-widest hover:bg-red-500/20 transition">
+                        Stop All Sounds
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <section id="soundboard-main-view" class="custom-scroll">
+            <div id="content-viewer">
+                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2" id="current-label">Collection</p>
+                <h2 class="text-6xl font-light tracking-tight mb-12" id="active-title">Normal Sounds</h2>
+                <div id="sounds-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-6 transition-all duration-300"></div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
         import { sounds as thirdPartySounds } from 'https://cdn.jsdelivr.net/gh/genizy/soundboard@main/sounds.js';
-
-        // --- Firebase Integration ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // Same config as the admin file
-        const firebaseConfig = {
-            apiKey: "AIzaSyAZBKAckVa4IMvJGjcyndZx6Y1XD52lgro",
-            authDomain: "project-zirconium.firebaseapp.com",
-            projectId: "project-zirconium",
-            storageBucket: "project-zirconium.firebasestorage.app",
-            messagingSenderId: "1096564243475",
-            appId: "1:1096564243475:web:6d0956a70125eeea1ad3e6",
-            measurementId: "G-1D4F692C1Q"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // --- UI & State References ---
-        const pageContent = document.getElementById('page-content');
-        const optionsMenuBtn = document.getElementById('options-menu-btn');
         
-        let unsubConfig = () => {};
-        function cleanup() {
-            unsubConfig();
-        }
-        window.addEventListener('pagehide', cleanup);
-
-        if (window.showLoader) window.showLoader("Soundboard");
-        const optionsDropdown = document.getElementById('options-dropdown');
-        const soundSearchInput = document.getElementById('sound-search');
-        
-        // --- Search Logic ---
-        function debounce(func, delay) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), delay);
-            };
-        }
-
-        const handleSearch = debounce(() => {
-            const query = soundSearchInput.value.toLowerCase().trim();
-            
-            document.querySelectorAll('.sound-btn').forEach(btn => {
-                const soundName = btn.textContent.toLowerCase();
-                if (!query || soundName.includes(query)) {
-                    btn.style.display = '';
-                } else {
-                    btn.style.display = 'none';
-                }
-            });
-        }, 200);
-
-        soundSearchInput.addEventListener('input', handleSearch);
-        soundSearchInput.addEventListener('focus', handleSearch);
-
-        const soundOverlayCheckbox = document.getElementById('soundOverlayCheckbox');
-        const autoClickerCheckbox = document.getElementById('autoClickerCheckbox');
-        const delaySettings = document.getElementById('delay-settings');
-        const autoClickDelayInput = document.getElementById('autoClickDelay');
-        const applyDelayBtn = document.getElementById('applyDelayBtn');
-        const clearSoundsBtn = document.getElementById('clear-sounds-btn');
-        const statusToaster = document.getElementById('status-toaster');
-        
-        // Sound Containers
-        const normalSoundsContainer = document.getElementById('normalSoundsContainer');
-        const explicitSoundsContainer = document.getElementById('explicitSoundsContainer');
-        const thirdPartySoundsContainer = document.getElementById('thirdPartySoundsContainer');
-        const explicitSectionWrapper = document.getElementById('explicitSectionWrapper');
-        const thirdPartySectionWrapper = document.getElementById('thirdPartySectionWrapper');
-
-        // --- Soundboard Logic State ---
+        let allSounds = { normal: [], explicit: [], thirdparty: [] };
+        let activeCat = 'normal';
         let playingAudios = [];
-        let autoClickInterval;
-        let requestAnimationFrameId = null;
-        let currentlyHoveredButton = null;
-        let toasterTimeout = null;
 
-        function initApp() {
-            // Use universal loader
-            if (window.hideLoader) window.hideLoader();
-            pageContent.classList.remove('hidden');
-            
-            // Load sounds
-            loadSoundsLocal();
-            loadThirdPartySounds();
-
-            // Initialize Config
-            fetchConfig();
-        }
-
-        // --- OPTIMIZATION: One-time fetch instead of live listener ---
-        async function fetchConfig() {
+        async function loadSounds() {
             try {
-                const configRef = doc(db, 'config', 'soundboard');
-                const docSnap = await getDoc(configRef);
-                
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const isExplicitEnabled = data.explicitEnabled !== false;
-                    explicitSectionWrapper.style.display = isExplicitEnabled ? 'block' : 'none';
-
-                    const isThirdPartyEnabled = data.thirdPartyEnabled !== false;
-                    thirdPartySectionWrapper.style.display = isThirdPartyEnabled ? 'block' : 'none';
-                } else {
-                    explicitSectionWrapper.style.display = 'block';
-                    thirdPartySectionWrapper.style.display = 'block';
-                }
-            } catch (error) {
-                console.warn("Config fetch error:", error);
-                explicitSectionWrapper.style.display = 'block';
-                thirdPartySectionWrapper.style.display = 'block';
-            }
-        }
-        
-        document.addEventListener('keydown', (e) => {
-            // Stop All Sounds: SHIFT + C
-            if (e.shiftKey && e.key.toLowerCase() === 'c') {
-                stopAllAudios(true);
-            }
-        });
-
-        function showStatus(message, type = 'info') {
-            statusToaster.textContent = message;
-            statusToaster.className = ''; 
-            if (type === 'error') statusToaster.style.borderColor = '#ef4444';
-            else if (type === 'success') statusToaster.style.borderColor = '#22c55e';
-            else statusToaster.style.borderColor = '#333';
-            statusToaster.classList.add('visible');
-            if (toasterTimeout) clearTimeout(toasterTimeout);
-            toasterTimeout = setTimeout(() => statusToaster.classList.remove('visible'), 2000);
+                const res = await fetch('https://cdn.jsdelivr.net/npm/4sp-sounds@latest/soundboard_names.json');
+                const data = await res.json();
+                allSounds.normal = (data.NormalSounds || []).map(f => ({ name: f.replace('.mp3', '').replace(/_/g, ' '), url: `https://cdn.jsdelivr.net/npm/4sp-sounds@latest/sounds/${f}` }));
+                allSounds.explicit = (data.ExplicitSounds || []).map(f => ({ name: f.replace('.mp3', '').replace(/_/g, ' '), url: `https://cdn.jsdelivr.net/npm/4sp-sounds@latest/sounds/${f}` }));
+                allSounds.thirdparty = thirdPartySounds.map(s => ({ name: s.name, url: `https://cdn.jsdelivr.net/gh/genizy/soundboard@main/${s.mp3}` }));
+                renderSounds();
+            } catch (e) { console.error(e); }
         }
 
-        const soundBlacklist = ['ear ringing', 'smoke detector'];
-
-        async function loadSoundsLocal() {
-            try {
-                const response = await fetch('https://cdn.jsdelivr.net/npm/4sp-sounds@latest/soundboard_names.json');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
-                const data = await response.json();
-
-                if (data.NormalSounds) {
-                    data.NormalSounds.forEach(f => {
-                        const name = f.replace('.mp3', '').replace(/_/g, ' ');
-                        if (soundBlacklist.some(term => name.toLowerCase().includes(term.toLowerCase()))) return;
-                        const path = `https://cdn.jsdelivr.net/npm/4sp-sounds@latest/sounds/${f}`;
-                        createSoundButton(name, normalSoundsContainer, path);
-                    });
-                }
-                
-                if (data.ExplicitSounds) {
-                    data.ExplicitSounds.forEach(f => {
-                        const name = f.replace('.mp3', '').replace(/_/g, ' ');
-                        if (soundBlacklist.some(term => name.toLowerCase().includes(term.toLowerCase()))) return;
-                        const path = `https://cdn.jsdelivr.net/npm/4sp-sounds@latest/sounds/${f}`;
-                        createSoundButton(name, explicitSoundsContainer, path);
-                    });
-                }
-
-            } catch (error) {
-                console.error("Load Error:", error);
-                showStatus("Unable to load local sounds.", "error");
-                normalSoundsContainer.innerHTML = `<p class="text-red-500 text-sm italic border border-red-900/50 p-2 rounded bg-red-900/10">Unable to load sounds. (Check Console)</p>`;
-            }
-        }
-
-        function loadThirdPartySounds() {
-            thirdPartySoundsContainer.innerHTML = '';
-            const baseUrl = "https://cdn.jsdelivr.net/gh/genizy/soundboard@main/";
-            
-            if (thirdPartySounds && Array.isArray(thirdPartySounds)) {
-                thirdPartySounds.forEach(sound => {
-                    if (soundBlacklist.some(term => sound.name.toLowerCase().includes(term.toLowerCase()))) return;
-                    const fullAudioUrl = baseUrl + sound.mp3;
-                    createSoundButton(sound.name, thirdPartySoundsContainer, fullAudioUrl);
-                });
-            } else {
-                thirdPartySoundsContainer.innerHTML = '<div class="text-red-500">Failed to load sounds list.</div>';
-            }
-        }
-
-        function createSoundButton(soundName, container, audioPath) {
+        function createSoundBtn(sound) {
             const btn = document.createElement('div');
             btn.className = 'sound-btn';
-            btn.textContent = soundName;
-            
-            btn.addEventListener('click', async () => {
-                if (!soundOverlayCheckbox.checked) stopAllAudios();
-
-                try {
-                    const audio = new Audio(audioPath);
-                    audio.soundButton = btn; // Store reference to the button
-                    playingAudios.push(audio);
-                    audio.addEventListener('ended', () => {
-                        playingAudios = playingAudios.filter(a => a !== audio);
-                        btn.classList.remove('sound-btn-playing'); // Remove class when ended
-                    });
-                    btn.classList.add('sound-btn-playing'); // Add class when playing
-                    await audio.play();
-                } catch (err) {
-                    console.error("Playback failed:", err);
-                    showStatus('Error playing sound', 'error');
-                    btn.classList.remove('sound-btn-playing'); // Remove class on error
-                }
-            });
-
-            btn.addEventListener('mouseenter', () => {
-                currentlyHoveredButton = btn;
-                if (autoClickerCheckbox.checked) startAutoClicker();
-            });
-            btn.addEventListener('mouseleave', () => {
-                if (currentlyHoveredButton === btn) {
-                    currentlyHoveredButton = null;
-                    stopAutoClicker();
-                }
-            });
-
-            container.appendChild(btn);
+            btn.textContent = sound.name;
+            btn.onclick = () => {
+                if (!document.getElementById('overlayCheckbox').checked) stopAll();
+                const audio = new Audio(sound.url);
+                btn.classList.add('playing');
+                audio.play();
+                playingAudios.push(audio);
+                audio.onended = () => {
+                    btn.classList.remove('playing');
+                    playingAudios = playingAudios.filter(a => a !== audio);
+                };
+            };
+            return btn;
         }
 
-        function stopAllAudios(fade = false) {
-            if (playingAudios.length === 0) return;
-            playingAudios.forEach(audio => {
-                audio.pause();
-                audio.currentTime = 0;
-                // Check if the audio object has a reference to its button
-                if (audio.soundButton) {
-                    audio.soundButton.classList.remove('sound-btn-playing');
-                }
-            });
+        function renderSounds(filter = '') {
+            const grid = document.getElementById('sounds-grid');
+            grid.innerHTML = '';
+            const list = allSounds[activeCat].filter(s => s.name.toLowerCase().includes(filter.toLowerCase()));
+            list.forEach(s => grid.appendChild(createSoundBtn(s)));
+        }
+
+        function stopAll() {
+            playingAudios.forEach(a => { a.pause(); a.currentTime = 0; });
             playingAudios = [];
-            if (fade) showStatus('All sounds muted', 'success');
+            document.querySelectorAll('.sound-btn.playing').forEach(b => b.classList.remove('playing'));
         }
 
-        function clickLoop() {
-             if (currentlyHoveredButton && autoClickerCheckbox.checked) currentlyHoveredButton.click();
-        }
+        document.getElementById('stopAllBtn').onclick = stopAll;
+        document.getElementById('searchInput').oninput = (e) => renderSounds(e.target.value);
 
-        function fastClicker() {
-            if (currentlyHoveredButton && autoClickerCheckbox.checked) {
-                currentlyHoveredButton.click();
-                requestAnimationFrameId = requestAnimationFrame(fastClicker);
-            }
-        }
-
-        function startAutoClicker() {
-            stopAutoClicker();
-            const delay = parseInt(autoClickDelayInput.value, 10) || 0;
-            if (!currentlyHoveredButton || !autoClickerCheckbox.checked) return;
-            if (delay === 0) requestAnimationFrameId = requestAnimationFrame(fastClicker);
-            else autoClickInterval = setInterval(clickLoop, delay);
-        }
-
-        function stopAutoClicker() {
-            if (autoClickInterval) { clearInterval(autoClickInterval); autoClickInterval = null; }
-            if (requestAnimationFrameId) { cancelAnimationFrame(requestAnimationFrameId); requestAnimationFrameId = null; }
-        }
-
-        // --- Event Listeners ---
-        optionsMenuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            optionsDropdown.classList.toggle('show');
+        document.querySelectorAll('.category-item').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.category-item').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeCat = btn.dataset.cat;
+                document.getElementById('active-title').textContent = btn.textContent.trim();
+                renderSounds();
+            };
         });
 
-        document.addEventListener('click', (e) => {
-            if (optionsDropdown.classList.contains('show') && !optionsMenuBtn.contains(e.target) && !optionsDropdown.contains(e.target)) {
-                optionsDropdown.classList.remove('show');
-            }
-        });
-
-        soundOverlayCheckbox.addEventListener('change', (e) => {
-            localStorage.setItem('soundOverlay', e.target.checked);
-            if (!e.target.checked) stopAllAudios();
-        });
-
-        autoClickerCheckbox.addEventListener('change', (e) => {
-            localStorage.setItem('autoClicker', e.target.checked);
-            if (e.target.checked) {
-                delaySettings.classList.remove('hidden');
-                if (currentlyHoveredButton) startAutoClicker();
-            } else {
-                delaySettings.classList.add('hidden');
-                stopAutoClicker();
-            }
-        });
-
-        applyDelayBtn.addEventListener('click', () => {
-            const val = autoClickDelayInput.value;
-            localStorage.setItem('autoClickDelay', val);
-            if (autoClickerCheckbox.checked && currentlyHoveredButton) startAutoClicker();
-            showStatus(`Delay set to ${val}ms`);
-        });
-
-        clearSoundsBtn.addEventListener('click', () => {
-            stopAllAudios(true);
-            optionsDropdown.classList.remove('show');
-        });
-
-        // --- Init ---
-        window.addEventListener('load', () => {
-            const savedOverlay = localStorage.getItem('soundOverlay') === 'true';
-            const savedAutoClick = localStorage.getItem('autoClicker') === 'true';
-            const savedDelay = localStorage.getItem('autoClickDelay') || '1000';
-
-            soundOverlayCheckbox.checked = savedOverlay;
-            autoClickerCheckbox.checked = savedAutoClick;
-            autoClickDelayInput.value = savedDelay;
-
-            if (savedAutoClick) delaySettings.classList.remove('hidden');
-            initApp();
-        });
+        loadSounds();
     </script>
-<script src="../injector.js"></script>
 </body>
 </html>
 <!-- Made with ❤️ from 4SP -->

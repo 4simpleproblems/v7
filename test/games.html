@@ -1,592 +1,17 @@
 <!DOCTYPE html>
-
-<html class="dark" lang="en">
+<html lang="en" class="dark">
 <head>
-<title>4SP - GAMES</title>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, user-scalable=no" name="viewport"/>
-<link href="../favicon.ico" id="faviconLink" rel="icon" type="image/x-icon"/>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;display=swap" rel="stylesheet"/>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="/injector.js"></script>
-<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
-<script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-1D4F692C1Q');
-    </script>
-<script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'deep-black': '#040404',
-                        'card-dark': '#111111',
-                        'accent-indigo': '#4f46e5',
-                        'brand-border': '#252525',
-                        'strongdog-orange': '#FFA500',
-                        'gn-math': '#FB2651',
-                        'gameboy': '#9A2257', 
-                        'other-grey': '#AAAAAA', 
-                    },
-                    fontFamily: {
-                        sans: ['Geist', 'sans-serif'],
-                    },
-                    borderRadius: {
-                        'md': '0.375rem',
-                        'lg': '0.5rem',
-                        'xl': '0.75rem',
-                        '2xl': '1.25rem',
-                        '3xl': '1.5rem', 
-                    },
-                    aspectRatio: {
-                        '3/2': '3 / 2',
-                    },
-                }
-            }
-        }
-    </script>
-<script>
-        // Initialize Service Worker at root for broad scope
-        (async () => {
-            if ('serviceWorker' in navigator) {
-                try {
-                    await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-                    console.log("VERN_SYSTEM SW Registered at root");
-                } catch(e) { console.error("SW Init Error:", e); }
-            }
-        })();
-    </script>
-<style>
-        /* Base styles */
-        :root {
-            --bg-page: var(--bg-primary, #040404);
-            --bg-card: var(--bg-secondary, #111111);
-            --text-main: var(--text-primary, #ffffff);
-            --text-muted: var(--text-secondary, #d1d5db);
-            --accent-color: var(--accent-primary, #4f46e5);
-            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.1));
-            --border-main: var(--border-primary, #333);
-            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
-            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
-            --btn-text: var(--button-text, #4f46e5);
-        }
-
-        body {
-            font-family: 'Geist', 'sans-serif';
-            font-weight: 300;
-            background-color: var(--bg-page);
-            color: var(--text-main);
-            padding-bottom: 100px;
-        }
-        
-        h1, h2, h3, .font-medium, .font-semibold, strong {
-            font-weight: 300 !important;
-        }
-
-        /* --- Toolbar Button Style (Global) --- */
-        .btn-toolbar-style {
-            background: var(--bg-card);
-            border: 1px solid var(--border-main);
-            border-radius: 14px; /* MATCHES auth-btn */
-            color: var(--text-muted);
-            padding: 0.5rem 1.25rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            font-size: 1rem;
-        }
-        .btn-toolbar-style:hover {
-            background-color: var(--bg-card);
-            border-color: var(--text-main);
-            color: var(--text-main);
-            transform: translateY(-1px);
-        }
-
-        /* --- Card Action Buttons --- */
-        .btn-card-action {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 2.25rem;
-            height: 2.25rem;
-            border-radius: 14px;
-            background-color: var(--accent-glow) !important;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid var(--border-main) !important;
-            color: var(--accent-color) !important;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 1rem;
-        }
-        .btn-card-action:hover {
-            background-color: var(--accent-color) !important;
-            color: white !important;
-            border-color: var(--accent-color) !important;
-            transform: scale(1.1);
-        }
-        
-        /* Favorite Button Logic */
-        .btn-card-action.fav-action .fa-solid-star { display: none; }
-        .btn-card-action.fav-action .fa-regular-star { display: inline-block; }
-        
-        .btn-card-action.fav-action.favorited .fa-solid-star { display: inline-block; color: white !important; }
-        .btn-card-action.fav-action.favorited .fa-regular-star { display: none; }
-        .btn-card-action.fav-action.favorited { background-color: var(--accent-color) !important; border-color: var(--accent-color) !important; }
-        
-        .btn-card-action.fav-action:not(.favorited):hover .fa-regular-star { color: white !important; }
-        
-        /* Card Hover Effects */
-        .zone-item {
-            background-color: var(--accent-glow) !important;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--accent-color) !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            will-change: transform;
-            border-radius: 20px;
-        }
-        .zone-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px var(--accent-glow) !important;
-            filter: brightness(1.1);
-            z-index: 20;
-        }
-        
-        .other-zone-item {
-            background-color: var(--accent-glow) !important;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--accent-color) !important;
-            min-height: 250px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative; 
-            z-index: 1; 
-            border-radius: 20px;
-        }
-        .other-zone-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px var(--accent-glow) !important;
-            filter: brightness(1.1);
-            z-index: 20; 
-        }
-        .other-zone-item .image-overlay {
-            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0) 100%);
-            border-radius: 1.25rem; 
-        }
-        .other-zone-item:hover .image-overlay {
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%);
-        }
-
-        /* --- Animations --- */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        .animate-fade-out { animation: fadeOut 0.3s ease-out forwards; }
-
-        .fade-out-card {
-            animation: fadeOut 0.3s ease-out forwards;
-            pointer-events: none;
-        }
-
-        /* Search Bar & Results */
-        #bottom-fixed-bar {
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
-            background-color: var(--accent-glow);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--accent-color);
-            border-radius: 24px;
-        }
-        #bottom-fixed-bar:focus-within {
-            transform: translateY(-5px);
-            border-color: var(--accent-color);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 0 2px var(--accent-glow);
-        }
-
-        .search-results-container {
-            max-height: 300px;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border-main) transparent;
-            transition: opacity 0.3s ease;
-        }
-        .search-item {
-            display: flex;
-            cursor: pointer;
-            transition: all 0.2s;
-            padding: 10px 15px;
-            border-radius: 1rem;
-            margin: 4px;
-        }
-        .search-item:hover { 
-            background-color: var(--accent-glow); 
-            padding-left: 20px;
-        }
-
-        .smart-text {
-            color: var(--text-main);
-            transition: color 0.3s;
-        }
-        
-        .smart-text-inverse {
-            color: var(--bg-page);
-        }
-
-        .category-badge {
-            font-size: 0.6rem;
-            padding: 1px 6px;
-            border-radius: 6px;
-            font-weight: 400;
-            margin-top: 4px;
-            border: 1px solid currentColor;
-            background: transparent !important;
-            display: inline-block;
-        }
-
-        @media (max-width: 768px) {
-            #bottom-fixed-bar {
-                left: 10px !important; right: 10px !important;
-                bottom: 10px !important; width: auto !important;
-            }
-        }
-
-        /* Polyfill for aspect-ratio */
-        .aspect-w-3 { position: relative; padding-bottom: 66.666667%; }
-        .aspect-h-2 { }
-        .aspect-w-3 > * { position: absolute; height: 100%; width: 100%; top: 0; right: 0; bottom: 0; left: 0; }
-        
-        /* --- Game Viewer Modal --- */
-        #zoneViewer { 
-            display: none; position: fixed; 
-            top: 64px; /* Clearance for navbar */
-            left: 0; width: 100%; 
-            height: calc(100% - 64px); 
-            background-color: var(--bg-page); z-index: 5000; flex-direction: column; 
-            opacity: 0;
-        }
-        #zoneViewer.active { display: flex; opacity: 1; }
-
-        #zoneViewer .zone-header {
-            background-color: var(--bg-card);
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-main);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            flex-shrink: 0;
-        }
-        #zoneViewer .zone-header .zone-title h2 {
-            margin: 0;
-            font-size: 1.2rem;
-            color: var(--text-main);
-            font-family: 'Geist', sans-serif;
-            font-weight: 500;
-        }
-        #zoneViewer .zone-header .zone-controls { display: flex; align-items: center; gap: 8px; }
-        
-        #zoneViewer .zone-header .zone-controls button,
-        #zoneViewer .zone-header .zone-controls a {
-            margin: 0;
-            width: 40px;
-            height: 40px;
-            background-color: var(--bg-page);
-            color: var(--text-muted);
-            border: 1px solid var(--border-main);
-            border-radius: 14px; /* MATCHES auth-btn */
-            cursor: pointer;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            text-decoration: none;
-        }
-        #zoneViewer .zone-header .zone-controls button:hover,
-        #zoneViewer .zone-header .zone-controls a:hover { 
-            background-color: var(--accent-glow); 
-            border-color: var(--accent-color);
-            color: var(--accent-color);
-            transform: scale(1.1);
-        }
-        #zoneViewer iframe { flex-grow: 1; border: none; background-color: var(--bg-page); }
-        .hidden { display: none !important; }
-
-        /* --- Dropdown (Modified to popup ABOVE) --- */
-        .eagler-dropdown {
-            display: none;
-            position: absolute;
-            bottom: 120%; /* Pops up above the button */
-            right: 0;
-            margin-bottom: 5px;
-            background-color: var(--bg-card);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border-main);
-            border-radius: 0.75rem;
-            padding: 0.5rem;
-            z-index: 1000;
-            min-width: 200px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-            transform-origin: bottom right;
-        }
-        .eagler-dropdown.show { display: block; animation: fadeInUp 0.15s ease-out; }
-        
-        @keyframes fadeInUp { 
-            from { opacity: 0; transform: translateY(10px) scale(0.95); } 
-            to { opacity: 1; transform: translateY(0) scale(1); } 
-        }
-
-        .eagler-dropdown-link {
-            display: block;
-            padding: 0.6rem 0.8rem;
-            color: var(--text-muted);
-            text-decoration: none;
-            border-radius: 0.5rem;
-            transition: all 0.2s;
-            font-weight: 400;
-            white-space: nowrap;
-            font-size: 0.9rem;
-        }
-        .eagler-dropdown-link:hover { background-color: var(--accent-glow); color: var(--text-main); }
-
-        #creditsModal { display: none; }
-        
-        /* Modal Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-        @keyframes popOut {
-            0% { transform: scale(1); opacity: 1; }
-            40% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(0); opacity: 0; }
-        }
-        .animate-pop-out { animation: popOut 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
-        .particle {
-            position: fixed;
-            pointer-events: none;
-            border-radius: 50%;
-            z-index: 10000;
-            animation: particle-fly 0.6s ease-out forwards;
-        }
-        @keyframes particle-fly {
-            0% { transform: translate(0, 0) scale(1); opacity: 1; }
-            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
-        }
-
-        /* --- Fullscreen Credits Styles --- */
-        #creditsModal {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background-color: var(--bg-page);
-            display: none; /* Flex when active */
-            flex-direction: column;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-        #creditsModal.active { display: flex; opacity: 1; }
-
-        .credits-scroll-container {
-            flex-grow: 1;
-            overflow-y: auto;
-            scroll-snap-type: y mandatory;
-            scrollbar-width: none; /* Hide scrollbar for immersion */
-        }
-        .credits-scroll-container::-webkit-scrollbar { display: none; }
-
-        .credit-section {
-            height: 100vh;
-            width: 100%;
-            scroll-snap-align: start;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4rem;
-            position: relative;
-            background-size: cover;
-            background-position: center;
-        }
-        
-        .credit-content-grid {
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 6rem;
-            max-width: 1600px;
-            width: 100%;
-            z-index: 10;
-        }
-
-        .credit-text-col {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 2rem;
-        }
-
-        .credit-title {
-            font-size: 5rem;
-            font-weight: 700;
-            line-height: 1;
-            background: linear-gradient(to right, #fff, #999);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            opacity: 0;
-            transform: translateY(30px);
-            animation: slideUpFade 0.8s ease-out forwards 0.2s;
-        }
-
-        .credit-desc {
-            font-size: 1.5rem;
-            color: var(--text-muted);
-            line-height: 1.6;
-            max-width: 600px;
-            opacity: 0;
-            transform: translateY(30px);
-            animation: slideUpFade 0.8s ease-out forwards 0.4s;
-        }
-
-        .credit-links {
-            display: flex;
-            gap: 1.5rem;
-            margin-top: 1rem;
-            opacity: 0;
-            transform: translateY(30px);
-            animation: slideUpFade 0.8s ease-out forwards 0.6s;
-        }
-
-        .credit-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            padding: 1rem 2rem;
-            border-radius: 1rem;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-        .credit-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        /* Specialized Brand Colors */
-        .btn-github:hover { border-color: #a78bfa; color: #a78bfa; background: rgba(167, 139, 250, 0.1); }
-        .btn-discord:hover { border-color: #5865F2; color: #5865F2; background: rgba(88, 101, 242, 0.1); }
-
-        .credit-img-col {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            transform: scale(0.9);
-            animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards 0.4s;
-        }
-        .credit-logo {
-            width: 100%;
-            max-width: 500px;
-            aspect-ratio: 1/1;
-            object-fit: contain;
-            filter: drop-shadow(0 20px 50px rgba(0,0,0,0.6));
-        }
-
-        @keyframes slideUpFade {
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes popIn {
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        #closeCreditsFixed {
-            position: fixed;
-            top: 2rem;
-            right: 2rem;
-            z-index: 10000;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-main);
-            color: #fff;
-            width: 2.5rem; /* Smaller width */
-            height: 2.5rem; /* Smaller height */
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        #closeCreditsFixed i {
-            font-size: 1rem; /* Smaller icon */
-        }
-        #closeCreditsFixed:hover {
-            filter: brightness(1.2);
-            background: rgba(20, 20, 20, 0.8);
-            border-color: var(--accent-color);
-        }
-
-        .credits-nav-bar {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10000;
-            display: flex;
-            gap: 1rem;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
-            padding: 0.5rem;
-            border-radius: 2rem; /* More rounded (pill shape) */
-            border: 1px solid var(--border-main);
-        }
-        .credits-nav-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            width: 2.5rem; /* Smaller width */
-            height: 2.5rem; /* Smaller height */
-            border-radius: 1rem; /* More rounded */
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem; /* Smaller icon */
-        }
-        .credits-nav-btn:hover:not(:disabled) {
-            background: var(--accent-glow);
-            color: #fff;
-        }
-        .credits-nav-btn:disabled {
-            opacity: 0.3;
-            cursor: default;
-            color: #555;
-        }
-    </style><style>
+    <title>4SP - GAMES</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/x-icon" href="../favicon.ico" id="faviconLink">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/injector.js"></script>
+    <style>
         :root {
             --bg-page: var(--bg-primary, #000000);
             --bg-card: var(--bg-secondary, #0d0d0d);
@@ -607,9 +32,9 @@
             color: var(--text-main);
             background-color: var(--bg-page);
             font-weight: 300;
+            overflow: hidden;
         }
 
-        /* Subtle dot grid */
         .grid-bg {
             background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
             background-size: 24px 24px;
@@ -622,1231 +47,303 @@
             pointer-events: none;
             z-index: -1;
         }
-</style>
+
+        #games-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #games-sidebar {
+            width: 380px;
+            flex-shrink: 0;
+            border-right: 1px solid var(--border-main);
+            background: var(--bg-card);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        #games-main-view {
+            flex-grow: 1;
+            padding: 64px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: 16px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+        }
+        .category-item:hover { background: var(--btn-bg); color: var(--accent-color); }
+        .category-item.active { background: var(--btn-bg); color: var(--accent-color); border-color: var(--accent-glow); }
+
+        .game-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            cursor: pointer;
+        }
+        .game-card:hover { border-color: var(--accent-color); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+        .game-card-img { aspect-ratio: 16/10; width: 100%; object-fit: cover; border-bottom: 1px solid var(--border-main); }
+
+        .btn-card-action {
+            display: inline-flex;
+            align-items: center; justify-content: center;
+            width: 2.25rem; height: 2.25rem;
+            border-radius: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .btn-card-action:hover { border-color: var(--accent-color); color: var(--accent-color); background: var(--btn-bg); }
+        .btn-card-action.favorited { background: var(--accent-color); color: white; border-color: var(--accent-color); }
+
+        #zoneViewer { 
+            display: none; position: fixed; inset: 0;
+            background-color: var(--bg-page); z-index: 5000; flex-direction: column; 
+        }
+        #zoneViewer.active { display: flex; }
+        .zone-header {
+            background-color: var(--bg-card);
+            padding: 12px 24px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border-main);
+        }
+        #zoneFrame { flex-grow: 1; border: none; }
+
+        .custom-scroll::-webkit-scrollbar { width: 0; }
+    </style>
 </head>
-<body class="min-h-screen grid-bg relative"><div id="dynamic-background"></div><div id="navbar-container"></div>
-<main class="mx-auto my-5 w-full max-w-screen-2xl px-4 relative flex h-screen">
-<button class="absolute top-0 right-4 z-20 btn-toolbar-style" id="creditsBtn">
-<i class="fa-solid fa-users mr-2"></i>Credits
-        </button>
-<div id="favoritesSection"> <h2 class="text-center text-3xl font-medium mt-12 mb-6 text-[var(--text-main)]" id="favoritesHeader" style="display: none;">
-<strong>Favorites</strong>
-</h2>
-<div class="games-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-4" id="favoritesGameList" style="display: none;"></div>
-</div>
-<div class="w-full mt-12" id="category-viewer">
-<div class="relative flex items-center justify-center max-w-sm mx-auto h-12" id="category-slider-container">
-<button class="absolute left-0 top-1/2 -translate-y-1/2 text-2xl text-gray-500 hover:text-white transition-all p-2 z-10 disabled:opacity-30 disabled:text-gray-700 disabled:hover:text-gray-700" id="prev-category">
-<i class="fas fa-chevron-left"></i>
-</button>
-<div class="overflow-hidden w-64 text-center">
-<div class="flex transition-transform duration-500 ease-in-out" id="category-slider">
-</div>
-</div>
-<button class="absolute right-0 top-1/2 -translate-y-1/2 text-2xl text-gray-500 hover:text-white transition-all p-2 z-10 disabled:opacity-30 disabled:text-gray-700 disabled:hover:text-gray-700" id="next-category">
-<i class="fas fa-chevron-right"></i>
-</button>
-</div>
-<div class="games-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-4 mt-6 transition-opacity duration-300 ease-in-out" id="games-grid-container">
-</div>
-</div>
-</main>
-<div class="fixed bottom-4 right-4 bg-[var(--bg-card)] backdrop-blur-xl rounded-3xl border border-[var(--border-main)] shadow-2xl w-full max-w-md z-50 transition-all duration-300 flex flex-col" id="bottom-fixed-bar">
-<div class="search-results-container w-full" id="searchResults" style="display: none;">
-</div>
-<div class="w-full h-[1px] bg-[var(--border-faint)]" id="searchDivider" style="display: none;"></div>
-<div class="flex items-center w-full p-1">
-<div class="pl-4 pr-2 text-[var(--text-muted)] opacity-60">
-<i class="fa-solid fa-magnifying-glass"></i>
-</div>
-<input autocomplete="off" class="w-full py-3 pr-4 bg-transparent placeholder-[var(--text-muted)] opacity-80 focus:outline-none focus:ring-0 text-base font-medium" id="searchInput" placeholder="Search for games…" type="text"/>
-</div>
-</div>
-<div aria-modal="true" id="zoneViewer" role="dialog">
-<div class="zone-header">
-<div class="zone-title">
-<h2 id="zoneNameEl">Game Title</h2>
-</div>
-<div class="zone-controls">
-<button id="fullscreenBtnZone" title="Fullscreen"><i class="fas fa-expand"></i></button>
-<a class="hidden" href="#" id="downloadBtnZone" title="Download"><i class="fas fa-download"></i></a>
-<button id="closeBtnZone" title="Close"><i class="fas fa-times"></i></button>
-</div>
-</div>
-<iframe id="zoneFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock" title="Game Content"></iframe>
-</div>
-<div id="creditsModal">
-<button id="closeCreditsFixed"><i class="fas fa-times text-2xl"></i></button>
-<div class="credits-scroll-container" id="creditsScrollContainer">
-</div>
-<div class="credits-nav-bar">
-<button class="credits-nav-btn" id="creditsPrevBtn"><i class="fas fa-chevron-up"></i></button>
-<button class="credits-nav-btn" id="creditsNextBtn"><i class="fas fa-chevron-down"></i></button>
-</div>
-</div>
-<script>
-        // --- Smart Contrast Helper ---
-        function getContrastYIQ(hexcolor){
-            if (!hexcolor || hexcolor.length < 4) return 'light';
-            hexcolor = hexcolor.replace("#", "");
-            if (hexcolor.length === 3) {
-                hexcolor = hexcolor.split("").map(c => c + c).join("");
-            }
-            const r = parseInt(hexcolor.substr(0,2),16);
-            const g = parseInt(hexcolor.substr(2,2),16);
-            const b = parseInt(hexcolor.substr(4,2),16);
-            const yiq = ((r*299)+(g*587)+(b*114))/1000;
-            return (yiq >= 128) ? 'dark' : 'light';
-        }
+<body class="grid-bg min-h-screen relative">
+    <div id="dynamic-background"></div>
+    <div id="navbar-container"></div>
 
-        function getSmartTextColor() {
-            const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
-            const contrast = getContrastYIQ(accentHex);
-            return contrast === 'dark' ? 'smart-text-inverse' : 'smart-text';
-        }
+    <main id="games-container">
+        <aside id="games-sidebar" class="custom-scroll">
+            <div class="mb-12">
+                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2">Discovery</p>
+                <h2 class="text-4xl font-light tracking-tight">Game Hub</h2>
+            </div>
 
-        // Configuration & Globals
-        const zonesurls = [
-            "https://cdn.jsdelivr.net/%67%68/%67%6e%2d%6d%61%74%68/%61%73%73%65%74%73@%6d%61%69%6e/%7a%6f%6e%65%73%2e%6a%73%6f%6e",
-            "https://cdn.jsdelivr.net/gh/gn-math/assets@latest/zones.json",
-            "https://cdn.jsdelivr.net/gh/gn-math/assets@master/zones.json",
-            "https://cdn.jsdelivr.net/gh/gn-math/assets/zones.json"
-        ];
-        let zonesURL = zonesurls[Math.floor(Math.random() * zonesurls.length)];
-        const coverURL = "https://cdn.jsdelivr.net/gh/gn-math/covers@main";
-        const htmlURL = "https://cdn.jsdelivr.net/gh/gn-math/html@main";
-        
+            <div class="mb-10">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-xs"></i>
+                    <input type="text" id="searchInput" placeholder="Search games..." 
+                        class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-[var(--accent-color)] transition-colors text-white">
+                </div>
+            </div>
+
+            <nav id="category-nav" class="flex flex-col gap-2 mb-10"></nav>
+
+            <div class="mt-auto">
+                <button id="creditsBtn" class="category-item">
+                    <i class="fa-solid fa-users"></i> System Credits
+                </button>
+            </div>
+        </aside>
+
+        <section id="games-main-view" class="custom-scroll">
+            <div id="favoritesSection" class="mb-16 hidden">
+                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2">Saved Content</p>
+                <h2 class="text-5xl font-light tracking-tight mb-8">Your Favorites</h2>
+                <div id="favoritesGameList" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"></div>
+            </div>
+
+            <div id="category-viewer">
+                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2" id="current-category-label">Collection</p>
+                <h2 class="text-6xl font-light tracking-tight mb-12" id="active-category-title">All Games</h2>
+                <div id="games-grid-container" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 transition-opacity duration-300"></div>
+            </div>
+        </section>
+    </main>
+
+    <div id="zoneViewer">
+        <div class="zone-header">
+            <h2 id="zoneNameEl" class="text-lg font-medium">Game Title</h2>
+            <div class="flex gap-2">
+                <button id="fullscreenBtnZone" class="btn-card-action"><i class="fas fa-expand"></i></button>
+                <button id="closeBtnZone" class="btn-card-action"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        <iframe id="zoneFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock" title="Game Content"></iframe>
+    </div>
+
+    <script type="module">
+        // Configuration
         const WORKER_ROOT = "https://dv-service-lfs.4simpleproblems.workers.dev/";
         const GAMES_BASE_URL = "https://dv-service-lfs.4simpleproblems.workers.dev/GAMES/";
         const CARDS_DATA_URL = "https://dv-service-lfs.4simpleproblems.workers.dev/GAMES/cards-data.js";
-
         const FAVORITES_KEY = 'gameHubFavorites_v3';
 
         let allGames = [];
         let searchableGames = [];
         let categories = [];
         let currentCategoryIndex = 0;
-        const categoryColors = {
-            'StrongdogXP': 'text-strongdog-orange',
-            'GN-Math': 'text-gn-math',
-            'Gameboy Games': 'text-gameboy',
-            'Others': 'text-other-grey', 
-        };
-        
-        const CREDITS_DATA = {
-            'StrongdogXP': { 
-                desc: "Main Creator: Josh P. The powerhouse behind the core game collection. Providing a vast library of classic and modern web games, StrongdogXP ensures stability and quality for the 4SP Games Hub.",
-                links: [
-                    { type: 'github', url: "https://github.com/jman1593/", label: "GitHub" },
-                    { type: 'discord', url: "https://discord.com/invite/sdxp", label: "Discord" }
-                ],
-                logo: "./images/credits/strongdog_logo.png",
-                color: "#FF8C00"
-            },
-            'GN-Math': { 
-                desc: "Main Creator: Genizy. A dedicated community focused on unblocked gaming solutions. The GN-Math infrastructure powers our external game loading system, bypassing many common network restrictions.",
-                links: [
-                    { type: 'github', url: "https://github.com/gn-math/", label: "Organization" },
-                    { type: 'github', url: "https://github.com/genizy", label: "Genizy" },
-                    { type: 'discord', url: "https://discord.com/invite/gn-math", label: "Discord" }
-                ],
-                logo: "./images/credits/gn_logo.png",
-                color: "#FD2E59"
-            },
-            'Others': { 
-                desc: "A tribute to the open-source community. This section features projects like Eaglercraft, JS-DOS, and Doom, developed by talented individuals who believe in accessible software for everyone.",
-                links: [],
-                logo: "./images/credits/opensource.png",
-                color: "#d1d5db"
-            }
-        };
 
-        const favoritesHeader = document.getElementById("favoritesHeader");
-        const favoritesGameList = document.getElementById("favoritesGameList");
-        const searchInput = document.getElementById("searchInput");
-        const searchResults = document.getElementById("searchResults");
-        const searchDivider = document.getElementById("searchDivider");
-        const categorySlider = document.getElementById('category-slider');
-        const prevCategoryBtn = document.getElementById('prev-category');
-        const nextCategoryBtn = document.getElementById('next-category');
-        const gamesGridContainer = document.getElementById('games-grid-container');
-        
-        const creditsModal = document.getElementById('creditsModal');
-        const creditsScrollContainer = document.getElementById('creditsScrollContainer');
-        const creditsBtn = document.getElementById('creditsBtn');
-        const closeCreditsFixed = document.getElementById('closeCreditsFixed');
-        const creditsPrevBtn = document.getElementById('creditsPrevBtn');
-        const creditsNextBtn = document.getElementById('creditsNextBtn');
-
-        // --- Intersection Observer for Image Virtualization ---
-        const imageObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                const img = entry.target;
-                if (entry.isIntersecting) {
-                    if (img.dataset.src) {
-                        img.src = img.dataset.src;
-                    }
-                } else {
-                    if(img.src && !img.src.includes('placehold.co') && !img.dataset.src) {
-                         img.dataset.src = img.src;
-                    }
-                    if(img.dataset.src) {
-                        img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-                    }
-                }
-            });
-        }, {
-            rootMargin: "300px 0px", 
-            threshold: 0.01
-        });
-
-        function observeImages(container) {
-            const images = container.querySelectorAll('img[data-src]');
-            images.forEach(img => imageObserver.observe(img));
-        }
-
-        // --- URL Management ---
-        function updateURL(category, gameId = null) {
-            let hash = `#${encodeURIComponent(category.replace(/\s+/g, '-'))}`;
-            if (gameId) hash += `?id=${gameId}`;
-            try {
-                // Safely attempt to replace state if the environment allows it
-                if (window.history && typeof window.history.replaceState === 'function') {
-                    history.replaceState(null, null, hash);
-                }
-            } catch(e) {
-                // Ignoring errors in restricted environments (like file:// or sandbox)
-            }
-        }
-
-        function parseURL() {
-            const hash = window.location.hash.substring(1);
-            if (!hash) return { category: null, gameId: null };
-            const parts = hash.split('?');
-            let rawCategory = parts[0];
-            let category = decodeURIComponent(rawCategory).replace(/-/g, ' '); 
-            let gameId = null;
-            if (parts[1]) {
-                const params = new URLSearchParams(parts[1]);
-                gameId = params.get('id');
-            }
-            return { category: rawCategory, gameId };
-        }
-
-        // --- Favorites Management (Live Updates) ---
         const getFavorites = () => JSON.parse(localStorage.getItem(FAVORITES_KEY)) || [];
         const saveFavorites = (favs) => localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
-        
-        function createParticles(x, y, color) {
-            for (let i = 0; i < 8; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.left = x + 'px';
-                p.style.top = y + 'px';
-                p.style.width = '6px';
-                p.style.height = '6px';
-                p.style.backgroundColor = color || '#facc15';
-                
-                const dx = (Math.random() - 0.5) * 100;
-                const dy = (Math.random() - 0.5) * 100;
-                p.style.setProperty('--dx', dx + 'px');
-                p.style.setProperty('--dy', dy + 'px');
-                
-                document.body.appendChild(p);
-                setTimeout(() => p.remove(), 600);
-            }
-        }
 
-        function toggleFavorite(gameId) {
-            const strGameId = String(gameId);
-            let favorites = getFavorites().map(String);
-            const isRemoving = favorites.includes(strGameId);
-
-            if (isRemoving) {
-                favorites = favorites.filter(id => id !== strGameId);
-                saveFavorites(favorites);
-                updateAllFavoriteButtons();
-                const favCard = favoritesGameList.querySelector(`[data-game-id='${strGameId}']`);
-                if (favCard) {
-                    const rect = favCard.getBoundingClientRect();
-                    createParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, '#facc15');
-                    favCard.classList.add('animate-pop-out');
-                    setTimeout(() => {
-                        favCard.remove();
-                        if (favoritesGameList.children.length === 0) {
-                            favoritesHeader.style.display = 'none';
-                            favoritesGameList.style.display = 'none';
-                        }
-                    }, 400); 
-                }
-            } else {
-                favorites.push(strGameId);
-                saveFavorites(favorites);
-                updateAllFavoriteButtons();
-                let gameData = allGames.find(g => String(g.id) === strGameId);
-                if (!gameData) {
-                    allGames.some(g => {
-                        if (g.versions) {
-                            const ver = g.versions.find(v => String(v.favoriteId) === strGameId);
-                            if (ver) {
-                                gameData = { ...g, id: ver.favoriteId, name: `${g.name} - ${ver.name}`, url: ver.url, versions: undefined };
-                                return true;
-                            }
-                        }
-                        return false;
-                    });
-                }
-                if (gameData) {
-                    favoritesHeader.style.display = "block";
-                    favoritesGameList.style.display = "grid";
-                    favoritesGameList.appendChild(createGameCard(gameData, true));
-                }
-            }
-        }
-
-        function updateAllFavoriteButtons() {
-            const favorites = getFavorites().map(String);
-            document.querySelectorAll('.btn-card-action.fav-action').forEach(btn => {
-                const card = btn.closest('.zone-item, .other-zone-item, .search-item');
-                if (!card) return;
-                const cardGameId = String(card.dataset.gameId);
-                if (btn.classList.contains('version-favorite-btn')) {
-                    const isAnyVersionFavorited = favorites.some(favId => favId.startsWith(cardGameId + '_'));
-                    btn.classList.toggle('favorited', isAnyVersionFavorited);
-                } else {
-                    const isFavorited = favorites.includes(cardGameId);
-                    btn.classList.toggle('favorited', isFavorited);
-                    btn.title = isFavorited ? 'Remove from Favorites' : 'Add to Favorites';
+        const imageObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    if (img.dataset.src) img.src = img.dataset.src;
+                    imageObserver.unobserve(img);
                 }
             });
+        }, { rootMargin: "200px" });
+
+        function resolveGameUrl(path) {
+            if (!path) return "";
+            if (path.startsWith('http')) return path;
+            if (path.startsWith('../')) return `${WORKER_ROOT}${path.substring(3)}`;
+            return `${GAMES_BASE_URL}${path.replace(/^\.\//, '')}`;
         }
 
-        // --- URL Helpers (Strongdog) ---
-        // Modified to support injected URLs using WORKER_ROOT + directory logic
-        function getAdjustedUrls(imgSrc, page) {
-            if (page && page > 1) {
-                // ../strongdog2/img/... -> exists outside GAMES dir
-                return { adjustedImgSrc: `${WORKER_ROOT}strongdog${page}/img/${imgSrc}` };
-            }
-            // ./img -> assumed inside GAMES dir or wherever relative
-            return { adjustedImgSrc: `${GAMES_BASE_URL}img/${imgSrc}` }; 
-        }
-        
-        function sd_getBaseURLForPage(page) {
-            // Updated to point to WORKER_ROOT for numbered pages, GAMES_BASE_URL for default
-            if (page > 1) return `${WORKER_ROOT}strongdog${page}/`;
-            return `${WORKER_ROOT}GAMES/`; // Assumes default strongdog is at root/STRONGDOG? Or inside GAMES?
-            // Re-reading logic: "stuff like ../DOOM/ will stay in GAMES directory but strongdog# directories exit"
-            // Let's assume default STRONGDOG is adjacent to strongdog2 etc. at root level based on prior naming conventions
-        }
-        
-        async function sd_getEmbedPath(adjustedHref, originalHref, page) {
-            let cleanHref = adjustedHref.replace(/index\.html$/, "").replace(/base\.html$/, "").replace(/\.html$/, "");
-            if (!cleanHref.endsWith("/")) cleanHref += "/";
-            const pathsToTry = [cleanHref + "game/index.html", cleanHref + "game/base.html", cleanHref + "gamereal/index.html", cleanHref + "gamereal/base.html", cleanHref + "index.html", cleanHref + "base.html", ];
-            try {
-                const response = await fetch(adjustedHref);
-                if (response.ok) {
-                    const text = await response.text();
-                    const match = text.match(/embedGame\((['"])(.*?)\1,\s*(['"])(.*?)\3\)/);
-                    if (match) {
-                        const resolvedPath = new URL(match[2], adjustedHref).href;
-                        if (await sd_fileExists(resolvedPath)) return resolvedPath;
-                    }
-                }
-            } catch (error) {}
-            for (const path of pathsToTry) {
-                if (await sd_fileExists(path)) return path;
-            }
-            return adjustedHref;
-        }
-        async function sd_fileExists(url) {
-            try { const response = await fetch(url, { method: "HEAD" }); return response.ok; } catch { return false; }
-        }
-
-        // --- URL Resolution Helper for "Others" ---
-        function resolveGameUrl(relativePath) {
-            if (!relativePath) return "";
-            
-            // If it's already an absolute URL, return it as is
-            if (relativePath.startsWith('http') || relativePath.startsWith('//')) {
-                return relativePath;
-            }
-
-            // Handle local paths explicitly requested
-            if (relativePath.startsWith('local:')) {
-                return relativePath.substring(6);
-            }
-
-            // Logic: 
-            // If path starts with ../ -> Go to WORKER_ROOT + path (stripping ../)
-            // If path starts with ../GAMES/ -> It will effectively be WORKER_ROOT/GAMES/ (which matches GAMES_BASE_URL)
-            // This allows us to access root folders like ../GTA-JSDOS/ while keeping ../GAMES/sm64 intact.
-            
-            if (relativePath.startsWith('../')) {
-                const pathPart = relativePath.substring(3); // Remove '../'
-                return `${WORKER_ROOT}${pathPart}`;
-            }
-            
-            // If it doesn't start with ../, assume it's relative to GAMES base
-            return `${GAMES_BASE_URL}${relativePath.replace(/^\.\//, '')}`;
-        }
-
-        // --- Game Data (Others) ---
-        // We keep the original relative paths here so the resolver logic above can handle them dynamically
-        const othersGames = [
-            { id: "other-eaglercraft", name: "Eaglercraft", imgSrc: "./images/eaglercraft.png", description: "The classic survival and building game with authentic block-based physics and multiplayer support, accessible directly in the browser.", category: "Others", versions: [ { name: "Release 1.12.2", url: "../EAGLERCRAFT/eaglercraft-1.12.2.html", favoriteId: "other-eaglercraft_1.12.2" }, { name: "Release 1.12.2 WASM", url: "../EAGLERCRAFT/eaglercraft-1.12.2-wasm.html", favoriteId: "other-eaglercraft_wasm", wasm: true } ] },
-            { id: "other-balatro", name: "Balatro", imgSrc: "../GAMES/others/balatro.png", description: "Balatro is a poker-themed deck-building roguelike video game.", category: "Others", url: "https://drive.google.com/uc?export=download&id=1EiwjvWTq3M9_Q1CPyd1g1zNZITzRa9mA", isDownload: true },
-            { id: "other-gta", name: "Grand Theft Auto", imgSrc: "./images/gta.png", description: "The original top-down classic. Cause chaos, complete missions, or just go for a drive in three iconic cities.", category: "Others", versions: [ { name: "Carnage3D", url: "../CARNAGE3D/web/carnage3D.html", favoriteId: "other-gta_carnage3d" }, { name: "Grand Theft Auto (JS-DOS)", url: "../GTA-JSDOS/index.html", favoriteId: "other-gta_jsdos" } ] },
-            { id: "other-simcity", name: "Sim City", imgSrc: "./images/simcity2000.png", description: "The original city-building classics. Design, build, and manage the city of your dreams in either the original Sim City or the detailed Sim City 2000.", category: "Others", versions: [ { name: "Sim City", url: "../SIM-CITY/index.html", favoriteId: "other-simcity_1" }, { name: "Sim City 2000", url: "../SIM-CITY-2/index.html", favoriteId: "other-simcity_2000" } ] },
-            { id: "other-doom", name: "DOOM", imgSrc: "./images/doom.png", description: "The legendary first-person shooter that pioneered the genre, focusing on blasting through hordes of demons in a timeless, adrenaline-fueled classic.", category: "Others", url: "../DOOM/index.html" },
-            { id: "other-sm64", name: "Super Mario 64", imgSrc: "./images/sm64.png", description: "The iconic 3D platformer that revolutionized gaming. Run, jump, and triple-jump your way through vast worlds to collect stars and save the princess.", category: "Others", url: "../GAMES/sm64/index.html" },
-            { id: "other-be-clicker", name: "Big E Clicker", imgSrc: "./images/be_clicker.png", description: "The ultimate clicker experience featuring Big E. Click your way to glory!", category: "Others", url: "https://drive.google.com/uc?export=download&id=1n7u_jT99S7QJzP4E_r6TzVz6W-W0fLwZ", isDownload: true, privileged: true }
-        ];
-
-        // --- Card Creation ---
-
-        function createOthersGameCard(game) {
-            const favorites = getFavorites().map(String);
-            const isAnyFavorite = game.versions ? favorites.some(favId => game.versions.some(v => String(v.favoriteId) === favId)) : favorites.includes(String(game.id));
-            const card = document.createElement("div");
-            card.className = 'other-zone-item rounded-2xl border border-brand-border col-span-full shadow-lg'; 
-            card.dataset.gameId = game.id;
-
-            // Resolve Image URL
-            const resolvedImgSrc = game.id === 'other-balatro' ? game.imgSrc : resolveGameUrl(game.imgSrc);
-
-            let gameButtonsHtml = '';
-            let favoriteButtonHtml = '';
-            
-            if (game.versions && game.versions.length > 0) {
-                const availableVersions = game.versions; 
-                if (availableVersions.length === 1) {
-                    const vUrl = resolveGameUrl(availableVersions[0].url);
-                    gameButtonsHtml = `<button class="btn-card-action play-action" data-url="${vUrl}" data-version-name="${availableVersions[0].name}" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`;
-                } else {
-                    const dropdownLinks = availableVersions.map(v => {
-                        const vUrl = resolveGameUrl(v.url);
-                        return `<a href="#" class="eagler-dropdown-link" data-url="${vUrl}" data-version-name="${v.name}">${v.name}</a>`
-                    }).join('');
-                    gameButtonsHtml = `<div class="relative"><button class="btn-card-action version-btn" title="Select Version"><i class="fa-solid fa-chevron-up transition-colors"></i></button><div class="eagler-dropdown">${dropdownLinks}</div></div>`;
-                }
-                favoriteButtonHtml = `<div class="relative"><button class="btn-card-action fav-action version-favorite-btn ${isAnyFavorite ? 'favorited' : ''}" title="Favorite a version"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button><div class="eagler-dropdown">${game.versions.map(v => `<a href="#" class="eagler-dropdown-link favorite-link" data-favorite-id="${v.favoriteId}">${v.name}</a>`).join('')}</div></div>`;
-            } else {
-                if (game.isDownload) {
-                    gameButtonsHtml = `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download transition-colors"></i></a>`;
-                } else {
-                    const gUrl = resolveGameUrl(game.url);
-                    gameButtonsHtml = `<button class="btn-card-action play-action" data-url="${gUrl}" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`;
-                }
-                favoriteButtonHtml = `<button class="btn-card-action fav-action ${isAnyFavorite ? 'favorited' : ''}" title="${isAnyFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>`;
-            }
-
-            const smartTextClass = getSmartTextColor();
-
-            card.innerHTML = `
-                <div class="relative w-full h-full cursor-pointer group" style="min-height: 250px;">
-                    <img data-src="${resolvedImgSrc}" alt="${game.name}" loading="lazy" decoding="async" class="w-full h-full object-cover absolute inset-0 rounded-2xl">
-                    <div class="image-overlay absolute inset-0 transition-colors duration-200"></div>
-                    <div class="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between rounded-2xl">
-                        <div class="flex items-start justify-between w-full">
-                            <h3 class="text-4xl font-medium ${smartTextClass} truncate drop-shadow-lg" style="max-width: 80%;" title="${game.name}">${game.name}</h3>
-                            <div class="flex items-center gap-1.5 bg-[var(--accent-glow)] backdrop-blur-md rounded-2xl p-1.5 border border-[var(--accent-color)] shadow-lg">
-                                ${gameButtonsHtml}
-                                ${favoriteButtonHtml}
-                            </div>
-                        </div>
-                        <p class="text-lg text-white font-medium drop-shadow-lg" style="max-width: 50%; opacity: 0.9;">${game.description}</p>
-                    </div>
-                </div>
-            `;
-            
-            if (!game.versions) { 
-                if (game.isDownload) {
-                    card.querySelector('.group').addEventListener('click', (e) => { e.preventDefault(); window.open(game.url, '_blank'); });
-                } else {
-                    card.querySelector('.group').addEventListener('click', () => {
-                         const gUrl = resolveGameUrl(game.url);
-                         openZone({...game, url: gUrl}); 
-                    }); 
-                }
-            }
-            card.querySelectorAll('.play-action, .download-action').forEach(btn => btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (btn.classList.contains('download-action')) {
-                    window.open(btn.href, '_blank');
-                } else {
-                    openZone({ ...game, name: btn.dataset.versionName ? `${game.name} - ${btn.dataset.versionName}` : game.name, url: btn.dataset.url });
-                }
-            }));
-            
-            const versionBtn = card.querySelector('.version-btn');
-            if (versionBtn) { versionBtn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.eagler-dropdown.show').forEach(d => d.classList.remove('show')); versionBtn.nextElementSibling.classList.toggle('show'); }); }
-            
-            card.querySelectorAll('.eagler-dropdown-link:not(.favorite-link)').forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openZone({ ...game, name: link.dataset.versionName ? `${game.name} - ${link.dataset.versionName}` : game.name, url: link.dataset.url }); link.closest('.eagler-dropdown').classList.remove('show'); }));
-
-            const favBtn = card.querySelector('.btn-card-action.fav-action');
-            if (favBtn.classList.contains('version-favorite-btn')) {
-                favBtn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.eagler-dropdown.show').forEach(d => d.classList.remove('show')); favBtn.nextElementSibling.classList.toggle('show'); });
-                card.querySelectorAll('.favorite-link').forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(link.dataset.favoriteId); link.closest('.eagler-dropdown').classList.remove('show'); }));
-            } else {
-                favBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(game.id); });
-            }
-            imageObserver.observe(card.querySelector('img'));
-            return card;
-        }
-
-        function createGameCard(game, forceSmallCard = false) {
-            if (game.category === 'Others' && !forceSmallCard) return createOthersGameCard(game);
+        function createGameCard(game, forceSmall = false) {
             const isStrongdog = game.category === 'StrongdogXP';
-            
-            // Resolve Image Src
             let imgSrc = game.imgSrc;
-            if (game.id === 'other-balatro' && forceSmallCard) {
-                imgSrc = "../GAMES/others/balatro-3-2.png";
-            } else if (isStrongdog) {
-                 imgSrc = getAdjustedUrls(game.imgSrc, game.page).adjustedImgSrc;
-            } else if (game.category === 'Others' || game.category === 'Gameboy Games') {
-                 imgSrc = resolveGameUrl(game.imgSrc);
-            }
+            if (isStrongdog) imgSrc = `${WORKER_ROOT}strongdog${game.page || 1}/img/${game.imgSrc}`;
+            else imgSrc = resolveGameUrl(game.imgSrc);
 
-            const isFavorite = getFavorites().map(String).includes(String(game.id));
-
+            const isFav = getFavorites().map(String).includes(String(game.id));
             const card = document.createElement("div");
-            card.className = 'zone-item rounded-2xl border border-brand-border overflow-hidden';
-            card.dataset.gameId = game.id;
-
-            const smartTextClass = getSmartTextColor();
-
+            card.className = 'game-card';
             card.innerHTML = `
-                <div class="relative w-full cursor-pointer group">
-                    <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover"></div>
-                    <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-[var(--accent-glow)] backdrop-blur-md rounded-xl px-3 py-1.5 ${smartTextClass} truncate text-sm font-medium shadow-lg border border-[var(--accent-color)]" title="${game.name}">${game.name}</h3>
-                    <div class="absolute bottom-2 right-2 bg-[var(--accent-glow)] backdrop-blur-md rounded-2xl p-1.5 flex items-center gap-1.5 shadow-lg border border-[var(--accent-color)]">
-                        ${game.isDownload ? `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download transition-colors"></i></a>` : `<button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`}
-                        <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>
+                <img data-src="${imgSrc}" alt="${game.name}" class="game-card-img">
+                <div class="p-4">
+                    <h3 class="font-medium truncate text-sm mb-3">${game.name}</h3>
+                    <div class="flex justify-between items-center">
+                        <button class="btn-card-action play-action"><i class="fa-solid fa-play text-xs"></i></button>
+                        <button class="btn-card-action fav-action ${isFav ? 'favorited' : ''}"><i class="fa-solid fa-star text-xs"></i></button>
                     </div>
                 </div>
             `;
-            
-            const handlePlay = async (e) => {
+
+            const play = async (e) => {
                 e.stopPropagation();
-                if (game.isDownload) {
-                    window.open(game.url, '_blank');
-                    return;
-                }
+                let url = resolveGameUrl(game.url || game.href);
                 if (isStrongdog) {
-                    const baseURL = sd_getBaseURLForPage(game.page);
-                    let adjustedHref = baseURL.endsWith("/") ? baseURL + game.href.replace(/^\.\//, "") : baseURL + "/" + game.href.replace(/^\.\//, "");
-                    const embedPath = await sd_getEmbedPath(adjustedHref, game.href, game.page);
-                    openZone({ name: game.name, url: embedPath, category: game.category, id: game.id });
-                } else {
-                    let gUrl = game.url;
-                    if (game.category === 'Others' || game.category === 'Gameboy Games') {
-                        gUrl = resolveGameUrl(gUrl);
-                    }
-                    openZone({ ...game, url: gUrl });
+                    const base = game.page > 1 ? `${WORKER_ROOT}strongdog${game.page}/` : `${WORKER_ROOT}GAMES/`;
+                    url = base + game.href.replace(/^\.\//, "");
                 }
+                openZone(game.name, url, game.id);
             };
 
-            card.querySelector('.group').addEventListener('click', handlePlay);
-            card.querySelector('.play-action').addEventListener('click', handlePlay);
-            card.querySelector('.fav-action').addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(game.id); });
-            imageObserver.observe(card.querySelector('img'));
-            return card;
-        }
-
-        // --- Helper for Download ---
-        async function downloadResource(url, filename) {
-            try {
-                const r = await fetch(url);
-                if (!r.ok) throw new Error("Fetch failed");
-                const b = await r.blob();
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(b);
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(a.href);
-            } catch (e) {
-                console.error(e);
-                alert("Download failed.");
-            }
-        }
-
-        // --- Game Viewer Logic ---
-        async function openZone(game) {
-            if (!game || !game.url) return;
-
-            // Auto-replace legacy GN-Math URLs
-            if (game.category === 'GN-Math' && game.url.includes('raw.githack.com/gn-math/html/main/')) {
-                game.url = game.url.replace('raw.githack.com/gn-math/html/main/', 'cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/');
-            }
-
-            updateURL(categories[currentCategoryIndex], game.id || null);
-            
-            const zoneViewer = document.getElementById('zoneViewer');
-            const zoneFrame = document.getElementById('zoneFrame');
-            const zoneNameEl = document.getElementById('zoneNameEl');
-            const downloadBtn = document.getElementById('downloadBtnZone');
-            const controls = zoneViewer.querySelector('.zone-controls');
-
-            // --- CRITICAL FIX: SHOW VIEWER FIRST ---
-            // Setting display: flex BEFORE loading content ensures the iframe has physical dimensions.
-            // This prevents "Undefined viewport" errors in WebGL games that check window.innerWidth/Height on load.
-            zoneViewer.style.opacity = '0'; // Keep hidden visually but active in DOM
-            zoneViewer.style.display = 'flex';
-
-            // --- Custom 404 Page Helper ---
-            const show404 = (errorMsg = "Game content unavailable.") => {
-                // Ensure frame is cleared
-                zoneFrame.src = 'about:blank';
-                // Show overlay error
-                const doc = zoneFrame.contentWindow.document;
-                doc.open();
-                doc.write(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
-                        <style>
-                            body { background: #000; color: #fff; font-family: 'Geist', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
-                            h1 { font-size: 4rem; margin: 0; color: #4f46e5; }
-                            p { color: #888; font-size: 1.2rem; max-width: 400px; margin-top: 10px; }
-                            .btn { margin-top: 30px; padding: 10px 25px; border: 1px solid #333; border-radius: 12px; color: #fff; cursor: pointer; background: #111; transition: all 0.2s; }
-                            .btn:hover { border-color: #4f46e5; background: #4f46e51a; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Load Failed</h1>
-                        <p><strong>${game.name}</strong> could not be loaded.<br><span style="font-size: 0.9rem; opacity: 0.7;">${errorMsg}</span></p>
-                        <div class="btn" onclick="window.parent.closeZoneViewer()">Return to Hub</div>
-                    </body>
-                    </html>
-                `);
-                doc.close();
-                // Ensure visibility if show404 is called directly
-                zoneViewer.style.display = "flex";
-                zoneViewer.classList.add('active', 'animate-fade-in');
-                zoneViewer.style.opacity = '1';
-            };
-
-            // Setup Download Button (Specific to Eaglercraft)
-            const isEagler = game.baseGameId === 'other-eaglercraft' || game.id === 'other-eaglercraft' || (game.id && String(game.id).startsWith('other-eaglercraft'));
-            if (isEagler) {
-                downloadBtn.href = "#"; 
-                downloadBtn.onclick = (e) => {
-                    e.preventDefault();
-                    downloadResource(game.url, game.name.replace(/ /g, '_') + '.html');
-                };
-                downloadBtn.classList.remove('hidden');
-            } else {
-                downloadBtn.classList.add('hidden');
-                downloadBtn.href = '#';
-                downloadBtn.onclick = null;
-                downloadBtn.removeAttribute('download');
-            }
-
-            // --- INJECT FAVORITE BUTTON IN PLAYER HEADER ---
-            const existingFav = controls.querySelector('.player-fav-btn');
-            if (existingFav) existingFav.remove();
-
-            const favBtn = document.createElement('button');
-            favBtn.className = 'player-fav-btn btn-card-action fav-action';
-            favBtn.innerHTML = '<i class="fa-solid fa-star fa-solid-star"></i><i class="fa-regular fa-star fa-regular-star"></i>';
-            const isFavorited = getFavorites().map(String).includes(String(game.id));
-            if (isFavorited) favBtn.classList.add('favorited');
-            
-            favBtn.onclick = (e) => {
+            card.addEventListener('click', play);
+            card.querySelector('.play-action').addEventListener('click', play);
+            card.querySelector('.fav-action').addEventListener('click', (e) => {
                 e.stopPropagation();
                 toggleFavorite(game.id);
-                favBtn.classList.toggle('favorited');
-            };
-            controls.prepend(favBtn);
+                e.target.closest('.fav-action').classList.toggle('favorited');
+            });
 
-            zoneNameEl.textContent = game.name;
-            zoneFrame.src = 'about:blank';
-            
-            // Fixed Allow attribute syntax to prevent warnings and enable features properly
-            // Removed allowfullscreen as "allow='fullscreen'" takes precedence
-            zoneFrame.setAttribute('allow', 'autoplay; fullscreen; pointer-lock; clipboard-write');
-            
-            // STRICT SANDBOX: Removing 'allow-popups' and 'allow-top-navigation' to prevent redirects
-            const sandboxRules = 'allow-scripts allow-same-origin allow-forms allow-pointer-lock';
-            zoneFrame.setAttribute('sandbox', sandboxRules);
-
-            // --- REVISED LOGIC FOR LOADING GAMES WITH RETRY ---
-            // GN-Math uses content injection. StrongdogXP and Others use standard loading.
-            // EXCEPTION: Eaglercraft uses injection to ensure keyboard focus/input works correctly as a "local" file.
-            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP';
-            
-            const attemptLoad = async (retriesLeft) => {
-                try {
-                    // Pre-check URL validity
-                    const check = await fetch(game.url, { method: 'HEAD' });
-                    if (!check.ok) throw new Error(`HTTP ${check.status}`);
-                    
-                    // If successful, set src
-                    if (isStandardURLGame) {
-                        zoneFrame.src = game.url;
-                        // Prevent showing raw directory listing if it resolves to a folder
-                        zoneFrame.onload = () => {
-                            try {
-                                const doc = zoneFrame.contentDocument;
-                                const title = doc.title;
-                                // UPDATED CHECK: Detects 'CDN files' specifically (as seen in screenshot) and generic directory listings
-                                if (title.includes("CDN files") || title.includes("Index of") || title.includes("Directory listing") || (doc.body && doc.body.textContent.includes("4sp-dv CDN files"))) {
-                                     console.warn("Directory listing detected. Aborting.");
-                                     closeZoneViewer();
-                                     // Previously reloaded page, now just closes viewer
-                                     return;
-                                }
-                                zoneFrame.contentWindow.focus();
-                                zoneFrame.focus();
-                            } catch (e) {
-                                // Cross-origin might block access. If it's a cross-origin game that loads fine, this error is expected and ignored.
-                            }
-                        };
-                    } else {
-                        // For embedded content fetching
-                        const response = await fetch(`${game.url}?t=${Date.now()}`);
-                        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-                        const html = await response.text();
-                        const doc = zoneFrame.contentWindow.document;
-                        doc.open();
-                        doc.write(html);
-                        doc.close();
-                        
-                        // Aggressively force focus for injected games (Eaglercraft needs this)
-                        // We try multiple times because the game engine takes a moment to mount the canvas
-                        let focusAttempts = 0;
-                        const forceFocusInterval = setInterval(() => {
-                            if (zoneFrame.contentWindow) {
-                                zoneFrame.contentWindow.focus();
-                                zoneFrame.focus();
-                            }
-                            focusAttempts++;
-                            if (focusAttempts > 20) clearInterval(forceFocusInterval); // Stop after ~2 seconds
-                        }, 100);
-                        
-                        // Also ensure clicking the frame area works if the interval misses it
-                        zoneFrame.contentWindow.addEventListener('click', () => {
-                            zoneFrame.contentWindow.focus();
-                        });
-                    }
-
-                    // Reveal the viewer fully after content load starts
-                    zoneViewer.classList.remove('animate-fade-out');
-                    zoneViewer.classList.add('active', 'animate-fade-in');
-                    zoneViewer.style.opacity = '1';
-
-                } catch (e) {
-                    console.warn(`Load failed for ${game.name}. Retries left: ${retriesLeft}`, e);
-                    if (retriesLeft > 0) {
-                        setTimeout(() => attemptLoad(retriesLeft - 1), 1000); // Retry after 1s
-                    } else {
-                        show404("The game files could not be loaded after multiple attempts.");
-                    }
-                }
-            };
-
-            attemptLoad(2); // Try 3 times total (1 initial + 2 retries)
+            imageObserver.observe(card.querySelector('img'));
+            return card;
         }
 
-        function closeZoneViewer() {
-            const zoneViewer = document.getElementById('zoneViewer');
-            const zoneFrame = document.getElementById('zoneFrame');
-            
-            zoneViewer.classList.remove('animate-fade-in');
-            zoneViewer.classList.add('animate-fade-out');
-            
-            setTimeout(() => {
-                zoneViewer.style.display = "none";
-                zoneViewer.classList.remove('active', 'animate-fade-out');
-                zoneViewer.style.opacity = '0'; // Reset opacity
-                if (zoneFrame) {
-                    zoneFrame.src = 'about:blank';
-                }
-                updateURL(categories[currentCategoryIndex]);
-                const downloadBtn = document.getElementById('downloadBtnZone');
-                downloadBtn.classList.add('hidden');
-                downloadBtn.href = '#';
-                downloadBtn.removeAttribute('download');
-                downloadBtn.removeAttribute('target');
-            }, 300);
-        }
-
-        // --- Render Lists ---
-        function renderGames(gamesToRender, targetElement, forceSmallCard = false) {
-            targetElement.innerHTML = '';
-            targetElement.className = (categories[currentCategoryIndex] === 'Others' && !forceSmallCard) ? 'grid grid-cols-1 gap-6 mt-6' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-4 mt-6';
-            gamesToRender.forEach(game => targetElement.appendChild(createGameCard(game, forceSmallCard)));
-            observeImages(targetElement);
+        function toggleFavorite(id) {
+            let favs = getFavorites().map(String);
+            const strId = String(id);
+            if (favs.includes(strId)) favs = favs.filter(f => f !== strId);
+            else favs.push(strId);
+            saveFavorites(favs);
+            renderFavorites();
         }
 
         function renderFavorites() {
-            const favoriteIds = getFavorites().map(String);
-            if (favoriteIds.length > 0) {
-                favoritesHeader.style.display = "block";
-                favoritesGameList.style.display = "grid"; 
-                const favoriteGames = [];
-                allGames.forEach(game => {
-                    if (favoriteIds.includes(String(game.id)) && !game.versions) { favoriteGames.push(game); }
-                    else if (game.versions) { 
-                        game.versions.forEach(v => { 
-                            if (favoriteIds.includes(String(v.favoriteId))) {
-                                let vUrl = v.url;
-                                if (game.category === 'Others' || game.category === 'Gameboy Games') {
-                                    vUrl = resolveGameUrl(v.url);
-                                }
-                                favoriteGames.push({ ...game, id: v.favoriteId, name: `${game.name} - ${v.name}`, url: vUrl, versions: undefined }); 
-                            }
-                        }); 
-                    }
-                });
-                renderGames(favoriteGames.sort((a, b) => a.name.localeCompare(b.name)), favoritesGameList, true);
-            } else {
-                favoritesHeader.style.display = "none";
-                favoritesGameList.style.display = "none";
-            }
+            const favIds = getFavorites().map(String);
+            const section = document.getElementById("favoritesSection");
+            const list = document.getElementById("favoritesGameList");
+            if (favIds.length > 0) {
+                section.classList.remove('hidden');
+                list.innerHTML = '';
+                allGames.filter(g => favIds.includes(String(g.id))).forEach(g => list.appendChild(createGameCard(g, true)));
+            } else section.classList.add('hidden');
         }
 
-        // --- Category Nav ---
-        function updateArrowVisibility() {
-            prevCategoryBtn.disabled = currentCategoryIndex === 0;
-            nextCategoryBtn.disabled = currentCategoryIndex === categories.length - 1;
+        function openZone(name, url, id) {
+            const viewer = document.getElementById('zoneViewer');
+            const frame = document.getElementById('zoneFrame');
+            document.getElementById('zoneNameEl').textContent = name;
+            frame.src = url;
+            viewer.classList.add('active');
         }
 
-        function switchCategory(newIndex) {
-            currentCategoryIndex = newIndex;
-            categorySlider.style.transform = `translateX(-${currentCategoryIndex * (100 / categories.length)}%)`;
-            renderGamesForCurrentCategory();
-            updateArrowVisibility();
-            updateURL(categories[currentCategoryIndex]);
-        }
-        
-        async function renderGamesForCurrentCategory() {
-            const categoryName = categories[currentCategoryIndex];
-            gamesGridContainer.classList.add('opacity-0');
-            await new Promise(r => setTimeout(r, 150));
-            renderGames(allGames.filter(g => g.category === categoryName), gamesGridContainer, false);
-            gamesGridContainer.classList.remove('opacity-0');
-        }
+        window.closeZoneViewer = () => {
+            const viewer = document.getElementById('zoneViewer');
+            document.getElementById('zoneFrame').src = 'about:blank';
+            viewer.classList.remove('active');
+        };
 
-        // --- Search ---
-        function debounce(func, delay) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), delay);
-            };
+        document.getElementById('closeBtnZone').onclick = window.closeZoneViewer;
+        document.getElementById('fullscreenBtnZone').onclick = () => document.getElementById('zoneFrame').requestFullscreen();
+
+        async function switchCategory(idx) {
+            currentCategoryIndex = idx;
+            const container = document.getElementById('games-grid-container');
+            container.style.opacity = '0';
+            setTimeout(() => {
+                const cat = categories[idx];
+                document.getElementById('active-category-title').textContent = cat;
+                container.innerHTML = '';
+                allGames.filter(g => g.category === cat).forEach(g => container.appendChild(createGameCard(g)));
+                container.style.opacity = '1';
+                updateCategoryNav();
+            }, 150);
         }
 
-        const handleSearch = debounce(() => {
-            const text = searchInput.value.toLowerCase().trim();
-            const filteredDropdown = text ? searchableGames.filter(g => g.name.toLowerCase().includes(text)).slice(0, 5) : [];
-            
-            searchResults.innerHTML = "";
-            
-            if (filteredDropdown.length === 0 || !text) {
-                searchResults.style.display = "none";
-                searchDivider.style.display = "none";
-                return;
-            }
-            
-            const favorites = getFavorites().map(String);
-            filteredDropdown.forEach(game => {
-                const isStrongdog = game.category === 'StrongdogXP';
-                let imgSrc;
-                let finalGameData = { ...game }; // clone
+        function updateCategoryNav() {
+            const nav = document.getElementById('category-nav');
+            nav.innerHTML = categories.map((cat, i) => `
+                <button class="category-item ${i === currentCategoryIndex ? 'active' : ''}" data-idx="${i}">
+                    <i class="fa-solid fa-layer-group opacity-30"></i>
+                    <span>${cat}</span>
+                </button>
+            `).join('');
+            nav.querySelectorAll('.category-item').forEach(btn => btn.onclick = () => switchCategory(parseInt(btn.dataset.idx)));
+        }
 
-                if (isStrongdog) {
-                    const { adjustedImgSrc } = getAdjustedUrls(game.imgSrc, game.page);
-                    imgSrc = adjustedImgSrc;
-                } else if (game.category === 'Others' || game.category === 'Gameboy Games') {
-                    imgSrc = resolveGameUrl(game.imgSrc);
-                    finalGameData.url = resolveGameUrl(game.url);
-                } else {
-                    imgSrc = game.imgSrc;
-                }
-                
-                const linkEl = document.createElement("a");
-                linkEl.href = '#';
-                linkEl.className = 'search-item flex justify-between items-center';
-                linkEl.dataset.gameId = game.id;
-                let isFavorite = favorites.includes(String(game.id));
-
-                const catLabel = game.category === 'StrongdogXP' ? 'StrongdogXP' : (game.category === 'GN-Math' ? 'GN-Math' : 'Others');
-                const catColor = game.category === 'StrongdogXP' ? 'text-strongdog-orange' : (game.category === 'GN-Math' ? 'text-gn-math' : 'text-gray-400');
-
-                const smartTextClass = getSmartTextColor();
-                
-                linkEl.innerHTML = `
-                    <div class="flex items-center truncate min-w-0">
-                        <img src="${imgSrc}" alt="${game.name}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
-                        <div class="flex flex-col ml-3 truncate min-w-0">
-                            <span class="font-medium truncate ${smartTextClass}" title="${game.name}">${game.name}</span>
-                            <span class="category-badge w-fit ${catColor}">${catLabel}</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center flex-shrink-0">
-                        <div class="bg-[var(--accent-glow)] backdrop-blur-md rounded-2xl p-1.5 flex items-center gap-1.5 border border-[var(--accent-color)] shadow-lg">
-                            ${game.isDownload ? `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download transition-colors"></i></a>` : `<button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>`}
-                            <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}">
-                                <i class="fa-solid fa-star fa-solid-star transition-colors"></i>
-                                <i class="fa-regular fa-star fa-regular-star transition-colors"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                const favBtn = linkEl.querySelector('.fav-action');
-                favBtn.addEventListener('click', (e) => {
-                    e.preventDefault(); e.stopPropagation(); 
-                    toggleFavorite(game.id);
-                });
-
-                linkEl.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    if (game.isDownload) {
-                        window.open(game.url, '_blank');
-                        return;
-                    }
-                    if (isStrongdog) {
-                        const baseURL = sd_getBaseURLForPage(game.page);
-                        let adjustedHref = baseURL.endsWith("/") ? baseURL + game.href.replace(/^\.\//, "") : baseURL + "/" + game.href.replace(/^\.\//, "");
-                        const embedPath = await sd_getEmbedPath(adjustedHref, game.href, game.page);
-                        const strongdogGameData = { name: game.name, url: embedPath, category: game.category, id: game.id };
-                        openZone(strongdogGameData);
-                    } else {
-                        openZone(finalGameData);
-                    }
-                    searchResults.style.display = "none";
-                    searchDivider.style.display = "none";
-                });
-                searchResults.appendChild(linkEl);
-            });
-            searchResults.style.display = "block";
-            searchDivider.style.display = "block";
-        }, 250);
-
-        // --- FETCHING DATA MANUALLY (NO MODULES) ---
-        // This function fetches the JS file as text, transforms it to set a global variable, and evals it.
-        // This bypasses module loading restrictions on file:// protocols.
-        async function fetchGameData() {
+        async function init() {
             try {
-                // Fetch the file
-                const response = await fetch(CARDS_DATA_URL);
-                if (!response.ok) throw new Error('Failed to fetch game data');
-                let scriptText = await response.text();
+                const res = await fetch(CARDS_DATA_URL);
+                const text = await res.text();
+                const data = eval(text.replace('export default', ''));
+                allGames = data.map(g => ({ ...g, category: 'StrongdogXP' }));
                 
-                // Transform 'export default' to 'window.loadedGameData ='
-                // This assumes the file structure is simple "export default [...]"
-                if (scriptText.includes('export default')) {
-                    scriptText = scriptText.replace('export default', 'window.loadedGameData =');
-                }
-                
-                // Execute the script
-                // We use new Function instead of eval for slight isolation, though still unsafe for untrusted code
-                // (But we trust this source).
-                // However, new Function creates a local scope. We need global assignment.
-                // Standard eval or appending a script tag is better.
-                const scriptEl = document.createElement('script');
-                scriptEl.textContent = scriptText;
-                document.body.appendChild(scriptEl);
-                
-                // Wait a tick for execution
-                await new Promise(resolve => setTimeout(resolve, 0));
-                
-                if (window.loadedGameData) {
-                    return window.loadedGameData;
-                } else {
-                    console.warn("Script loaded but window.loadedGameData is undefined");
-                    return [];
-                }
-            } catch (e) {
-                console.error("Error manual loading games:", e);
-                return [];
-            }
+                categories = ['StrongdogXP'];
+                updateCategoryNav();
+                switchCategory(0);
+                renderFavorites();
+
+                document.getElementById('searchInput').oninput = (e) => {
+                    const term = e.target.value.toLowerCase();
+                    const container = document.getElementById('games-grid-container');
+                    container.innerHTML = '';
+                    allGames.filter(g => g.name.toLowerCase().includes(term)).slice(0, 50).forEach(g => container.appendChild(createGameCard(g)));
+                };
+            } catch (e) { console.error(e); }
         }
 
-        // --- Init ---
-        async function initializeApp() {
-            // --- PRIVILEGE CHECK ---
-            const checkPrivilege = () => {
-                return new Promise((resolve) => {
-                    const check = async () => {
-                        if (typeof firebase === 'undefined' || !firebase.apps.length) {
-                            setTimeout(check, 100);
-                            return;
-                        }
-                        const auth = firebase.auth();
-                        const validate = async (u) => {
-                            if (!u) return false;
-                            if (u.email === 'otweno30@minerva.sparcc.org' || u.email === '4simpleproblems@gmail.com') return true;
-                            const db = firebase.firestore();
-                            try {
-                                const adminDoc = await db.collection('admins').doc(u.uid).get();
-                                return adminDoc.exists;
-                            } catch (e) {
-                                return false;
-                            }
-                        };
-                        const user = auth.currentUser;
-                        if (user) resolve(await validate(user));
-                        else {
-                            const unsubscribe = auth.onAuthStateChanged(async (u) => {
-                                unsubscribe();
-                                resolve(await validate(u));
-                            });
-                        }
-                    };
-                    check();
-                });
-            };
-
-            const isAuthorized = await checkPrivilege();
-            const filteredOthers = othersGames.filter(g => !g.privileged || isAuthorized);
-
-            // Load Game Data Manually
-            let gamesData = [];
-            try {
-                gamesData = await fetchGameData();
-            } catch (e) {
-                console.error("Could not load external games data", e);
-            }
-            
-            const strongdogGames = gamesData.map(g => ({ ...g, category: 'StrongdogXP' }));
-            
-            try {
-                let sharesponse;
-                let shajson;
-                let sha;
-                try {
-                    sharesponse = await fetch("https://api.github.com/repos/gn-math/assets/commits?t="+Date.now());
-                } catch (error) {}
-                if (sharesponse && sharesponse.status === 200) {
-                    try {
-                        shajson = await sharesponse.json();
-                        sha = shajson[0]['sha'];
-                        if (sha) {
-                            zonesURL = `https://cdn.jsdelivr.net/gh/gn-math/assets@${sha}/zones.json`;
-                        }
-                    } catch (error) {
-                        try {
-                            let secondarysharesponse = await fetch("https://raw.githubusercontent.com/gn-math/xml/refs/heads/main/sha.txt?t="+Date.now());
-                            if (secondarysharesponse && secondarysharesponse.status === 200) {
-                                sha = (await secondarysharesponse.text()).trim();
-                                if (sha) {
-                                    zonesURL = `https://cdn.jsdelivr.net/gh/gn-math/assets@${sha}/zones.json`;
-                                }
-                            }
-                        } catch(error) {}
-                    }
-                }
-
-                // Fetch data for popularity (not actively used for sort here, but part of the original logic)
-                const popularityData = {};
-                try {
-                    const response = await fetch("https://data.jsdelivr.com/v1/stats/packages/gh/gn-math/html@main/files?period=year");
-                    const data = await response.json();
-                    data.forEach(file => {
-                        const idMatch = file.name.match(/\/(\d+)\.html$/);
-                        if (idMatch) {
-                            const id = parseInt(idMatch[1]);
-                            popularityData[id] = file.hits.total;
-                        }
-                    });
-                } catch (error) {
-                    popularityData[0] = 0;
-                }
-
-                const response = await fetch(zonesURL+"?t="+Date.now());
-                const gnMathRaw = await response.json();
-                
-                // Map to local structure using dynamic replacements
-                const gnMathGames = gnMathRaw.map(g => ({ 
-                    id: `gn-${g.id}`, 
-                    name: g.name, 
-                    imgSrc: g.cover.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL), 
-                    category: 'GN-Math', 
-                    url: g.url.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL),
-                    popularity: popularityData[g.id] || 0
-                }));
-                
-                allGames = [...strongdogGames, ...gnMathGames, ...filteredOthers];
-            } catch (error) { 
-                console.warn("Failed to load GN-Math, falling back to others.", error);
-                allGames = [...strongdogGames, ...filteredOthers]; 
-            }
-
-            try {
-                const blacklistRes = await fetch("https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/blacklisted_games.json");
-                const blacklist = await blacklistRes.json();
-                allGames = allGames.filter(g => !blacklist.some(term => g.name.toLowerCase().includes(term.toLowerCase())));
-            } catch (err) {
-                console.warn("Failed to fetch game blacklist:", err);
-                allGames = allGames.filter(g => !['bitlife', 'soundboard', 'five nights at e'].some(term => g.name.toLowerCase().includes(term)));
-            }
-            
-            searchableGames = [];
-            allGames.forEach(game => {
-                if (game.versions && game.versions.length > 0) {
-                    game.versions.forEach(version => {
-                        searchableGames.push({
-                            ...game,
-                            id: version.favoriteId,
-                            name: `${game.name} - ${version.name}`,
-                            url: version.url,
-                            wasm: version.wasm,
-                            versions: undefined,
-                            baseGameId: game.id
-                        });
-                    });
-                } else {
-                    searchableGames.push(game);
-                }
-            });
-
-            categories = ['StrongdogXP', 'GN-Math', 'Gameboy Games', 'Others'].filter(cat => allGames.some(g => g.category === cat));
-
-            const { category: urlCat } = parseURL();
-            if (urlCat) currentCategoryIndex = Math.max(0, categories.findIndex(c => c.replace(/\s+/g, '-').toLowerCase() === urlCat.toLowerCase()));
-
-            categorySlider.style.width = `${categories.length * 100}%`;
-            categorySlider.innerHTML = categories.map(cat => `<div class="w-64 flex-shrink-0"><h2 class="text-3xl font-medium ${categoryColors[cat] || 'text-[var(--text-main)]'}"><strong>${cat}</strong></h2></div>`).join('');
-
-            switchCategory(currentCategoryIndex);
-            
-            // Sync search input with smart text
-            const smartTextClass = getSmartTextColor();
-            searchInput.classList.add(smartTextClass);
-            
-            renderFavorites();
-            
-            searchInput.placeholder = `Search all games...`;
-            searchInput.addEventListener("input", handleSearch);
-            searchInput.addEventListener("focus", handleSearch);
-
-            document.addEventListener("click", ev => {
-                if (!document.getElementById('bottom-fixed-bar').contains(ev.target)) {
-                    searchResults.style.display = "none";
-                    searchDivider.style.display = "none";
-                }
-                if (!ev.target.closest('.version-btn') && !ev.target.closest('.version-favorite-btn') && !ev.target.closest('.eagler-dropdown')) {
-                    document.querySelectorAll('.eagler-dropdown.show').forEach(d => {
-                        d.classList.remove('show');
-                    });
-                }
-            });
-
-            prevCategoryBtn.addEventListener('click', () => switchCategory(currentCategoryIndex - 1));
-            nextCategoryBtn.addEventListener('click', () => switchCategory(currentCategoryIndex + 1));
-            document.getElementById('closeBtnZone').addEventListener('click', closeZoneViewer);
-
-            // If the user clicks the black background around the game, force focus back to the game
-            document.getElementById('zoneViewer').addEventListener('click', (e) => {
-                // Don't refocus if they clicked a button in the header
-                if (e.target.closest('.zone-controls')) return;
-                
-                const zoneFrame = document.getElementById('zoneFrame');
-                if (zoneFrame && zoneFrame.contentWindow) {
-                    zoneFrame.contentWindow.focus();
-                    zoneFrame.focus();
-                }
-            });
-
-            // --- FULLSCREEN BUTTON LISTENER ---
-            document.getElementById('fullscreenBtnZone').addEventListener('click', () => {
-                const zoneFrame = document.getElementById('zoneFrame');
-                if (zoneFrame && zoneFrame.requestFullscreen) {
-                    zoneFrame.requestFullscreen();
-                } else if (zoneFrame && zoneFrame.webkitRequestFullscreen) {
-                    zoneFrame.webkitRequestFullscreen();
-                } else if (zoneFrame && zoneFrame.msRequestFullscreen) {
-                    zoneFrame.msRequestFullscreen();
-                }
-            });
-
-            // --- SCROLL PREVENTION LOGIC ---
-            window.addEventListener('keydown', (e) => {
-                const zoneViewer = document.getElementById('zoneViewer');
-                // Check if any game player is active
-                if (zoneViewer && zoneViewer.style.display === 'flex') {
-                    const scrollKeys = ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
-                    if (scrollKeys.includes(e.code) || (e.key === ' ' || scrollKeys.includes(e.key))) {
-                        // Only prevent if focus is on the page itself or the iframe
-                        e.preventDefault();
-                    }
-                }
-            }, false);
-
-            const updateNavButtons = () => {
-                const scrollTop = creditsScrollContainer.scrollTop;
-                const maxScroll = creditsScrollContainer.scrollHeight - creditsScrollContainer.clientHeight;
-                
-                // Allow a small buffer (e.g., 5px) for floating point inaccuracies
-                creditsPrevBtn.disabled = scrollTop <= 5;
-                creditsNextBtn.disabled = scrollTop >= maxScroll - 5;
-            };
-
-            creditsScrollContainer.addEventListener('scroll', updateNavButtons);
-
-            creditsBtn.addEventListener('click', () => { 
-                creditsModal.classList.add('active');
-                creditsScrollContainer.innerHTML = '';
-                
-                Object.keys(CREDITS_DATA).forEach(key => {
-                    const data = CREDITS_DATA[key];
-                    const section = document.createElement('section');
-                    section.className = 'credit-section';
-                    
-                    let linksHtml = '';
-                    if (data.links.length > 0) {
-                        linksHtml = `<div class="credit-links">` + data.links.map(l => `
-                            <a href="${l.url}" target="_blank" class="credit-btn" style="border-color: ${data.color}; color: ${data.color}; background: ${data.color}1a;">
-                                <i class="fa-brands fa-${l.type}"></i> ${l.label}
-                            </a>
-                        `).join('') + `</div>`;
-                    }
-
-                    section.innerHTML = `
-                        <div class="credit-content-grid">
-                            <div class="credit-text-col">
-                                <h2 class="credit-title" style="background: ${data.color}; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${key}</h2>
-                                <p class="credit-desc" style="border-left: 2px solid ${data.color}; padding-left: 1rem;">${data.desc}</p>
-                                ${linksHtml}
-                            </div>
-                            <div class="credit-img-col">
-                                <img src="${data.logo}" class="credit-logo" onerror="this.style.display='none'">
-                            </div>
-                        </div>
-                    `;
-                    creditsScrollContainer.appendChild(section);
-                });
-                
-                // Reset scroll and update buttons after rendering
-                requestAnimationFrame(() => {
-                    creditsScrollContainer.scrollTop = 0;
-                    updateNavButtons();
-                });
-            });
-            
-            closeCreditsFixed.addEventListener('click', () => {
-                creditsModal.classList.remove('active');
-            });
-
-            creditsPrevBtn.addEventListener('click', () => {
-                creditsScrollContainer.scrollBy({ top: -window.innerHeight, behavior: 'smooth' });
-            });
-
-            creditsNextBtn.addEventListener('click', () => {
-                creditsScrollContainer.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', initializeApp);
+        init();
     </script>
 </body>
 </html>

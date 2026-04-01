@@ -16,6 +16,7 @@
         const sidebarTabs = document.querySelectorAll('.settings-tab');
         const mainView = document.getElementById('settings-main-view');
         let currentUser = null; // To store the authenticated user object
+        let currentSource = 'supabase'; // Default to supabase
         let isUserAdmin = false; // Stores admin status result to prevent race conditions
         
         // --- NEW: Global var for loading overlay (from index.html) ---
@@ -4458,9 +4459,10 @@
 
 
         async function initializeAuth() {
-            const handleUser = async (user) => {
+            const handleUser = async (user, source = 'supabase') => {
                 if (user) {
                     currentUser = user;
+                    currentSource = source;
                     const uid = user.id;
                     
                     // Check admin status

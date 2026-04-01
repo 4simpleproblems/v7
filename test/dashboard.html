@@ -12,325 +12,265 @@
 <script src="../injector.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-        :root {
-            --bg-page: var(--bg-primary, #040404);
-            --bg-container: var(--bg-secondary, #080808);
-            --border-color: var(--border-secondary, rgba(255,255,255,0.05));
-            --accent-color: var(--accent-primary, #4f46e5);
-            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
-            --text-main: var(--text-primary, #ffffff);
-            --text-muted: var(--text-secondary, #c0c0c0);
-        }
+    :root {
+        --bg-page: var(--bg-primary, #000000);
+        --bg-card: var(--bg-secondary, #0d0d0d);
+        --text-main: var(--text-primary, #ffffff);
+        --text-muted: var(--text-secondary, #c0c0c0);
+        --accent-color: var(--accent-primary, #4f46e5);
+        --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+        --border-main: var(--border-primary, #1a1a1a);
+        --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+        --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+        --btn-text: var(--button-text, #4f46e5);
+    }
 
-        body { 
-            font-family: 'Geist', sans-serif; 
-            background-color: var(--bg-page);
-            color: var(--text-main);
-            font-weight: 300;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+    * { box-sizing: border-box; }
 
-        #page-content {
-            flex-grow: 1;
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            grid-template-rows: repeat(12, minmax(0, 1fr));
-            gap: 1.5rem;
-            padding: 2.5rem;
-            width: 100%;
-            height: calc(100vh - 64px);
-            box-sizing: border-box;
-            overflow: hidden;
-        }
+    body { 
+        font-family: 'Geist', sans-serif; 
+        color: var(--text-main);
+        background-color: var(--bg-page);
+        font-weight: 300;
+        overflow: hidden;
+    }
 
-        @media (max-width: 1024px) {
-            #page-content {
-                display: flex;
-                flex-direction: column;
-                height: auto;
-                overflow-y: visible;
-            }
-            .dashboard-card {
-                grid-column: span 12 !important;
-                grid-row: span 1 !important;
-                min-height: 200px;
-            }
-        }
+    /* Subtle dot grid */
+    .grid-bg {
+        background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
+        background-size: 24px 24px;
+    }
 
-        .dashboard-card {
-            background: var(--bg-container);
-            border: 1px solid var(--border-color);
-            border-radius: 28px;
-            padding: 1.75rem;
-            position: relative;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
-        }
+    #dynamic-background {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%);
+        pointer-events: none;
+        z-index: -1;
+    }
 
-        .dashboard-card:hover:not(.no-hover) {
-            border-color: var(--accent-color);
-            background: var(--bg-secondary);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-        }
+    /* Dashboard Layout */
+    #dashboard-container {
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+    }
 
-        /* --- LAYOUT SLOTS --- */
-        #welcome-section {
-            grid-column: span 4;
-            grid-row: span 5;
-            background: transparent;
-            border: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding-left: 0;
-        }
+    /* Sidebar Style */
+    #dashboard-sidebar {
+        width: 380px;
+        shrink-0: 0;
+        border-right: 1px solid var(--border-main);
+        background: var(--bg-card);
+        padding: 40px;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
 
-        #analytics-left {
-            grid-column: span 4;
-            grid-row: span 7;
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-            background: transparent;
-            border: none;
-            padding: 0;
-        }
+    #dashboard-main-view {
+        flex-grow: 1;
+        padding: 64px;
+        overflow-y: auto;
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        grid-auto-rows: min-content;
+        gap: 2rem;
+    }
 
-        #quick-access-section {
-            grid-column: span 8;
-            grid-row: span 7;
-            display: flex;
-            flex-direction: column;
-        }
+    .dashboard-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-main);
+        border-radius: 2rem;
+        padding: 2.5rem;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+        box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
+    }
+    .dashboard-card:hover:not(.no-hover) {
+        border-color: var(--accent-color);
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
 
-        /* --- COMPONENTS --- */
-        .time-display { font-size: 4.5rem; font-weight: 200; line-height: 1; letter-spacing: -0.04em; color: var(--text-main); }
-        
-        /* Scalable clock for large screens */
-        @media (min-width: 1600px) {
-            .time-display { font-size: 6vw; }
-        }
+    .time-display { font-size: 5rem; font-weight: 200; line-height: 1; letter-spacing: -0.04em; }
+    .date-display { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3em; opacity: 0.3; margin-bottom: 0.5rem; }
 
-        .date-display { font-size: 1.2rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 0.5rem; opacity: 0.6; }
-        .welcome-msg { font-size: 2rem; font-weight: 300; margin-top: 1.5rem; color: var(--text-secondary); }
+    .label-tiny { font-size: 0.6rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.4; }
+    .val-big { font-size: 2rem; font-weight: 400; color: var(--text-main); margin-top: 0.25rem; }
 
-        .stat-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 1.25rem;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
+    .btn-toolbar-style {
+        background: var(--bg-card);
+        border: 1px solid var(--border-main);
+        border-radius: 16px;
+        color: var(--text-muted);
+        padding: 0.6rem 1.25rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+    }
+    .btn-toolbar-style:hover {
+        border-color: var(--accent-color);
+        color: var(--text-main);
+        background: var(--btn-bg);
+    }
+    .btn-primary-override {
+        background-color: var(--btn-bg) !important;
+        border: 1px solid var(--accent-color) !important;
+        color: var(--accent-color) !important;
+    }
+    .btn-primary-override:hover {
+        background-color: var(--accent-color) !important;
+        color: #fff !important;
+    }
 
-        .label-tiny { font-size: 0.65rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.5; }
-        .val-big { font-size: 1.75rem; font-weight: 500; color: var(--text-main); margin-top: 0.25rem; }
-        #stat-total-time { font-size: 3rem; }
-        .val-sub { font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.25rem; opacity: 0.6; }
+    .nav-link-box {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+        border-radius: 16px;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+    }
+    .nav-link-box i { width: 1.25rem; text-align: center; font-size: 1rem; }
+    .nav-link-box:hover {
+        background: var(--btn-bg);
+        color: var(--accent-color);
+        border-color: var(--accent-glow);
+    }
 
-        /* --- LEADERBOARD WIDGET --- */
-        #leaderboard-widget {
-            grid-column: span 8;
-            grid-row: span 5;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 28px;
-            padding: 2.5rem 3.5rem;
-            display: flex;
-            flex-direction: row; /* Horizontal layout */
-            align-items: center;
-            justify-content: space-between;
-            gap: 3rem;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-        #leaderboard-widget.greyed-out {
-            filter: grayscale(1) brightness(0.5);
-        }
-        #leaderboard-overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(8px);
-            border-radius: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 20;
-            pointer-events: auto; /* Ensure clicks are captured */
-        }
+    .page-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    .page-btn {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--border-main);
+        border-radius: 1.25rem;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .page-btn:hover {
+        background: var(--btn-bg);
+        border-color: var(--accent-color);
+        transform: scale(1.02);
+    }
 
-        .page-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-            margin-top: 1rem;
-            /* Hide scrollbars and allow overflow for hover effects */
-            overflow: visible;
-        }
-
-        .page-btn {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: rgba(255,255,255,0.02);
-            border: 1px solid var(--border-color);
-            border-radius: 18px;
-            transition: all 0.2s;
-            cursor: pointer;
-            /* Ensure the button stays above others during animation */
-            position: relative;
-            z-index: 1;
-        }
-        .page-btn:hover {
-            background: var(--button-bg);
-            border-color: var(--accent-color);
-            transform: scale(1.05);
-            z-index: 10;
-        }
-        .page-btn.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
-
-        .icon-box {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: rgba(255,255,255,0.03);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--accent-color);
-            font-size: 1.2rem;
-        }
-
-        .weather-row { display: flex; align-items: flex-end; justify-content: space-between; }
-        .temp-text { font-size: 4rem; font-weight: 500; line-height: 1; }
-        
-        #weather-loader { position: absolute; top: 1.5rem; right: 1.75rem; color: var(--accent-color); opacity: 0; }
-        #weather-loader.loading { opacity: 1; }
-
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-    </style><style>
-        :root {
-            --bg-page: var(--bg-primary, #000000);
-            --bg-card: var(--bg-secondary, #0d0d0d);
-            --text-main: var(--text-primary, #ffffff);
-            --text-muted: var(--text-secondary, #c0c0c0);
-            --accent-color: var(--accent-primary, #4f46e5);
-            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
-            --border-main: var(--border-primary, #1a1a1a);
-            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
-            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
-            --btn-text: var(--button-text, #4f46e5);
-        }
-
-        * { box-sizing: border-box; }
-
-        body { 
-            font-family: 'Geist', sans-serif; 
-            color: var(--text-main);
-            background-color: var(--bg-page);
-            font-weight: 300;
-        }
-
-        /* Subtle dot grid */
-        .grid-bg {
-            background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
-            background-size: 24px 24px;
-        }
-
-        #dynamic-background {
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%);
-            pointer-events: none;
-            z-index: -1;
-        }
+    .custom-scroll::-webkit-scrollbar { width: 0; }
 </style>
 </head>
-<body class="grid-bg min-h-screen relative"><div id="dynamic-background"></div><div id="navbar-container"></div>
-<div id="page-content">
-<!-- WELCOME SECTION -->
-<div class="dashboard-card no-hover" id="welcome-section">
-<div class="date-display" id="clock-date">--------</div>
-<div class="time-display" id="clock-time">00:00:00</div>
-<h2 class="welcome-msg">Good day, <span id="user-name-display" style="color: var(--accent-primary);">User</span>.</h2>
-</div>
-<!-- LEADERBOARD WIDGET -->
-<div class="dashboard-card greyed-out" id="leaderboard-widget">
-<div class="flex flex-col justify-center border-r border-white/5 pr-10 h-full">
-<div class="label-tiny">Your Rank</div>
-<div class="text-6xl font-bold mt-1" id="leaderboard-rank" style="color: var(--accent-primary);">#--</div>
-<div class="text-[12px] opacity-60 mt-1 uppercase tracking-widest font-bold" style="color: var(--text-muted);">Global Standing</div>
-</div>
-<div class="flex-grow flex items-center gap-10 px-6">
-<div class="w-24 h-24 rounded-[32px] flex items-center justify-center overflow-hidden flex-shrink-0" id="user-avatar-widget" style="background: var(--button-bg); border: 1px solid var(--border-color);">
-<i class="fas fa-user text-3xl" style="color: var(--accent-primary);"></i>
-</div>
-<div class="min-w-0">
-<div class="label-tiny">Your Statistics</div>
-<div class="text-4xl font-semibold truncate mt-1" id="user-stats-name" style="color: var(--text-primary);">Loading...</div>
-<div class="text-sm font-mono mt-1" id="user-stats-time" style="color: var(--text-secondary); opacity: 0.7;">0h 0m total</div>
-</div>
-</div>
-<div class="flex flex-col gap-2">
-<a class="inline-flex items-center justify-center py-4 px-8 border rounded-3xl text-sm font-medium transition group" href="leaderboard.html" style="background: var(--button-bg); border-color: var(--border-primary); color: var(--accent-primary);">
-                    Rankings <i class="fas fa-trophy ml-2 group-hover:scale-110 transition-transform"></i>
-</a>
-</div>
-<div id="leaderboard-overlay">
-<div class="text-center p-4" id="leaderboard-prompt-content">
-<p class="text-xs mb-3" id="leaderboard-prompt-text" style="color: var(--text-muted); opacity: 0.8;">Join the leaderboard to see your rank</p>
-<button class="py-2.5 px-6 hover:opacity-90 rounded-2xl text-xs font-medium transition shadow-lg" id="accept-leaderboard-btn" style="background: var(--accent-primary); color: #fff;">
-                        Accept Terms
-                    </button>
-<div class="mt-2">
-<a class="text-[10px] hover:underline text-white/80 hover:text-white transition-colors font-medium" href="../legal.html#leaderboard-terms" target="_blank">View Terms</a>
-</div>
-</div>
-</div>
-</div>
-<!-- ANALYTICS LEFT -->
-<div class="dashboard-card no-hover" id="analytics-left">
-<div class="stat-card">
-<div>
-<div class="label-tiny">Experience Time</div>
-<div class="val-big" id="stat-total-time" style="color: var(--text-primary);">0h 0m</div>
-</div>
-<div class="val-sub">Total session duration in V6</div>
-</div>
-<div class="stat-card">
-<div>
-<div class="label-tiny">System Analytics</div>
-<div class="text-sm font-medium" id="stat-browser" style="color: var(--accent-primary);">Loading...</div>
-<div class="text-xs mt-1" id="stat-os" style="color: var(--text-muted); opacity: 0.6;">Detecting OS</div>
-</div>
-<div class="text-[10px] uppercase font-bold tracking-widest" id="stat-device" style="color: var(--text-muted); opacity: 0.4;">Project Niobium</div>
-</div>
-</div>
-<!-- QUICK ACCESS SECTION -->
-<div class="dashboard-card" id="quick-access-section">
-<div class="flex justify-between items-center">
-<div>
-<div class="label-tiny">Recently Accessed</div>
-<h3 class="text-xl font-medium mt-1" style="color: var(--text-primary); opacity: 0.8;">Most Opened Pages</h3>
-</div>
-<div class="text-3xl font-light" id="stat-pageviews" style="color: var(--text-muted); opacity: 0.2;">0</div>
-</div>
-<div class="page-grid flex-grow" id="recent-pages-list">
-<div class="col-span-2 py-20 text-center italic text-sm" style="color: var(--text-muted); opacity: 0.6;">Synchronizing analytics...</div>
-</div>
-</div>
-</div>
+
+<body class="grid-bg min-h-screen relative">
+
+<div id="dynamic-background"></div>
+<div id="navbar-container"></div>
+
+<main id="dashboard-container">
+    <!-- SIDEBAR -->
+    <aside id="dashboard-sidebar" class="custom-scroll">
+        <div class="mb-12">
+            <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2">Workspace</p>
+            <h2 class="text-4xl font-light tracking-tight">Dashboard</h2>
+        </div>
+
+        <!-- Profile Overview (Simplified) -->
+        <div class="mb-10 flex items-center gap-5">
+            <div id="user-avatar-sidebar" class="w-14 h-14 rounded-2xl overflow-hidden bg-white/5 border border-white/5"></div>
+            <div>
+                <h3 id="sidebar-user-name" class="font-medium">User</h3>
+                <p class="text-[10px] font-black uppercase tracking-widest opacity-30">Active Session</p>
+            </div>
+        </div>
+
+        <nav class="flex flex-col gap-2 mb-10">
+            <a href="/test/profile.html" class="nav-link-box">
+                <i class="fa-solid fa-user"></i> My Profile
+            </a>
+            <a href="/test/leaderboard.html" class="nav-link-box">
+                <i class="fa-solid fa-trophy"></i> Leaderboard
+            </a>
+            <a href="/test/settings.html" class="nav-link-box">
+                <i class="fa-solid fa-gear"></i> Settings
+            </a>
+        </nav>
+
+        <div class="mt-auto">
+            <div class="p-6 rounded-2xl bg-white/5 border border-white/5">
+                <div class="label-tiny mb-2">Project Niobium</div>
+                <p class="text-[10px] opacity-40 leading-relaxed">System performance is optimal. Connected to secure global infrastructure.</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN VIEW -->
+    <section id="dashboard-main-view" class="custom-scroll">
+        <!-- Clock Section -->
+        <div class="dashboard-card no-hover col-span-12 lg:col-span-6 flex flex-col justify-center">
+            <div id="clock-date" class="date-display">--------</div>
+            <div id="clock-time" class="time-display text-[var(--accent-color)]">00:00:00</div>
+            <h2 class="text-2xl font-light mt-8">Welcome back, <span id="user-name-display" class="font-medium text-[var(--text-main)]">User</span>.</h2>
+        </div>
+
+        <!-- Stats (Small) -->
+        <div class="dashboard-card no-hover col-span-12 lg:col-span-3 flex flex-col justify-between">
+            <div>
+                <div class="label-tiny">Experience Time</div>
+                <div id="stat-total-time" class="val-big">0h 0m</div>
+            </div>
+            <div class="text-[10px] opacity-30 uppercase tracking-widest font-black">Total Activity</div>
+        </div>
+
+        <div class="dashboard-card no-hover col-span-12 lg:col-span-3 flex flex-col justify-between">
+            <div>
+                <div class="label-tiny">Leaderboard Rank</div>
+                <div id="leaderboard-rank" class="val-big text-[var(--accent-color)]">#--</div>
+            </div>
+            <div class="text-[10px] opacity-30 uppercase tracking-widest font-black">Global Position</div>
+        </div>
+
+        <!-- Quick Access / Recent -->
+        <div class="dashboard-card col-span-12 lg:col-span-8">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <div class="label-tiny">Activity</div>
+                    <h3 class="text-xl font-medium mt-1">Recent Pages</h3>
+                </div>
+                <div id="stat-pageviews" class="text-4xl font-light opacity-10">0</div>
+            </div>
+            <div id="recent-pages-list" class="page-grid">
+                <div class="col-span-2 py-12 text-center italic text-sm opacity-20">Synchronizing...</div>
+            </div>
+        </div>
+
+        <!-- System Info -->
+        <div class="dashboard-card no-hover col-span-12 lg:col-span-4 flex flex-col justify-between">
+            <div class="mb-8">
+                <div class="label-tiny">Network Status</div>
+                <div id="stat-browser" class="text-lg font-medium mt-1 text-[var(--accent-color)]">Detecting...</div>
+                <div id="stat-os" class="text-xs opacity-40 mt-1">Analyzing environment</div>
+            </div>
+            <div class="pt-8 border-t border-white/5">
+                <div class="label-tiny mb-2">Environment</div>
+                <div id="stat-device" class="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Project Niobium</div>
+            </div>
+        </div>
+    </section>
+</main>
 <script type="module">
         import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -447,7 +387,14 @@
                     
                     if (data) {
                         document.getElementById('user-name-display').textContent = data.displayName || data.username || "User";
+                        document.getElementById('sidebar-user-name').textContent = data.displayName || data.username || "User";
                         
+                        // Avatar
+                        const avatarSidebar = document.getElementById('user-avatar-sidebar');
+                        if (avatarSidebar) {
+                            avatarSidebar.innerHTML = getAvatarHTML(data, "w-full h-full", false, null, "");
+                        }
+
                         // Leaderboard handling
                         const widget = document.getElementById('leaderboard-widget');
                         const overlay = document.getElementById('leaderboard-overlay');
