@@ -129,7 +129,7 @@
                         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin: 0; line-height: 1.5;">Found a bug? Help us improve by emailing <a href="mailto:4simpleproblems+feedback@gmail.com" style="color: #4f46e5; text-decoration: none; font-weight: 600;">4simpleproblems+feedback@gmail.com</a></p>
                     </div>
 
-                    <button id="close-v65-btn" style="width: 100%; padding: 1rem 2rem; background: rgba(79, 70, 229, 0.1); border: 1px solid #4f46e5; border-radius: 12px; color: #4f46e5; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <button id="close-v65-btn" style="width: 100%; padding: 1rem 2rem; background: rgba(79, 70, 229, 0.1); border: 1px solid #4f46e5; border-radius: 24px; color: #4f46e5; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                         Enter V6.5 <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
                     </button>
                 </div>
