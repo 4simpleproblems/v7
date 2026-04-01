@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4SP - V6 TEASER</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="../injector.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --bg-page: var(--bg-primary, #040404);
+            --bg-container: var(--bg-secondary, #080808);
+            --border-color: var(--border-secondary, rgba(255,255,255,0.05));
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+        }
+
+        body { 
+            font-family: 'Geist', sans-serif; 
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            font-weight: 300;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #page-content {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: repeat(12, 1fr);
+            gap: 1.5rem;
+            padding: 2.5rem;
+            width: 100%;
+            height: calc(100vh - 64px);
+            box-sizing: border-box;
+            overflow-y: auto; /* Allow scroll on small screens */
+        }
+
+        @media (max-width: 1024px) {
+            #page-content {
+                display: flex;
+                flex-direction: column;
+                height: auto;
+                overflow-y: visible;
+            }
+            .dashboard-card {
+                grid-column: span 12 !important;
+                grid-row: span 1 !important;
+                min-height: 200px;
+            }
+        }
+
+        .dashboard-card {
+            background: var(--bg-container);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 1.75rem;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .dashboard-card:hover:not(.no-hover) {
+            border-color: var(--accent-color);
+            background: var(--bg-secondary);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+
+        /* --- LAYOUT SLOTS --- */
+        #welcome-section {
+            grid-column: span 4;
+            grid-row: span 5;
+            background: transparent;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-left: 0;
+        }
+
+        #analytics-left {
+            grid-column: span 4;
+            grid-row: span 7;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        #quick-access-section {
+            grid-column: span 8;
+            grid-row: span 7;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- COMPONENTS --- */
+        .time-display { font-size: 4.5rem; font-weight: 200; line-height: 1; letter-spacing: -0.04em; color: var(--text-main); }
+        
+        /* Scalable clock for large screens */
+        @media (min-width: 1600px) {
+            .time-display { font-size: 6vw; }
+        }
+
+        .date-display { font-size: 1.2rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 0.5rem; opacity: 0.6; }
+        .welcome-msg { font-size: 2rem; font-weight: 300; margin-top: 1.5rem; color: var(--text-secondary); }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.25rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .label-tiny { font-size: 0.65rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.5; }
+        .val-big { font-size: 1.75rem; font-weight: 500; color: var(--text-main); margin-top: 0.25rem; }
+        #stat-total-time { font-size: 3rem; }
+        .val-sub { font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.25rem; opacity: 0.6; }
+
+        /* --- LEADERBOARD WIDGET --- */
+        #leaderboard-widget {
+            grid-column: span 8;
+            grid-row: span 5;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 2.5rem 3.5rem;
+            display: flex;
+            flex-direction: row; /* Horizontal layout */
+            align-items: center;
+            justify-content: space-between;
+            gap: 3rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        #leaderboard-widget.greyed-out {
+            filter: grayscale(1) brightness(0.5);
+        }
+        #leaderboard-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            pointer-events: auto; /* Ensure clicks are captured */
+        }
+
+        .page-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-top: 1rem;
+            /* Hide scrollbars and allow overflow for hover effects */
+            overflow: visible;
+        }
+
+        .page-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            transition: all 0.2s;
+            cursor: pointer;
+            /* Ensure the button stays above others during animation */
+            position: relative;
+            z-index: 1;
+        }
+        .page-btn:hover {
+            background: var(--button-bg);
+            border-color: var(--accent-color);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        .page-btn.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+        .icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.03);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-color);
+            font-size: 1.2rem;
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style>
+</head>
+
+<body>
+    <div id="page-content">
+        <!-- WELCOME SECTION -->
+        <div id="welcome-section" class="dashboard-card no-hover">
+            <div id="clock-date" class="date-display">FRIDAY, MARCH 13</div>
+            <div id="clock-time" class="time-display">12:00:00<span class="text-3xl ml-2 opacity-60 uppercase font-light">AM</span></div>
+            <h2 class="welcome-msg">Coming soon, <span id="user-name-display" style="color: var(--accent-primary);">User</span>.</h2>
+        </div>
+
+        <!-- LEADERBOARD WIDGET -->
+        <div id="leaderboard-widget" class="dashboard-card greyed-out">
+            <div class="flex flex-col justify-center border-r border-white/5 pr-10 h-full">
+                <div class="label-tiny">Your Status</div>
+                <div id="leaderboard-rank" class="text-6xl font-bold mt-1" style="color: var(--accent-primary);">#--</div>
+                <div class="text-[12px] opacity-60 mt-1 uppercase tracking-widest font-bold" style="color: var(--text-muted);">Global Rank</div>
+            </div>
+
+            <div class="flex-grow flex items-center gap-10 px-6">
+                <div id="champion-avatar-widget" class="w-24 h-24 rounded-[32px] flex items-center justify-center overflow-hidden flex-shrink-0" style="background: var(--button-bg); border: 1px solid var(--border-color);">
+                    <i class="fas fa-crown text-3xl" style="color: var(--accent-primary);"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="label-tiny">Global Champion</div>
+                    <div id="champion-name-widget" class="text-4xl font-semibold truncate mt-1" style="color: var(--text-primary);">Loading...</div>
+                    <div id="champion-time-widget" class="text-sm font-mono mt-1" style="color: var(--text-secondary); opacity: 0.7;">0h 0m total</div>
+                </div>
+            </div>
+            
+            <div class="flex flex-col gap-2">
+                <a href="leaderboard.html" class="inline-flex items-center justify-center py-4 px-8 border rounded-3xl text-sm font-medium transition group" style="background: var(--button-bg); border-color: var(--border-primary); color: var(--accent-primary);">
+                    Rankings <i class="fas fa-trophy ml-2 group-hover:scale-110 transition-transform"></i>
+                </a>
+            </div>
+
+            <div id="leaderboard-overlay">
+                <div class="text-center p-4">
+                    <p class="text-xs mb-3" style="color: var(--text-muted); opacity: 0.8;">Join the leaderboard to see your rank</p>
+                    <button id="accept-leaderboard-btn" class="py-2.5 px-6 hover:opacity-90 rounded-2xl text-xs font-medium transition shadow-lg" style="background: var(--accent-primary); color: #fff;">
+                        Accept Terms
+                    </button>
+                    <div class="mt-2">
+                        <a href="../legal.html#leaderboard-terms" target="_blank" class="text-[10px] hover:underline" style="color: var(--accent-primary); opacity: 0.6;">View Terms</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANALYTICS LEFT -->
+        <div id="analytics-left" class="dashboard-card no-hover">
+            <div class="stat-card">
+                <div>
+                    <div class="label-tiny">Experience Time</div>
+                    <div id="stat-total-time" class="val-big" style="color: var(--text-primary);">0h 0m</div>
+                </div>
+                <div class="val-sub">Total session duration in V6</div>
+            </div>
+            <div class="stat-card">
+                <div>
+                    <div class="label-tiny">System Analytics</div>
+                    <div id="stat-browser" class="text-sm font-medium" style="color: var(--accent-primary);">Loading...</div>
+                    <div id="stat-os" class="text-xs mt-1" style="color: var(--text-muted); opacity: 0.6;">Detecting OS</div>
+                </div>
+                <div id="stat-device" class="text-[10px] uppercase font-bold tracking-widest" style="color: var(--text-muted); opacity: 0.4;">Project Niobium</div>
+            </div>
+        </div>
+
+        <!-- QUICK ACCESS SECTION -->
+        <div id="quick-access-section" class="dashboard-card">
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="label-tiny">Recently Accessed</div>
+                    <h3 class="text-xl font-medium mt-1" style="color: var(--text-primary); opacity: 0.8;">Most Opened Pages</h3>
+                </div>
+                <div id="stat-pageviews" class="text-3xl font-light" style="color: var(--text-muted); opacity: 0.2;">0</div>
+            </div>
+            
+            <div id="recent-pages-list" class="page-grid flex-grow">
+                <div class="col-span-2 py-20 text-center italic text-sm" style="color: var(--text-muted); opacity: 0.6;">Synchronizing analytics...</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { firebaseConfig } from '../firebase-config.js';
+        import { getAvatarHTML } from '../utils.js';
+
+        if (!getApps().length) initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore();
+
+        const parseUA = (ua) => {
+            if (!ua) return { browser: 'Browser', os: 'Operating System' };
+            let browser = 'Other', os = 'Other';
+            if (ua.includes('Chrome')) browser = 'Chrome';
+            else if (ua.includes('Firefox')) browser = 'Firefox';
+            else if (ua.includes('Safari')) browser = 'Safari';
+            if (ua.includes('Windows')) os = 'Windows';
+            else if (ua.includes('Mac OS')) os = 'macOS';
+            else if (ua.includes('CrOS')) os = 'ChromeOS';
+            else if (ua.includes('Linux')) os = 'Linux';
+            return { browser, os };
+        };
+
+        async function initDashboard() {
+            // Load page identification config
+            let pageConfig = {};
+            try {
+                const response = await fetch('../page-identification.json');
+                pageConfig = await response.json();
+            } catch (e) {
+                console.error("Failed to load page identification config", e);
+            }
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    const userDocRef = doc(db, 'users', user.uid);
+                    const userSnap = await getDoc(userDocRef);
+                    
+                    if (userSnap.exists()) {
+                        const data = userSnap.data();
+                        document.getElementById('user-name-display').textContent = data.displayName || data.username || "User";
+                        
+                        // Leaderboard handling
+                        if (data.leaderboardAccepted) {
+                            document.getElementById('leaderboard-widget').classList.remove('greyed-out');
+                            document.getElementById('leaderboard-overlay').style.display = 'none';
+                            fetchUserRank(user.uid);
+                        } else {
+                            document.getElementById('accept-leaderboard-btn').onclick = async () => {
+                                await updateDoc(userDocRef, {
+                                    leaderboardAccepted: true,
+                                    leaderboardOptOut: false
+                                });
+                                location.reload();
+                            };
+                        }
+                        loadAnalytics(user.uid, pageConfig, data);
+                    }
+                } else if (!window._LOCAL_MODE) {
+                    window.location.replace('../index.html');
+                }
+            });
+        }
+
+        // --- OPTIMIZATION: Reads from pre-aggregated leaderboard snapshot ---
+        async function fetchUserRank(uid) {
+            const leaderboardSnap = await getDoc(doc(db, 'leaderboard', 'snapshot'));
+            let rank = '--';
+            let champion = null;
+
+            if (leaderboardSnap.exists()) {
+                const data = leaderboardSnap.data();
+                const rankedUsers = data.users || [];
+                const userIndex = rankedUsers.findIndex(u => u.id === uid);
+                if (userIndex !== -1) rank = `#${userIndex + 1}`;
+                if (rankedUsers.length > 0) champion = rankedUsers[0];
+            }
+
+            document.getElementById('leaderboard-rank').textContent = rank;
+
+            if (champion) {
+                document.getElementById('champion-name-widget').textContent = champion.displayName || champion.username || "Anonymous";
+                const hours = Math.floor((champion.totalV6Time || 0) / 3600);
+                const minutes = Math.floor(((champion.totalV6Time || 0) % 3600) / 60);
+                document.getElementById('champion-time-widget').textContent = `${hours}h ${minutes}m total`;
+                const champAvatarWidget = document.getElementById('champion-avatar-widget');
+                champAvatarWidget.innerHTML = getAvatarHTML(champion, "w-24 h-24", false, auth.currentUser, "rounded-[32px]");
+            }
+        }
+
+        function renderAvatar(userData, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const initial = (userData.username || userData.displayName || '?').charAt(0).toUpperCase();
+            const pfpType = userData.pfpType || 'google';
+
+            let avatarHtml = '';
+
+            if (pfpType === 'custom' && userData.customPfp) {
+                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover">`;
+            } else if (pfpType === 'mibi' && userData.mibiConfig) {
+                const { eyes, mouths, hats, bgColor } = userData.mibiConfig || {};
+                avatarHtml = `
+                    <div class="relative w-full h-full" style="background-color: ${bgColor || '#3B82F6'};">
+                        <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
+                        ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                        ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                        ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                    </div>
+                `;
+            } else if (pfpType === 'letter') {
+                const bg = userData.pfpLetterBg || '#333';
+                avatarHtml = `<div class="w-full h-full flex items-center justify-center font-bold text-white" style="background: ${bg};">${initial}</div>`;
+            } else {
+                if (userData.photoURL) {
+                    avatarHtml = `<img src="${userData.photoURL}" class="w-full h-full object-cover">`;
+                } else {
+                    avatarHtml = `<div class="w-full h-full bg-indigo-600 flex items-center justify-center font-bold text-white">${initial}</div>`;
+                }
+            }
+
+            container.innerHTML = avatarHtml;
+        }
+
+        // --- OPTIMIZATION: Reads from pre-aggregated analytics summary ---
+        async function loadAnalytics(uid, pageConfig = {}, userData = {}) {
+            const summarySnap = await getDoc(doc(db, "analytics_summary", "latest"));
+            let totalPageViews = 0;
+
+            if(summarySnap.exists()){
+                const summary = summarySnap.data();
+                totalPageViews = summary.traffic?.recentSessionsCount || 0;
+                
+                const uaInfo = parseUA(navigator.userAgent);
+                document.getElementById('stat-browser').textContent = uaInfo.browser;
+                document.getElementById('stat-os').textContent = uaInfo.os;
+            }
+
+            document.getElementById('stat-device').textContent = window._LOCAL_MODE ? 'Version 5 Client' : 'Cloud Access';
+
+            const displayTime = (timeInSecs) => {
+                const hours = Math.floor(timeInSecs / 3600);
+                const minutes = Math.floor((timeInSecs % 3600) / 60);
+                document.getElementById('stat-total-time').textContent = `${hours}h ${minutes}m`;
+            };
+
+            displayTime(userData.totalV6Time || 0);
+            document.getElementById('stat-pageviews').textContent = totalPageViews;
+
+            const listEl = document.getElementById('recent-pages-list');
+            listEl.innerHTML = '';
+            
+            const teaserPages = [
+                { title: 'Dashboard', count: 155, icon: 'fa-solid fa-house', path: 'dashboard.html' },
+                { title: 'Vora', count: 107, icon: 'fa-solid fa-tv', path: 'vora.html' },
+                { title: 'Games', count: 71, icon: 'fa-solid fa-gamepad', path: 'games.html' },
+                { title: 'Velium', count: 44, icon: 'fa-solid fa-music', path: 'velium.html' },
+                { title: 'Soundboard', count: 19, icon: 'fa-solid fa-volume-high', path: 'soundboard.html' },
+                { title: 'Settings', count: 13, icon: 'fa-solid fa-gear', path: 'settings.html' }
+            ];
+
+            teaserPages.forEach((data) => {
+                const item = document.createElement('div');
+                item.className = 'page-btn';
+                
+                item.innerHTML = `
+                    <div class="icon-box">
+                        <i class="${data.icon}"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white truncate">${data.title}</p>
+                        <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">${data.count} Sessions</p>
+                    </div>
+                `;
+
+                item.onclick = () => {
+                    if (window.parent && window.parent.loadPage) {
+                        window.parent.loadPage(data.path);
+                    } else {
+                        window.location.href = data.path;
+                    }
+                };
+
+                listEl.appendChild(item);
+            });
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>
+<!-- Made with ❤️ from 4SP -->

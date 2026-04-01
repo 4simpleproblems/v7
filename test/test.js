@@ -1,16 +1,61 @@
-        import { supabaseConfig } from "../supabase-config.js";
-        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { 
+            getAuth, 
+            onAuthStateChanged, 
+            signOut,
+            EmailAuthProvider, 
+            reauthenticateWithCredential, 
+            updatePassword,
+            // NEW AUTH IMPORTS
+            GoogleAuthProvider,
+            GithubAuthProvider,
+            OAuthProvider,
+            linkWithPopup,
+            unlink,
+            reauthenticateWithPopup,
+            deleteUser
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            updateDoc, 
+            collection,
+            query,
+            where,
+            getDocs,
+            serverTimestamp,
+            deleteDoc, // NEW FIREBASE IMPORT
+            setDoc,
+            writeBatch
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { 
+            getStorage, 
+            ref, 
+            listAll, 
+            getDownloadURL, 
+            uploadString, 
+            deleteObject, 
+            uploadBytes 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        
+        // --- Import Firebase Config (Assumed to exist in a relative file) ---
+        import { firebaseConfig } from "../firebase-config.js"; 
         
         // --- NEW: Import Site Mapping (from index.html logic) ---
         // This file MUST exist at ../site-mapping.js for import/export to work
         import { siteMapping } from "../site-mapping.js";
 
-        // --- Supabase Client (Reuse global instance if available) ---
-        let supabase = window.supabase;
-        if (!supabase) {
-            supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
-            window.supabase = supabase;
+
+        if (!firebaseConfig || !firebaseConfig.apiKey) {
+            console.error("FATAL ERROR: Firebase configuration is missing or invalid.");
         }
+
+        // --- Firebase Initialization ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
 
         // --- Global State and Element References ---
         const sidebarTabs = document.querySelectorAll('.settings-tab');
@@ -33,39 +78,37 @@
             'privacy': { title: 'Privacy & Security', icon: 'fa-shield-halved' },
             'personalization': { title: 'Personalization', icon: 'fa-palette' },
             'data': { title: 'Data Management', icon: 'fa-database' },
+            'management': { title: 'Management', icon: 'fa-users-gear' },
             'about': { title: 'About 4SP', icon: 'fa-circle-info' },
         };
         
         // Constants for providers (NEW)
-        const getProviderConfig = () => {
-            const light = isLightTheme();
-            return {
-                'google.com': { 
-                    name: 'Google', 
-                    icon: '../images/google-icon.png', 
-                    instance: () => new GoogleAuthProvider() 
-                },
-                'github.com': { 
-                    name: 'GitHub', 
-                    icon: light ? '../images/github-mark.png' : '../images/github-mark-white.png', 
-                    instance: () => new GithubAuthProvider() 
-                },
-                'microsoft.com': { 
-                    name: 'Microsoft', 
-                    icon: '../images/microsoft.png', 
-                    instance: () => new OAuthProvider('microsoft.com') 
-                },
-                'twitter.com': { // NEW: X (Twitter) Provider
-                    name: 'X (Twitter)',
-                    icon: light ? '../images/x.png' : '../images/x-white.png',
-                    instance: () => new OAuthProvider('twitter.com')
-                },
-                'password': { 
-                    name: 'Email & Password', 
-                    icon: '<i class="fa-solid fa-at fa-lg mr-3"></i>', 
-                    isCredential: true
-                }
-            };
+        const PROVIDER_CONFIG = {
+            'google.com': { 
+                name: 'Google', 
+                icon: '../images/google-icon.png', 
+                instance: () => new GoogleAuthProvider() 
+            },
+            'github.com': { 
+                name: 'GitHub', 
+                icon: '../images/github-mark-white.png', 
+                instance: () => new GithubAuthProvider() 
+            },
+            'microsoft.com': { 
+                name: 'Microsoft', 
+                icon: '../images/microsoft.png', 
+                instance: () => new OAuthProvider('microsoft.com') 
+            },
+            'twitter.com': { // NEW: X (Twitter) Provider
+                name: 'X (Twitter)',
+                icon: '../images/x.png',
+                instance: () => new OAuthProvider('twitter.com')
+            },
+            'password': { 
+                name: 'Email & Password', 
+                icon: '<i class="fa-solid fa-at fa-lg mr-3"></i>', 
+                isCredential: true
+            }
         };
 
         // --- NEW: Constants for Privacy Settings ---
@@ -80,16 +123,6 @@
         // --- NEW: Constant for Theme Storage ---
         // (Copied from navigation.js)
         const THEME_STORAGE_KEY = 'user-navbar-theme';
-        const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink'];
-
-        const isLightTheme = () => {
-            try {
-                const theme = JSON.parse(localStorage.getItem(THEME_STORAGE_KEY));
-                return theme && lightThemeNames.includes(theme.name);
-            } catch (e) {
-                return false;
-            }
-        };
 
 
         // Presets copied from tab-disguiser.js
@@ -106,115 +139,13 @@
             { id: '_LIVE_CURRENT_TIME', name: 'Current Time', title: 'Live Time', favicon: '', category: 'live', live: true }
         ];
 
+        
         // --- Shared Helper Functions ---
-
-        /**
-         * Fetches user data from Supabase profiles.
-         */
-        async function getUserData(uid) {
-            if (!window.supabase) return null;
-
-            try {
-                const { data: profile, error } = await window.supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', uid)
-                    .maybeSingle();
-                
-                if (error) throw error;
-
-                if (profile) {
-                    // Map Supabase snake_case to the app's internal camelCase
-                    return {
-                        ...profile,
-                        displayName: profile.display_name,
-                        pfpType: profile.pfp_type,
-                        customPfp: profile.avatar_url,
-                        pfpLetterBg: profile.pfp_letter_bg,
-                        pfpLetterChar: profile.pfp_letter_char,
-                        letterAvatarText: profile.pfp_letter_char,
-                        mibiConfig: profile.mibi_config
-                    };
-                }
-            } catch (e) {
-                console.error("Supabase profile fetch error:", e);
-            }
-
-            return null;
-        }
-
-        /**
-         * Saves user data to Supabase profiles.
-         */
-        async function saveUserData(uid, updates) {
-            if (!window.supabase) return;
-
-            try {
-                // Map Firestore field names to Supabase snake_case if they differ
-                const supabaseUpdates = {};
-                const mapping = {
-                    pfpType: 'pfp_type',
-                    pfp_type: 'pfp_type',
-                    customPfp: 'avatar_url',
-                    photoURL: 'avatar_url',
-                    displayName: 'display_name',
-                    description: 'description',
-                    pfpLetterBg: 'pfp_letter_bg',
-                    pfpLetterChar: 'pfp_letter_char',
-                    letterAvatarText: 'pfp_letter_char',
-                    mibiConfig: 'mibi_config',
-                    showOffline: 'show_offline',
-                    leaderboardOptOut: 'leaderboard_opt_out',
-                    navbarTheme: 'navbar_theme',
-                    schoolId: 'school_id',
-                    schoolName: 'school_name',
-                    districtId: 'district_id',
-                    state: 'state',
-                    stateAbbr: 'state_abbr',
-                    schoolSkipped: 'school_skipped',
-                    schoolChangesThisMonth: 'school_changes_this_month',
-                    lastSchoolChangeMonth: 'last_school_change_month',
-                    usernameChangesThisMonth: 'username_changes_this_month',
-                    lastUsernameChangeMonth: 'last_username_change_month'
-                };
-
-                for (const key in updates) {
-                    const sbKey = mapping[key] || key;
-                    const value = updates[key];
-
-                    // Handle legacy FieldValue types if still passed
-                    if (value && typeof value === 'object' && value._methodName === 'deleteField') {
-                        supabaseUpdates[sbKey] = null;
-                        continue;
-                    }
-
-                    supabaseUpdates[sbKey] = value;
-                }
-
-                // Logic: If we are switching to letter or mibi, clear avatar_url
-                if (supabaseUpdates.pfp_type === 'letter' || supabaseUpdates.pfp_type === 'mibi') {
-                    supabaseUpdates.avatar_url = null;
-                }
-
-                const { error } = await window.supabase
-                    .from('profiles')
-                    .update(supabaseUpdates)
-                    .eq('id', uid);
-
-                if (error) throw error;
-            } catch (e) {
-                console.error("Supabase profile save error:", e);
-                throw e;
-            }
-        }
-
+        // --- Shared Helper Functions ---
+        const getUserDocRef = (userId) => doc(db, 'users', userId);
+        
         import { checkAdminStatus } from '../utils.js';
-        const getUserDocRef = (userId) => {
-            // Placeholder for Firestore-style calls, though we use Supabase
-            console.warn("getUserDocRef called in Supabase mode for user:", userId);
-            return null; 
-        };
-
+        
         const showMessage = (element, text, type = 'error') => {
             // Prevent clearing a success message if a warning is generated elsewhere
             if (element && element.innerHTML.includes('success') && type !== 'error') return;
@@ -233,13 +164,9 @@
         };
 
         const isUsernameTaken = async (username) => {
-            if (!window.supabase) return false;
-            const { data, error } = await window.supabase
-                .from('profiles')
-                .select('id')
-                .eq('username', username.toLowerCase())
-                .maybeSingle();
-            return !!data;
+            const q = query(collection(db, 'users'), where('username', '==', username));
+            const querySnapshot = await getDocs(q);
+            return !querySnapshot.empty;
         };
         
         // --- NEW: IndexedDB Helper Functions ---
@@ -677,9 +604,9 @@
          */
         function getChangePasswordSection() {
             return `
-                <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Change Password</h3>
+                <h3 class="text-xl font-bold text-white mb-2 mt-8">Change Password</h3>
                 <div id="passwordChangeSection" class="settings-box w-full p-4">
-                    <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-3">
+                    <p class="text-sm font-light text-gray-400 mb-3">
                         Change your password. You must provide your current password for security.
                     </p>
                     
@@ -702,27 +629,27 @@
         /**
          * Renders the Linked Providers and Account Deletion section.
          */
-        function getAccountManagementContent(providerData = []) {
+        function getAccountManagementContent(providerData) {
             // Determine the Primary Provider (the first one in the list)
             const primaryProviderId = providerData && providerData.length > 0 ? providerData[0].providerId : null;
-            const providerConfig = getProviderConfig();
-
-            const isSupabase = currentSource === 'supabase';
-
-            let linkedProvidersHtml = (providerData || []).map(info => {
+            
+            let linkedProvidersHtml = providerData.map(info => {
                 const id = info.providerId;
-                const config = providerConfig[id] || { name: id, icon: '<i class="fa-solid fa-puzzle-piece fa-lg mr-3"></i>' };
-
+                const config = PROVIDER_CONFIG[id] || { name: id, icon: '<i class="fa-solid fa-puzzle-piece fa-lg mr-3"></i>' };
+                
                 const isPrimary = (id === primaryProviderId); // Check if this is the primary provider
                 const canUnlink = providerData.length > 1 && !(id === 'password' && primaryProviderId === 'password');
-
+                
+                // NEW: Determine if "Set as Primary" button should be shown
+                // Show if no primary is explicitly set, it's not the current primary, and it's not the password provider.
                 const showSetPrimaryButton = !isPrimary && primaryProviderId === null && id !== 'password';
 
+                // Determine if icon is an image or a FontAwesome icon
                 let iconHtml = config.icon.startsWith('<i') ? config.icon : `<img src="${config.icon}" alt="${config.name} Icon" class="h-6 w-auto mr-3">`;
 
                 return `
-                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[var(--border-main)] last:border-b-0" data-provider-row="${id}">
-                        <div class="flex items-center text-lg text-[var(--text-main)]">
+                    <div class="flex justify-between items-center px-4 py-4 border-b border-[#252525] last:border-b-0">
+                        <div class="flex items-center text-lg text-white">
                             ${iconHtml}
                             ${config.name}
                             ${isPrimary ? '<span class="text-xs text-yellow-400 ml-2 font-normal">(Primary)</span>' : ''}
@@ -737,104 +664,115 @@
                                 `<button class="btn-toolbar-style text-red-400 hover:border-red-600 hover:text-red-600" data-provider-id="${id}" data-action="unlink" style="padding: 0.5rem 0.75rem;">
                                     <i class="fa-solid fa-unlink mr-1"></i> Unlink
                                 </button>` : 
+                                // Show "Cannot Unlink" if not able to unlink (e.g., it's the only provider, or it's password and primary)
                                 (providerData.length === 1 || (id === 'password' && primaryProviderId === 'password')) ? 
-                                    `<span class="text-xs text-[var(--text-muted)] opacity-60 font-light ml-4">Cannot Unlink</span>` : ''
+                                    `<span class="text-xs text-custom-light-gray font-light ml-4">Cannot Unlink</span>` : ''
                             }
                         </div>
                     </div>
                 `;
             }).join('');
 
-            // Fallback for Supabase users who don't have Firebase providerData
-            if (isSupabase && linkedProvidersHtml === '') {
-                linkedProvidersHtml = `
-                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[var(--border-main)] last:border-b-0">
-                        <div class="flex items-center text-lg text-[var(--text-main)]">
-                            <i class="fa-solid fa-bolt-lightning fa-lg mr-3 text-yellow-400"></i>
-                            Supabase (Direct)
-                            <span class="text-xs text-yellow-400 ml-2 font-normal">(Primary)</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                             <span class="text-xs text-[var(--text-muted)] opacity-60 font-light ml-4">Managed via Supabase</span>
-                        </div>
-                    </div>
-                `;
-            }
-                
             // Filter out already linked social providers for the linking list
             const linkedIds = providerData.map(p => p.providerId);
-            const availableProviders = Object.keys(providerConfig).filter(id => id !== 'password' && !linkedIds.includes(id));
+            let availableProvidersHtml = Object.keys(PROVIDER_CONFIG)
+                .filter(id => id !== 'password' && !linkedIds.includes(id))
+                .map(id => {
+                    const config = PROVIDER_CONFIG[id];
+                    let iconHtml = config.icon.startsWith('<i') ? config.icon : `<img src="${config.icon}" alt="${config.name} Icon" class="h-6 w-auto mr-3">`;
 
-            let availableProvidersHtml = availableProviders.map(id => {
-                const config = providerConfig[id];
-                let iconHtml = config.icon.startsWith('<i') ? config.icon : `<img src="${config.icon}" alt="${config.name} Icon" class="h-6 w-auto mr-3">`;
-
-                return `
-                    <div class="provider-item flex justify-between items-center px-4 py-4 border-b border-[var(--border-main)] last:border-b-0" data-provider-row="${id}">
-                        <div class="flex items-center text-lg text-[var(--text-main)]">
-                            ${iconHtml}
-                            ${config.name}
-                        </div>
-                        <div class="flex items-center gap-2">
+                    return `
+                        <div class="flex justify-between items-center px-4 py-4 border-b border-[#252525] last:border-b-0">
+                            <div class="flex items-center text-lg text-white">
+                                ${iconHtml}
+                                ${config.name}
+                            </div>
                             <button class="btn-toolbar-style btn-primary-override" data-provider-id="${id}" data-action="link" style="padding: 0.5rem 0.75rem;">
                                 <i class="fa-solid fa-link mr-1"></i> Link Provider
                             </button>
                         </div>
-                    </div>
-                `;
-            }).join('');
-
-            const hideLinkSection = (availableProviders.length === 0) || isSupabase;
-            
-            let supabaseNotice = '';
-            if (isSupabase) {
-                supabaseNotice = `
-                    <div class="settings-box w-full mb-4 p-4 bg-yellow-900/10 border-yellow-700/30">
-                        <p class="text-sm font-light text-yellow-200">
-                            <i class="fa-solid fa-circle-info mr-2"></i>
-                            Linking additional providers is currently only supported for accounts created via Email or Google.
-                        </p>
+                    `;
+                }).join('');
+                
+            if (availableProvidersHtml === '') {
+                availableProvidersHtml = `
+                    <div class="px-4 py-4">
+                        <p class="text-sm text-gray-500 text-center">All available social providers are linked.</p>
                     </div>
                 `;
             }
 
+
             // --- Account Deletion Section ---
-            let deletionContent = `
-                <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Delete Account</h3>
-                <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
-                    <p class="text-sm font-light text-red-300 mb-3">
-                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
-                        WARNING: Deleting your account is permanent and cannot be undone. All your data across the 4SP network will be removed.
-                    </p>
-                    
-                    <div id="deletionStep1">
-                        <label for="deleteConfirmText" class="block text-red-300 text-sm font-light mb-2">Type "Delete My Account" to confirm (Case-insensitive)</label>
-                        <input type="text" id="deleteConfirmText" placeholder="Delete My Account" class="input-text-style w-full bg-red-900/20 border-red-700/50">
+            let deletionContent = '';
+            
+            if (!primaryProviderId) { // No primary provider found
+                deletionContent = `
+                    <h3 class="text-xl font-bold text-white mb-2 mt-8">Delete Account</h3>
+                    <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
+                        <p class="text-sm font-light text-red-300 mb-3">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
+                            WARNING: Deleting your account is permanent. No primary authentication method found. Please contact support.
+                        </p>
+                    </div>
+                `;
+            } else if (primaryProviderId === 'password') {
+                deletionContent = `
+                    <h3 class="text-xl font-bold text-white mb-2 mt-8">Delete Account</h3>
+                    <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
+                        <p class="text-sm font-light text-red-300 mb-3">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
+                            WARNING: Deleting your account is permanent and cannot be undone.
+                        </p>
                         
-                        <div class="flex justify-between items-center pt-4">
+                        <div id="passwordDeletionStep1">
+                            <label for="deletePasswordInput" class="block text-red-300 text-sm font-light mb-2">Confirm Current Password</label>
+                            <input type="password" id="deletePasswordInput" placeholder="Current Password" class="input-text-style w-full bg-red-900/20 border-red-700/50 mb-3">
+                            
+                            <label for="deleteConfirmText" class="block text-red-300 text-sm font-light mb-2">Type "Delete My Account" to confirm (Case-insensitive)</label>
+                            <input type="text" id="deleteConfirmText" placeholder="Delete My Account" class="input-text-style w-full bg-red-900/20 border-red-700/50">
+                            
+                            <div class="flex justify-between items-center pt-4">
+                                <p id="deleteMessage" class="general-message-area text-sm"></p>
+                                <button id="finalDeleteBtn" class="btn-toolbar-style btn-primary-override-danger w-48" disabled style="padding: 0.5rem 0.75rem;">
+                                     <i class="fa-solid fa-trash mr-1"></i> Delete Account
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                deletionContent = `
+                    <h3 class="text-xl font-bold text-white mb-2 mt-8">Delete Account</h3>
+                    <div id="deletionSection" class="settings-box w-full bg-red-900/10 border-red-700/50 p-4">
+                        <p class="text-sm font-light text-red-300 mb-3">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
+                            WARNING: Deleting your account is permanent. You must re-authenticate with ${PROVIDER_CONFIG[primaryProviderId].name} to proceed.
+                        </p>
+                        
+                        <div class="flex justify-between items-center pt-2">
                             <p id="deleteMessage" class="general-message-area text-sm"></p>
-                            <button id="finalDeleteBtn" class="btn-toolbar-style btn-primary-override-danger w-48" disabled style="padding: 0.5rem 0.75rem;">
+                            <button id="reauthenticateBtn" class="btn-toolbar-style w-48 btn-primary-override" data-provider-id="${primaryProviderId}" style="padding: 0.5rem 0.75rem;">
+                                 <i class="fa-solid fa-key mr-1"></i> Re-authenticate
+                            </button>
+                            <button id="finalDeleteBtn" class="btn-toolbar-style btn-primary-override-danger w-48 hidden" style="padding: 0.5rem 0.75rem;">
                                  <i class="fa-solid fa-trash mr-1"></i> Delete Account
                             </button>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
 
             // --- Combined HTML for Account Management ---
             return `
-                <h3 class="text-xl font-bold text-[var(--text-main)] mb-2 mt-8">Linked Providers</h3>
-                <div id="linked-providers-list" class="settings-box w-full mb-4 p-0">
+                <h3 class="text-xl font-bold text-white mb-2 mt-8">Linked Providers</h3>
+                <div class="settings-box w-full mb-4 p-0" data-section="linked-providers">
                     ${linkedProvidersHtml}
                 </div>
                 
-                ${supabaseNotice}
-
-                <div id="available-providers-section" class="provider-section-fade w-full ${hideLinkSection ? 'section-hidden' : ''}">
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Link New Providers</h3>
-                    <div id="available-providers-list" class="settings-box w-full flex flex-col gap-0 p-0">
-                        ${availableProvidersHtml}
-                    </div>
+                <h3 class="text-xl font-bold text-white mb-2">Link New Providers</h3>
+                <div class="settings-box w-full flex flex-col gap-0 p-0">
+                    ${availableProvidersHtml}
                 </div>
                 
                 ${deletionContent}
@@ -845,7 +783,7 @@
         /**
          * Generates the HTML for the "General Settings" section.
          */
-        function getGeneralContent(currentUsername, changesRemaining, changesThisMonth, currentMonthName, isEmailPasswordUser, providerData) {
+        function getGeneralContent(currentUsername, changesRemaining, changesThisMonth, currentMonthName, isEmailPasswordUser, providerData, downloadCode) {
              const changesUsed = changesThisMonth;
              
              // Conditionally generate the password section HTML
@@ -854,13 +792,15 @@
                  passwordSectionHtml = getChangePasswordSection();
              }
 
+             const downloadCodeValue = downloadCode || "No code generated";
+
              return `
-                 <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">General Settings</h2>
+                 <h2 class="text-3xl font-bold text-white mb-6">General Settings</h2>
                  
                  <div class="w-full">
                     
                     <div class="flex justify-between items-center mb-4 settings-box p-4">
-                        <p class="text-sm font-light text-[var(--text-muted)] opacity-80">
+                        <p class="text-sm font-light text-gray-300">
                            <i class="fa-solid fa-calendar-alt mr-2 text-yellow-500"></i>
                            Changes this month (<span class="text-emphasis text-yellow-300">${currentMonthName}</span>):
                         </p>
@@ -869,12 +809,12 @@
                         </span>
                     </div>
 
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Account Username</h3>
+                    <h3 class="text-xl font-bold text-white mb-2">Account Username</h3>
                     
                     <div id="usernameSection" class="settings-box transition-all duration-300 p-4">
                         
                         <div id="viewMode" class="flex justify-between items-center">
-                            <p class="text-lg text-[var(--text-muted)] leading-relaxed">
+                            <p class="text-lg text-gray-400 leading-relaxed">
                                 Current: <span id="currentUsernameText" class="text-emphasis text-blue-400">${currentUsername}</span>
                             </p>
                             <button id="enterEditModeBtn" class="btn-toolbar-style" style="padding: 0.5rem 0.75rem;">
@@ -882,15 +822,15 @@
                             </button>
                         </div>
 
-                        <div id="editMode" class="hidden flex-col gap-3 pt-4 border-t border-[var(--border-main)]">
-                            <label for="newUsernameInput" class="block text-[var(--text-muted)] opacity-60 text-sm font-light">New Username</label>
+                        <div id="editMode" class="hidden flex-col gap-3 pt-4 border-t border-[#252525]">
+                            <label for="newUsernameInput" class="block text-gray-400 text-sm font-light">New Username</label>
                             <input type="text" id="newUsernameInput" value="${currentUsername}" maxlength="${MAX_LENGTH}"
                                    class="input-text-style w-full" 
                                    placeholder="${MIN_LENGTH}-${MAX_LENGTH} characters, only allowed symbols">
                             
                             <div class="flex justify-between items-center pt-2">
-                                <p class="text-xs text-[var(--text-muted)] opacity-50 font-light whitespace-nowrap">
-                                    Length: <span id="minLength" class="font-semibold text-[var(--text-muted)]">${MIN_LENGTH}</span>/<span id="charCount" class="font-semibold text-[var(--text-muted)]">${currentUsername.length}</span>/<span id="maxLength" class="font-semibold text-[var(--text-muted)]">${MAX_LENGTH}</span>
+                                <p class="text-xs text-gray-500 font-light whitespace-nowrap">
+                                    Length: <span id="minLength" class="font-semibold text-gray-400">${MIN_LENGTH}</span>/<span id="charCount" class="font-semibold text-gray-400">${currentUsername.length}</span>/<span id="maxLength" class="font-semibold text-gray-400">${MAX_LENGTH}</span>
                                 </p>
                                 
                                 <div class="flex gap-2">
@@ -911,6 +851,31 @@
                 ${passwordSectionHtml}
                 
                 ${getAccountManagementContent(providerData)}
+
+                <h3 class="text-xl font-bold text-white mb-2 mt-8">4SP Version 5: Download</h3>
+                <div class="settings-box w-full p-4">
+                    <p class="text-sm font-light text-gray-400 mb-3">
+                        Download a single HTML file to access 4SP v5 locally. This version loads the latest app from the cloud but runs independently. 
+                        It requires a unique code to launch and verifies your identity.
+                    </p>
+                    
+                    <div class="flex flex-col gap-3">
+                        <label class="block text-gray-400 text-sm font-light">Your Access Code</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="downloadCodeInput" readonly class="input-text-style font-mono text-center tracking-widest text-lg" value="${downloadCodeValue}">
+                            <button id="regenerateCodeBtn" class="btn-toolbar-style btn-primary-override w-12 flex justify-center items-center" title="Regenerate Code">
+                                <i class="fa-solid fa-rotate"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="flex justify-between items-center pt-4 border-t border-[#252525] mt-2">
+                            <p id="downloadMessage" class="general-message-area text-sm"></p>
+                            <button id="downloadClientBtn" class="btn-toolbar-style btn-primary-override w-48">
+                                <i class="fa-solid fa-download mr-2"></i> Download Client
+                            </button>
+                        </div>
+                    </div>
+                </div>
              `;
          }
 
@@ -924,18 +889,58 @@
             ).join('');
 
             return `
-                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">Privacy & Security</h2>
+                <h2 class="text-3xl font-bold text-white mb-6">Privacy & Security</h2>
                 
                 <div class="w-full">
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Tab Disguise (URL Changer)</h3>
+                    <h3 class="text-xl font-bold text-white mb-2">Panic Key Settings</h3>
+                    <div id="panicKeySection" class="settings-box transition-all duration-300 p-4">
+                        <p class="text-sm font-light text-gray-400 mb-4">
+                            Configure up to 3 panic keys. Pressing the specified key (without Shift, Ctrl, or Alt) on any page will redirect you to the URL you set.
+                            <br>
+                            <span class="text-yellow-400">Valid keys:</span> a-z, 0-9, and &#96; - = [ ] \\ ; ' , . /
+                        </p>
+                        
+                        <div class="flex items-center gap-4 px-2 mb-2">
+                            <label class="block text-gray-400 text-sm font-light" style="width: 4rem; text-align: center;">Key</label>
+                            <label class="block text-gray-400 text-sm font-light flex-grow">Redirect URL</label>
+                        </div>
+
+                        <div class="flex items-center gap-4 mb-3">
+                            <input type="text" id="panicKey1" data-key-id="1" class="input-key-style panic-key-input" placeholder="-" maxlength="1">
+                            <input type="url" id="panicUrl1" class="input-text-style" placeholder="e.g., https://google.com">
+                        </div>
+                        
+                        <div class="flex items-center gap-4 mb-3">
+                            <input type="text" id="panicKey2" data-key-id="2" class="input-key-style panic-key-input" placeholder="-" maxlength="1">
+                            <input type="url" id="panicUrl2" class="input-text-style" placeholder="e.g., https://youtube.com/feed/subscriptions">
+                        </div>
+                        
+                        <div class="flex items-center gap-4 mb-3">
+                            <input type="text" id="panicKey3" data-key-id="3" class="input-key-style panic-key-input" placeholder="-" maxlength="1">
+                            <input type="url" id="panicUrl3" class="input-text-style" placeholder="e.g., https://wikipedia.org">
+                        </div>
+                        
+                        <div class="flex justify-between items-center pt-4 border-t border-[#252525]">
+                            <p id="panicKeyMessage" class="general-message-area text-sm"></p>
+                            <button id="applyPanicKeyBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
+                                <i class="fa-solid fa-check mr-1"></i> Apply Keys
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="panicKeyGlobalMessage" class="general-message-area text-sm"></div>
+                </div>
+                
+                <div class="w-full mt-8">
+                    <h3 class="text-xl font-bold text-white mb-2">Tab Disguise (URL Changer)</h3>
                     <div id="urlChangerSection" class="settings-box transition-all duration-300 p-4">
-                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
+                        <p class="text-sm font-light text-gray-400 mb-4">
                             Change the title and favicon of the website to disguise it. This setting is saved locally in your browser.
                         </p>
                         
                         <div class="flex flex-col gap-4">
                             <div>
-                                <label for="tabDisguiseMode" class="block text-[var(--text-muted)] opacity-60 text-sm font-light mb-2">Mode</label>
+                                <label for="tabDisguiseMode" class="block text-gray-400 text-sm font-light mb-2">Mode</label>
                                 <select id="tabDisguiseMode" class="input-select-style">
                                     <option value="none">None (Use 4SP Default)</option>
                                     <option value="preset">Use a Preset</option>
@@ -961,7 +966,7 @@
                                     <div class="flex items-center gap-2">
                                         <input type="text" id="faviconFetchInput" class="input-text-style" placeholder="e.g., google.com">
                                         <button type="button" id="fetchFaviconBtn" class="btn-toolbar-style btn-primary-override w-28" style="padding: 0.5rem 0.75rem;">Fetch</button>
-                                        <div id="favicon-fetch-preview-container" class="w-10 h-10 border border-[var(--border-main)] bg-[#111111] rounded-[16px] flex items-center justify-center p-1 flex-shrink-0">
+                                        <div id="favicon-fetch-preview-container" class="w-10 h-10 border border-[#252525] bg-[#111111] rounded-[14px] flex items-center justify-center p-1 flex-shrink-0">
                                             <img src="" alt="Preview" class="w-full h-full object-contain" style="display: none;">
                                         </div>
                                     </div>
@@ -969,148 +974,10 @@
                                 </div>
                         </div>
 
-                        <div class="flex justify-between items-center pt-4 mt-4 border-t border-[var(--border-main)]">
+                        <div class="flex justify-between items-center pt-4 mt-4 border-t border-[#252525]">
                             <p id="urlChangerMessage" class="general-message-area text-sm"></p>
                             <button id="applyUrlChangerBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
                                 <i class="fa-solid fa-check mr-1"></i> Apply Tab
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="w-full mt-8">
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Panic Key Settings</h3>
-                    <div id="panicKeySection" class="settings-box transition-all duration-300 p-4">
-                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
-                            Configure up to 3 panic keys. Pressing the specified key (without Shift, Ctrl, or Alt) on any page will redirect you to the URL you set.
-                            <br>
-                            <span class="text-yellow-400">Valid keys:</span> a-z, 0-9, and &#96; - = [ ] \\ ; ' , . /
-                        </p>
-                        
-                        <div class="flex items-center gap-4 px-2 mb-2">
-                            <label class="block text-[var(--text-muted)] opacity-60 text-sm font-light" style="width: 4rem; text-align: center;">Key</label>
-                            <label class="block text-[var(--text-muted)] opacity-60 text-sm font-light flex-grow">Redirect URL</label>
-                        </div>
-
-                        <div class="flex items-center gap-4 mb-3">
-                            <input type="text" id="panicKey1" data-key-id="1" class="input-key-style panic-key-input" placeholder="-" maxlength="1">
-                            <input type="url" id="panicUrl1" class="input-text-style" placeholder="e.g., https://google.com">
-                        </div>
-                        
-                        <div class="flex items-center gap-4 mb-3">
-                            <input type="text" id="panicKey2" data-key-id="2" class="input-key-style panic-key-input" placeholder="-" maxlength="1">
-                            <input type="url" id="panicUrl2" class="input-text-style" placeholder="e.g., https://youtube.com/feed/subscriptions">
-                        </div>
-                        
-                        <div class="flex items-center gap-4 mb-3">
-                            <input type="text" id="panicKey3" data-key-id="3" class="input-key-style panic-key-input" placeholder="-" maxlength="1">
-                            <input type="url" id="panicUrl3" class="input-text-style" placeholder="e.g., https://wikipedia.org">
-                        </div>
-                        
-                        <div class="flex justify-between items-center pt-4 border-t border-[var(--border-main)]">
-                            <p id="panicKeyMessage" class="general-message-area text-sm"></p>
-                            <button id="applyPanicKeyBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
-                                <i class="fa-solid fa-check mr-1"></i> Apply Keys
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="panicKeyGlobalMessage" class="general-message-area text-sm"></div>
-                </div>
-
-                <div class="w-full mt-8">
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">School & District</h3>
-                    <div id="schoolSettingsSection" class="settings-box transition-all duration-300 p-6 relative">
-                        <!-- Current View -->
-                        <div id="school-current-view">
-                            <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-6">
-                                Customize your local experience. You can change your school or district up to 2 times per month.
-                            </p>
-                            
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between p-4 bg-black/20 rounded-[18px] border border-[var(--border-main)]">
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-xs font-bold text-[var(--accent-color)] uppercase tracking-widest mb-1">Current School</p>
-                                        <p id="current-school-display" class="text-white font-medium truncate">None</p>
-                                    </div>
-                                    <div class="text-right min-w-0 flex-1">
-                                        <p class="text-xs font-bold text-[var(--accent-color)] uppercase tracking-widest mb-1">District</p>
-                                        <p id="current-district-display" class="text-white font-medium truncate">None</p>
-                                    </div>
-                                </div>
-
-                                <div class="flex gap-3">
-                                    <button id="changeSchoolBtn" class="btn-toolbar-style btn-primary-override flex-1 py-3">
-                                        <i class="fa-solid fa-school mr-2"></i> Change School
-                                    </button>
-                                    <button id="removeSchoolBtn" class="btn-toolbar-style flex-1 py-3 text-red-500 border-red-500/20 hover:bg-red-500/10">
-                                        <i class="fa-solid fa-trash-can mr-2"></i> Remove
-                                    </button>
-                                </div>
-                                
-                                <p id="schoolChangesRemaining" class="text-[10px] text-center opacity-40 font-bold uppercase tracking-tighter">Changes remaining this month: 2</p>
-                            </div>
-                        </div>
-
-                        <!-- Selector View (Initially Hidden) -->
-                        <div id="school-selector-view" class="hidden">
-                            <div class="flex justify-between items-center mb-4">
-                                <h4 class="text-sm font-bold uppercase tracking-widest text-[var(--accent-color)]">Select Your School</h4>
-                                <button id="cancelSchoolChange" class="text-xs font-bold opacity-50 hover:opacity-100 transition-opacity">Cancel</button>
-                            </div>
-
-                            <div id="settings-state-step">
-                                <div class="relative mb-4">
-                                    <input type="text" id="settings-state-search" placeholder="Search State (e.g. Ohio)..." class="w-full p-3 pl-10 bg-black/40 border border-[var(--border-main)] rounded-xl outline-none focus:border-[var(--accent-color)] text-white text-sm">
-                                    <i class="fas fa-map-marker-alt absolute left-3 top-1/2 -translate-y-1/2 opacity-30 text-sm"></i>
-                                </div>
-                                <div class="relative overflow-hidden">
-                                    <div id="settings-state-fade-top" class="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[var(--bg-secondary)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
-                                    <div id="settings-state-results" class="space-y-1 max-h-48 overflow-y-auto custom-scroll"></div>
-                                    <div id="settings-state-fade-bottom" class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[var(--bg-secondary)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
-                                </div>
-                            </div>
-
-                            <div id="settings-school-step" class="hidden">
-                                <div class="relative mb-4">
-                                    <input type="text" id="settings-school-search" placeholder="Search School or District..." class="w-full p-3 pl-10 bg-black/40 border border-[var(--border-main)] rounded-xl outline-none focus:border-[var(--accent-color)] text-white text-sm">
-                                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 opacity-30 text-sm"></i>
-                                </div>
-                                <div class="relative overflow-hidden">
-                                    <div id="settings-school-fade-top" class="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[var(--bg-secondary)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
-                                    <div id="settings-school-results" class="space-y-1 max-h-60 overflow-y-auto custom-scroll"></div>
-                                    <div id="settings-school-fade-bottom" class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[var(--bg-secondary)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
-                                </div>
-                                <button id="settings-back-to-states" class="mt-3 text-[10px] font-bold uppercase text-indigo-500 hover:text-indigo-400 flex items-center gap-2"><i class="fas fa-arrow-left"></i> Change State</button>
-                            </div>
-                        </div>
-
-                        <p id="schoolMessage" class="general-message-area text-sm mt-4"></p>
-                    </div>
-                </div>
-
-                <div class="w-full mt-8">
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Activity Presence</h3>
-                    <div id="activityPresenceSection" class="settings-box p-6 space-y-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-emphasis">Appear Offline</p>
-                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">When enabled, your status will always show as offline to other users.</p>
-                            </div>
-                            <input type="checkbox" id="showOfflineToggle" class="custom-checkbox w-5 h-5">
-                        </div>
-                        
-                        <div class="flex items-center justify-between border-t border-[var(--border-main)] pt-6">
-                            <div>
-                                <p class="text-emphasis">Leaderboard Participation</p>
-                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">Show your profile and activity on the global leaderboard.</p>
-                            </div>
-                            <input type="checkbox" id="leaderboardToggle" checked class="custom-checkbox w-5 h-5">
-                        </div>                        
-                        <div class="flex justify-between items-center pt-4 border-t border-[var(--border-main)]">
-                            <p id="activityPresenceMessage" class="general-message-area text-sm"></p>
-                            <button id="saveActivityPresenceBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
-                                <i class="fa-solid fa-check mr-1"></i> Save Status
                             </button>
                         </div>
                     </div>
@@ -1166,62 +1033,30 @@
                         transform-origin: center;
                     }
                 </style>
-                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">Personalization</h2>
+                <h2 class="text-3xl font-bold text-white mb-6">Personalization</h2>
                 
                 <div class="w-full">
-                    <!-- DISPLAY NAME SECTION -->
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Display Name</h3>
-                    <div class="settings-box transition-all duration-300 p-4 mb-8">
-                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
-                            Update your public display name. There are no limits on how often you can change this.
-                        </p>
-                        <div class="flex gap-2">
-                            <input type="text" id="display-name-input" class="flex-1 bg-white/5 border border-[var(--border-main)] rounded-xl p-3 text-sm outline-none focus:border-[var(--accent-color)] transition-all" placeholder="New display name...">
-                            <button id="save-display-name-btn" class="btn-toolbar-style btn-primary-override px-6">Save</button>
-                        </div>
-                        <p id="display-name-message" class="text-[10px] mt-2"></p>
-                    </div>
-
                     <!-- PROFILE PICTURE SECTION -->
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Profile Picture</h3>
+                    <h3 class="text-xl font-bold text-white mb-2">Profile Picture</h3>
                     <div id="pfpSection" class="settings-box transition-all duration-300 p-4 mb-8">
-                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
+                        <p class="text-sm font-light text-gray-400 mb-4">
                             Choose how you appear across the site.
                         </p>
                         
                         <div class="flex flex-col gap-4">
-                            <!-- Mode Selection Buttons -->
-                            <div class="flex gap-4 mb-4 border-b border-[var(--border-main)] pb-4">
-                                <button class="pfp-mode-btn active btn-toolbar-style" data-mode="google">Google PFP</button>
-                                <button class="pfp-mode-btn btn-toolbar-style" data-mode="letter">Letter Avatar</button>
-                                <button class="pfp-mode-btn btn-toolbar-style" data-mode="mibi">Mibi Avatar</button>
-                                <button class="pfp-mode-btn btn-toolbar-style" data-mode="custom">Upload Image</button>
-                            </div>
-
-                            <!-- Letter Avatar Options -->
-                            <div id="pfpLetterSettings" class="hidden flex flex-col gap-4 mt-2">
-                                <div class="flex items-center gap-6 mb-4">
-                                    <!-- Interactive Preview -->
-                                    <div id="pfp-letter-preview" class="w-24 h-24 rounded-[24px] flex items-center justify-center text-[var(--text-main)] text-3xl font-bold shadow-lg border border-[var(--border-main)] cursor-text relative overflow-hidden group" style="background: linear-gradient(135deg, #374151 0%, #111827 100%);">
-                                        <input type="text" id="pfp-letter-input" maxlength="3" class="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-center uppercase cursor-text placeholder-white/20" placeholder="A">
-                                    </div>
-                                    <div class="flex flex-col gap-1">
-                                        <label class="block text-[var(--text-muted)] opacity-60 text-xs uppercase tracking-wider font-bold">Letter Preview</label>
-                                        <p class="text-xs text-[var(--text-muted)] opacity-50 max-w-[200px]">Type directly in the box to set your avatar text (Max 3).</p>
-                                    </div>
-                                </div>
-                                
-                                <label class="block text-[var(--text-muted)] opacity-60 text-xs mb-2 uppercase tracking-wider font-bold">Background Color</label>
-                                <div class="color-palette-grid mb-6" id="pfp-color-grid"></div>
-                                
-                                <button id="save-letter-pfp-btn" class="btn-toolbar-style btn-primary-override w-full justify-center">
-                                    <i class="fa-solid fa-check mr-2"></i> Set Letter Avatar
-                                </button>
+                            <!-- Mode Selection Dropdown -->
+                            <div>
+                                <label for="pfpModeSelect" class="block text-gray-400 text-sm font-light mb-2">Display Mode</label>
+                                <select id="pfpModeSelect" class="input-select-style">
+                                    <option value="google">Use Google Profile Picture</option>
+                                    <option value="mibi">Use Mibi Avatar</option>
+                                    <option value="custom">Upload Custom Image</option>
+                                </select>
                             </div>
 
                             <!-- Mibi Avatar Settings (Hidden by default) -->
                             <div id="pfpMibiSettings" class="hidden flex flex-col gap-4 mt-2">
-                                <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
+                                <p class="text-sm font-light text-gray-400 mb-4">
                                     Create your custom Mibi Avatar!
                                 </p>
                                 <button id="open-mac-menu-btn" class="btn-toolbar-style btn-primary-override">
@@ -1229,12 +1064,12 @@
                                 </button>
                                 
                                 <!-- MAC Modal -->
-                                <div id="mibi-mac-menu" class="fixed inset-0 bg-[var(--bg-page)] bg-opacity-80 flex items-center justify-center z-[2000000] hidden backdrop-blur-sm">
-                                    <div class="relative bg-[var(--bg-secondary)] rounded-[16px] shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden border border-[var(--border-main)]">
+                                <div id="mibi-mac-menu" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden backdrop-blur-sm">
+                                    <div class="relative bg-black rounded-[1.25rem] shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden border border-[#333]">
                                         
                                         <!-- Header -->
-                                        <div class="flex justify-between items-center p-6 border-b border-[var(--border-main)] bg-[var(--bg-secondary)]">
-                                            <h3 class="text-2xl font-bold text-[var(--text-main)]">Mibi Avatar Creator</h3>
+                                        <div class="flex justify-between items-center p-6 border-b border-[#333] bg-black">
+                                            <h3 class="text-2xl font-bold text-white">Mibi Avatar Creator</h3>
                                             <button id="mac-close-x-btn" class="btn-toolbar-style w-10 h-10 flex items-center justify-center p-0">
                                                 <i class="fa-solid fa-xmark fa-xl"></i>
                                             </button>
@@ -1244,8 +1079,8 @@
                                         <div class="flex flex-grow overflow-hidden relative">
                                             
                                             <!-- LEFT: Live Preview -->
-                                            <div id="mac-preview-wrapper" class="w-1/2 flex flex-col items-center justify-center bg-[var(--bg-page)] p-8 border-r border-[var(--border-main)] transition-all duration-500 ease-in-out z-10">
-                                                <div class="relative h-64 md:h-80 aspect-square rounded-[56px] overflow-hidden border-4 border-[var(--border-main)] shadow-lg mb-6 transition-all duration-300 hover:border-dashed hover:border-[var(--text-main)] cursor-pointer flex-shrink-0" id="mac-preview-container" style="aspect-ratio: 1/1;">
+                                            <div id="mac-preview-wrapper" class="w-1/2 flex flex-col items-center justify-center bg-[#0a0a0a] p-8 border-r border-[#333] transition-all duration-500 ease-in-out z-10">
+                                                <div class="relative h-64 md:h-80 aspect-square rounded-full overflow-hidden border-4 border-[#333] shadow-lg mb-6 transition-all duration-300 hover:border-dashed hover:border-white cursor-pointer flex-shrink-0" id="mac-preview-container" style="aspect-ratio: 1/1;">
                                                     <!-- Background (Static) -->
                                                     <div id="mac-preview-bg" class="absolute inset-0 w-full h-full transition-colors duration-300"></div>
                                                     
@@ -1260,40 +1095,40 @@
                                                 
                                                 <div id="mac-sliders-container" class="hidden flex-col gap-6 w-full max-w-xs transition-opacity duration-300 opacity-0">
                                                     <div class="flex flex-col gap-2">
-                                                        <label class="text-xs text-[var(--text-muted)] opacity-60 uppercase tracking-wider font-bold">Size</label>
-                                                        <input type="range" id="mac-size-slider" min="50" max="150" value="100" list="mac-size-ticks" class="mac-slider w-full h-2 bg-[var(--bg-secondary)] rounded-[16px] appearance-none cursor-pointer">
+                                                        <label class="text-xs text-gray-400 uppercase tracking-wider font-bold">Size</label>
+                                                        <input type="range" id="mac-size-slider" min="50" max="150" value="100" list="mac-size-ticks" class="mac-slider w-full h-2 bg-gray-700 rounded-[14px] appearance-none cursor-pointer">
                                                         <datalist id="mac-size-ticks">
                                                             <option value="100"></option>
                                                         </datalist>
                                                     </div>
                                                     <div class="flex flex-col gap-2">
-                                                        <label class="text-xs text-[var(--text-muted)] opacity-60 uppercase tracking-wider font-bold">Rotation</label>
-                                                        <input type="range" id="mac-rotation-slider" min="-180" max="180" value="0" list="mac-rotation-ticks" class="mac-slider w-full h-2 bg-[var(--bg-secondary)] rounded-[16px] appearance-none cursor-pointer">
+                                                        <label class="text-xs text-gray-400 uppercase tracking-wider font-bold">Rotation</label>
+                                                        <input type="range" id="mac-rotation-slider" min="-180" max="180" value="0" list="mac-rotation-ticks" class="mac-slider w-full h-2 bg-gray-700 rounded-[14px] appearance-none cursor-pointer">
                                                         <datalist id="mac-rotation-ticks">
                                                             <option value="0"></option>
                                                         </datalist>
                                                     </div>
-                                                    <p class="text-center text-[var(--text-muted)] opacity-50 text-xs mt-2"><i class="fa-solid fa-hand-pointer mr-1"></i> Drag avatar to position</p>
+                                                    <p class="text-center text-gray-500 text-xs mt-2"><i class="fa-solid fa-hand-pointer mr-1"></i> Drag avatar to position</p>
                                                 </div>
                                                 
-                                                <p class="text-[var(--text-muted)] opacity-50 text-sm font-mono mt-2" id="mac-preview-label">Click preview to adjust orientation</p>
+                                                <p class="text-gray-500 text-sm font-mono mt-2" id="mac-preview-label">Click preview to adjust orientation</p>
                                             </div>
 
                                             <!-- RIGHT: Controls & Options -->
-                                            <div id="mac-controls-wrapper" class="w-1/2 flex flex-col bg-[var(--bg-secondary)] transition-transform duration-500 ease-in-out translate-x-0">
+                                            <div id="mac-controls-wrapper" class="w-1/2 flex flex-col bg-black transition-transform duration-500 ease-in-out translate-x-0">
                                                 
                                                 <!-- Tabs -->
-                                                <div class="flex border-b border-[var(--border-main)]">
-                                                    <button class="mac-tab-btn flex-1 py-4 text-[var(--text-muted)] opacity-60 hover:text-[var(--text-main)] hover:bg-[var(--bg-page)] transition-colors border-b-2 border-transparent font-medium active-tab" data-tab="hats">
+                                                <div class="flex border-b border-[#333]">
+                                                    <button class="mac-tab-btn flex-1 py-4 text-gray-400 hover:text-white hover:bg-[#252525] transition-colors border-b-2 border-transparent font-medium active-tab" data-tab="hats">
                                                         <i class="fa-solid fa-hat-wizard mr-2"></i> Hats
                                                     </button>
-                                                    <button class="mac-tab-btn flex-1 py-4 text-[var(--text-muted)] opacity-60 hover:text-[var(--text-main)] hover:bg-[var(--bg-page)] transition-colors border-b-2 border-transparent font-medium" data-tab="eyes">
+                                                    <button class="mac-tab-btn flex-1 py-4 text-gray-400 hover:text-white hover:bg-[#252525] transition-colors border-b-2 border-transparent font-medium" data-tab="eyes">
                                                         <i class="fa-solid fa-eye mr-2"></i> Eyes
                                                     </button>
-                                                    <button class="mac-tab-btn flex-1 py-4 text-[var(--text-muted)] opacity-60 hover:text-[var(--text-main)] hover:bg-[var(--bg-page)] transition-colors border-b-2 border-transparent font-medium" data-tab="mouths">
+                                                    <button class="mac-tab-btn flex-1 py-4 text-gray-400 hover:text-white hover:bg-[#252525] transition-colors border-b-2 border-transparent font-medium" data-tab="mouths">
                                                         <i class="fa-solid fa-face-smile mr-2"></i> Mouths
                                                     </button>
-                                                    <button class="mac-tab-btn flex-1 py-4 text-[var(--text-muted)] opacity-60 hover:text-[var(--text-main)] hover:bg-[var(--bg-page)] transition-colors border-b-2 border-transparent font-medium" data-tab="bg">
+                                                    <button class="mac-tab-btn flex-1 py-4 text-gray-400 hover:text-white hover:bg-[#252525] transition-colors border-b-2 border-transparent font-medium" data-tab="bg">
                                                         <i class="fa-solid fa-palette mr-2"></i> Color
                                                     </button>
                                                 </div>
@@ -1310,12 +1145,12 @@
                                         </div>
                                         
                                         <!-- Footer Actions -->
-                                        <div class="p-6 border-t border-[var(--border-main)] bg-[var(--bg-secondary)] flex justify-end gap-4 items-center">
-                                            <button id="mac-reset-btn" class="btn-toolbar-style mr-auto px-4 py-2 rounded-[16px]" title="Reset Avatar">
+                                        <div class="p-6 border-t border-[#333] bg-black flex justify-end gap-4 items-center">
+                                            <button id="mac-reset-btn" class="btn-toolbar-style mr-auto px-4 py-2 rounded-[1.25rem]" title="Reset Avatar">
                                                 <i class="fa-solid fa-rotate-left"></i>
                                             </button>
-                                            <button id="mac-cancel-btn" class="btn-toolbar-style px-6 py-2 rounded-[16px]">Cancel</button>
-                                            <button id="mac-confirm-btn" class="btn-toolbar-style btn-primary-override px-6 py-2 rounded-[16px]">
+                                            <button id="mac-cancel-btn" class="btn-toolbar-style px-6 py-2 rounded-[1.25rem]">Cancel</button>
+                                            <button id="mac-confirm-btn" class="btn-toolbar-style btn-primary-override px-6 py-2 rounded-[1.25rem]">
                                                 <i class="fa-solid fa-check mr-2"></i> Confirm Avatar
                                             </button>
                                         </div>
@@ -1327,9 +1162,9 @@
                             <div id="pfpCustomSettings" class="hidden mt-2">
                                 <div class="flex items-center gap-4">
                                     <!-- Preview -->
-                                    <div class="w-16 h-16 rounded-[24px] overflow-hidden border border-[var(--border-main)] flex-shrink-0 bg-black relative">
+                                    <div class="w-16 h-16 rounded-full overflow-hidden border border-gray-600 flex-shrink-0 bg-black relative">
                                         <img id="customPfpPreview" src="" class="w-full h-full object-cover" style="display: none;">
-                                        <div id="customPfpPlaceholder" class="w-full h-full flex items-center justify-center text-[var(--text-muted)] opacity-40">
+                                        <div id="customPfpPlaceholder" class="w-full h-full flex items-center justify-center text-gray-600">
                                             <i class="fa-solid fa-user"></i>
                                         </div>
                                     </div>
@@ -1340,7 +1175,7 @@
                                             <i class="fa-solid fa-upload mr-2"></i> Upload Image
                                         </button>
                                         <input type="file" id="pfpFileInput" accept="image/*" style="display: none;">
-                                        <p class="text-xs text-[var(--text-muted)] opacity-50 mt-1">Max size: 2MB. Images are cropped to square.</p>
+                                        <p class="text-xs text-gray-500 mt-1">Max size: 2MB. Images are cropped to square.</p>
                                     </div>
                                 </div>
                             </div>
@@ -1350,15 +1185,15 @@
                     </div>
 
                     <!-- THEME SECTION -->
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Navigation Bar Theme</h3>
+                    <h3 class="text-xl font-bold text-white mb-2">Navigation Bar Theme</h3>
                     <div id="themeSection" class="settings-box transition-all duration-300 p-4">
-                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
+                        <p class="text-sm font-light text-gray-400 mb-4">
                             Select a theme for your navigation bar. This setting is saved locally and will apply a live preview.
                         </p>
                         
                         <div id="theme-picker-container">
                             <div class="flex items-center justify-center p-8">
-                                <i class="fa-solid fa-spinner fa-spin fa-2x text-[var(--text-muted)] opacity-40"></i>
+                                <i class="fa-solid fa-spinner fa-spin fa-2x text-gray-500"></i>
                             </div>
                         </div>
                         
@@ -1371,11 +1206,11 @@
         // --- NEW: Generates the HTML for the "Data Management" section ---
         function getDataManagementContent() {
             return `
-                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">Data Management</h2>
+                <h2 class="text-3xl font-bold text-white mb-6">Data Management</h2>
                 <div class="w-full">
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Export Data</h3>
+                    <h3 class="text-xl font-bold text-white mb-2">Export Data</h3>
                     <div class="settings-box transition-all duration-300 p-4 mb-8">
-                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
+                        <p class="text-sm font-light text-gray-400 mb-4">
                             Export all your local game data (from LocalStorage and IndexedDB) into a single JSON file.
                             This file can be used as a backup or to transfer your data to another browser.
                         </p>
@@ -1384,7 +1219,7 @@
                         </button>
                     </div>
 
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Import Data</h3>
+                    <h3 class="text-xl font-bold text-white mb-2">Import Data</h3>
                     <div class="settings-box transition-all duration-300 p-4 bg-red-900/10 border-red-700/50">
                         <p class="text-sm font-light text-red-300 mb-4">
                             <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
@@ -1405,28 +1240,28 @@
          */
                  function getManagementContent() {            return `
 
-                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">Admin Management</h2>
+                <h2 class="text-3xl font-bold text-white mb-6">Admin Management</h2>
                 
                 <!-- Admin Management Section -->
                 <div class="w-full mb-8">
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">Admin Management</h3>
+                    <h3 class="text-xl font-bold text-white mb-2">Admin Management</h3>
                     <div class="settings-box p-4">
-                        <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
+                        <p class="text-sm font-light text-gray-400 mb-4">
                             Manage website administrators. Superadmins can add/remove other admins and designate additional superadmins.
                         </p>
 
                         <!-- Current Admins List -->
                         <div class="mb-4">
-                            <label class="block text-[var(--text-muted)] opacity-60 text-sm font-light mb-2">Current Administrators</label>
+                            <label class="block text-gray-400 text-sm font-light mb-2">Current Administrators</label>
                             <div id="current-admins-list" class="flex flex-col gap-2">
                                 <!-- Admins will be loaded here by JavaScript -->
-                                <p class="text-[var(--text-muted)] opacity-40 italic">Loading admins...</p>
+                                <p class="text-gray-500 italic">Loading admins...</p>
                             </div>
                         </div>
 
                         <!-- Add Admin Section -->
-                        <div class="border-t border-[var(--border-main)] pt-4 mt-4">
-                            <label for="newAdminEmail" class="block text-[var(--text-muted)] opacity-60 text-sm font-light mb-2">Add New Admin (by Email)</label>
+                        <div class="border-t border-[#252525] pt-4 mt-4">
+                            <label for="newAdminEmail" class="block text-gray-400 text-sm font-light mb-2">Add New Admin (by Email)</label>
                             <div class="flex gap-2">
                                 <input type="email" id="newAdminEmail" class="input-text-style flex-grow" placeholder="Enter email address">
                                 <button id="addAdminBtn" class="btn-toolbar-style btn-primary-override w-24">
@@ -1437,9 +1272,9 @@
                         </div>
 
                         <!-- Superadmin Controls (only visible to superadmin) -->
-                        <div id="superadmin-controls" class="hidden border-t border-[var(--border-main)] pt-4 mt-4">
-                            <h4 class="text-lg font-bold text-[var(--text-main)] mb-2">Superadmin Actions</h4>
-                            <p class="text-sm font-light text-[var(--text-muted)] opacity-60 mb-4">
+                        <div id="superadmin-controls" class="hidden border-t border-[#252525] pt-4 mt-4">
+                            <h4 class="text-lg font-bold text-white mb-2">Superadmin Actions</h4>
+                            <p class="text-sm font-light text-gray-400 mb-4">
                                 Only the primary superadmin can manage other superadmins and strip admin privileges.
                             </p>
                             <div class="flex flex-col gap-3">
@@ -1514,10 +1349,10 @@
                     }
                     
                     const adminEntry = document.createElement('div');
-                    adminEntry.className = 'flex justify-between items-center bg-[#0a0a0a] border border-[#1a1a1a] rounded-[16px] p-3';
+                    adminEntry.className = 'flex justify-between items-center bg-[#0a0a0a] border border-[#1a1a1a] rounded-[14px] p-3';
                     adminEntry.innerHTML = `
                         <div>
-                            <span class="font-medium text-[var(--text-main)]">${admin.username || admin.email}</span>
+                            <span class="font-medium text-white">${admin.username || admin.email}</span>
                             ${isSuperadmin ? '<span class="text-xs text-yellow-400 ml-2 font-normal">(Superadmin)</span>' : ''}
                             ${isCurrentUser ? '<span class="text-xs text-blue-400 ml-2 font-normal">(Current User)</span>' : ''}
                         </div>
@@ -1534,19 +1369,17 @@
                 currentAdminsList.innerHTML = `<p class="text-gray-500 italic">Loading admins...</p>`;
 
                 try {
-                    const { data: admins, error } = await window.supabase
-                        .from('profiles')
-                        .select('id, username, email, is_admin')
-                        .eq('is_admin', true);
-
-                    if (error) throw error;
+                    const adminsSnap = await getDocs(collection(db, 'admins'));
+                    
+                    const adminsMap = new Map(); // Store full admin data for display
+                    adminsSnap.forEach(doc => adminsMap.set(doc.id, doc.data()));
 
                     allAdmins = [];
 
-                    (admins || []).forEach(adminData => {
-                        const uid = adminData.id;
-                        // Use SUPERADMIN_EMAIL constant if defined, or check is_admin (simplified for now)
-                        const isSuperadmin = adminData.email === SUPERADMIN_EMAIL; 
+                    adminsSnap.forEach(doc => {
+                        const uid = doc.id;
+                        const adminData = doc.data();
+                        const isSuperadmin = adminData.email === SUPERADMIN_EMAIL || adminData.role === 'superadmin';
 
                         const adminEntry = {
                             uid: uid,
@@ -1559,15 +1392,18 @@
                         allAdmins.push(adminEntry);
                     });
 
-                    // Sort admins to put primary superadmin first
+                    // Sort admins to put primary superadmin first, then other superadmins, then regular admins
                     allAdmins.sort((a, b) => {
                         if (a.email === SUPERADMIN_EMAIL) return -1;
                         if (b.email === SUPERADMIN_EMAIL) return 1;
+                        if (a.isSuperadmin && !b.isSuperadmin) return -1;
+                        if (!a.isSuperadmin && b.isSuperadmin) return 1;
                         return (a.username || '').localeCompare(b.username || '');
                     });
 
                     renderAdminList();
                     
+                    // Show superadmin controls if current user is primary superadmin
                     if (isPrimarySuperadmin) {
                         superadminControls.classList.remove('hidden');
                     } else {
@@ -1580,7 +1416,7 @@
                 }
             };
             
-            // --- Handlers for Admin Management Actions ---
+            // --- Handlers for Admin Management Actions (Add/Remove Admin, Add/Remove Superadmin) ---
             window.handleRemoveAdmin = async (uid, username) => {
                 if (!isPrimarySuperadmin) {
                     showMessage(adminMessage, 'You do not have permission to remove admins.', 'error');
@@ -1590,13 +1426,7 @@
 
                 showMessage(adminMessage, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Removing admin privileges...`, 'warning');
                 try {
-                    const { error } = await window.supabase
-                        .from('profiles')
-                        .update({ is_admin: false })
-                        .eq('id', uid);
-                    
-                    if (error) throw error;
-
+                    await deleteDoc(doc(db, 'admins', uid));
                     showMessage(adminMessage, `${username}'s admin privileges have been removed.`, 'success');
                     fetchAdmins();
                 } catch (error) {
@@ -1620,25 +1450,24 @@
                 addAdminBtn.disabled = true;
 
                 try {
-                    const { data: userProfile, error: searchError } = await window.supabase
-                        .from('profiles')
-                        .select('id, username')
-                        .eq('email', email)
-                        .maybeSingle();
+                    const usersQuery = query(collection(db, 'users'), where('email', '==', email));
+                    const usersSnapshot = await getDocs(usersQuery);
 
-                    if (searchError) throw searchError;
-
-                    if (!userProfile) {
-                        showMessage(adminMessage, 'No user found with that email address in Supabase.', 'error');
+                    if (usersSnapshot.empty) {
+                        showMessage(adminMessage, 'No user found with that email address.', 'error');
                     } else {
-                        const { error: updateError } = await window.supabase
-                            .from('profiles')
-                            .update({ is_admin: true })
-                            .eq('id', userProfile.id);
-                        
-                        if (updateError) throw updateError;
+                        const userDoc = usersSnapshot.docs[0];
+                        const uid = userDoc.id;
+                        const username = userDoc.data().username || email; // Use email if no username
 
-                        showMessage(adminMessage, `${userProfile.username || email} has been added as an admin.`, 'success');
+                        await setDoc(doc(db, 'admins', uid), {
+                            role: 'admin',
+                            addedBy: (currentUser.uid || currentUser.id),
+                            addedAt: serverTimestamp(),
+                            username: username,
+                            email: email
+                        });
+                        showMessage(adminMessage, `${username} has been added as an admin.`, 'success');
                         newAdminEmailInput.value = '';
                         fetchAdmins();
                     }
@@ -1663,11 +1492,12 @@
 
                 showMessage(superadminMessage, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Removing superadmin privileges...`, 'warning');
                 try {
-                    // In Supabase, superadmin is currently email-based, 
-                    // so "removing" it for a non-primary superadmin just means they remain a regular admin.
-                    // We don't have a 'role' column, so we just log it or do nothing if it's only email-based.
-                    // For now, we'll just show success as they are still admins.
-                    showMessage(superadminMessage, `${email}'s superadmin privileges have been removed (reverted to regular admin).`, 'success');
+                    await updateDoc(doc(db, 'admins', uid), {
+                        role: 'admin', // Revert to regular admin
+                        superadminRemovedBy: (currentUser.uid || currentUser.id),
+                        superadminRemovedAt: serverTimestamp()
+                    });
+                    showMessage(superadminMessage, `${email}'s superadmin privileges have been removed.`, 'success');
                     fetchAdmins();
                 } catch (error) {
                     console.error("Remove Superadmin error:", error);
@@ -1697,27 +1527,39 @@
                 addSuperadminBtn.disabled = true;
 
                 try {
-                    const { data: userProfile, error: searchError } = await window.supabase
-                        .from('profiles')
-                        .select('id, username')
-                        .eq('email', email)
-                        .maybeSingle();
+                    const usersQuery = query(collection(db, 'users'), where('email', '==', email));
+                    const usersSnapshot = await getDocs(usersQuery);
 
-                    if (searchError) throw searchError;
-
-                    if (!userProfile) {
-                        showMessage(superadminMessage, 'No user found with that email address in Supabase.', 'error');
+                    if (usersSnapshot.empty) {
+                        showMessage(superadminMessage, 'No user found with that email address.', 'error');
                     } else {
-                        // In Supabase, we just ensure they are an admin.
-                        // Superadmin status is determined by email '4simpleproblems@gmail.com'.
-                        const { error: updateError } = await window.supabase
-                            .from('profiles')
-                            .update({ is_admin: true })
-                            .eq('id', userProfile.id);
-                        
-                        if (updateError) throw updateError;
+                        const userDoc = usersSnapshot.docs[0];
+                        const uid = userDoc.id;
+                        const username = userDoc.data().username || email;
 
-                        showMessage(superadminMessage, `${userProfile.username || email} has been promoted to superadmin (admin privileges granted).`, 'success');
+                        // Check if already an admin
+                        const adminDocRef = doc(db, 'admins', uid);
+                        const adminDocSnap = await getDoc(adminDocRef);
+
+                        if (adminDocSnap.exists()) {
+                            // Already an admin, just upgrade role
+                            await updateDoc(adminDocRef, {
+                                role: 'superadmin',
+                                superadminAddedBy: (currentUser.uid || currentUser.id),
+                                superadminAddedAt: serverTimestamp()
+                            });
+                            showMessage(superadminMessage, `${username} has been promoted to superadmin.`, 'success');
+                        } else {
+                            // Not an admin yet, add as superadmin
+                            await setDoc(adminDocRef, {
+                                role: 'superadmin',
+                                addedBy: (currentUser.uid || currentUser.id),
+                                addedAt: serverTimestamp(),
+                                username: username,
+                                email: email
+                            });
+                            showMessage(superadminMessage, `${username} has been added as a superadmin.`, 'success');
+                        }
                         newSuperadminEmailInput.value = '';
                         fetchAdmins();
                     }
@@ -1739,14 +1581,14 @@
          */
         function getAboutContent() {
             return `
-                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-4">About 4SP (4simpleproblems)</h2>
+                <h2 class="text-3xl font-bold text-white mb-4">About 4SP (4simpleproblems)</h2>
                 
                 <div class="about-section-content">
-                    <p class="text-lg text-[var(--text-muted)] opacity-80 leading-relaxed">
+                    <p class="text-lg text-gray-400 leading-relaxed">
                         <span class="text-emphasis">4SP (4simpleproblems)</span> is a <span class="text-emphasis">Student Toolkit and Entertainment website</span> designed to boost student productivity and provide useful resources. We aim to solve four core challenges that students face every day by integrating essential tools and engaging digital content into one seamless platform.
                     </p>
                     
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mt-6 mb-2">The Four Simple Problems We Address</h3>
+                    <h3 class="text-xl font-bold text-white mt-6 mb-2">The Four Simple Problems We Address</h3>
                     <ul class="list-disc list-inside ml-4 text-lg text-gray-400 leading-relaxed">
                         <li>Providing a <span class="text-emphasis">digital leisure platform free of advertisements</span>.</li>
                         <li>Delivering a <span class="text-emphasis">student toolkit designed for accessibility and consistent availability</span>, bypassing typical institutional network restrictions.</li>
@@ -1758,28 +1600,28 @@
                         Features currently include an <span class="text-emphasis">online notebook</span> in the Notes App for secure organization, a <span class="text-emphasis">live clock</span> on the dashboard, a <span class="text-emphasis">dictionary</span> for quick lookups, and more tools.
                     </p>
                     
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mt-6 mb-2">Version</h3>
-                    <p class="text-[var(--text-muted)] opacity-80">
-                        Current Version: <span class="text-blue-400 text-emphasis">6.0.0</span>
+                    <h3 class="text-xl font-bold text-white mt-6 mb-2">Version</h3>
+                    <p class="text-gray-400">
+                        Current Version: <span class="text-blue-400 text-emphasis">5.0.17</span>
                     </p>
 
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mt-6 mb-3">Connect & Support</h3>
+                    <h3 class="text-xl font-bold text-white mt-6 mb-3">Connect & Support</h3>
                     <div class="social-link-group">
                         <a href="https://www.youtube.com/@4simpleproblems" target="_blank" class="btn-toolbar-style" title="YouTube">
                             <i class="fa-brands fa-youtube fa-lg mr-2"></i> YouTube
                         </a>
                         <a href="https://x.com/4simpleproblems" target="_blank" class="btn-toolbar-style" title="X (Twitter)">
-                            <i class="fa-brands fa-x-twitter fa-lg mr-2 light-invert"></i>X
+                            <i class="fa-brands fa-x-twitter fa-lg mr-2"></i>X
                         </a>
                         <a href="https://buymeacoffee.com/4simpleproblems" target="_blank" class="btn-toolbar-style" title="Buy Me a Coffee">
                             <i class="fa-solid fa-mug-hot fa-lg mr-2"></i> Buy Me a Coffee
                         </a>
                         <a href="https://github.com/v5-4simpleproblems" target="_blank" class="btn-toolbar-style" title="GitHub">
-                            <i class="fa-brands fa-github fa-lg mr-2 light-invert"></i> Github
+                            <i class="fa-brands fa-github fa-lg mr-2"></i> Github
                         </a>
                     </div>
                     
-                    <h3 class="text-xl font-bold text-[var(--text-main)] mt-6 mb-3">Legal Information</h3>
+                    <h3 class="text-xl font-bold text-white mt-6 mb-3">Legal Information</h3>
                     <div class="legal-buttons">
                         <a href="../legal.html#terms-of-service" class="btn-toolbar-style">Terms of Service</a>
                         <a href="../legal.html#privacy-policy" class="btn-toolbar-style">Privacy Policy</a>
@@ -1793,7 +1635,7 @@
          */
         function getComingSoonContent(title) {
             return `
-                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-2">${title}</h2>
+                <h2 class="text-3xl font-bold text-white mb-2">${title}</h2>
                 <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
                     <p class="text-xl text-gray-500 italic">...Coming Soon...</p>
                     <i class="fa-solid fa-hourglass-start fa-5x text-gray-700 mt-4"></i>
@@ -1801,19 +1643,16 @@
             `;
         }
         
+        // Helper for refreshing the General Tab
+        const refreshGeneralTab = () => {
+            // Clear the current view state and re-render the General tab
+            // This is necessary because currentUser.providerData needs to be fresh
+            switchTab('general');
+        };
+
         // --- Mibi Avatar Creator (MAC) Logic ---
 
         // Global state for Mibi Avatar parts (persisted in this scope)
-        let currentMacSlide = 1;
-        const showMacSlide = (slide) => {
-            if (slide === 1) {
-                // If we're using a single-step "creator" where slide 1 
-                // is just opening the menu, we handle that in openMenu.
-                // If it's intended to enter orientation mode:
-                // enterOrientationMode(); 
-            }
-        };
-
         let mibiAvatarState = {
             eyes: '',
             mouths: '',
@@ -1825,13 +1664,6 @@
             offsetY: 0
         };
         
-        const letterColors = [
-            'EF4444', 'F97316', 'FDBA74', 'EAB308', 'FDE047',
-            '22C55E', '86EFAC', '06B6D4', '67E8F9', '3B82F6',
-            '93C5FD', '6366F1', 'A5B4FC', 'A855F7', 'D8B4FE',
-            'EC4899', 'F9A8D4', '6B7280', '000000'
-        ];
-
         // Constants for Assets
         const MIBI_ASSETS = {
             eyes: ['default-eyes.png', 'glasses.png', 'odd.png'],
@@ -1910,8 +1742,8 @@
                 MIBI_ASSETS.colors.forEach(color => {
                     const btn = document.createElement('button');
                     const isSelected = mibiAvatarState.bgColor === color;
-                    // Style: Match X button (w-10 h-10, rounded-[16px] i.e. 0.75rem) + flex-shrink-0
-                    btn.className = `w-10 h-10 rounded-[16px] shadow-sm transition-transform hover:scale-110 focus:outline-none border-2 flex-shrink-0 ${isSelected ? 'border-[var(--text-main)]' : 'border-transparent'} hover:border-dashed hover:border-[var(--text-main)]`;
+                    // Style: Match X button (w-10 h-10, rounded-[1.25rem] i.e. 0.75rem) + flex-shrink-0
+                    btn.className = `w-10 h-10 rounded-[1.25rem] shadow-sm transition-transform hover:scale-110 focus:outline-none border-2 flex-shrink-0 ${isSelected ? 'border-white' : 'border-transparent'} hover:border-dashed hover:border-white`;
                     btn.style.backgroundColor = color;
                     
                     btn.onclick = () => {
@@ -1924,8 +1756,8 @@
                 // Add custom picker
                 const customWrapper = document.createElement('div');
                 // Match size and roundness + flex-shrink-0
-                customWrapper.className = 'w-10 h-10 rounded-[16px] bg-[#333] flex items-center justify-center cursor-pointer hover:bg-[#444] relative overflow-hidden border-2 border-transparent hover:border-dashed hover:border-[var(--text-main)] flex-shrink-0';
-                customWrapper.innerHTML = '<i class="fa-solid fa-eye-dropper text-[var(--text-main)] text-sm"></i><input type="color" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">';
+                customWrapper.className = 'w-10 h-10 rounded-[1.25rem] bg-[#333] flex items-center justify-center cursor-pointer hover:bg-[#444] relative overflow-hidden border-2 border-transparent hover:border-dashed hover:border-white flex-shrink-0';
+                customWrapper.innerHTML = '<i class="fa-solid fa-eye-dropper text-white text-sm"></i><input type="color" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">';
                 const input = customWrapper.querySelector('input');
                 input.oninput = (e) => {
                     mibiAvatarState.bgColor = e.target.value;
@@ -1940,8 +1772,8 @@
                 // "None" Option - ONLY for Hats
                 if (category === 'hats') {
                     const noneBtn = document.createElement('div');
-                    // Light grey background (bg-gray-200), More rounded (rounded-[16px])
-                    noneBtn.className = `bg-gray-200 rounded-[16px] p-2 flex flex-col items-center justify-center cursor-pointer border-2 hover:border-dashed hover:border-black transition-all ${!mibiAvatarState[category] ? 'border-black' : 'border-transparent'}`;
+                    // Light grey background (bg-gray-200), More rounded (rounded-[1.25rem])
+                    noneBtn.className = `bg-gray-200 rounded-[1.25rem] p-2 flex flex-col items-center justify-center cursor-pointer border-2 hover:border-dashed hover:border-black transition-all ${!mibiAvatarState[category] ? 'border-black' : 'border-transparent'}`;
                     noneBtn.innerHTML = `<i class="fa-solid fa-ban fa-2x text-gray-600"></i>`;
                     noneBtn.onclick = () => {
                         mibiAvatarState[category] = '';
@@ -1956,8 +1788,8 @@
                 files.forEach(file => {
                     const item = document.createElement('div');
                     const isSelected = mibiAvatarState[category] === file;
-                    // Light grey background (bg-gray-200), More rounded (rounded-[16px])
-                    item.className = `bg-gray-200 rounded-[16px] p-2 flex flex-col items-center justify-center cursor-pointer border-2 hover:border-dashed hover:border-black transition-all ${isSelected ? 'border-black' : 'border-transparent'}`;
+                    // Light grey background (bg-gray-200), More rounded (rounded-[1.25rem])
+                    item.className = `bg-gray-200 rounded-[1.25rem] p-2 flex flex-col items-center justify-center cursor-pointer border-2 hover:border-dashed hover:border-black transition-all ${isSelected ? 'border-black' : 'border-transparent'}`;
                     
                     item.innerHTML = `
                         <img src="../mibi-avatars/${category}/${file}" class="w-16 h-16 object-contain">
@@ -2650,7 +2482,7 @@
 
                     
 
-                                            b.classList.remove('active-tab', 'text-[var(--text-main)]', 'border-blue-500');
+                                            b.classList.remove('active-tab', 'text-white', 'border-blue-500');
 
                     
 
@@ -2662,7 +2494,7 @@
 
                     
 
-                                        btn.classList.add('active-tab', 'text-[var(--text-main)]', 'border-blue-500');
+                                        btn.classList.add('active-tab', 'text-white', 'border-blue-500');
 
                     
 
@@ -2732,10 +2564,10 @@
                 showMessage(pfpMessage, '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving Mibi Avatar...', 'warning');
                 
                 try {
-                    const uid = currentUser.uid || currentUser.id;
+                    const userDocRef = getUserDocRef((currentUser.uid || currentUser.id));
                     
-                    // Save to Firestore & Supabase
-                    await saveUserData(uid, {
+                    // Save to Firestore
+                    await updateDoc(userDocRef, {
                         pfpType: 'mibi',
                         mibiConfig: mibiAvatarState
                     });
@@ -2907,18 +2739,20 @@
         async function loadGeneralTab() {
             if (!currentUser) return; 
 
-            const isEmailPasswordUser = (currentUser.providerData || []).some(
+            // Check if user is using email/password authentication (providerId 'password')
+            const isEmailPasswordUser = currentUser.providerData.some(
                 (info) => info.providerId === 'password'
             );
             
-            const uid = currentUser.uid || currentUser.id;
-            const userData = await getUserData(uid);
+            const userDocRef = getUserDocRef((currentUser.uid || currentUser.id));
+            let userDocSnap = await getDoc(userDocRef);
 
-            if (!userData) {
-                mainView.innerHTML = `<h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">General Settings</h2><p class="text-red-400">Error: User data not found. Please log out and back in.</p>`;
+            if (!userDocSnap.exists()) {
+                mainView.innerHTML = `<h2 class="text-3xl font-bold text-white mb-6">General Settings</h2><p class="text-red-400">Error: User data not found. Please log out and back in.</p>`;
                 return;
             }
 
+            let userData = userDocSnap.data();
             const today = new Date();
             const currentMonthNumber = today.getMonth() + 1; 
             const currentMonthName = today.toLocaleDateString('en-US', { month: 'long' }); 
@@ -2926,17 +2760,15 @@
             let changesThisMonth = userData.usernameChangesThisMonth || 0;
             let lastChangeMonth = userData.lastUsernameChangeMonth || 0;
 
-            // --- Monthly Reset Logic (Only if Firestore is accessible) ---
+            // --- Monthly Reset Logic ---
             if (currentMonthNumber !== lastChangeMonth) {
-                try {
-                    await saveUserData(uid, {
-                        usernameChangesThisMonth: 0,
-                        lastUsernameChangeMonth: currentMonthNumber
-                    });
-                    changesThisMonth = 0;
-                } catch (e) {
-                    console.warn("Could not reset monthly changes:", e);
-                }
+                changesThisMonth = 0;
+                await updateDoc(userDocRef, {
+                    usernameChangesThisMonth: 0,
+                    lastUsernameChangeMonth: currentMonthNumber
+                });
+                userDocSnap = await getDoc(userDocRef);
+                userData = userDocSnap.data(); 
             }
             
             const changesRemaining = MAX_CHANGES - changesThisMonth;
@@ -2948,7 +2780,8 @@
                 changesThisMonth, 
                 currentMonthName,
                 isEmailPasswordUser, 
-                currentUser.providerData || [] // Pass provider info
+                currentUser.providerData, // Pass provider info
+                userData.downloadCode // Pass download code
             );
             
             // 2. Element References (Username Section)
@@ -3049,9 +2882,7 @@
                     
                     // --- Update Logic ---
                     const newChangesCount = changesThisMonth + 1;
-
-                    // Update User Document (Supabase Only)
-                    await saveUserData(uid, {
+                    await updateDoc(userDocRef, {
                         username: newUsername,
                         usernameChangesThisMonth: newChangesCount,
                         lastUsernameChangeMonth: currentMonthNumber 
@@ -3134,24 +2965,18 @@
                     }
 
                     try {
-                        // 1. Re-authenticate the user (confirm they know the current password)
-                        const { error: reauthError } = await window.supabase.auth.signInWithPassword({
-                            email: currentUser.email,
-                            password: currentPass
-                        });
-                        if (reauthError) throw reauthError;
+                        // 1. Re-authenticate the user
+                        const credential = EmailAuthProvider.credential(currentUser.email, currentPass);
+                        await reauthenticateWithCredential(currentUser, credential);
 
                         // 2. Update the password
-                        const { error: updateError } = await window.supabase.auth.updateUser({
-                            password: newPass
-                        });
-                        if (updateError) throw updateError;
+                        await updatePassword(currentUser, newPass);
 
                         showMessage(passwordMessage, 'Password successfully updated!', 'success');
                         
                         // Clear fields on success
                         currentPasswordInput.value = '';
-                        newUsernameInput.value = '';
+                        newPasswordInput.value = '';
                         confirmPasswordInput.value = '';
                         // Re-check fields to disable the button
                         checkPasswordFields(); 
@@ -3160,8 +2985,18 @@
                         console.error("Error changing password:", error);
                         let errorMessage = "An unknown error occurred.";
                         
-                        if (error.message) {
-                            errorMessage = `Password change failed: ${error.message}`;
+                        switch (error.code) {
+                            case 'auth/requires-recent-login':
+                                errorMessage = 'Password change failed. Please sign out and sign in again to change your password.';
+                                break;
+                            case 'auth/wrong-password':
+                                errorMessage = 'The current password you provided is incorrect.';
+                                break;
+                            case 'auth/weak-password':
+                                errorMessage = 'The new password is too weak. Please use a stronger one (min 6 characters).';
+                                break;
+                            default:
+                                errorMessage = `Password change failed. (${error.message})`;
                         }
                         showMessage(passwordMessage, errorMessage, 'error');
                     } finally {
@@ -3174,53 +3009,374 @@
             }
             
             // =================================================================
-            // --- ACCOUNT DELETION LOGIC (Supabase) ---
+            // --- LINKING / UNLINKING PROVIDERS LOGIC (NEW) ---
             // =================================================================
+
+            const linkProviderButtons = mainView.querySelectorAll('button[data-action="link"]');
+            const unlinkProviderButtons = mainView.querySelectorAll('button[data-action="unlink"]');
+            const setPrimaryProviderButtons = mainView.querySelectorAll('button[data-action="set-primary"]');
+
+            // --- LINKING Providers ---
+            linkProviderButtons.forEach(button => {
+                button.addEventListener('click', async () => {
+                    const providerId = button.dataset.providerId;
+                    const config = PROVIDER_CONFIG[providerId];
+                    const providerInstance = config.instance();
+                    
+                    showMessage(messageElement, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Attempting to link with ${config.name}...`, 'warning');
+                    
+                    try {
+                        await linkWithPopup(auth.currentUser, providerInstance);
+                        showMessage(messageElement, `${config.name} successfully linked to your account!`, 'success');
+                        setTimeout(refreshGeneralTab, 1500); // Refresh UI
+                    } catch (error) {
+                        console.error("Error linking provider:", error);
+                        let msg = `Failed to link ${config.name}.`;
+                        if (error.code === 'auth/credential-already-in-use') {
+                            msg = `This ${config.name} account is already linked to another user.`;
+                        } else if (error.code === 'auth/popup-closed-by-user') {
+                            msg = 'Link cancelled by user.';
+                        } else if (error.code === 'auth/requires-recent-login') {
+                            msg = 'Please sign out and sign in again to link a new provider.';
+                        } else if (error.code === 'auth/invalid-credential') {
+                            // Explicitly identifying the configuration error from logs
+                            msg = `Configuration Error: The Client ID or Secret for ${config.name} is incorrect in the Firebase Console.`;
+                        }
+                        showMessage(messageElement, msg, 'error');
+                    }
+                });
+            });
+
+            // --- UNLINKING Providers ---
+            unlinkProviderButtons.forEach(button => {
+                button.addEventListener('click', async () => {
+                    const providerId = button.dataset.providerId;
+                    const config = PROVIDER_CONFIG[providerId];
+                    
+                    showMessage(messageElement, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Unlinking ${config.name}...`, 'warning');
+                    
+                    try {
+                        await unlink(auth.currentUser, providerId);
+                        showMessage(messageElement, `${config.name} successfully unlinked.`, 'success');
+                        setTimeout(refreshGeneralTab, 1500); // Refresh UI
+                    } catch (error) {
+                        console.error("Error unlinking provider:", error);
+                        let msg = `Failed to unlink ${config.name}.`;
+                        if (error.code === 'auth/no-such-provider') {
+                            msg = 'Provider not found on this account.';
+                        } else if (error.code === 'auth/requires-recent-login') {
+                             msg = 'Please sign out and sign in again to unlink this provider.';
+                        } else if (error.code === 'auth/provider-already-linked') {
+                            // This can happen if attempting to unlink the last provider
+                            msg = "Cannot unlink the last remaining sign-in method.";
+                        }
+                        
+                        showMessage(messageElement, msg, 'error');
+                    }
+                });
+            });
+            
+            // --- SET PRIMARY Provider ---
+            setPrimaryProviderButtons.forEach(button => {
+                button.addEventListener('click', async () => {
+                    const providerId = button.dataset.providerId;
+                    const config = PROVIDER_CONFIG[providerId];
+                    const providerInstance = config.instance();
+                    
+                    showMessage(messageElement, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Attempting to set ${config.name} as primary...`, 'warning');
+                    
+                    try {
+                        // Re-authenticate with the desired provider to make it primary
+                        await reauthenticateWithPopup(auth.currentUser, providerInstance);
+                        showMessage(messageElement, `${config.name} successfully set as primary!`, 'success');
+                        setTimeout(refreshGeneralTab, 1500); // Refresh UI
+                    } catch (error) {
+                        console.error("Error setting primary provider:", error);
+                        let msg = `Failed to set ${config.name} as primary.`;
+                        if (error.code === 'auth/popup-closed-by-user') {
+                            msg = 'Operation cancelled by user.';
+                        } else if (error.code === 'auth/requires-recent-login') {
+                            msg = 'Please sign out and sign in again to set a new primary provider.';
+                        } else if (error.code === 'auth/invalid-credential') {
+                            msg = `Configuration Error: Invalid Client ID/Secret. Check Firebase Console settings for ${config.name}.`;
+                        }
+                        showMessage(messageElement, msg, 'error');
+                    }
+                });
+            });
+
+            // =================================================================
+            // --- ACCOUNT DELETION LOGIC (NEW) ---
+            // =================================================================
+            const deletePasswordInput = document.getElementById('deletePasswordInput');
             const deleteConfirmText = document.getElementById('deleteConfirmText');
+            const reauthenticateBtn = document.getElementById('reauthenticateBtn');
             const finalDeleteBtn = document.getElementById('finalDeleteBtn');
             const deleteMessage = document.getElementById('deleteMessage');
+            const primaryProviderId = currentUser.providerData[0].providerId;
 
-            /**
-             * Orchestrates the deletion of a user's account and data via Supabase RPC.
-             */
-            const performAccountDeletion = async () => {
-                try {
-                    const userId = currentUser.id;
-                    showLoading("Permanently deleting your account and all associated data...");
 
-                    // 1. Call the Supabase RPC function to delete user data and account
-                    const { error } = await supabase.rpc('delete_user');
+            // --- ACCOUNT DELETION LOGIC --- 
 
-                    if (error) throw error;
+/**
+ * Executes the full account deletion process.
+ * 1. Collects and executes a batch delete for all associated Firestore data.
+ * 2. Deletes the Firebase Auth user (MUST BE LAST).
+ * 3. Cleans up local data.
+ * 4. Redirects the user.
+ */
+const performAccountDeletion = async (credential) => {
+    try {
+        const userId = (currentUser.uid || currentUser.id);
+        // Assuming showLoading() is defined elsewhere in your file
+        showLoading("Permanently deleting your account and all associated data...");
 
-                    // --- 2. Local Storage Cleanup ---
-                    localStorage.clear();
+        // NOTE: All Firestore deletion queries and commits MUST run before deleteUser(auth.currentUser)
+        
+        // --- 1. FIRESTORE DELETION (BATCH WRITE) ---
+        // This is the FIRST action, ensuring permissions are valid while deleting.
+        const batch = writeBatch(db); 
 
-                    // --- 3. Sign Out & Redirect ---
-                    if (window.supabase) await window.supabase.auth.signOut();
-                    window.location.href = '../authentication.html';
+        // A. Delete User Profile Document 
+        const userDocRef = doc(db, 'users', userId); 
+        batch.delete(userDocRef);
 
-                } catch (error) {
-                    console.error("Error deleting account:", error);
-                    let msg = "Failed to delete account completely. Please try again or contact support.";
+        // B. Query and Queue Deletion for Daily Photos
+        const photosQuery = query(collection(db, 'dailyPhotos'), where('userId', '==', userId));
+        const photosSnapshot = await getDocs(photosQuery);
+        photosSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        // C. Query and Queue Deletion for Friend Requests (as sender or recipient)
+        const sentRequestsQuery = query(collection(db, 'friendRequests'), where('senderId', '==', userId));
+        const receivedRequestsQuery = query(collection(db, 'friendRequests'), where('recipientId', '==', userId));
+        
+        const sentSnapshot = await getDocs(sentRequestsQuery);
+        sentSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        
+        const receivedSnapshot = await getDocs(receivedRequestsQuery);
+        receivedSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        
+        // EXECUTE THE BATCH: The permissions check happens here, with a valid token.
+        await batch.commit(); 
+
+        // --- 2. AUTH DELETION (LAST STEP) ---
+        // This is done after Firestore deletion to maintain permissions.
+        await deleteUser(auth.currentUser); 
+
+        // --- 3. Local Storage/IndexedDB Cleanup ---
+        localStorage.clear();
+
+        // --- 4. Sign Out & Redirect ---
+        await signOut(auth);
+        window.location.href = '../authentication.html';
+
+    } catch (error) {
+        console.error("Error deleting account:", error); 
+        let msg = "Failed to delete account completely. Please sign out and sign in again immediately to proceed with deletion.";
+
+        // Handle re-login requirement specifically for security-sensitive operations
+        if (error.code === 'auth/requires-recent-login') {
+            msg = 'Deletion failed: For security, please sign out, sign in again, and then immediately try the deletion process.';
+        } else if (error.code === 'permission-denied' || error.message.includes('Missing or insufficient permissions')) {
+            msg = 'Deletion failed due to insufficient server permissions. Please ensure your Firestore rules and code order are correct.';
+        }
+        
+        // Use the existing message display function
+        // Assuming deleteMessage is the UI element for displaying deletion errors
+        showMessage(deleteMessage, msg, 'error'); 
+
+        // Re-enable/reset UI elements (Requested Addition)
+        if (reauthenticateBtn) reauthenticateBtn.classList.remove('hidden');
+        if (finalDeleteBtn) finalDeleteBtn.classList.add('hidden');
+    }
+};
+
+
+            // --- Email/Password Primary Deletion Logic ---
+            if (primaryProviderId === 'password' && deletePasswordInput) {
+                const checkDeletionInputs = () => {
+                    const passwordMatch = deletePasswordInput.value.length > 0;
+                    const textConfirmed = deleteConfirmText.value.trim().toLowerCase() === 'delete my account';
                     
-                    if (error.message.includes('permission-denied')) {
-                        msg = 'Deletion failed: Permission denied.';
-                    } else if (error.message) {
-                        msg = `Deletion failed: ${error.message}`;
+                    finalDeleteBtn.disabled = !(passwordMatch && textConfirmed);
+                };
+
+                deletePasswordInput.addEventListener('input', checkDeletionInputs);
+                deleteConfirmText.addEventListener('input', checkDeletionInputs);
+                
+                finalDeleteBtn.addEventListener('click', async () => {
+                    if (finalDeleteBtn.disabled) return;
+                    
+                    finalDeleteBtn.disabled = true;
+                    showMessage(deleteMessage, '', 'success');
+                    showMessage(deleteMessage, '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Re-authenticating...', 'warning');
+                    
+                    try {
+                        // Re-authenticate using email/password credential
+                        const credential = EmailAuthProvider.credential(auth.currentUser.email, deletePasswordInput.value);
+                        await reauthenticateWithCredential(auth.currentUser, credential);
+
+                        // If re-auth is successful, proceed to final deletion
+                        await performAccountDeletion();
+
+                    } catch (error) {
+                        console.error("Error during password re-authentication for deletion:", error);
+                        let msg = 'Re-authentication failed. Incorrect password.';
+                        if (error.code === 'auth/requires-recent-login') {
+                             msg = 'Please sign out and sign in again immediately to proceed with deletion.';
+                        }
+                        showMessage(deleteMessage, msg, 'error');
+                        finalDeleteBtn.disabled = false;
+                    }
+                });
+            } 
+            // --- Social Provider Primary Deletion Logic ---
+            else if (reauthenticateBtn) {
+                
+                reauthenticateBtn.addEventListener('click', async () => {
+                    const providerInstance = PROVIDER_CONFIG[primaryProviderId].instance();
+                    
+                    reauthenticateBtn.disabled = true;
+                    showMessage(deleteMessage, '', 'success');
+                    showMessage(deleteMessage, `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Re-authenticating with ${PROVIDER_CONFIG[primaryProviderId].name}...`, 'warning');
+                    
+                    try {
+                        // Re-authenticate using the social provider popup
+                        await reauthenticateWithPopup(auth.currentUser, providerInstance);
+                        
+                        // Re-authentication successful: change button to final delete button
+                        reauthenticateBtn.classList.add('hidden');
+                        finalDeleteBtn.classList.remove('hidden');
+                        showMessage(deleteMessage, 'Authentication successful. Click "Delete Account" one last time to confirm.', 'success');
+
+                    } catch (error) {
+                        console.error("Error during social re-authentication for deletion:", error);
+                        let msg = 'Re-authentication failed. Please try again.';
+                         if (error.code === 'auth/popup-closed-by-user') {
+                            msg = 'Re-authentication cancelled by user.';
+                        } else if (error.code === 'auth/requires-recent-login') {
+                             msg = 'Please sign out and sign in again immediately to proceed with deletion.';
+                        }
+                        showMessage(deleteMessage, msg, 'error');
+                        reauthenticateBtn.disabled = false;
+                    }
+                    if (reauthenticateBtn.classList.contains('hidden') === false) {
+                        reauthenticateBtn.disabled = false;
+                    }
+                });
+                
+                // Final Delete button click
+                finalDeleteBtn.addEventListener('click', performAccountDeletion);
+            }
+
+            // =================================================================
+            // --- DOWNLOADABLE VERSION LOGIC (NEW) ---
+            // =================================================================
+            const regenerateCodeBtn = document.getElementById('regenerateCodeBtn');
+            const downloadClientBtn = document.getElementById('downloadClientBtn');
+            const downloadCodeInput = document.getElementById('downloadCodeInput');
+            const downloadMessage = document.getElementById('downloadMessage');
+
+            if (regenerateCodeBtn) {
+                regenerateCodeBtn.addEventListener('click', async () => {
+                    const confirmMsg = "Are you sure you want to regenerate your access code? This will invalidate any previously downloaded clients.";
+                    if (!confirm(confirmMsg)) return;
+
+                    regenerateCodeBtn.disabled = true;
+                    showMessage(downloadMessage, '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Generating new code...', 'warning');
+
+                    try {
+                        const newCode = generateDownloadCode();
+                        
+                        await updateDoc(userDocRef, {
+                            downloadCode: newCode,
+                            downloadCodeUpdatedAt: serverTimestamp()
+                        });
+
+                        if (downloadCodeInput) downloadCodeInput.value = newCode;
+                        showMessage(downloadMessage, 'New access code generated!', 'success');
+                        
+                        setTimeout(() => showMessage(downloadMessage, '', 'success'), 3000);
+
+                    } catch (error) {
+                        console.error("Error generating code:", error);
+                        showMessage(downloadMessage, "Failed to generate code.", 'error');
+                    } finally {
+                        regenerateCodeBtn.disabled = false;
+                    }
+                });
+            }
+
+            if (downloadClientBtn) {
+                downloadClientBtn.addEventListener('click', async () => {
+                    const code = downloadCodeInput ? downloadCodeInput.value : '';
+                    if (!code || code === "No code generated") {
+                        showMessage(downloadMessage, "Please generate an access code first.", 'error');
+                        return;
                     }
 
-                    if (deleteMessage) showMessage(deleteMessage, msg, 'error');
-                    hideLoading();
-                }
-            };
+                    downloadClientBtn.disabled = true;
+                    showMessage(downloadMessage, '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Packing data & downloading...', 'warning');
 
-            if (deleteConfirmText && finalDeleteBtn) {
-                deleteConfirmText.addEventListener('input', () => {
-                    finalDeleteBtn.disabled = deleteConfirmText.value.trim().toLowerCase() !== 'delete my account';
+                    try {
+                        // 1. Fetch Template
+                        const response = await fetch('../4simpleproblems-v5.html', { cache: "no-store" }); // Prevent caching
+                        if (!response.ok) throw new Error("Failed to fetch client template.");
+                        let htmlContent = await response.text();
+
+                        // 2. Gather Data
+                        const localData = getAllLocalStorageData();
+                        const indexedData = await getAllIndexedDBData();
+                        
+                        if (userData) {
+                            localData['offline_user_profile'] = JSON.stringify(userData);
+                        }
+
+                        const fullData = {
+                            localStorage: localData,
+                            indexedDB: indexedData
+                        };
+                        
+                        // Serialize and escape potential script-breaking characters
+                        const jsonString = JSON.stringify(fullData).replace(/<\/script>/g, '<\\/script>');
+
+                        // 3. Inject Data (Robust Replacement)
+                        // Use regex to be safe against spacing, and use callback to prevent '$' replacement issues
+                        htmlContent = htmlContent.replace(/{{ACCESS_CODE}}/g, () => code);
+                        htmlContent = htmlContent.replace(/{{USER_DATA}}/g, () => jsonString);
+                        
+                        // Verification Log
+                        if (htmlContent.includes('{{USER_DATA}}')) {
+                            console.error("CRITICAL: Data injection failed. Placeholder still present.");
+                            throw new Error("Data injection failed.");
+                        }
+
+                        // 4. Download
+                        const blob = new Blob([htmlContent], { type: 'text/html' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = '4sp-v5-client.html';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+
+                        showMessage(downloadMessage, 'Download started! Your data has been securely embedded.', 'success');
+                    } catch (error) {
+                        console.error("Error downloading client:", error);
+                        showMessage(downloadMessage, "Failed to download client.", 'error');
+                    } finally {
+                        downloadClientBtn.disabled = false;
+                    }
                 });
-
-                finalDeleteBtn.addEventListener('click', performAccountDeletion);
             }
         }
         
@@ -3497,219 +3653,7 @@
                     showMessage(urlChangerMessage, 'An error occurred while saving.', 'error');
                 }
             });
-
-            // --- School & District Logic ---
-            const schoolDisplay = document.getElementById('current-school-display');
-            const districtDisplay = document.getElementById('current-district-display');
-            const changeSchoolBtn = document.getElementById('changeSchoolBtn');
-            const removeSchoolBtn = document.getElementById('removeSchoolBtn');
-            const schoolRemaining = document.getElementById('schoolChangesRemaining');
-            const schoolMessage = document.getElementById('schoolMessage');
-            
-            const currentView = document.getElementById('school-current-view');
-            const selectorView = document.getElementById('school-selector-view');
-            const cancelChangeBtn = document.getElementById('cancelSchoolChange');
-            const stateSearch = document.getElementById('settings-state-search');
-            const stateResults = document.getElementById('settings-state-results');
-            const schoolSearch = document.getElementById('settings-school-search');
-            const schoolResults = document.getElementById('settings-school-results');
-            const backToStatesBtn = document.getElementById('settings-back-to-states');
-            const stateStep = document.getElementById('settings-state-step');
-            const schoolStep = document.getElementById('settings-school-step');
-
-            if (currentUser) {
-                const uid = currentUser.uid || currentUser.id;
-                const userData = await getUserData(uid);
-                if (!userData) return;
-
-                const currentMonth = new Date().getMonth() + 1;
-                let schoolChangesThisMonth = userData?.schoolChangesThisMonth || 0;
-                const lastSchoolChangeMonth = userData?.lastSchoolChangeMonth || 0;
-
-                if (currentMonth !== lastSchoolChangeMonth) {
-                    schoolChangesThisMonth = 0;
-                }
-
-                schoolDisplay.textContent = userData?.schoolName || 'None';
-                districtDisplay.textContent = userData?.districtId || 'None';
-                schoolRemaining.textContent = `Changes remaining this month: ${Math.max(0, 2 - schoolChangesThisMonth)}`;
-
-                let allStates = [];
-                let currentStateSchools = [];
-                let selectedState = null;
-
-                const fetchStates = async () => {
-                    try {
-                        const res = await fetch('/schools/states.json');
-                        allStates = await res.json();
-                    } catch (err) { console.error("Failed to load states:", err); }
-                };
-
-                const toggleView = (showSelector) => {
-                    currentView.classList.toggle('hidden', showSelector);
-                    selectorView.classList.toggle('hidden', !showSelector);
-                    schoolMessage.textContent = '';
-                };
-
-                changeSchoolBtn.addEventListener('click', async () => {
-                    if (schoolChangesThisMonth >= 2 && currentUser.email !== '4simpleproblems@gmail.com') {
-                        showMessage(schoolMessage, 'You have reached the monthly limit for school changes.', 'error');
-                        return;
-                    }
-                    if (allStates.length === 0) await fetchStates();
-                    toggleView(true);
-                });
-
-                cancelChangeBtn.addEventListener('click', () => toggleView(false));
-
-                stateSearch.oninput = () => {
-                    const term = stateSearch.value.trim().toLowerCase();
-                    if (!term) { stateResults.innerHTML = ''; return; }
-                    const filtered = allStates.filter(s => s.name.toLowerCase().includes(term) || s.abbr.toLowerCase().includes(term));
-                    stateResults.innerHTML = filtered.map(s => `
-                        <div class="p-3 bg-white/5 border border-white/5 rounded-xl cursor-pointer hover:border-indigo-500 transition-all flex justify-between items-center group" onclick="window.settingsSelectState('${s.abbr}')">
-                            <span class="text-sm font-bold text-white">${s.name}</span>
-                            <span class="text-[10px] opacity-40 group-hover:opacity-100 transition-opacity font-mono">${s.abbr}</span>
-                        </div>
-                    `).join('');
-                    updateSettingsScrollFades(stateResults, 'settings-state-fade-top', 'settings-state-fade-bottom');
-                };
-
-                stateResults.onscroll = () => updateSettingsScrollFades(stateResults, 'settings-state-fade-top', 'settings-state-fade-bottom');
-                schoolResults.onscroll = () => updateSettingsScrollFades(schoolResults, 'settings-school-fade-top', 'settings-school-fade-bottom');
-
-                function updateSettingsScrollFades(el, topId, bottomId) {
-                    const topFade = document.getElementById(topId);
-                    const bottomFade = document.getElementById(bottomId);
-                    if (!el || !topFade || !bottomFade) return;
-
-                    const isAtTop = el.scrollTop <= 5;
-                    const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 5;
-                    const hasScroll = el.scrollHeight > el.clientHeight;
-
-                    topFade.style.opacity = (hasScroll && !isAtTop) ? '1' : '0';
-                    bottomFade.style.opacity = (hasScroll && !isAtBottom) ? '1' : '0';
-                }
-
-                window.settingsSelectState = async (abbr) => {
-                    selectedState = allStates.find(s => s.abbr === abbr);
-                    stateResults.innerHTML = '<div class="p-4 text-center"><i class="fas fa-spinner fa-spin opacity-20 text-indigo-500"></i></div>';
-                    try {
-                        const res = await fetch(`/schools/${abbr.trim()}.json`);
-                        currentStateSchools = await res.json();
-                        currentStateSchools.sort((a, b) => a.name.localeCompare(b.name));
-                        stateStep.classList.add('hidden');
-                        schoolStep.classList.remove('hidden');
-                        renderSchools('');
-                    } catch (err) { 
-                        showMessage(schoolMessage, 'Failed to load schools.', 'error');
-                    }
-                };
-
-                schoolSearch.oninput = () => renderSchools(schoolSearch.value.trim());
-
-                function renderSchools(term) {
-                    const search = term.toLowerCase();
-                    const filtered = currentStateSchools.filter(s => {
-                        if (!search) return true;
-                        return s.name.toLowerCase().includes(search) || 
-                               (s.district && s.district.toLowerCase().includes(search)) ||
-                               (s.county && s.county.toLowerCase().includes(search));
-                    }).slice(0, 50);
-
-                    schoolResults.innerHTML = filtered.map(s => `
-                        <div class="p-3 bg-white/5 border border-white/5 rounded-xl cursor-pointer hover:border-indigo-500 transition-all" onclick="window.settingsConfirmSchool('${s.name.replace(/'/g, "\\'")}', '${(s.district || "").replace(/'/g, "\\'")}')">
-                            <div class="font-bold text-xs text-white mb-1 truncate">${s.name}</div>
-                            <div class="text-[9px] opacity-40 uppercase tracking-widest font-black truncate">${s.district || 'Independent'}</div>
-                        </div>
-                    `).join('');
-                    updateSettingsScrollFades(schoolResults, 'settings-school-fade-top', 'settings-school-fade-bottom');
-                }
-
-                window.settingsConfirmSchool = async (schoolName, districtName) => {
-                    if (confirm(`Confirm change to: ${schoolName}?`)) {
-                        try {
-                            await saveUserData(uid, {
-                                schoolId: schoolName,
-                                schoolName: schoolName,
-                                districtId: districtName || schoolName,
-                                state: selectedState.name,
-                                stateAbbr: selectedState.abbr,
-                                schoolSkipped: false,
-                                schoolChangesThisMonth: schoolChangesThisMonth + 1,
-                                lastSchoolChangeMonth: currentMonth
-                            });
-                            location.reload();
-                        } catch (e) {
-                            showMessage(schoolMessage, 'Failed to update school.', 'error');
-                        }
-                    }
-                };
-
-                backToStatesBtn.onclick = () => {
-                    schoolStep.classList.add('hidden');
-                    stateStep.classList.remove('hidden');
-                };
-
-                removeSchoolBtn.addEventListener('click', async () => {
-                    if (schoolChangesThisMonth >= 2 && currentUser.email !== '4simpleproblems@gmail.com') {
-                        showMessage(schoolMessage, 'You have reached the monthly limit for school changes.', 'error');
-                        return;
-                    }
-
-                    if (confirm('Are you sure you want to remove your school and district affiliation?')) {
-                        try {
-                            await saveUserData(uid, {
-                                schoolId: deleteField(),
-                                schoolName: deleteField(),
-                                districtId: deleteField(),
-                                state: deleteField(),
-                                stateAbbr: deleteField(),
-                                schoolSkipped: true,
-                                schoolChangesThisMonth: schoolChangesThisMonth + 1,
-                                lastSchoolChangeMonth: currentMonth
-                            });
-                            location.reload();
-                        } catch (e) {
-                            showMessage(schoolMessage, 'Failed to remove school.', 'error');
-                        }
-                    }
-                });
-            }
-
-            // --- 4. Activity Presence Logic ---
-            const showOfflineToggle = document.getElementById('showOfflineToggle');
-            const leaderboardToggle = document.getElementById('leaderboardToggle');
-            const saveActivityPresenceBtn = document.getElementById('saveActivityPresenceBtn');
-            const activityPresenceMessage = document.getElementById('activityPresenceMessage');
-
-            if (currentUser) {
-                const uid = currentUser.uid || currentUser.id;
-                const userData = await getUserData(uid);
-                if (userData) {
-                    showOfflineToggle.checked = !!userData.showOffline;
-                    leaderboardToggle.checked = !userData.leaderboardOptOut;
-                }
-
-                saveActivityPresenceBtn.addEventListener('click', async () => {
-                    try {
-                        saveActivityPresenceBtn.disabled = true;
-                        showMessage(activityPresenceMessage, '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...', 'warning');
-
-                        await saveUserData(uid, {
-                            showOffline: showOfflineToggle.checked,
-                            leaderboardOptOut: !leaderboardToggle.checked
-                        });
-
-                        showMessage(activityPresenceMessage, 'Presence settings saved!', 'success');
-                    } catch (e) {
-                        console.error("Error saving activity presence:", e);
-                        showMessage(activityPresenceMessage, 'Error saving settings.', 'error');
-                    } finally {
-                        saveActivityPresenceBtn.disabled = false;
-                    }
-                });
-            }        }
+        }
         
         
         /**
@@ -3718,251 +3662,96 @@
         async function loadPersonalizationTab() {
             const themePickerContainer = document.getElementById('theme-picker-container');
             const themeMessage = document.getElementById('themeMessage');
-            const pfpMessage = document.getElementById('pfpMessage');
-            const displayNameMessage = document.getElementById('display-name-message');
-            const displayNameInput = document.getElementById('display-name-input');
-            const saveDisplayNameBtn = document.getElementById('save-display-name-btn');
-
-            // --- 1. USER DATA LOADING (Supabase Primary) ---
+            const pfpMessage = document.getElementById('pfpMessage'); 
+            
+            // --- 1. PROFILE PICTURE LOGIC ---
             if (currentUser) {
-                const uid = currentUser.uid || currentUser.id;
-                const userData = await getUserData(uid) || {};
-
-                if (displayNameInput) displayNameInput.value = userData.displayName || userData.display_name || "";
-
-                // Display Name Logic
-                if (saveDisplayNameBtn) {
-                    saveDisplayNameBtn.onclick = async () => {
-                        const newDisplayName = displayNameInput.value.trim();
-                        if (!newDisplayName || newDisplayName === (userData.displayName || userData.display_name)) return;
-
-                        // Simple validation
-                        if (newDisplayName.length < 2) {
-                            showMessage(displayNameMessage, 'Name too short (min 2).', 'error');
-                            return;
+                const userDocRef = getUserDocRef((currentUser.uid || currentUser.id));
+                let userData = {};
+                try {
+                    const snap = await getDoc(userDocRef);
+                    if (snap.exists()) {
+                        userData = snap.data();
+                        // Initialize mibiAvatarState with saved config if available
+                        if (userData.mibiConfig) {
+                            mibiAvatarState = { ...mibiAvatarState, ...userData.mibiConfig };
                         }
+                    }
+                } catch (e) { console.error("Error fetching PFP settings:", e); }
 
-                        saveDisplayNameBtn.disabled = true;
-                        showMessage(displayNameMessage, 'Saving...', 'warning');
-
-                        try {
-                            await saveUserData(uid, {
-                                displayName: newDisplayName
-                            });
-
-                            userData.displayName = newDisplayName;
-                            showMessage(displayNameMessage, 'Display name updated!', 'success');
-
-                            // Instant update for local UI
-                            window.dispatchEvent(new CustomEvent('pfp-updated', {
-                                detail: { ...userData, displayName: newDisplayName }
-                            }));
-                        } catch (err) {
-                            console.error("Display Name update error:", err);
-                            showMessage(displayNameMessage, 'Error updating display name.', 'error');
-                        } finally {
-                            saveDisplayNameBtn.disabled = false;
-                        }
-                    };
-                }
-
-                // --- 2. PROFILE PICTURE LOGIC ---
-
-                // Initialize mibiAvatarState with saved config if available
-                if (userData.mibiConfig) {
-                    mibiAvatarState = { ...mibiAvatarState, ...userData.mibiConfig };
-                }
-
-                const currentPfpType = userData.pfpType || userData.pfp_type || 'google';
-                const pfpModeBtns = document.querySelectorAll('.pfp-mode-btn');
-                const pfpLetterSettings = document.getElementById('pfpLetterSettings');
-                const mibiSettings = document.getElementById('pfpMibiSettings');
+                const currentPfpType = userData.pfpType || 'google';
+                const pfpModeSelect = document.getElementById('pfpModeSelect');
+                const mibiSettings = document.getElementById('pfpMibiSettings'); // Renamed
                 const customSettings = document.getElementById('pfpCustomSettings');
                 const previewImg = document.getElementById('customPfpPreview');
                 const previewPlaceholder = document.getElementById('customPfpPlaceholder');
-                const macMenu = document.getElementById('mibi-mac-menu'); 
-                const openMacMenuBtn = document.getElementById('open-mac-menu-btn'); 
-
-                // Function to update UI visibility
-                const updatePfpUi = (type) => {
-                    if (pfpModeBtns) {
-                        pfpModeBtns.forEach(btn => {
-                            btn.classList.toggle('active', btn.dataset.mode === type);
-                            if (btn.dataset.mode === type) {
-                                btn.style.backgroundColor = 'var(--btn-bg)';
-                                btn.style.borderColor = 'var(--accent-color)';
-                            } else {
-                                btn.style.backgroundColor = '';
-                                btn.style.borderColor = '';
-                            }
-                        });
-                    }
-
-                    if (pfpLetterSettings) pfpLetterSettings.classList.toggle('hidden', type !== 'letter');
-                    if (mibiSettings) mibiSettings.classList.toggle('hidden', type !== 'mibi');
-                    if (customSettings) customSettings.classList.toggle('hidden', type !== 'custom');
-
-                    // Update preview if possible
-                    if (!previewImg || !previewPlaceholder) return;
-
-                    if (type === 'custom' && (userData.customPfp || userData.avatar_url)) {
-                        previewImg.src = userData.customPfp || userData.avatar_url;
-                        previewImg.style.display = 'block';
-                        previewPlaceholder.style.display = 'none';
-                    } else if (type === 'google') {
-                        const googlePfp = userData.avatar_url || userData.photoURL || (currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture);
-                        if (googlePfp) {
-                            previewImg.src = googlePfp;
-                            previewImg.style.display = 'block';
-                            previewPlaceholder.style.display = 'none';
-                        } else {
-                            previewImg.style.display = 'none';
-                            previewPlaceholder.style.display = 'flex';
-                            previewPlaceholder.innerHTML = '<i class="fa-solid fa-user"></i>';
-                        }
-                    } else if (type === 'letter') {
-                        previewImg.style.display = 'none';
-                        previewPlaceholder.style.display = 'flex';
-                        const text = userData.letterAvatarText || userData.pfp_letter_char || (userData.username || 'U').charAt(0).toUpperCase();
-                        previewPlaceholder.innerText = text;
-                        previewPlaceholder.style.background = userData.pfpLetterBg || userData.pfp_letter_bg || '#3B82F6';
-                        previewPlaceholder.style.color = '#FFFFFF';
-                    } else {
-                        previewImg.style.display = 'none';
-                        previewPlaceholder.style.display = 'flex';
-                        previewPlaceholder.innerHTML = '<i class="fa-solid fa-user"></i>';
-                        previewPlaceholder.style.background = '';
-                    }
-                };
-                // Function to dispatch instant update event
-                const triggerNavbarUpdate = () => {
-                    const detail = { 
-                        pfpType: userData.pfpType || userData.pfp_type, 
-                        pfp_type: userData.pfpType || userData.pfp_type,
-                        customPfp: userData.customPfp || userData.avatar_url,
-                        avatar_url: userData.customPfp || userData.avatar_url,
-                        pfpLetterBg: userData.pfpLetterBg || userData.pfp_letter_bg,
-                        pfp_letter_bg: userData.pfpLetterBg || userData.pfp_letter_bg,
-                        letterAvatarText: userData.letterAvatarText || userData.pfp_letter_char,
-                        pfp_letter_char: userData.letterAvatarText || userData.pfp_letter_char,
-                        displayName: userData.displayName || userData.display_name,
-                        display_name: userData.displayName || userData.display_name
-                    };
-                    window.dispatchEvent(new CustomEvent('pfp-updated', { detail }));
-                };
+                const macMenu = document.getElementById('mibi-mac-menu'); // Reference to the MAC menu overlay
+                const openMacMenuBtn = document.getElementById('open-mac-menu-btn'); // New button
 
                 // --- CONDITIONAL GOOGLE OPTION ---
-                const hasGoogle = (currentUser.providerData || []).some(p => p.providerId === 'google.com') || 
-                                  (currentUser.app_metadata?.provider === 'google') || 
-                                  (currentUser.user_metadata?.iss?.includes('google')) ||
-                                  (currentUser.user_metadata?.avatar_url?.includes('googleusercontent.com'));
-                
+                const hasGoogle = currentUser.providerData.some(p => p.providerId === 'google.com');
                 if (!hasGoogle) {
-                    const googleBtn = Array.from(pfpModeBtns).find(btn => btn.dataset.mode === 'google');
-                    if (googleBtn) googleBtn.remove();
+                    const googleOption = Array.from(pfpModeSelect.options).find(opt => opt.value === 'google');
+                    if (googleOption) {
+                        googleOption.remove();
+                    }
+                    if (currentPfpType === 'google') {
+                        // Just let the UI default to the first available option or handle visually.
+                    }
                 }
 
-                // Mode Button Clicks
-                if (pfpModeBtns) {
-                    pfpModeBtns.forEach(btn => {
-                        btn.addEventListener('click', async () => {
-                            const type = btn.dataset.mode;
-                            updatePfpUi(type);
-                            try {
-                                const updates = { 
-                                    pfp_type: type,
-                                    pfpType: type // Keep for legacy
-                                };
-                                
-                                // If switching to Google, ensure we have the URL
-                                if (type === 'google') {
-                                    let googlePhoto = userData.avatar_url || userData.photoURL;
-                                    
-                                    // Try Supabase Metadata if missing
-                                    if (!googlePhoto && window.supabase) {
-                                        const { data: { session } } = await window.supabase.auth.getSession();
-                                        googlePhoto = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture;
-                                    }
+                // Function to dispatch instant update event
+                const triggerNavbarUpdate = () => {
+                    window.dispatchEvent(new CustomEvent('pfp-updated', { 
+                        detail: { 
+                            pfpType: userData.pfpType, 
+                            customPfp: userData.customPfp
+                        }
+                    }));
+                };
 
-                                    if (googlePhoto) {
-                                        updates.avatar_url = googlePhoto;
-                                        updates.photoURL = googlePhoto;
-                                        userData.avatar_url = googlePhoto;
-                                        userData.photoURL = googlePhoto;
-                                    }
-                                }
+                // Function to update UI visibility and the avatar preview
+                const updatePfpUi = (type) => {
+                    mibiSettings.classList.toggle('hidden', type !== 'mibi');
+                    customSettings.classList.toggle('hidden', type !== 'custom');
+                    // Hide the MAC menu overlay unless explicitly opened
+                    macMenu.classList.add('hidden');
 
-                                await saveUserData(uid, updates);
-                                userData.pfp_type = type;
-                                userData.pfpType = type;
-                                triggerNavbarUpdate();
-                                showMessage(pfpMessage, 'Preference saved!', 'success');
-                            } catch (e) { 
-                                console.error("PFP Preference Save Error:", e);
-                                showMessage(pfpMessage, 'Error saving preference.', 'error'); 
-                            }
-                        });
-                    });
+                    // Update avatar preview based on type
+                    if (type === 'custom' && userData.customPfp) {
+                        customPfpPreview.src = userData.customPfp;
+                        customPfpPreview.style.display = 'block';
+                        customPfpPlaceholder.style.display = 'none';
+                    } else {
+                        // Default/Google or no custom/mibi set
+                        customPfpPreview.style.display = 'none';
+                        customPfpPlaceholder.style.display = 'flex';
+                        customPfpPlaceholder.className = `w-full h-full flex items-center justify-center text-gray-600`;
+                        customPfpPlaceholder.innerHTML = '<i class="fa-solid fa-user"></i>'; // Reset to default icon
+                        customPfpPlaceholder.style.background = ''; // Clear custom background
+                        customPfpPlaceholder.style.color = ''; // Clear custom color
+                    }
+                };
+
+                // Init Custom Dropdown
+                const pfpDropdown = setupCustomDropdown(pfpModeSelect, async (type) => {
+                    updatePfpUi(type);
+                    // Auto-save type change
+                    try {
+                        await updateDoc(userDocRef, { pfpType: type });
+                        userData.pfpType = type; // Update local state
+                        triggerNavbarUpdate();
+                        showMessage(pfpMessage, 'Preference saved!', 'success');
+                    } catch (e) {
+                        showMessage(pfpMessage, 'Error saving preference.', 'error');
+                    }
+                });
+
+                if (!pfpDropdown) { // Defensive check
+                    console.error("pfpDropdown could not be initialized.");
+                    return; // Exit if dropdown failed to initialize
                 }
-
-                // Initial UI state
-                updatePfpUi(currentPfpType);
-
-                // --- Letter Avatar Logic ---
-                const pfpLetterInput = document.getElementById('pfp-letter-input');
-                const pfpLetterPreview = document.getElementById('pfp-letter-preview');
-                const pfpColorGrid = document.getElementById('pfp-color-grid');
-                const saveLetterBtn = document.getElementById('save-letter-pfp-btn');
-                let selectedLetterColor = userData.pfpLetterBg || '#374151';
-
-                if (pfpLetterInput) pfpLetterInput.value = userData.letterAvatarText || "";
                 
-                if (pfpLetterPreview) {
-                    pfpLetterPreview.style.background = selectedLetterColor;
-                }
-
-                if (pfpColorGrid) {
-                    pfpColorGrid.innerHTML = '';
-                    letterColors.forEach(color => {
-                        const d = document.createElement('div');
-                        const hexColor = color.startsWith('#') ? color : '#' + color;
-                        const isSelected = selectedLetterColor === hexColor;
-                        
-                        d.className = `color-option ${isSelected ? 'selected' : ''}`;
-                        d.style.backgroundColor = hexColor;
-                        
-                        d.onclick = () => {
-                            selectedLetterColor = hexColor;
-                            pfpColorGrid.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
-                            d.classList.add('selected');
-                            // Update live preview
-                            if (pfpLetterPreview) {
-                                pfpLetterPreview.style.background = hexColor;
-                            }
-                        };
-                        pfpColorGrid.appendChild(d);
-                    });
-                }
-
-                if (saveLetterBtn) {
-                    saveLetterBtn.onclick = async () => {
-                        const text = pfpLetterInput.value.trim().toUpperCase();
-                        showMessage(pfpMessage, 'Saving...', 'warning');
-                        try {
-                            await saveUserData(uid, {
-                                pfpType: 'letter',
-                                pfpLetterBg: selectedLetterColor,
-                                letterAvatarText: text
-                            });
-                            userData.pfpType = 'letter';
-                            userData.pfpLetterBg = selectedLetterColor;
-                            userData.letterAvatarText = text;
-                            triggerNavbarUpdate();
-                            showMessage(pfpMessage, 'Letter avatar saved!', 'success');
-                        } catch (e) { showMessage(pfpMessage, 'Error saving letter avatar.', 'error'); }
-                    };
-                }
-
                 // Add event listener for the Open Mibi Avatar Creator button
                 if (openMacMenuBtn) {
                     openMacMenuBtn.addEventListener('click', () => {
@@ -3972,6 +3761,13 @@
                     });
                 }
 
+                // Set initial display based on saved settings
+                pfpDropdown.setValue(currentPfpType);
+                if (currentPfpType === 'custom') {
+                    customSettings.classList.remove('hidden');
+                } else if (currentPfpType === 'mibi') {
+                    mibiSettings.classList.remove('hidden'); // Ensure the container div for Mibi settings is visible
+                }
                 const uploadBtn = document.getElementById('uploadPfpBtn');
                 const fileInput = document.getElementById('pfpFileInput');
                 const cropperModal = document.getElementById('cropperModal');
@@ -3986,7 +3782,7 @@
                     previewPlaceholder.style.display = 'none';
                 }
 
-                if (uploadBtn) uploadBtn.addEventListener('click', () => fileInput.click());
+                uploadBtn.addEventListener('click', () => fileInput.click());
 
                 let cropperImage = null;
                 let cropState = { x: 0, y: 0, radius: 100 };
@@ -4041,44 +3837,25 @@
                     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                     ctx.beginPath();
                     ctx.rect(0, 0, w, h);
+                    // Cut hole
+                    ctx.arc(cropState.x, cropState.y, cropState.radius, 0, 2 * Math.PI, true);
                     ctx.fill();
-                    
-                    // Cut hole (Rounded Rect)
-                    ctx.globalCompositeOperation = 'destination-out';
-                    ctx.beginPath();
-                    
-                    const r = cropState.radius;
-                    const size = r * 2;
-                    const cornerRadius = size * 0.15;
-                    
-                    if (ctx.roundRect) {
-                        ctx.roundRect(cropState.x - r, cropState.y - r, size, size, cornerRadius);
-                    } else {
-                        ctx.rect(cropState.x - r, cropState.y - r, size, size);
-                    }
-                    ctx.fill();
-                    
-                    ctx.globalCompositeOperation = 'source-over';
                     
                     // Draw dashed border
                     ctx.strokeStyle = '#fff';
                     ctx.lineWidth = 2;
-                    ctx.setLineDash([6, 4]);
+                    ctx.setLineDash([6, 4]); // Dashed pattern
                     ctx.beginPath();
-                    if (ctx.roundRect) {
-                        ctx.roundRect(cropState.x - r, cropState.y - r, size, size, cornerRadius);
-                    } else {
-                        ctx.rect(cropState.x - r, cropState.y - r, size, size);
-                    }
+                    ctx.arc(cropState.x, cropState.y, cropState.radius, 0, 2 * Math.PI);
                     ctx.stroke();
-                    ctx.setLineDash([]);
+                    ctx.setLineDash([]); // Reset
                 };
 
                 // Interaction Handlers
                 const handleStart = (x, y) => {
-                    const r = cropState.radius;
-                    if (x >= cropState.x - r && x <= cropState.x + r &&
-                        y >= cropState.y - r && y <= cropState.y + r) {
+                    const dx = x - cropState.x;
+                    const dy = y - cropState.y;
+                    if (dx*dx + dy*dy < cropState.radius * cropState.radius) {
                         isDragging = true;
                         dragStart = { x, y };
                     }
@@ -4093,6 +3870,8 @@
                         let newY = cropState.y + dy;
                         
                         // Constraint: Circle must stay within canvas
+                        // x - radius >= 0  => x >= radius
+                        // x + radius <= w  => x <= w - radius
                         const r = cropState.radius;
                         const w = cropperCanvas.width;
                         const h = cropperCanvas.height;
@@ -4114,16 +3893,28 @@
                     e.preventDefault();
                     const delta = e.deltaY > 0 ? -5 : 5;
                     let newRadius = cropState.radius + delta;
+                    
                     const w = cropperCanvas.width;
                     const h = cropperCanvas.height;
+                    
+                    // 1. Absolute Max Radius constraint (half of smallest dimension)
                     const maxPossibleRadius = Math.min(w, h) / 2;
+                    
+                    // Clamp requested radius to valid range [20, maxPossibleRadius]
                     newRadius = Math.max(20, Math.min(newRadius, maxPossibleRadius));
+                    
+                    // 2. Calculate required bounds for center (x, y) given newRadius
+                    // The center must be at least newRadius away from any edge.
                     const minX = newRadius;
                     const maxX = w - newRadius;
                     const minY = newRadius;
                     const maxY = h - newRadius;
+                    
+                    // 3. Clamp current center to these new valid bounds
+                    // This effectively "pushes" the circle inwards if it was too close to the edge for the new size
                     cropState.x = Math.max(minX, Math.min(cropState.x, maxX));
                     cropState.y = Math.max(minY, Math.min(cropState.y, maxY));
+                    
                     cropState.radius = newRadius;
                     requestAnimationFrame(drawCropper);
                 };
@@ -4134,31 +3925,74 @@
                 cropperCanvas.addEventListener('mouseleave', handleEnd);
                 cropperCanvas.addEventListener('wheel', handleScroll);
                 
+                // Touch support
+                cropperCanvas.addEventListener('touchstart', e => {
+                    e.preventDefault();
+                    const rect = cropperCanvas.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    // Account for CSS scaling if canvas is displayed smaller than actual size
+                    // offsetX = (clientX - left) * (canvas.width / clientWidth)
+                    const scaleX = cropperCanvas.width / rect.width;
+                    const scaleY = cropperCanvas.height / rect.height;
+                    handleStart((touch.clientX - rect.left) * scaleX, (touch.clientY - rect.top) * scaleY);
+                });
+                cropperCanvas.addEventListener('touchmove', e => {
+                    e.preventDefault();
+                    const rect = cropperCanvas.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    const scaleX = cropperCanvas.width / rect.width;
+                    const scaleY = cropperCanvas.height / rect.height;
+                    handleMove((touch.clientX - rect.left) * scaleX, (touch.clientY - rect.top) * scaleY);
+                });
+                cropperCanvas.addEventListener('touchend', handleEnd);
+
                 cancelCropBtn.addEventListener('click', () => {
                     cropperModal.style.display = 'none';
-                    fileInput.value = ''; 
+                    fileInput.value = ''; // Reset
                 });
 
                 submitCropBtn.addEventListener('click', async () => {
+                    // Create final cropped image
                     const tempCanvas = document.createElement('canvas');
                     const size = 128; // Output size
                     tempCanvas.width = size;
                     tempCanvas.height = size;
                     const tCtx = tempCanvas.getContext('2d');
+                    
+                    // Mapping back to original image
+                    // Canvas was scaled to fixedHeight (400).
+                    // scale = 400 / image.height
+                    // originalX = cropState.x / scale
                     const scale = cropperCanvas.height / cropperImage.height;
+                    
                     const sourceX = (cropState.x - cropState.radius) / scale;
                     const sourceY = (cropState.y - cropState.radius) / scale;
                     const sourceSize = (cropState.radius * 2) / scale;
+                    
                     tCtx.drawImage(cropperImage, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+                    
                     const base64 = tempCanvas.toDataURL('image/jpeg', 0.8);
+                    
+                    // Save to Firestore
                     try {
                         submitCropBtn.disabled = true;
                         submitCropBtn.textContent = "Saving...";
-                        await saveUserData(uid, { customPfp: base64, pfpType: 'custom' });
+                        await updateDoc(userDocRef, { 
+                            customPfp: base64,
+                            pfpType: 'custom'
+                        });
+                        
                         userData.customPfp = base64;
                         userData.pfpType = 'custom';
                         triggerNavbarUpdate();
+                        
+                        // Update UI
+                        pfpDropdown.setValue('custom'); // Use custom dropdown method
                         updatePfpUi('custom');
+                        previewImg.src = base64;
+                        previewImg.style.display = 'block';
+                        previewPlaceholder.style.display = 'none';
+                        
                         cropperModal.style.display = 'none';
                         showMessage(pfpMessage, 'Profile picture updated!', 'success');
                     } catch (e) {
@@ -4222,7 +4056,7 @@
             if (!themePickerContainer) return;
             
             // From navigation.js
-            const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink', 'Birthday'];
+            const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink'];
 
             try {
                 // 1. Fetch themes
@@ -4235,36 +4069,56 @@
                 }
 
                 // --- NEW: Sorting Logic ---
-                const orderedThemeNames = ['Dark', 'Light', 'Christmas', 'The New Year', 'Potato'];
-                const sortedThemes = [];
-                let remainingThemes = [];
-
-                // 1. Extract explicit order
-                orderedThemeNames.forEach(name => {
-                    const theme = themes.find(t => t.name === name);
-                    if (theme) sortedThemes.push(theme);
-                });
-
-                // 2. Separate remaining
-                remainingThemes = themes.filter(t => !orderedThemeNames.includes(t.name));
+                                const orderedThemeNames = ['Dark', 'Light', 'Christmas', 'Potato'];
+                                const sortedThemes = [];
                 
-                const darkThemes = remainingThemes.filter(t => !lightThemeNames.includes(t.name));
-                const lightThemes = remainingThemes.filter(t => lightThemeNames.includes(t.name));
-
-                // 3. Sort subgroups (Rainbow/Alphabetical)
-                const colorMap = {
-                    'Crimson': 1, 'Fire': 1, 'Orange': 2, 'Sunset': 2, 'Potato': 2, 'Ember': 2, 'Copper': 2, 'Gold': 3,
-                    'Green': 4, 'Forest': 4, 'Matrix': 4, 'Mint': 5, 'Ocean': 6, 'Deep Blue': 6,
-                    'Purple': 7, 'Royal': 7, 'Haze': 7, 'Lavender': 7, 'Pink': 8, 'Coral': 8, 'Rose Gold': 8,
+                                // Add themes in the specified order first
+                                orderedThemeNames.forEach(name => {
+                                    const theme = themes.find(t => t.name === name);
+                                    if (theme) {
+                                        sortedThemes.push(theme);
+                                        themes = themes.filter(t => t.name !== name); // Remove from original list
+                                    }
+                                });
+                
+                                // Sort remaining themes by Rainbow Color then Type
+                                const colorMap = {
+                                    'Crimson': 1, 'Fire': 1,
+                                    'Orange': 2, 'Sunset': 2, 'Potato': 2, 'Ember': 2, 'Copper': 2, 'Gold': 3,
+                    'Green': 4, 'Forest': 4, 'Matrix': 4,
+                    'Mint': 5,
+                    'Ocean': 6, 'Deep Blue': 6,
+                    'Purple': 7, 'Royal': 7, 'Haze': 7, 'Lavender': 7,
+                    'Pink': 8, 'Coral': 8, 'Rose Gold': 8,
                     'Clanker': 9, 'Monochrome': 9, 'Silver': 9, 'Slate': 9
                 };
-                const sortFn = (a, b) => (colorMap[a.name] || 100) - (colorMap[b.name] || 100) || a.name.localeCompare(b.name);
                 
-                darkThemes.sort(sortFn);
-                lightThemes.sort(sortFn);
+                // Helper to determine type (Dark=0, Light=1 for sorting)
+                // Light themes use logo-dark.png
+                const getThemeType = (t) => (t['logo-src'] && t['logo-src'].includes('logo-dark.png')) ? 1 : 0;
 
-                // 4. Combine
-                themes = [...sortedThemes, ...darkThemes, ...lightThemes];
+                themes.sort((a, b) => {
+                    const colorA = colorMap[a.name] || 100; // Default to end if unknown
+                    const colorB = colorMap[b.name] || 100;
+                    
+                    if (colorA !== colorB) {
+                        return colorA - colorB;
+                    }
+                    
+                    // If same color, sort by type
+                    const typeA = getThemeType(a);
+                    const typeB = getThemeType(b);
+                    
+                    if (typeA !== typeB) {
+                        return typeA - typeB; // Dark first, then Light
+                    }
+                    
+                    // If same color and type, alphabetical
+                    return a.name.localeCompare(b.name);
+                });
+
+                // Combine them
+                themes = [...sortedThemes, ...themes];
                 // --- END NEW: Sorting Logic ---
                 
                 // 2. Get currently saved theme to set the active state
@@ -4294,32 +4148,24 @@
                     
                     const isActive = savedTheme && savedTheme.name === theme.name;
                     
-                    // Use the theme's own background/accent for the button preview
-                    const activeText = theme['text-primary'] || theme['tab-active-text'] || '#ffffff';
-                    const activeBorder = theme['accent-primary'] || theme['tab-active-border'] || '#4f46e5';
-                    const activeBg = theme['avatar-gradient'] || theme['bg-primary'] || theme['navbar-bg'] || '#000000'; 
-                    
-                    // Hover states (using accents)
-                    const hoverText = theme['text-primary'] || '#ffffff';
-                    const hoverBorder = theme['accent-primary'] || '#4f46e5';
-                    const hoverBg = theme['accent-secondary'] || 'rgba(79, 70, 229, 0.2)';
+                    // === MODIFICATION START ===
+                    // Get the theme's main background and text colors for the button
+                    const previewBg = theme['navbar-bg'] || '#000000';
+                    const previewText = theme['navbar-text'] || '#c0c0c0';
+                    // Get the theme's accent border color
+                    const previewBorder = theme['tab-active-border'] || '#4f46e5';
+
 
                     themeButtonsHtml += `
                         <button 
                             class="theme-button ${isActive ? 'active' : ''}" 
                             data-theme-name="${theme.name}" 
-                            style="
-                                color: ${activeText}; 
-                                border-color: ${activeBorder}; 
-                                background: ${activeBg};
-                                --hover-color: ${hoverText};
-                                --hover-border: ${hoverBorder};
-                                --hover-bg: ${hoverBg};
-                            "
+                            style="background-color: ${previewBg}; border-color: ${previewBorder};"
                         >
-                            ${theme.name}
+                            <div class="theme-button-name" style="color: ${previewText};">${theme.name}</div>
                         </button>
                     `;
+                    // === MODIFICATION END ===
                 }
                 
                 // Inject buttons into the DOM
@@ -4345,12 +4191,14 @@
                                 return;
                             }
 
-                            // 3. Save to Firestore & Supabase (Persistence)
+                            // 3. Save to Firestore (Persistence)
                             if (currentUser) {
                                 try {
-                                    await saveUserData(uid, { navbarTheme: themeToApply });
+                                    const userDocRef = getUserDocRef((currentUser.uid || currentUser.id));
+                                    // Ensure we're only saving valid data
+                                    await updateDoc(userDocRef, { navbarTheme: themeToApply });
                                 } catch (error) {
-                                    console.error("Error saving theme:", error);
+                                    console.error("Error saving theme to Firestore:", error);
                                     // Don't block UI feedback for this
                                 }
                             }
@@ -4433,6 +4281,11 @@
                 mainView.innerHTML = getDataManagementContent(); // Render HTML
                 await loadDataTab(); // Load data and add listeners
             }
+            else if (tabId === 'management') {
+                // --- NEW: Load Management Tab ---
+                mainView.innerHTML = getManagementContent();
+                await loadManagementTab();
+            }
             else if (tabId === 'about') {
                 mainView.innerHTML = getAboutContent();
             } else {
@@ -4457,18 +4310,27 @@
         });
 
 
-        async function initializeAuth() {
-            const handleUser = async (user) => {
-                if (user) {
-                    currentUser = user;
-                    const uid = user.id;
+        // --- AUTHENTICATION/REDIRECT LOGIC (Retained and Modified) ---
+
+
+
+        function initializeAuth() {
+            onAuthStateChanged(auth, async (user) => {
+                if (!user && !window._LOCAL_MODE) {
+                    // No user is logged in, redirect to authentication.html (path corrected)
+                    window.location.href = '../authentication.html'; 
+                } else {
+                    if (user) currentUser = user; 
                     
-                    // Check admin status
-                    try {
-                        isUserAdmin = await checkAdminStatus(uid);
-                    } catch (e) {
-                        console.warn("Could not verify admin status:", e.message);
+                    // --- MODIFIED: Mandatory Admin Status Check ---
+                    // We MUST await this check before proceeding to load tabs that might require admin privileges.
+                    // This prevents "Missing or insufficient permissions" errors due to race conditions.
+                    if (user) {
+                        isUserAdmin = await checkAdminStatus(user.uid);
+                    } else if (window._LOCAL_MODE) {
+                        // Offline/Local Mode: Assume no admin, or load from offline profile
                         isUserAdmin = false;
+                        // Mock userData if needed
                     }
 
                     if (isUserAdmin) {
@@ -4477,35 +4339,23 @@
                     }
 
                     // Set initial state to 'General' (or the first tab)
-                    if (mainView && mainView.children.length === 0) {
-                        switchTab('general');
-                    }
-                } else {
-                    window.location.replace('../authentication.html');
+                    switchTab('general'); 
                 }
-            };
-
-            // Supabase Listener
-            if (window.supabase) {
-                window.supabase.auth.onAuthStateChange(async (event, session) => {
-                    if (session) {
-                        handleUser(session.user);
-                    } else {
-                        handleUser(null);
-                    }
-                });
-
-                // Initial check
-                const { data: { session } } = await window.supabase.auth.getSession();
-                if (session) {
-                    handleUser(session.user);
-                } else {
-                    window.location.replace('../authentication.html');
-                }
-            } else {
-                console.error("Supabase client not found.");
-            }
+            });
         }
         
         // Use a short timeout to allow the rest of the script to run before auth check
         setTimeout(() => { initializeAuth(); }, 100);
+
+        // --- Helper: Generate Random Code ---
+        function generateDownloadCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 12; i++) {
+                if (i > 0 && i % 4 === 0) result += '-';
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+

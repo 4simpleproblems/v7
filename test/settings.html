@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4SP - SETTINGS</title>
+    <meta name="description" content="Settings and configuration for the 4SP website.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="../firebase-config.js" type="module"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.min.js"></script>
+    <script src="../injector.js"></script>
+    <script type="module" src="settings.js"></script>
+    
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+
+    <style>
+        /* --- FONT & BASE STYLING (MATCHING template) --- */
+        :root {
+            --bg-page: var(--bg-primary, #000000);
+            --bg-container: var(--bg-secondary, #0d0d0d);
+            --bg-secondary: var(--bg-secondary, #0d0d0d);
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #1a1a1a);
+            --border-color: var(--border-primary, #1a1a1a);
+            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --btn-text: var(--button-text, #4f46e5);
+        }
+
+        * { box-sizing: border-box; }
+
+        body { 
+            font-family: 'Geist', sans-serif; 
+            background-color: var(--bg-page); 
+            color: var(--text-main); 
+            transition: all 0.3s ease;
+            font-size: 16px;
+            font-weight: 300;
+            overflow: hidden;
+        }
+
+        /* Subtle dot grid */
+        .grid-bg {
+            background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+
+        #dynamic-background {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-widest {
+            font-weight: 400 !important;
+        }
+        
+        /* --- THEME-AWARE STYLES --- */
+        .btn-toolbar-style {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            color: var(--text-muted);
+            padding: 0.6rem 1.25rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .btn-toolbar-style:hover {
+            border-color: var(--accent-color);
+            color: var(--text-main);
+            background: var(--btn-bg);
+        }
+        
+        .btn-primary-override {
+            background-color: var(--btn-bg) !important;
+            border: 1px solid var(--accent-color) !important;
+            color: var(--accent-color) !important;
+        }
+        .btn-primary-override:hover {
+            background-color: var(--accent-color) !important;
+            color: #fff !important;
+            transform: scale(1.02);
+        }
+
+        .settings-tab {
+            width: 100%;
+            justify-content: flex-start;
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+        }
+        .settings-tab.active {
+            background-color: var(--btn-bg);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+        }
+        
+        /* --- Page Content Layout --- */
+        #settings-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #settings-sidebar {
+            width: 380px;
+            padding: 40px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-r: 1px solid var(--border-main);
+            background: var(--bg-secondary);
+            overflow-y: auto;
+        }
+
+        #settings-main-view {
+            flex-grow: 1;
+            padding: 64px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column; 
+            align-items: stretch;
+        }
+        
+        .settings-box { 
+            border: 1px solid var(--border-color); 
+            border-radius: 2rem; 
+            background-color: var(--bg-secondary);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-text-style, .modal-input {
+            width: 100%; 
+            padding: 0.75rem 1rem; 
+            border: 1px solid var(--border-color); 
+            background-color: rgba(255,255,255,0.05); 
+            border-radius: 14px; 
+            color: var(--text-main); 
+            outline: none;
+            transition: all 0.2s;
+        }
+        .input-text-style:focus { border-color: var(--accent-color); background: rgba(255,255,255,0.08); }
+
+        .custom-scroll::-webkit-scrollbar { width: 0; }
+    </style>
+</head>
+<body class="grid-bg min-h-screen relative">
+    <div id="dynamic-background"></div>
+    <div id="navbar-container"></div>
+
+    <main id="settings-container">
+        <aside id="settings-sidebar" class="custom-scroll">
+            <div class="mb-12">
+                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2">Configuration</p>
+                <h2 class="text-4xl font-light tracking-tight">Settings</h2>
+            </div>
+
+            <nav class="flex flex-col gap-2">
+                <button id="tab-general" class="btn-toolbar-style settings-tab active" data-tab="general">
+                    <i class="fa-solid fa-gear w-5"></i> <span>General</span>
+                </button>
+                <button id="tab-privacy" class="btn-toolbar-style settings-tab" data-tab="privacy">
+                    <i class="fa-solid fa-shield-halved w-5"></i> <span>Privacy & Security</span>
+                </button>
+                <button id="tab-personalization" class="btn-toolbar-style settings-tab" data-tab="personalization">
+                    <i class="fa-solid fa-palette w-5"></i> <span>Personalization</span>
+                </button>
+                <button id="tab-data" class="btn-toolbar-style settings-tab" data-tab="data">
+                    <i class="fa-solid fa-database w-5"></i> <span>Data Management</span>
+                </button>
+                <button id="tab-about" class="btn-toolbar-style settings-tab" data-tab="about">
+                    <i class="fa-solid fa-circle-info w-5"></i> <span>About 4SP</span>
+                </button>
+            </nav>
+
+            <div class="mt-auto pt-8">
+                <a href="/test/dashboard.html" class="nav-link-box flex items-center gap-3 p-4 rounded-2xl hover:bg-white/5 transition">
+                    <i class="fa-solid fa-house opacity-40"></i>
+                    <span class="text-xs font-bold uppercase tracking-widest">Dashboard</span>
+                </a>
+            </div>
+        </aside>
+
+        <section id="settings-main-view" class="custom-scroll">
+            <!-- Content Injected Here -->
+        </section>
+    </main>
+    
+    <div class="modal" id="modalPrompt">
+        <div class="modal-content" id="modalContent">
+            <span class="modal-close" id="modalClose">&times;</span>
+            <p id="modalText">Modal Text</p>
+            <div class="modal-buttons" id="modalButtons"></div>
+        </div>
+    </div>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-animation">
+            <div class="loading-bar"></div>
+            <div class="loading-bar"></div>
+            <div class="loading-bar"></div>
+            <div class="loading-bar"></div>
+            <div class="loading-bar"></div>
+        </div>
+        <p id="loadingText">Loading...</p>
+    </div>
+    
+    
+    <div id="cropperModal">
+        <div id="cropperContent">
+            <!-- Header -->
+            <div class="flex justify-between items-center p-6 border-b border-[var(--border-main)] bg-[var(--bg-secondary)]">
+                <h3 class="text-2xl font-bold text-[var(--text-main)]">Adjust Profile Picture</h3>
+                <button id="cancelCropBtn" class="btn-toolbar-style w-10 h-10 flex items-center justify-center p-0 rounded-[16px]">
+                     <i class="fa-solid fa-xmark fa-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="flex flex-col items-center p-6 bg-[var(--bg-page)]">
+                <p class="text-sm text-[var(--text-muted)] opacity-60 mb-4">Drag to move. Scroll to resize the selection.</p>
+                
+                <div id="cropperCanvasContainer" class="relative mb-6 border border-[var(--border-main)] rounded-2xl overflow-hidden">
+                    <canvas id="cropperCanvas"></canvas>
+                </div>
+                
+                <div class="flex justify-end w-full">
+                    <button id="submitCropBtn" class="btn-toolbar-style btn-primary-override px-6 py-2 rounded-[16px]">
+                        <i class="fa-solid fa-check mr-2"></i> Submit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+<!-- Made with ❤️ from 4SP -->

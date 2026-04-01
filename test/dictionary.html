@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>4SP - DICTIONARY</title>
+<meta content="A simple interactive dictionary with search and definition display using Merriam-Webster APIs." name="description"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../injector.js"></script>
+<style>
+        /* --- FONT & BASE STYLING (MATCHING notes.html) --- */
+        :root {
+            --bg-page: var(--bg-primary, #040404);
+            --bg-card: var(--bg-secondary, #0d0d0d);
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #1a1a1a);
+            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --btn-text: var(--button-text, #4f46e5);
+        }
+
+        body { 
+            font-family: 'Geist', sans-serif; 
+            background-color: var(--bg-page); 
+            color: var(--text-muted); 
+            transition: all 0.3s ease;
+            font-size: 16px;
+            overflow-x: hidden;
+            font-weight: 300;
+        }
+
+        h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-widest {
+            font-weight: 400 !important;
+        }
+
+        /* --- THEME-AWARE STYLES (from navigation.js) --- */
+        
+        .btn-toolbar-style {
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
+            border-radius: 14px;
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-toolbar-style:hover {
+            background-color: var(--bg-page);
+            border-color: var(--text-main);
+            color: var(--text-main);
+        }
+        
+        .btn-toolbar-style.btn-primary-override {
+            background-color: var(--btn-bg);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+        }
+        .btn-toolbar-style.btn-primary-override:hover {
+            background-color: var(--accent-glow);
+            border-color: var(--accent-color);
+            color: var(--text-main);
+        }
+
+        /* Input Styling (Matches Notes Editor Aesthetic) */
+        .input-text-style {
+            width: 100%; 
+            padding: 1rem 1.5rem; 
+            border: 1px solid var(--border-main); 
+            background-color: var(--bg-card); 
+            border-radius: 14px;
+            color: var(--text-muted); 
+            transition: all 0.2s;
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+        .input-text-style:focus {
+            border-color: var(--accent-color); 
+            outline: none;
+            box-shadow: none;
+        }
+
+        /* --- Page Content Layout --- */
+        #page-content {
+            min-height: calc(100vh - 4rem);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #main-wrapper {
+            flex-grow: 1;
+            padding: 20px;
+            margin: 1.25rem 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-width: 1200px;
+            width: calc(100% - 40px);
+            align-self: center;
+        }
+
+        /* Content Box - Matches #note-editor */
+        #definition-output {
+            flex-grow: 1;
+            min-height: calc(100vh - 15rem);
+            padding: 2rem;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-main);
+            color: var(--text-muted);
+            line-height: 1.6;
+            border-radius: 1.25rem;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .pronunciation-text {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            color: var(--text-muted);
+            opacity: 0.6;
+            font-size: 1.25rem;
+        }
+        
+        .highlighted-word {
+            text-decoration: underline;
+            text-decoration-color: var(--accent-glow);
+            text-underline-offset: 3px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+        }
+        .highlighted-word:hover {
+            color: var(--text-main);
+            text-decoration-color: var(--accent-color);
+        }
+        
+        .synonym-tag {
+            cursor: pointer;
+            color: var(--text-muted);
+            opacity: 0.8;
+            transition: all 0.2s;
+        }
+        .synonym-tag:hover {
+             color: var(--text-main); 
+             text-decoration: underline;
+             text-decoration-color: var(--accent-color);
+             text-underline-offset: 3px;
+        }
+        
+        .audio-icon {
+            font-size: 0.6em;
+            margin-left: 12px;
+            color: var(--accent-color);
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            vertical-align: middle;
+        }
+        .audio-icon:hover { opacity: 1; }
+        
+        .part-of-speech-label {
+            display: block;
+            width: 100%;
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            background-color: transparent;
+            color: var(--accent-color); 
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-main);
+        }
+        
+        ol.definition-list {
+            counter-reset: item;
+            list-style: none;
+            padding-left: 0;
+        }
+        ol.definition-list li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-muted);
+        }
+        ol.definition-list li::before {
+            content: counter(item) ".";
+            counter-increment: item;
+            position: absolute;
+            left: 0;
+            color: var(--text-muted);
+            opacity: 0.5;
+            font-weight: 300;
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 10px; }
+
+    </style><style>
+        :root {
+            --bg-page: var(--bg-primary, #000000);
+            --bg-card: var(--bg-secondary, #0d0d0d);
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #1a1a1a);
+            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --btn-text: var(--button-text, #4f46e5);
+        }
+
+        * { box-sizing: border-box; }
+
+        body { 
+            font-family: 'Geist', sans-serif; 
+            color: var(--text-main);
+            background-color: var(--bg-page);
+            font-weight: 300;
+        }
+
+        /* Subtle dot grid */
+        .grid-bg {
+            background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+
+        #dynamic-background {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%);
+            pointer-events: none;
+            z-index: -1;
+        }
+</style>
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-1D4F692C1Q');
+</script>
+</head>
+<body class="min-h-screen custom-scroll grid-bg relative"><div id="dynamic-background"></div><div id="navbar-container"></div>
+<div class="hidden" id="page-content">
+<header class="flex justify-between items-center p-4 border-b border-[var(--border-main)] sticky top-0 bg-[var(--bg-page)] z-[1000]">
+<h1 class="text-2xl font-bold text-[var(--text-main)]">4SP Dictionary</h1>
+<div class="flex items-center gap-2"></div>
+</header>
+<div id="main-wrapper">
+<div class="relative w-full">
+<input autocomplete="off" class="input-text-style pl-12 pr-24" id="search-input" placeholder="Type a word..." type="text"/>
+<i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)] opacity-60"></i>
+<button class="btn-toolbar-style btn-primary-override absolute right-2 top-1/2 transform -translate-y-1/2 h-10 px-4" id="search-button" title="Search">
+<i class="fa-solid fa-arrow-right"></i>
+</button>
+</div>
+<div class="custom-scroll" id="definition-output">
+<div class="h-full flex flex-col items-center justify-center text-[var(--text-muted)] space-y-4 pt-12 opacity-50">
+<i class="fa-solid fa-book-open fa-3x mb-2"></i>
+<p class="text-lg font-light">Enter a word above to begin.</p>
+</div>
+</div>
+</div>
+</div>
+<script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { firebaseConfig } from "../firebase-config.js"; 
+
+        const DICT_KEY = 'e9433acb-a413-4034-b379-c04f65ba4728';
+        const THES_KEY = '14361996-c9fa-4e29-ac53-bb70eb0647e7';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const pageContent = document.getElementById('page-content');
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const definitionOutput = document.getElementById('definition-output');
+        
+        let currentAudio = null; 
+
+        function getWordFromHash() {
+            const hash = window.location.hash;
+            if (hash.startsWith('#word=')) return decodeURIComponent(hash.substring(6)).trim();
+            return '';
+        }
+
+        function updateUrlHash(word) {
+            const newHash = word ? `#word=${encodeURIComponent(word.toLowerCase())}` : '';
+            if (window.location.hash === newHash) return;
+            history.pushState(null, '', newHash);
+        }
+
+        function checkUrlHashForWord() {
+            const word = getWordFromHash();
+            if (word) {
+                searchInput.value = word;
+                fetchDefinition(word);
+            }
+        }
+
+        window.addEventListener('popstate', checkUrlHashForWord);
+
+        async function fetchDefinition(word) {
+            const trimmedWord = word.trim().toLowerCase();
+            if (!trimmedWord) return;
+            updateUrlHash(trimmedWord);
+            definitionOutput.innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center pt-12">
+                    <i class="fa-solid fa-spinner fa-spin fa-2x text-[var(--accent-color)] mb-4"></i>
+                    <p class="text-lg font-light text-[var(--text-muted)] opacity-60">Searching...</p>
+                </div>
+            `;
+            try {
+                const [dictResponse, thesResponse] = await Promise.all([
+                    fetch(`https://www.dictionaryapi.com/api/v3/references/sd3/json/${encodeURIComponent(trimmedWord)}?key=${DICT_KEY}`),
+                    fetch(`https://www.dictionaryapi.com/api/v3/references/ithesaurus/json/${encodeURIComponent(trimmedWord)}?key=${THES_KEY}`)
+                ]);
+                const dictEntries = await dictResponse.json();
+                let thesEntries = [];
+                if (thesResponse.ok) thesEntries = await thesResponse.json();
+                if (!dictEntries || dictEntries.length === 0) { displayNotFound(trimmedWord); return; }
+                if (typeof dictEntries[0] === 'string') { displaySuggestions(trimmedWord, dictEntries); return; }
+                displayDefinition(trimmedWord, dictEntries, thesEntries);
+            } catch (error) {
+                console.error("Fetch error:", error);
+                definitionOutput.innerHTML = `<div class="text-center pt-12"><p class="text-red-400 mb-2">An error occurred.</p></div>`;
+            }
+        }
+
+        function displayNotFound(word) {
+            definitionOutput.innerHTML = `<div class="h-full flex flex-col items-center justify-center pt-12 opacity-50"><i class="fa-solid fa-circle-exclamation fa-2x mb-4"></i><p class="text-lg">No definition found for "${word}".</p></div>`;
+        }
+
+        function displaySuggestions(word, suggestions) {
+            const suggestionsHtml = suggestions.slice(0, 10).map(s => `<span class="highlighted-word text-indigo-400 mx-2" data-word="${s}">${s}</span>`).join(', ');
+            definitionOutput.innerHTML = `<div class="h-full flex flex-col items-center justify-center pt-12 px-8 text-center opacity-50"><i class="fa-solid fa-circle-question fa-2x mb-4"></i><p class="text-lg mb-4">Word not found. Did you mean:</p><div>${suggestionsHtml}</div></div>`;
+        }
+
+        function highlightDefinitionText(text) {
+            const commonWords = ['the', 'and', 'but', 'not', 'for', 'with', 'from', 'that', 'this', 'have', 'when', 'what', 'which', 'will', 'was', 'are', 'you', 'can', 'one', 'use', 'any', 'all', 'out', 'into', 'upon', 'like', 'than', 'only', 'much', 'a', 'an', 'or', 'of', 'in', 'to', 'is'];
+            let cleanText = text.replace(/{bc}/g, ': ').replace(/{it}/g, '<i>').replace(/{\/it}/g, '</i>').replace(/{wi}/g, '<i>').replace(/{\/wi}/g, '</i>').replace(/{sx\|([^|]+)\|([^}]*)}/g, '<span class="highlighted-word" data-word="$1">$1</span>').replace(/{[^}]+}/g, ''); 
+            return cleanText.replace(/\b([a-zA-Z]{3,})\b/g, (match) => commonWords.includes(match.toLowerCase()) ? match : `<span class="highlighted-word" data-word="${match.toLowerCase()}">${match}</span>`);
+        }
+        
+        function getAudioUrl(audioBase) {
+            if (!audioBase) return null;
+            let subdir = audioBase.startsWith('bix') ? 'bix' : audioBase.startsWith('gg') ? 'gg' : (!isNaN(parseInt(audioBase[0])) || !/^[a-zA-Z]/.test(audioBase)) ? 'number' : audioBase[0];
+            return `https://media.merriam-webster.com/audio/prons/en/us/mp3/${subdir}/${audioBase}.mp3`;
+        }
+
+        function displayDefinition(word, dictData, thesData) {
+            const primaryEntry = dictData[0];
+            const hw = primaryEntry.hwi ? primaryEntry.hwi.hw.replace(/\*/g, '·') : word;
+            const prs = (primaryEntry.hwi && primaryEntry.hwi.prs && primaryEntry.hwi.prs.length > 0) ? primaryEntry.hwi.prs[0] : null;
+            const mwPron = prs ? prs.mw : '';
+            const audioUrl = prs && prs.sound ? getAudioUrl(prs.sound.audio) : null;
+            let htmlContent = `<div class="space-y-4"><div class="border-b border-[var(--border-main)] pb-6"><h2 class="text-4xl text-[var(--text-main)] capitalize font-normal tracking-wide">${hw}${audioUrl ? `<i class="fa-solid fa-volume-high audio-icon" title="Listen" data-audio="${audioUrl}"></i>` : ''}</h2>${mwPron ? `<p class="mt-2 pronunciation-text">/${mwPron}/</p>` : ''}</div><div class="mt-2">`;
+            const groupedDefinitions = {};
+            dictData.slice(0, 5).forEach(entry => {
+                if (typeof entry === 'string') return;
+                const fl = entry.fl ? entry.fl.toLowerCase() : 'definition'; 
+                if (!groupedDefinitions[fl]) groupedDefinitions[fl] = [];
+                groupedDefinitions[fl].push(entry);
+            });
+            for (const fl in groupedDefinitions) {
+                if (groupedDefinitions.hasOwnProperty(fl) && groupedDefinitions[fl][0].shortdef) {
+                    htmlContent += `<div class="part-of-speech-label">${fl}</div><ol class="definition-list">`;
+                    groupedDefinitions[fl].forEach(entry => entry.shortdef.forEach(def => { htmlContent += `<li>${highlightDefinitionText(def)}</li>`; }));
+                    htmlContent += `</ol>`;
+                }
+            }
+            htmlContent += `</div>`;
+            let allSynonyms = [];
+            if (thesData && thesData.length > 0 && typeof thesData[0] !== 'string') {
+                thesData.forEach(entry => { if (entry.meta && entry.meta.syns) entry.meta.syns.forEach(group => allSynonyms.push(...group)); });
+            }
+            allSynonyms = [...new Set(allSynonyms)];
+            if (allSynonyms.length > 0) {
+                const synonymTags = allSynonyms.slice(0, 15).map(s => `<span class="synonym-tag" data-word="${s}">${s}</span>`).join('<span class="text-[var(--text-muted)] opacity-20 mx-2">|</span>');
+                htmlContent += `<div class="mt-12 pt-6 border-t border-[var(--border-main)]"><p class="text-xs text-[var(--text-muted)] opacity-40 font-medium uppercase mb-3 tracking-widest">Synonyms</p><div class="leading-loose text-[var(--text-muted)] opacity-80">${synonymTags}</div></div>`;
+            }
+            htmlContent += `</div>`;
+            definitionOutput.innerHTML = htmlContent;
+        }
+
+        searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') fetchDefinition(searchInput.value); });
+        searchButton.addEventListener('click', () => fetchDefinition(searchInput.value));
+        definitionOutput.addEventListener('click', (event) => {
+            if (event.target.dataset.word) fetchDefinition(event.target.dataset.word);
+            if (event.target.classList.contains('audio-icon') && event.target.dataset.audio) new Audio(event.target.dataset.audio).play();
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            let authed = !!user;
+            if (!authed && window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session) authed = true;
+            }
+
+            if (authed) {
+                if (window.hideLoader) window.hideLoader();
+                pageContent.classList.remove('hidden');
+                pageContent.style.display = 'flex'; 
+                checkUrlHashForWord(); 
+            } else {
+                window.location.href = '../index.html'; 
+            }
+        });
+    </script>
+</body>
+</html>
+<!-- Made with ❤️ from 4SP -->

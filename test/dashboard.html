@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>4SP - DASHBOARD</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet"/>
+<script src="../injector.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+        :root {
+            --bg-page: var(--bg-primary, #040404);
+            --bg-container: var(--bg-secondary, #080808);
+            --border-color: var(--border-secondary, rgba(255,255,255,0.05));
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+        }
+
+        body { 
+            font-family: 'Geist', sans-serif; 
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            font-weight: 300;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #page-content {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: repeat(12, minmax(0, 1fr));
+            gap: 1.5rem;
+            padding: 2.5rem;
+            width: 100%;
+            height: calc(100vh - 64px);
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        @media (max-width: 1024px) {
+            #page-content {
+                display: flex;
+                flex-direction: column;
+                height: auto;
+                overflow-y: visible;
+            }
+            .dashboard-card {
+                grid-column: span 12 !important;
+                grid-row: span 1 !important;
+                min-height: 200px;
+            }
+        }
+
+        .dashboard-card {
+            background: var(--bg-container);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 1.75rem;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dashboard-card:hover:not(.no-hover) {
+            border-color: var(--accent-color);
+            background: var(--bg-secondary);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+
+        /* --- LAYOUT SLOTS --- */
+        #welcome-section {
+            grid-column: span 4;
+            grid-row: span 5;
+            background: transparent;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-left: 0;
+        }
+
+        #analytics-left {
+            grid-column: span 4;
+            grid-row: span 7;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        #quick-access-section {
+            grid-column: span 8;
+            grid-row: span 7;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- COMPONENTS --- */
+        .time-display { font-size: 4.5rem; font-weight: 200; line-height: 1; letter-spacing: -0.04em; color: var(--text-main); }
+        
+        /* Scalable clock for large screens */
+        @media (min-width: 1600px) {
+            .time-display { font-size: 6vw; }
+        }
+
+        .date-display { font-size: 1.2rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 0.5rem; opacity: 0.6; }
+        .welcome-msg { font-size: 2rem; font-weight: 300; margin-top: 1.5rem; color: var(--text-secondary); }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.25rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .label-tiny { font-size: 0.65rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.5; }
+        .val-big { font-size: 1.75rem; font-weight: 500; color: var(--text-main); margin-top: 0.25rem; }
+        #stat-total-time { font-size: 3rem; }
+        .val-sub { font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.25rem; opacity: 0.6; }
+
+        /* --- LEADERBOARD WIDGET --- */
+        #leaderboard-widget {
+            grid-column: span 8;
+            grid-row: span 5;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 2.5rem 3.5rem;
+            display: flex;
+            flex-direction: row; /* Horizontal layout */
+            align-items: center;
+            justify-content: space-between;
+            gap: 3rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        #leaderboard-widget.greyed-out {
+            filter: grayscale(1) brightness(0.5);
+        }
+        #leaderboard-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            pointer-events: auto; /* Ensure clicks are captured */
+        }
+
+        .page-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-top: 1rem;
+            /* Hide scrollbars and allow overflow for hover effects */
+            overflow: visible;
+        }
+
+        .page-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            transition: all 0.2s;
+            cursor: pointer;
+            /* Ensure the button stays above others during animation */
+            position: relative;
+            z-index: 1;
+        }
+        .page-btn:hover {
+            background: var(--button-bg);
+            border-color: var(--accent-color);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        .page-btn.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+        .icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.03);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-color);
+            font-size: 1.2rem;
+        }
+
+        .weather-row { display: flex; align-items: flex-end; justify-content: space-between; }
+        .temp-text { font-size: 4rem; font-weight: 500; line-height: 1; }
+        
+        #weather-loader { position: absolute; top: 1.5rem; right: 1.75rem; color: var(--accent-color); opacity: 0; }
+        #weather-loader.loading { opacity: 1; }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style><style>
+        :root {
+            --bg-page: var(--bg-primary, #000000);
+            --bg-card: var(--bg-secondary, #0d0d0d);
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #1a1a1a);
+            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --btn-text: var(--button-text, #4f46e5);
+        }
+
+        * { box-sizing: border-box; }
+
+        body { 
+            font-family: 'Geist', sans-serif; 
+            color: var(--text-main);
+            background-color: var(--bg-page);
+            font-weight: 300;
+        }
+
+        /* Subtle dot grid */
+        .grid-bg {
+            background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+
+        #dynamic-background {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%);
+            pointer-events: none;
+            z-index: -1;
+        }
+</style>
+</head>
+<body class="grid-bg min-h-screen relative"><div id="dynamic-background"></div><div id="navbar-container"></div>
+<div id="page-content">
+<!-- WELCOME SECTION -->
+<div class="dashboard-card no-hover" id="welcome-section">
+<div class="date-display" id="clock-date">--------</div>
+<div class="time-display" id="clock-time">00:00:00</div>
+<h2 class="welcome-msg">Good day, <span id="user-name-display" style="color: var(--accent-primary);">User</span>.</h2>
+</div>
+<!-- LEADERBOARD WIDGET -->
+<div class="dashboard-card greyed-out" id="leaderboard-widget">
+<div class="flex flex-col justify-center border-r border-white/5 pr-10 h-full">
+<div class="label-tiny">Your Rank</div>
+<div class="text-6xl font-bold mt-1" id="leaderboard-rank" style="color: var(--accent-primary);">#--</div>
+<div class="text-[12px] opacity-60 mt-1 uppercase tracking-widest font-bold" style="color: var(--text-muted);">Global Standing</div>
+</div>
+<div class="flex-grow flex items-center gap-10 px-6">
+<div class="w-24 h-24 rounded-[32px] flex items-center justify-center overflow-hidden flex-shrink-0" id="user-avatar-widget" style="background: var(--button-bg); border: 1px solid var(--border-color);">
+<i class="fas fa-user text-3xl" style="color: var(--accent-primary);"></i>
+</div>
+<div class="min-w-0">
+<div class="label-tiny">Your Statistics</div>
+<div class="text-4xl font-semibold truncate mt-1" id="user-stats-name" style="color: var(--text-primary);">Loading...</div>
+<div class="text-sm font-mono mt-1" id="user-stats-time" style="color: var(--text-secondary); opacity: 0.7;">0h 0m total</div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<a class="inline-flex items-center justify-center py-4 px-8 border rounded-3xl text-sm font-medium transition group" href="leaderboard.html" style="background: var(--button-bg); border-color: var(--border-primary); color: var(--accent-primary);">
+                    Rankings <i class="fas fa-trophy ml-2 group-hover:scale-110 transition-transform"></i>
+</a>
+</div>
+<div id="leaderboard-overlay">
+<div class="text-center p-4" id="leaderboard-prompt-content">
+<p class="text-xs mb-3" id="leaderboard-prompt-text" style="color: var(--text-muted); opacity: 0.8;">Join the leaderboard to see your rank</p>
+<button class="py-2.5 px-6 hover:opacity-90 rounded-2xl text-xs font-medium transition shadow-lg" id="accept-leaderboard-btn" style="background: var(--accent-primary); color: #fff;">
+                        Accept Terms
+                    </button>
+<div class="mt-2">
+<a class="text-[10px] hover:underline text-white/80 hover:text-white transition-colors font-medium" href="../legal.html#leaderboard-terms" target="_blank">View Terms</a>
+</div>
+</div>
+</div>
+</div>
+<!-- ANALYTICS LEFT -->
+<div class="dashboard-card no-hover" id="analytics-left">
+<div class="stat-card">
+<div>
+<div class="label-tiny">Experience Time</div>
+<div class="val-big" id="stat-total-time" style="color: var(--text-primary);">0h 0m</div>
+</div>
+<div class="val-sub">Total session duration in V6</div>
+</div>
+<div class="stat-card">
+<div>
+<div class="label-tiny">System Analytics</div>
+<div class="text-sm font-medium" id="stat-browser" style="color: var(--accent-primary);">Loading...</div>
+<div class="text-xs mt-1" id="stat-os" style="color: var(--text-muted); opacity: 0.6;">Detecting OS</div>
+</div>
+<div class="text-[10px] uppercase font-bold tracking-widest" id="stat-device" style="color: var(--text-muted); opacity: 0.4;">Project Niobium</div>
+</div>
+</div>
+<!-- QUICK ACCESS SECTION -->
+<div class="dashboard-card" id="quick-access-section">
+<div class="flex justify-between items-center">
+<div>
+<div class="label-tiny">Recently Accessed</div>
+<h3 class="text-xl font-medium mt-1" style="color: var(--text-primary); opacity: 0.8;">Most Opened Pages</h3>
+</div>
+<div class="text-3xl font-light" id="stat-pageviews" style="color: var(--text-muted); opacity: 0.2;">0</div>
+</div>
+<div class="page-grid flex-grow" id="recent-pages-list">
+<div class="col-span-2 py-20 text-center italic text-sm" style="color: var(--text-muted); opacity: 0.6;">Synchronizing analytics...</div>
+</div>
+</div>
+</div>
+<script type="module">
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { firebaseConfig } from '../firebase-config.js';
+        import { firebaseConfig2 } from '../firebase-config-2.js';
+        import { supabaseConfig } from '../supabase-config.js';
+        import { getAvatarHTML, syncGooglePhoto } from "../utils.js";
+
+        // Initialize primary app
+        if (!getApps().length) initializeApp(firebaseConfig);
+        const app = getApp();
+        
+        // Initialize secondary app for offloading data
+        let app2;
+        try {
+            app2 = getApp("secondary");
+        } catch (e) {
+            app2 = initializeApp(firebaseConfig2, "secondary");
+        }
+
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const db2 = getFirestore(app2); // Secondary DB for logs/pageviews
+
+        // Initialize Supabase (Reuse global instance if available)
+        let supabase = window.supabase;
+        if (!supabase) {
+            const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm");
+            supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        }
+
+        const V6_PAGES = {
+            'dashboard.html': 'Dashboard',
+            'soundboard.html': 'Soundboard',
+            'notes.html': 'Notes',
+            'dailyphoto.html': 'Dailyphoto',
+            'dictionary.html': 'Dictionary',
+            'schedule.html': 'Schedule',
+            'messenger-tutorial.html': 'Messenger',
+            'games.html': 'Games',
+            'vana.html': 'Vana',
+            'vora.html': 'Vora',
+            'vern.html': 'Vern',
+            'velium.html': 'Velium',
+            'securly-tester.html': 'Securly Tester',
+            'settings.html': 'Settings',
+            'profile.html': 'Profile'
+        };
+
+        const parseUA = (ua) => {
+            if (!ua) return { browser: 'Browser', os: 'Operating System' };
+            let browser = 'Other', os = 'Other';
+            if (ua.includes('Chrome')) browser = 'Chrome';
+            else if (ua.includes('Firefox')) browser = 'Firefox';
+            else if (ua.includes('Safari')) browser = 'Safari';
+            if (ua.includes('Windows')) os = 'Windows';
+            else if (ua.includes('Mac OS')) os = 'macOS';
+            else if (ua.includes('CrOS')) os = 'ChromeOS';
+            else if (ua.includes('Linux')) os = 'Linux';
+            return { browser, os };
+        };
+
+        async function initDashboard() {
+            // Load page identification config
+            let pageConfig = {};
+            try {
+                const response = await fetch('../page-identification.json');
+                pageConfig = await response.json();
+            } catch (e) {
+                console.error("Failed to load page identification config", e);
+            }
+
+            // Primary Auth Listener (Firebase for legacy, Supabase for modern)
+            const handleUser = async (user, source = 'firebase') => {
+                if (user) {
+                    console.log(`Dashboard: User authenticated via ${source}`, user.email);
+                    if (source === 'firebase') syncGooglePhoto(user);
+                    
+                    const uid = user.id || user.uid; 
+                    let data = null;
+
+                    if (source === 'supabase') {
+                        // Fetch from Supabase profiles table
+                        const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', uid).single();
+                        if (profile) {
+                            data = {
+                                ...profile,
+                                displayName: profile.display_name,
+                                username: profile.username || user.user_metadata?.custom_claims?.global_name || user.email.split('@')[0],
+                                leaderboardAccepted: profile.leaderboard_accepted,
+                                leaderboardOptOut: profile.leaderboard_opt_out
+                            };
+                        }
+                    } else {
+                        // Legacy Firebase path
+                        const userDocRef = doc(db, 'users', uid);
+                        try {
+                            const userSnap = await getDoc(userDocRef);
+                            if (userSnap.exists()) data = userSnap.data();
+                        } catch (e) {
+                            console.warn("Dashboard: Firestore Primary access denied. Switching to Supabase profile.");
+                            const { data: profile } = await supabase.from('profiles').select('*').eq('id', uid).single();
+                            if (profile) {
+                                data = {
+                                    ...profile,
+                                    displayName: profile.display_name,
+                                    username: profile.username
+                                };
+                            }
+                        }
+                    }
+                    
+                    if (data) {
+                        document.getElementById('user-name-display').textContent = data.displayName || data.username || "User";
+                        
+                        // Leaderboard handling
+                        const widget = document.getElementById('leaderboard-widget');
+                        const overlay = document.getElementById('leaderboard-overlay');
+                        const promptText = document.getElementById('leaderboard-prompt-text');
+                        const acceptBtn = document.getElementById('accept-leaderboard-btn');
+
+                        if (data.leaderboardAccepted && !data.leaderboardOptOut) {
+                            widget.classList.remove('greyed-out');
+                            overlay.style.display = 'none';
+                            fetchUserStats(uid);
+                        } else {
+                            widget.classList.add('greyed-out');
+                            overlay.style.display = 'flex';
+                            
+                            if (data.leaderboardOptOut) {
+                                promptText.textContent = "Leaderboard participation is disabled in settings";
+                                acceptBtn.textContent = "Enable Participation";
+                                acceptBtn.onclick = async () => {
+                                    if (source === 'supabase') {
+                                        await supabase.from('profiles').update({ leaderboard_opt_out: false }).eq('id', uid);
+                                    } else {
+                                        await updateDoc(doc(db, 'users', uid), { leaderboardOptOut: false });
+                                    }
+                                    location.reload();
+                                };
+                            } else {
+                                promptText.textContent = "Join the leaderboard to see your rank";
+                                acceptBtn.textContent = "Accept Terms";
+                                acceptBtn.onclick = async () => {
+                                    if (source === 'supabase') {
+                                        await supabase.from('profiles').update({ leaderboard_accepted: true, leaderboard_opt_out: false }).eq('id', uid);
+                                    } else {
+                                        await updateDoc(doc(db, 'users', uid), { leaderboardAccepted: true, leaderboardOptOut: false });
+                                    }
+                                    location.reload();
+                                };
+                            }
+                        }
+                        loadAnalytics(uid, pageConfig, data);
+                    } else {
+                        // Create basic doc if it doesn't exist (e.g. first time Supabase login)
+                        console.log("Dashboard: Creating missing user profile for", uid);
+                        const username = user.user_metadata?.custom_claims?.global_name || user.email.split('@')[0];
+                        if (source === 'supabase') {
+                            await supabase.from('profiles').upsert({
+                                id: uid,
+                                username: username,
+                                display_name: username,
+                                leaderboard_accepted: false,
+                                leaderboard_opt_out: false
+                            });
+                        } else {
+                            await setDoc(doc(db, 'users', uid), {
+                                email: user.email,
+                                username: username,
+                                createdAt: serverTimestamp(),
+                                leaderboardAccepted: false,
+                                leaderboardOptOut: false
+                            });
+                        }
+                        location.reload();
+                    }
+                } else if (!window._LOCAL_MODE && source === 'firebase') {
+                    // Only redirect if both fail. We check Supabase first.
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) {
+                        window.location.replace('../index.html');
+                    }
+                }
+            };
+
+            // Supabase session check
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                handleUser(session.user, 'supabase');
+            }
+
+            // Firebase fallback/sync
+            onAuthStateChanged(auth, async (user) => {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    handleUser(user, 'firebase');
+                }
+            });
+
+            startClock();
+        }
+
+        async function fetchUserStats(uid) {
+            const CACHE_KEY = `leaderboard_rank_${uid}`;
+            const CACHE_TIME_KEY = `leaderboard_rank_time_${uid}`;
+            const ONE_HOUR = 3600000;
+
+            const now = Date.now();
+            const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+            const cachedData = localStorage.getItem(CACHE_KEY);
+
+            if (cachedTime && cachedData && (now - parseInt(cachedTime) < ONE_HOUR)) {
+                renderRankData(JSON.parse(cachedData));
+                return;
+            }
+
+            try {
+                // Fetch rank from Supabase profiles table
+                const { data: rankedUsers, error } = await supabase
+                    .from('profiles')
+                    .select('id, username, display_name, total_v6_time, avatar_url')
+                    .order('total_v6_time', { ascending: false })
+                    .limit(100);
+
+                if (error) throw error;
+
+                let rank = '--';
+                let userDataRankInfo = null;
+
+                if (rankedUsers && rankedUsers.length > 0) {
+                    const index = rankedUsers.findIndex(u => u.id === uid);
+                    if (index !== -1) {
+                        rank = `#${index + 1}`;
+                        userDataRankInfo = {
+                            ...rankedUsers[index],
+                            totalV6Time: rankedUsers[index].total_v6_time,
+                            displayName: rankedUsers[index].display_name
+                        };
+                    }
+                }
+
+                const dataToCache = { rank, userData: userDataRankInfo };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(dataToCache));
+                localStorage.setItem(CACHE_TIME_KEY, now.toString());
+
+                renderRankData(dataToCache);
+            } catch (e) {
+                console.error("Dashboard: Failed to fetch Supabase stats", e);
+            }
+        }
+
+        function renderRankData({ rank, userData: rankData }) {
+            document.getElementById('leaderboard-rank').textContent = rank;
+            if (rankData) {
+                document.getElementById('user-stats-name').textContent = rankData.displayName || rankData.username || "Anonymous";
+                const hours = Math.floor((rankData.totalV6Time || 0) / 3600);
+                const minutes = Math.floor(((rankData.totalV6Time || 0) % 3600) / 60);
+                document.getElementById('user-stats-time').textContent = `${hours}h ${minutes}m total`;
+                const avatarWidget = document.getElementById('user-avatar-widget');
+                avatarWidget.innerHTML = getAvatarHTML(rankData, "w-24 h-24", false, null, "rounded-[32px]");
+            }
+        }
+
+        async function loadAnalytics(uid, pageConfig = {}, userDataPrimary = {}) {
+            let recentPages = [];
+            try {
+                recentPages = JSON.parse(localStorage.getItem('v6_recent_pages') || '[]');
+            } catch (e) {}
+
+            const displayTime = (timeInSecs) => {
+                const hours = Math.floor(timeInSecs / 3600);
+                const minutes = Math.floor((timeInSecs % 3600) / 60);
+                document.getElementById('stat-total-time').textContent = `${hours}h ${minutes}m`;
+            };
+
+            // Real-time time update via Supabase (if supported by project) or simple fetch
+            const { data: profile } = await supabase.from('profiles').select('total_v6_time').eq('id', uid).single();
+            displayTime(profile?.total_v6_time || 0);
+
+            // Subscribe to real-time changes on profiles table
+            supabase
+                .channel('profile-updates')
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` }, payload => {
+                    if (payload.new) displayTime(payload.new.total_v6_time || 0);
+                })
+                .subscribe();
+
+            // Minimal system stats
+            const uaInfo = parseUA(navigator.userAgent);
+            document.getElementById('stat-browser').textContent = uaInfo.browser;
+            document.getElementById('stat-os').textContent = uaInfo.os;
+            document.getElementById('stat-device').textContent = window._LOCAL_MODE ? 'Local Client' : 'Cloud Access';
+            document.getElementById('stat-pageviews').textContent = recentPages.length;
+
+            const listEl = document.getElementById('recent-pages-list');
+            listEl.innerHTML = '';
+            
+            if (recentPages.length === 0) {
+                listEl.innerHTML = '<div class="col-span-2 py-20 text-center italic text-sm" style="color: var(--text-muted); opacity: 0.6;">No recent activity found.</div>';
+                return;
+            }
+
+            recentPages.slice(0, 6).forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'page-btn';
+                
+                // Find icon from mapping or default
+                let icon = 'fa-solid fa-file-alt';
+                for (const key in pageConfig) {
+                    if (pageConfig[key].url && p.path.includes(pageConfig[key].url.split('/').pop())) {
+                        icon = pageConfig[key].icon || icon;
+                        break;
+                    }
+                }
+                
+                item.innerHTML = `
+                    <div class="icon-box">
+                        <i class="${icon}"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white truncate">${p.title}</p>
+                        <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">${new Date(p.ts).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                    </div>
+                `;
+
+                item.onclick = () => {
+                    if (window.parent && window.parent.loadPage) {
+                        window.parent.loadPage(p.path);
+                    } else {
+                        window.location.href = p.path;
+                    }
+                };
+
+                listEl.appendChild(item);
+            });
+        }
+
+        function startClock() {
+            const update = () => {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                const [time, ampm] = timeStr.split(' ');
+                document.getElementById('clock-time').innerHTML = `${time}<span class="text-3xl ml-2 opacity-60 uppercase font-light">${ampm}</span>`;
+                document.getElementById('clock-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            };
+            update();
+            setInterval(update, 1000);
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>
+<!-- Made with ❤️ from 4SP -->
