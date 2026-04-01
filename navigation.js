@@ -1444,61 +1444,25 @@ let db;
                     if (!currentUserData) currentUserData = {};
                     Object.assign(currentUserData, e.detail);
                     
-                    const username = currentUserData.username || currentUser?.displayName || 'User';
-                    const initial = (currentUserData.letterAvatarText) ? currentUserData.letterAvatarText : username.charAt(0).toUpperCase();
-                    let newContent = '';
-                    
-                    if (currentUserData.pfpType === 'custom' && currentUserData.customPfp) {
-                        newContent = `<img src="${currentUserData.customPfp}" class="w-full h-full object-cover" style="border-radius: 12px;" alt="Profile">`;
-                    } else if (currentUserData.pfpType === 'mibi' && currentUserData.mibiConfig) {
-                        const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = currentUserData.mibiConfig;
-                        const scale = (size || 100) / 100;
-                        const rot = rotation || 0;
-                        const x = offsetX || 0;
-                        const y = offsetY || 0;
-
-                        newContent = `
-                            <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 12px;">
-                                 <div class="absolute inset-0 w-full h-full" style="transform: translate(${x}%, ${y}%) rotate(${rot}deg) scale(${scale}); transform-origin: center;">
-                                     <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
-                                     ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                     ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                     ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                 </div>
-                            </div>
-                        `;
-                    } else if (currentUserData.pfpType === 'letter') {
-                        const bg = currentUserData.letterAvatarColor || DEFAULT_THEME['avatar-gradient'];
-                        const textColor = getLetterAvatarTextColor(bg);
-                        const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
-                        newContent = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
-                    } else {
-                        const googleProvider = currentUser?.providerData?.find(p => p.providerId === 'google.com');
-                        const googlePhoto = googleProvider ? googleProvider.photoURL : null;
-                        const displayPhoto = googlePhoto || currentUser?.photoURL;
-
-                        if (displayPhoto) {
-                            newContent = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 12px;" alt="Profile">`;
-                        } else {
-                            const bg = DEFAULT_THEME['avatar-gradient'];
-                            const textColor = getLetterAvatarTextColor(bg);
-                            const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
-                            newContent = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
-                        }
-                    }
+                    const newAvatarHtml = getAvatarHTML(currentUserData, "w-10 h-10", false, currentUser, "rounded-xl");
+                    const dN = currentUserData.display_name || currentUserData.displayName || currentUser?.displayName || 'User';
 
                     const authToggle = document.getElementById('auth-toggle');
                     if (authToggle) {
                         authToggle.style.transition = 'opacity 0.2s ease';
                         authToggle.style.opacity = '0';
                         setTimeout(() => {
-                            authToggle.innerHTML = newContent;
+                            authToggle.innerHTML = newAvatarHtml;
                             authToggle.style.opacity = '1';
                         }, 200);
                     }
                     const menuAvatar = document.getElementById('auth-menu-avatar-container');
                     if (menuAvatar) {
-                        menuAvatar.innerHTML = newContent; 
+                        menuAvatar.innerHTML = newAvatarHtml;
+                    }
+                    const menuDisplayName = document.querySelector('.auth-menu-displayname');
+                    if (menuDisplayName) {
+                        menuDisplayName.textContent = dN;
                     }
                 });
 
