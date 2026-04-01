@@ -545,7 +545,7 @@
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
         import { firebaseConfig } from "/firebase-config.js";
-        import { getAvatarHTML } from "/utils.js";
+        import { getAvatarHTML, checkAdminStatus } from "/utils.js";
 
         // Initialize primary app (legacy fallback)
         if (!getApps().length) initializeApp(firebaseConfig);
@@ -657,14 +657,8 @@
         });
 
         async function initApp() {
-            try {
-                const uid = (currentUser.uid || currentUser.id);
-                if (window.supabase) {
-                    const { data: profile } = await window.supabase.from('profiles').select('is_admin').eq('id', uid).maybeSingle();
-                    if (profile) isAdmin = profile.is_admin;
-                }
-                if (!isAdmin && currentUser.email === '4simpleproblems@gmail.com') isAdmin = true;
-            } catch (e) { console.warn("Admin check failed:", e); }
+            const uid = (currentUser.uid || currentUser.id);
+            isAdmin = await checkAdminStatus(uid);
 
             await fetchSocialGraph();
 

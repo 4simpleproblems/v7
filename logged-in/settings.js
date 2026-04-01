@@ -205,8 +205,9 @@
                         // Map Supabase fields to Firestore fields if they differ
                         data = {
                             ...profile,
+                            displayName: profile.display_name || profile.displayName,
                             pfpType: profile.pfp_type || profile.pfpType,
-                            customPfp: profile.custom_pfp || profile.customPfp,
+                            customPfp: profile.avatar_url || profile.customPfp,
                             pfpLetterBg: profile.pfp_letter_bg || profile.pfpLetterBg,
                             pfpLetterChar: profile.pfp_letter_char || profile.pfpLetterChar,
                             mibiConfig: profile.mibi_config || profile.mibiConfig
@@ -248,6 +249,8 @@
                     const mapping = {
                         pfpType: 'pfp_type',
                         customPfp: 'avatar_url',
+                        photoURL: 'avatar_url',
+                        displayName: 'display_name',
                         pfpLetterBg: 'pfp_letter_bg',
                         pfpLetterChar: 'pfp_letter_char',
                         letterAvatarText: 'pfp_letter_char',

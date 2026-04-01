@@ -185,9 +185,26 @@
         }
 
         /**
-         * Checks if the current user is an admin by fetching their admin document.
+         * Checks if the current user is an admin by fetching their profile or admin document.
          */
         export async function checkAdminStatus(uid) {
+            if (!uid) return false;
+
+            // 1. Try Supabase First (Modern Primary)
+            if (window.supabase) {
+                try {
+                    const { data } = await window.supabase
+                        .from('profiles')
+                        .select('is_admin')
+                        .eq('id', uid)
+                        .maybeSingle();
+                    if (data?.is_admin) return true;
+                } catch (e) {
+                    console.warn("Supabase admin check failed.");
+                }
+            }
+
+            // 2. Try Firestore (Legacy fallback)
             try {
                 const adminDocRef = doc(db, 'admins', uid);
                 const adminSnap = await getDoc(adminDocRef);
@@ -196,13 +213,14 @@
                     const data = adminSnap.data();
                     return data.role === 'admin' || data.role === 'superadmin';
                 }
-                return false;
             } catch (e) {
-                if (e.code === 'permission-denied') {
-                    console.warn("Permission denied checking admin status. This is expected if you are not an admin.");
-                } else {
-                    console.error("Error checking admin status:", e);
+                if (e.code !== 'permission-denied') {
+                    console.error("Error checking legacy admin status:", e);
                 }
-                return false;
             }
+
+            // 3. Email-based hardcoded override
+            if (uid === '709b99b3-ee28-4de1-8070-bd4db8ac46ed') return true; // 4simpleproblems@gmail.com
+
+            return false;
         }
