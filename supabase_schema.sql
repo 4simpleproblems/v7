@@ -247,3 +247,63 @@ BEGIN
   DELETE FROM auth.users WHERE id = auth.uid();
 END;
 $$;
+
+-- 10. AUTOMATIC PROFILE CREATION TRIGGER
+-- This function runs every time a user signs up or logs in via OAuth
+-- It extracts metadata like 'picture' or 'avatar_url' and ensures the profile exists
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  username_val TEXT;
+  display_name_val TEXT;
+  avatar_url_val TEXT;
+BEGIN
+  -- Extract values from raw_user_meta_data (Supabase standard)
+  display_name_val := COALESCE(
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'name',
+    split_part(new.email, '@', 1)
+  );
+  
+  avatar_url_val := COALESCE(
+    new.raw_user_meta_data->>'picture',
+    new.raw_user_meta_data->>'avatar_url'
+  );
+
+  username_val := COALESCE(
+    new.raw_user_meta_data->>'username',
+    split_part(new.email, '@', 1)
+  );
+
+  -- UPSERT into profiles table
+  INSERT INTO public.profiles (id, email, username, display_name, avatar_url, auth_method)
+  VALUES (
+    new.id,
+    new.email,
+    username_val,
+    display_name_val,
+    avatar_url_val,
+    new.raw_app_meta_data->>'provider'
+  )
+  ON CONFLICT (id) DO UPDATE
+  SET 
+    email = EXCLUDED.email,
+    -- Only update avatar if it was missing or if they are using Google/Discord
+    avatar_url = COALESCE(EXCLUDED.avatar_url, public.profiles.avatar_url),
+    display_name = COALESCE(EXCLUDED.display_name, public.profiles.display_name),
+    auth_method = EXCLUDED.auth_method,
+    updated_at = NOW();
+
+  RETURN new;
+END;
+$$;
+
+-- Trigger on auth.users
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT OR UPDATE ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
