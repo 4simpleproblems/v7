@@ -393,11 +393,7 @@
                             </div>
                             <h1 id="display-name" class="text-3xl font-light tracking-tight mb-1" style="color: var(--text-main);">--</h1>
                             <p id="username" class="font-mono text-sm" style="color: var(--text-muted); opacity: 0.5;">@--</p>
-                            <div id="activity-label" class="hidden mt-3 text-[10px] font-bold uppercase tracking-widest" style="color: var(--accent-color);">
-                                On: <span id="current-activity-text" style="color: var(--text-main);"></span>
                             </div>
-                        </div>
-
                         <!-- Edit profile (own) -->
                         <div id="edit-profile-btn-container" class="hidden mt-5 w-full">
                             <button id="open-edit-modal-btn" class="btn-toolbar-style w-full py-2.5 text-[10px] font-bold uppercase tracking-widest">
@@ -553,8 +549,6 @@
         const followingCountEl      = document.getElementById('following-count');
         const descriptionEl         = document.getElementById('description');
         const statusIndicator       = document.getElementById('status-indicator');
-        const activityLabel         = document.getElementById('activity-label');
-        const activityText          = document.getElementById('current-activity-text');
         const dailyphotoContainer   = document.getElementById('dailyphoto-container');
         const followActions         = document.getElementById('follow-actions');
         const followBtn             = document.getElementById('follow-btn');
@@ -844,8 +838,7 @@
                             followerCount: profile.follower_count || 0,
                             followingCount: profile.following_count || 0,
                             description: profile.description || '',
-                            isOnline: profile.is_online,
-                            currentActivity: profile.current_activity
+                            isOnline: profile.is_online
                         };
                     }
                 } catch (e) {
@@ -904,13 +897,20 @@
             hideLoading();
         }
 
+        let profileChannel = null;
+
         function setupMainProfileSnapshot() {
             loadProfileData();
 
             if (window.supabase) {
-                const channel = supabase.channel(`profile-view-${profileOwnerId}`);
+                // Remove old channel if it exists
+                if (profileChannel) {
+                    supabase.removeChannel(profileChannel);
+                }
                 
-                channel.on('postgres_changes', { 
+                profileChannel = supabase.channel(`profile-view-${profileOwnerId}`);
+                
+                profileChannel.on('postgres_changes', { 
                     event: 'UPDATE', 
                     schema: 'public', 
                     table: 'profiles', 
@@ -927,14 +927,13 @@
                             followerCount: profile.follower_count || 0,
                             followingCount: profile.following_count || 0,
                             description: profile.description || '',
-                            isOnline: profile.is_online,
-                            currentActivity: profile.current_activity
+                            isOnline: profile.is_online
                         };
                         renderProfileUI(mapped);
                     }
                 });
 
-                channel.subscribe();
+                profileChannel.subscribe();
             }
         }
 
@@ -943,19 +942,13 @@
         // ------------------------------------------------------------------
         function updateStatusUI(data) {
             if (!data) return;
-            if (data.isOnline && (isOwnProfile || isMutual)) {
+            const online = data.isOnline || data.is_online;
+            if (online) {
                 statusIndicator.className = 'absolute bottom-1 right-1 w-5 h-5 border-4 rounded-full status-online';
                 statusIndicator.style.borderColor = 'var(--bg-card)';
-                if (data.currentActivity) {
-                    activityLabel.classList.remove('hidden');
-                    activityText.textContent = data.currentActivity;
-                } else {
-                    activityLabel.classList.add('hidden');
-                }
             } else {
                 statusIndicator.className = 'absolute bottom-1 right-1 w-5 h-5 border-4 rounded-full status-offline';
                 statusIndicator.style.borderColor = 'var(--bg-card)';
-                activityLabel.classList.add('hidden');
             }
         }
 

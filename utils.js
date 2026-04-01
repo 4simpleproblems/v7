@@ -120,19 +120,25 @@
                 innerHTML = `<div class="${innerClasses} flex items-center justify-center font-normal" style="background:${bg}; color: ${tC}; font-size: ${fontSize}px; line-height: 1;">${letter}</div>`;
             } else {
                 // 2. Default Case (user, google, or undefined) -> Use photoURL if available
-                let gP = userData?.photoURL;
+                let gP = userData?.photoURL || userData?.avatar_url;
+
+                // Check Supabase metadata if provided directly in userData
+                if (!gP && userData?.user_metadata?.avatar_url) {
+                    gP = userData.user_metadata.avatar_url;
+                }
+                if (!gP && userData?.raw_user_meta_data?.avatar_url) {
+                    gP = userData.raw_user_meta_data.avatar_url;
+                }
 
                 // Fallback to authUser photo if viewing own profile and userData is partial
                 if (!gP && authUser && (userData?.uid === authUser.uid || userData?.id === authUser.uid || userData?.id === authUser.id)) {
-                    // Only use authUser photo if we are definitely rendering the current user
-                    
-                    // Try Firebase providerData first
-                    const googleProvider = authUser?.providerData?.find(p => p.providerId === 'google.com');
-                    gP = googleProvider ? googleProvider.photoURL : authUser.photoURL;
+                    // Try Supabase user_metadata/raw_user_meta_data first
+                    gP = authUser?.user_metadata?.avatar_url || authUser?.raw_user_meta_data?.avatar_url;
 
-                    // Try Supabase user_metadata if still no photo
-                    if (!gP && authUser?.user_metadata?.avatar_url) {
-                        gP = authUser.user_metadata.avatar_url;
+                    // Try Firebase providerData next
+                    if (!gP) {
+                        const googleProvider = authUser?.providerData?.find(p => p.providerId === 'google.com');
+                        gP = googleProvider ? googleProvider.photoURL : authUser.photoURL;
                     }
                 }
 

@@ -609,8 +609,8 @@ let db;
                 avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 14px;">${initial}</div>`;
             } else {
                 const googleProvider = user?.providerData?.find(p => p.providerId === 'google.com');
-                const googlePhoto = googleProvider ? googleProvider.photoURL : null;
-                const displayPhoto = googlePhoto || user.photoURL || userData?.customPfp;
+                const googlePhoto = googleProvider ? googleProvider.photoURL : (user.photoURL || userData?.avatar_url || (user.user_metadata?.avatar_url));
+                const displayPhoto = googlePhoto || userData?.customPfp;
                 if (displayPhoto) {
                     avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
                 } else {
@@ -625,8 +625,7 @@ let db;
             const following = userData?.followingCount || 0;
             const followersDisplay = followers > 999 ? (followers / 1000).toFixed(1) + 'k' : followers;
             const followingDisplay = following > 999 ? (following / 1000).toFixed(1) + 'k' : following;
-            const isOnline = userData?.isOnline || false;
-            const currentActivity = userData?.currentActivity || null;
+            const isOnline = userData?.isOnline || (userData?.is_online) || false;
 
             const userTagHtml = (userData?.userTag) 
                 ? `<div class="text-xs font-italic" style="color: ${userData.userTag.color}; font-style: italic; margin-top: 2px;">${userData.userTag.text}</div>`
@@ -635,7 +634,7 @@ let db;
             const statusHtml = isOnline 
                 ? `<div class="flex items-center gap-1.5 mt-1 overflow-hidden">
                      <span class="w-2 h-2 rounded-full bg-[var(--accent-color)] animate-pulse shadow-[0_0_8px_var(--accent-glow)] flex-shrink-0"></span>
-                     <span class="text-[10px] text-[var(--accent-color)] font-medium uppercase tracking-wider truncate">${currentActivity ? `On: ${currentActivity}` : 'Online'}</span>
+                     <span class="text-[10px] text-[var(--accent-color)] font-medium uppercase tracking-wider truncate">Online</span>
                    </div>`
                 : `<div class="flex items-center gap-1.5 mt-1 overflow-hidden">
                      <span class="w-2 h-2 rounded-full bg-gray-600 flex-shrink-0"></span>
