@@ -402,11 +402,18 @@
             <div class="p-10 flex flex-col items-center min-h-full">
                 
                 <!-- Options menu -->
-                <div class="absolute top-8 right-8 flex gap-2">
+                <div class="absolute top-20 right-8 flex items-center gap-2">
+                    <!-- School Info (Top Compact Version - Hidden by default) -->
+                    <div id="school-info-top" class="hidden flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 max-w-[140px]">
+                        <i class="fas fa-school text-[10px] opacity-40"></i>
+                        <p id="school-name-top" class="text-[9px] font-bold uppercase tracking-widest truncate" style="color: var(--text-muted);"></p>
+                    </div>
+
                     <div class="relative">
                         <button id="profile-options-btn" class="btn-icon w-10 h-10">
                             <i class="fas fa-ellipsis-vertical text-sm"></i>
                         </button>
+
                         <div id="profile-options-menu" class="hidden absolute top-full right-0 mt-2 w-48 feature-card shadow-xl z-50 p-2 overflow-hidden">
                             <button id="btn-share-profile" class="w-full text-left p-3 hover:bg-white/5 rounded-xl transition flex items-center gap-3 text-sm" style="color: var(--text-muted);">
                                 <i class="fas fa-share-nodes w-4" style="color: var(--accent-color);"></i> Share Profile
@@ -936,20 +943,47 @@
             avatarPreview.innerHTML = getAvatarHTML(data, 'w-full h-full', false, firebaseAuthUser);
             displayNameEl.textContent = data.displayName || data.display_name || 'Anonymous';
             usernameEl.textContent = `@${data.username}`;
-            descriptionEl.textContent = data.description || '';
-            followersCountEl.textContent = data.followerCount || data.follower_count || 0;
-            followingCountEl.textContent = data.followingCount || data.following_count || 0;
+            
+            const bioText = data.description || '';
+            descriptionEl.textContent = bioText;
 
-            const schoolInfo = document.getElementById('school-info-container');
-            const schoolName = document.getElementById('school-name-display');
-            if (schoolInfo && schoolName) {
+            // Privacy: School and Following list restricted to mutuals (if not own profile)
+            const canSeePrivateInfo = isOwnProfile || isMutual;
+
+            const schoolInfoOriginal = document.getElementById('school-info-container');
+            const schoolNameOriginal = document.getElementById('school-name-display');
+            const schoolInfoTop = document.getElementById('school-info-top');
+            const schoolNameTop = document.getElementById('school-name-top');
+
+            // Reset visibilities
+            schoolInfoOriginal.classList.add('hidden');
+            schoolInfoTop.classList.add('hidden');
+
+            if (canSeePrivateInfo) {
                 const sName = data.school_name || data.schoolName;
                 if (sName) {
-                    schoolName.textContent = sName;
-                    schoolInfo.classList.remove('hidden');
-                } else {
-                    schoolInfo.classList.add('hidden');
+                    if (bioText) {
+                        // Move school to top if bio exists
+                        schoolNameTop.textContent = sName;
+                        schoolInfoTop.classList.remove('hidden');
+                    } else {
+                        // Keep school in original slot if no bio
+                        schoolNameOriginal.textContent = sName;
+                        schoolInfoOriginal.classList.remove('hidden');
+                    }
                 }
+            }
+
+            followersCountEl.textContent = data.followerCount || data.follower_count || 0;
+            
+            if (canSeePrivateInfo) {
+                followingCountEl.textContent = data.followingCount || data.following_count || 0;
+                btnShowFollowing.style.opacity = '1';
+                btnShowFollowing.style.cursor = 'pointer';
+            } else {
+                followingCountEl.textContent = '--';
+                btnShowFollowing.style.opacity = '0.5';
+                btnShowFollowing.style.cursor = 'not-allowed';
             }
 
             updateStatusUI(data);

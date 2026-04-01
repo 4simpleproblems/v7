@@ -252,6 +252,7 @@
                         customPfp: 'avatar_url',
                         photoURL: 'avatar_url',
                         displayName: 'display_name',
+                        description: 'description',
                         pfpLetterBg: 'pfp_letter_bg',
                         pfpLetterChar: 'pfp_letter_char',
                         letterAvatarText: 'pfp_letter_char',

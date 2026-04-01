@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     username TEXT UNIQUE,
     display_name TEXT,
+    description TEXT,
     avatar_url TEXT,
     email TEXT,
     auth_method TEXT,
@@ -39,6 +40,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 -- REPAIR / MIGRATION:
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS auth_method TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS pfp_type TEXT DEFAULT 'letter';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS pfp_letter_bg TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS pfp_letter_char TEXT;
