@@ -684,7 +684,7 @@ let db;
                         ${isOnline ? '<span class="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[var(--accent-color)] border-2 border-black rounded-full shadow-[0_0_5px_var(--accent-glow)]"></span>' : ''}
                     </button>
                     <div id="profile-menu-container" class="auth-menu-container closed">
-                        <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center gap-3 pb-2 cursor-pointer hover:bg-white/5 transition rounded-2xl p-1" onclick="window.location.href='/logged-in/@${username}'">
+                        <div class="border border-gray-700/50 mb-2 w-full min-w-0 flex items-center gap-3 cursor-pointer hover:bg-white/5 transition rounded-2xl p-2" onclick="window.location.href='/logged-in/@${username}'">
                             <div class="w-10 h-10 flex-shrink-0 relative" id="auth-menu-avatar-container">
                                 ${avatarHtml}
                             </div>

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>4SP - DAILYPHOTO (v6.7.1)</title>
     <meta name="description" content="Share your day with friends through daily photos.">
-    <base href="/">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +12,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/injector.js"></script>
-
     <style>
         :root {
             --bg-page: var(--bg-primary, #000000);
@@ -28,46 +26,27 @@
             --btn-text: var(--button-text, #4f46e5);
         }
 
-        * { box-sizing: border-box; }
-
         body { 
             font-family: 'Geist', sans-serif; 
+            background-color: var(--bg-page); 
+            color: var(--text-muted); 
+            font-weight: 300; 
+            overflow: hidden; 
+            height: 100vh;
+            padding-top: 64px;
+        }
+        
+        h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-widest {
+            font-weight: 400 !important; 
             color: var(--text-main);
-            background-color: var(--bg-page);
-            font-weight: 300;
-            overflow: hidden;
         }
 
-        /* Subtle dot grid */
-        .grid-bg {
-            background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
-            background-size: 24px 24px;
-        }
-
-        #dynamic-background {
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%);
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .feature-card {
-            border-radius: 2rem;
-            border: 1px solid var(--border-main);
-            background: var(--bg-card);
-            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
-        }
-
-        /* ------------------------------------------------------------------ */
-        /* BUTTONS                                                             */
-        /* ------------------------------------------------------------------ */
         .btn-toolbar-style {
             background: var(--bg-card);
             border: 1px solid var(--border-main);
-            border-radius: 16px;
+            border-radius: 14px; 
             color: var(--text-muted);
-            padding: 0.6rem 1.25rem;
+            padding: 0.5rem 1rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
@@ -75,32 +54,76 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            font-size: 0.85rem;
-            outline: 1px solid transparent;
         }
         .btn-toolbar-style:hover {
-            border-color: var(--accent-color);
+            border-color: var(--text-main);
             color: var(--text-main);
-            background: var(--btn-bg);
-            outline: 1px solid var(--accent-glow);
         }
-        .btn-toolbar-style.active {
+        
+        .btn-toolbar-style.active, .btn-primary-override {
             background-color: var(--btn-bg) !important;
             border: 1px solid var(--accent-color) !important;
             color: var(--accent-color) !important;
-            outline: 1px solid var(--accent-glow);
         }
-        .btn-primary-override {
-            background-color: var(--btn-bg) !important;
-            border: 1px solid var(--accent-color) !important;
-            color: var(--accent-color) !important;
-            outline: 1px solid var(--accent-glow);
+
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem; 
+            height: 2.5rem; 
+            border-radius: 14px; 
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-main);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .btn-primary-override:hover {
-            background-color: var(--accent-color) !important;
-            color: #fff !important;
-            transform: scale(1.02);
-            outline: 1px solid rgba(255,255,255,0.2);
+        .btn-icon:hover {
+            border-color: var(--text-main);
+            color: var(--text-main);
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-areas: "sidebar main";
+            grid-template-columns: 350px 1fr;
+            height: calc(100vh - 64px);
+            width: 100%;
+            background: var(--bg-page);
+        }
+
+        .sidebar {
+            grid-area: sidebar;
+            background-color: var(--bg-page);
+            border-right: 1px solid var(--border-main);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-main);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .main-content {
+            grid-area: main;
+            background-color: var(--bg-page);
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .content-scroll {
+            padding: 2.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         /* Nav Items */
@@ -108,39 +131,37 @@
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding: 1rem 1.25rem;
+            padding: 0.875rem 1.25rem;
             border-radius: 16px;
             color: var(--text-muted);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.5rem;
             cursor: pointer;
             border: 1px solid transparent;
-            width: 100%;
         }
         .sidebar-nav-item:hover {
-            background-color: rgba(255,255,255,0.05);
+            background-color: var(--bg-card);
             color: var(--text-main);
+            border-color: var(--border-main);
         }
         .sidebar-nav-item.active {
             background-color: var(--btn-bg);
             color: var(--accent-color);
-            border-color: var(--accent-glow);
+            border-color: var(--accent-color);
             font-weight: 600;
         }
 
-        /* ------------------------------------------------------------------ */
-        /* PHOTO GRID                                                          */
-        /* ------------------------------------------------------------------ */
+        /* Photo Grid */
         .photo-feed-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 1.5rem;
+            gap: 1.25rem;
         }
 
         .photo-thumbnail {
             position: relative;
             aspect-ratio: 1 / 1;
-            border-radius: 1.5rem;
+            border-radius: 24px;
             overflow: hidden;
             background-color: var(--bg-card);
             border: 1px solid var(--border-main);
@@ -148,42 +169,77 @@
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .photo-thumbnail:hover {
-            transform: scale(1.02) translateY(-4px);
+            transform: translateY(-8px) scale(1.02);
             border-color: var(--accent-color);
-            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 40px -15px var(--accent-glow);
+            z-index: 10;
         }
         .photo-thumbnail img {
-            width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.5s ease;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
         }
-        .photo-thumbnail:hover img { transform: scale(1.1); }
+        .photo-thumbnail:hover img {
+            transform: scale(1.1);
+        }
 
         .overlay-grad {
-            position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%);
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%, rgba(0,0,0,0.4) 100%);
             opacity: 0.8;
         }
 
         .title-overlay {
-            position: absolute; bottom: 1rem; left: 1rem; right: 1rem;
-            color: white; font-size: 0.75rem; font-weight: 600;
-            z-index: 5;
+            position: absolute;
+            bottom: 1.5rem;
+            left: 1.5rem;
+            right: 1.5rem;
+            color: white;
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* ------------------------------------------------------------------ */
-        /* MODALS                                                              */
-        /* ------------------------------------------------------------------ */
-        .modal-backdrop {
-            position: fixed; inset: 0;
-            background-color: rgba(0,0,0,0.9);
+        .mutual-badge {
+            position: absolute;
+            top: 1.25rem;
+            left: 1.25rem;
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(12px);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 100000;
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.3s ease;
-            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            z-index: 20;
         }
-        .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+
+        /* Modal Styles */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.85);
+            backdrop-filter: blur(16px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .modal-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
 
         .modal-container {
             background-color: var(--bg-card);
@@ -198,21 +254,30 @@
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
         }
-        .modal-backdrop.open .modal-container { transform: scale(1); }
+        .modal-backdrop.open .modal-container {
+            transform: scale(1);
+        }
 
         #photo-display-area {
             flex: 1.4;
             background-color: #000;
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             position: relative;
             border-right: 1px solid var(--border-main);
         }
-        .photo-modal-img { width: 100%; height: 100%; object-fit: contain; }
+        .photo-modal-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
 
         #photo-info-panel {
             flex: 1;
             padding: 2rem;
-            display: flex; flex-direction: column;
+            display: flex;
+            flex-direction: column;
             background-color: var(--bg-card);
             overflow-y: auto;
         }
@@ -228,137 +293,256 @@
         }
 
         .modal-close-btn {
-            position: absolute; top: 1.5rem; right: 1.5rem;
-            width: 3rem; height: 3rem;
-            background: rgba(255,255,255,0.05);
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.5);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
             color: white;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.2s; z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.2s;
         }
-        .modal-close-btn:hover { background: rgba(255,255,255,0.15); transform: rotate(90deg); }
+        .modal-close-btn:hover {
+            background: rgba(255,255,255,0.1);
+            transform: rotate(90deg);
+        }
 
-        .custom-scroll::-webkit-scrollbar { width: 0; }
+        /* Generic List Items */
+        .list-item-themed {
+            padding: 1rem;
+            border-radius: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+        }
+        .list-item-themed:hover {
+            border-color: var(--accent-color);
+            background: var(--btn-bg);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
+
+        @media (max-width: 900px) {
+            .app-container { grid-template-areas: "main"; grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .modal-container { flex-direction: column; max-height: 95vh; }
+            #photo-info-panel { border-left: none; border-top: 1px solid var(--border-main); }
+        }
     </style>
 </head>
-
-<body class="grid-bg min-h-screen relative">
-    <div id="dynamic-background"></div>
-    <div id="navbar-container"></div>
-
-    <main id="daily-feed-container" class="invisible flex min-h-screen">
-        
-        <!-- SIDEBAR (Sticky, Full Height) -->
-        <aside class="w-[380px] shrink-0 border-r border-[var(--border-main)] bg-[var(--bg-card)] sticky top-0 h-screen overflow-y-auto custom-scroll">
-            <div class="p-10 pt-12 flex flex-col items-center min-h-full">
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold tracking-tight">Your Activity</h2>
+                    <div id="school-indicator-sidebar" class="hidden px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                        <span id="sidebar-school-name">School</span>
+                    </div>
+                </div>
                 
-                <div class="w-full flex justify-between items-center mb-12 shrink-0">
-                    <div class="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10">
-                        <i class="fas fa-camera-retro text-xs text-indigo-400"></i>
-                        <span class="text-[10px] font-black uppercase tracking-[0.2em]">Dailyphoto</span>
+                <nav>
+                    <div id="sidebar-nav-posts" class="sidebar-nav-item active">
+                        <i class="fas fa-camera-retro"></i>
+                        <span>My Moments</span>
+                    </div>
+                    <div id="sidebar-nav-friends" class="sidebar-nav-item">
+                        <i class="fas fa-user-friends"></i>
+                        <span>Mutual Friends</span>
+                    </div>
+                    <div id="sidebar-nav-blocked" class="sidebar-nav-item">
+                        <i class="fas fa-ban text-red-500/50"></i>
+                        <span>Blocked Users</span>
+                    </div>
+                </nav>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- My Posts Section -->
+                <div id="daily-posts-section" class="space-y-4">
+                    <div class="flex items-center justify-between opacity-40 mb-4">
+                        <span class="text-[10px] font-bold uppercase tracking-widest">Today's Slots</span>
+                        <span class="text-[10px] font-mono">0 / 5</span>
+                    </div>
+                    <div id="daily-posts-container" class="space-y-2">
+                        <!-- Filled by JS -->
                     </div>
                 </div>
 
-                <div class="text-center w-full mb-12">
-                    <h1 class="text-5xl font-light tracking-tight mb-2" style="color: var(--text-main);">The Feed</h1>
-                    <p class="text-sm opacity-40 leading-relaxed italic" style="color: var(--text-muted);">A visual timeline of the 4SP network.</p>
-                </div>
-
-                <!-- Feed Navigation -->
-                <div class="w-full flex flex-col gap-1 mb-12">
-                    <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 mb-4 px-2">Navigation</p>
-                    <div id="toggle-global-feed" class="sidebar-nav-item active">
-                        <i class="fas fa-globe"></i> Global Network
+                <!-- Friends Section (Hidden by default) -->
+                <div id="friends-section-wrapper" class="hidden">
+                    <div class="mb-6">
+                        <div class="relative">
+                            <input type="text" id="user-search-input" placeholder="Search users..." class="w-full bg-white/5 border border-[var(--border-main)] rounded-xl py-3 pl-10 pr-4 text-xs outline-none focus:border-[var(--accent-color)] transition-all">
+                            <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 opacity-20 text-[10px]"></i>
+                        </div>
+                        <div id="search-results" class="mt-2 space-y-1 max-h-40 overflow-y-auto"></div>
                     </div>
-                    <div id="toggle-school-feed" class="sidebar-nav-item">
-                        <i class="fas fa-school"></i> My School
-                    </div>
-                </div>
-
-                <!-- My Slots (Dashboard Style) -->
-                <div id="daily-posts-section" class="w-full flex flex-col gap-4 mb-12 pt-8 border-t border-[var(--border-main)]">
-                    <div class="flex justify-between items-center px-2 mb-2">
-                        <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">My Moments</p>
-                        <p class="text-[10px] font-mono text-indigo-400">0 / 5</p>
-                    </div>
-                    <div id="my-posts-slots" class="grid grid-cols-5 gap-2">
-                        <!-- slots -->
+                    
+                    <div id="friends-list-items" class="space-y-1">
+                        <!-- Filled by JS -->
                     </div>
                 </div>
 
-                <!-- Final Action (Post) -->
-                <div class="mt-auto w-full pb-4">
-                    <button id="open-upload-btn" class="btn-toolbar-style btn-primary-override w-full py-4 text-[10px] font-black uppercase tracking-[0.25em]">
-                        <i class="fas fa-plus mr-2"></i> Share New Moment
-                    </button>
+                <!-- Blocked Section (Hidden by default) -->
+                <div id="blocked-section" class="hidden">
+                    <div id="blocked-list-items" class="space-y-1">
+                        <!-- Filled by JS -->
+                    </div>
                 </div>
             </div>
         </aside>
 
-        <!-- MAIN FEED -->
-        <section class="flex-1 min-w-0 p-16 pt-12 overflow-y-auto">
-            <div class="max-w-[1200px] mx-auto">
-                
-                <!-- Feed Header -->
-                <div class="flex justify-between items-end mb-16">
+        <!-- Main Feed Area -->
+        <main class="main-content">
+            <div class="content-scroll">
+                <header class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                     <div>
-                        <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2">Network Broadcast</p>
-                        <h2 id="feed-title" class="text-6xl font-light tracking-tight" style="color: var(--text-main);">Global Moments</h2>
-                        <p id="feed-desc" class="text-lg mt-3" style="color: var(--text-muted); opacity: 0.5;">Recent shares from across all schools.</p>
+                        <h1 class="text-4xl font-bold mb-2 tracking-tight">Daily Photo Feed</h1>
+                        <p id="feed-desc" class="text-sm opacity-40 font-light">Explore moments shared by your school today.</p>
                     </div>
-                </div>
+                    
+                    <div class="flex items-center gap-2 p-1.5 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl shrink-0">
+                        <button id="feed-toggle-school" class="btn-toolbar-style active px-6">School</button>
+                        <button id="feed-toggle-district" class="btn-toolbar-style px-6">District</button>
+                        <div class="w-px h-6 bg-[var(--border-main)] mx-1"></div>
+                        <button id="refresh-feed-btn" class="btn-icon" title="Refresh Feed"><i class="fas fa-sync-alt text-xs"></i></button>
+                    </div>
+                </header>
 
-                <!-- Feed Grid -->
                 <div id="photo-feed" class="photo-feed-grid">
-                    <!-- Loading State -->
-                    <div class="col-span-full py-20 flex flex-col items-center justify-center opacity-20">
-                        <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
-                        <p class="text-xs font-black uppercase tracking-[0.2em]">Synchronizing Feed</p>
-                    </div>
+                    <!-- Photo thumbnails go here -->
                 </div>
             </div>
-        </section>
-    </main>
+        </main>
+    </div>
 
-    <!-- MODAL BACKDROP -->
-    <div id="post-modal" class="modal-backdrop">
-        <div id="post-modal-container" class="modal-container">
-            <!-- Populated by JS -->
+    <!-- Photo View Modal -->
+    <div id="photo-modal" class="modal-backdrop">
+        <div class="modal-container" id="modal-content-container">
+            <!-- Filled by JS -->
         </div>
     </div>
 
-    <!-- UPLOAD MODAL -->
-    <div id="upload-modal" class="modal-backdrop">
+    <!-- Upload Menu Modal -->
+    <div id="upload-menu-modal" class="modal-backdrop">
         <div class="modal-container max-w-md flex-col p-8 items-center text-center">
-            <h3 class="text-2xl font-light tracking-tight mb-2">Share a Moment</h3>
-            <p class="text-xs opacity-50 mb-8 leading-relaxed">Images are public to your school or mutual followers.</p>
-            
-            <div class="w-full space-y-4">
-                <input type="text" id="upload-title" class="modal-input" placeholder="Give it a title...">
-                
-                <div id="upload-dropzone" class="w-full h-48 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-all group">
-                    <i class="fas fa-cloud-arrow-up text-2xl mb-3 opacity-20 group-hover:opacity-100 group-hover:text-indigo-400 transition-all"></i>
-                    <p class="text-[10px] font-bold uppercase tracking-widest opacity-30">Click to upload image</p>
-                    <input type="file" id="upload-file" class="hidden" accept="image/*">
-                </div>
-
-                <div id="upload-preview-container" class="hidden w-full aspect-square rounded-2xl overflow-hidden border border-white/10">
-                    <img id="upload-preview" class="w-full h-full object-cover">
-                </div>
-
-                <button id="submit-upload-btn" class="btn-toolbar-style btn-primary-override w-full py-4 text-[10px] font-black uppercase tracking-[0.25em]">
-                    Post Moment
-                </button>
-                <button onclick="window.closeUpload()" class="w-full text-[10px] font-bold uppercase tracking-widest opacity-30 hover:opacity-100 py-2 transition-opacity">
-                    Cancel
-                </button>
+            <div class="w-20 h-20 bg-indigo-500/10 border border-indigo-500/20 rounded-3xl flex items-center justify-center text-indigo-400 text-3xl mb-6">
+                <i class="fas fa-cloud-upload-alt"></i>
             </div>
+            <h3 class="text-2xl font-bold mb-2">Share a Moment</h3>
+            <p class="text-sm opacity-40 mb-8 font-light leading-relaxed">Photos disappear after 24 hours. Choose a square-ish image for the best view.</p>
+            
+            <input type="file" id="upload-file-input" accept="image/*" class="hidden">
+            <button onclick="document.getElementById('upload-file-input').click()" class="btn-toolbar-style btn-primary-override w-full py-4 mb-3">
+                Select from Device
+            </button>
+            <button id="upload-menu-close-btn" class="w-full py-3 text-xs opacity-30 hover:opacity-100 transition-opacity">Cancel</button>
+        </div>
+    </div>
+
+    <!-- School Selection Modal -->
+    <div id="school-selection-modal" class="modal-backdrop">
+        <div class="modal-container max-w-2xl flex-col p-10 overflow-hidden relative">
+            <h3 class="text-2xl font-bold mb-2">Select Your School</h3>
+            <p class="text-sm opacity-40 mb-8">This determines which feed you see. You can change this twice per month.</p>
+            
+            <div id="state-step" class="flex flex-col h-full overflow-hidden">
+                <div class="relative mb-4">
+                    <input type="text" id="state-search-input" placeholder="Search State..." class="w-full bg-white/5 border border-[var(--border-main)] rounded-xl py-3 pl-10 pr-4 text-sm outline-none focus:border-[var(--accent-color)]">
+                    <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 opacity-20 text-sm"></i>
+                </div>
+                <div class="relative overflow-hidden flex-1">
+                    <div id="state-fade-top" class="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-[var(--bg-card)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                    <div id="state-results" class="space-y-1 overflow-y-auto max-h-[40vh] pr-2 custom-scroll"></div>
+                    <div id="state-fade-bottom" class="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--bg-card)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                </div>
+            </div>
+
+            <div id="school-step" class="hidden flex flex-col h-full overflow-hidden">
+                <div class="relative mb-4">
+                    <input type="text" id="school-search-input" placeholder="Search School Name..." class="w-full bg-white/5 border border-[var(--border-main)] rounded-xl py-3 pl-10 pr-4 text-sm outline-none focus:border-[var(--accent-color)]">
+                    <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 opacity-20 text-sm"></i>
+                </div>
+                <div class="relative overflow-hidden flex-1">
+                    <div id="school-fade-top" class="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-[var(--bg-card)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                    <div id="school-results" class="space-y-1 overflow-y-auto max-h-[40vh] pr-2 custom-scroll"></div>
+                    <div id="school-fade-bottom" class="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--bg-card)] to-transparent z-10 pointer-events-none opacity-0 transition-opacity"></div>
+                </div>
+                <button id="back-to-states" class="mt-6 text-xs text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-widest flex items-center gap-2"><i class="fas fa-arrow-left"></i> Back to States</button>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-[var(--border-main)] flex justify-between items-center">
+                <p id="school-selection-message" class="text-xs text-red-400"></p>
+                <button id="skip-school-btn" class="text-xs opacity-30 hover:opacity-100 transition-opacity font-bold">Skip Selection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Custom Modals -->
+    <div id="custom-alert-modal" class="modal-backdrop">
+        <div class="modal-container max-w-sm flex-col p-8 items-center text-center">
+            <h3 id="custom-alert-title" class="text-xl font-bold mb-2">Notice</h3>
+            <p id="custom-alert-message" class="text-sm opacity-50 mb-8 font-light"></p>
+            <button id="custom-alert-btn" class="btn-toolbar-style btn-primary-override w-full py-3">OK</button>
+        </div>
+    </div>
+
+    <div id="custom-confirm-modal" class="modal-backdrop">
+        <div class="modal-container max-w-sm flex-col p-8 items-center text-center">
+            <h3 id="custom-confirm-title" class="text-xl font-bold mb-2">Confirm</h3>
+            <p id="custom-confirm-message" class="text-sm opacity-50 mb-8 font-light"></p>
+            <div class="flex gap-3 w-full">
+                <button id="custom-confirm-cancel" class="btn-toolbar-style flex-1 py-3">Cancel</button>
+                <button id="custom-confirm-ok" class="btn-toolbar-style btn-primary-override flex-1 py-3">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-prompt-modal" class="modal-backdrop">
+        <div class="modal-container max-w-md flex-col p-8 items-center">
+            <h3 id="custom-prompt-title" class="text-xl font-bold mb-2">Input</h3>
+            <p id="custom-prompt-message" class="text-sm opacity-50 mb-6 font-light text-center"></p>
+            <div id="custom-prompt-preview-container" class="hidden mb-6 w-full aspect-square max-w-[200px] rounded-2xl overflow-hidden border border-[var(--border-main)]">
+                <img id="custom-prompt-preview-img" class="w-full h-full object-cover">
+            </div>
+            <input type="text" id="custom-prompt-input" class="w-full bg-white/5 border border-[var(--border-main)] rounded-xl py-3 px-4 text-sm outline-none focus:border-[var(--accent-color)] mb-8">
+            <div class="flex gap-3 w-full">
+                <button id="custom-prompt-cancel" class="btn-toolbar-style flex-1 py-3">Cancel</button>
+                <button id="custom-prompt-ok" class="btn-toolbar-style btn-primary-override flex-1 py-3">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Announcement Modal -->
+    <div id="announcement-modal" class="modal-backdrop">
+        <div class="modal-container max-w-xl flex-col p-12 items-center text-center">
+            <div class="w-24 h-24 bg-indigo-500/10 border border-indigo-500/20 rounded-[40px] flex items-center justify-center text-indigo-400 text-4xl mb-8">
+                <i class="fas fa-school"></i>
+            </div>
+            <h2 class="text-3xl font-bold mb-4 tracking-tight">Pick Your School</h2>
+            <p class="text-base opacity-50 mb-10 font-light leading-relaxed">To use Daily Photo, you must select your school. This connects you with classmates and lets you see shared moments from your district.</p>
+            <button id="announcement-continue-btn" class="btn-toolbar-style btn-primary-override w-full py-5 text-lg shadow-2xl shadow-indigo-500/20">
+                Pick My School <i class="fas fa-arrow-right ml-2 text-sm opacity-50"></i>
+            </button>
         </div>
     </div>
 
     <script type="module">
-        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
@@ -378,369 +562,930 @@
         let followerUids = [];
         let mutualUids = [];
         let blockedUsers = [];
-        let feedMode = 'global';
+        let feedMode = 'school';
         let isAdmin = false;
+        let unsubModal = () => {};
+        let unsubUser = () => {};
 
-        // Supabase Client
-        const supabase = window.supabase;
-
-        window.__PAGE_KEY = 'dailyphoto';
+        let allStates = [];
+        let currentStateSchools = [];
+        let selectedState = null;
 
         // --- Cursed Text Filter ---
         function containsCursedText(text) {
             if (!text) return false;
             const combiningMarksRegex = /[\u0300-\u036f\u1ab0-\u1aff\u1dc0-\u1dff\u20d0-\u20ff\ufe20-\ufe2f]/g;
-            return combiningMarksRegex.test(text);
+            const matches = text.match(combiningMarksRegex);
+            if (!matches) return false;
+            return matches.length > 15 || matches.length > text.length;
         }
 
-        // --- AUTH ---
+        // --- Custom UI Helpers ---
+        const CustomUI = {
+            alert: (message, title = "Notice") => {
+                return new Promise(resolve => {
+                    const modal = document.getElementById('custom-alert-modal');
+                    document.getElementById('custom-alert-title').textContent = title;
+                    document.getElementById('custom-alert-message').textContent = message;
+                    modal.classList.add('open');
+                    document.getElementById('custom-alert-btn').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve();
+                    };
+                });
+            },
+            confirm: (message, title = "Confirm") => {
+                return new Promise(resolve => {
+                    const modal = document.getElementById('custom-confirm-modal');
+                    document.getElementById('custom-confirm-title').textContent = title;
+                    document.getElementById('custom-confirm-message').textContent = message;
+                    modal.classList.add('open');
+                    document.getElementById('custom-confirm-ok').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve(true);
+                    };
+                    document.getElementById('custom-confirm-cancel').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve(false);
+                    };
+                });
+            },
+            prompt: (message, defaultValue = "", title = "Input", previewSrc = null) => {
+                return new Promise(resolve => {
+                    const modal = document.getElementById('custom-prompt-modal');
+                    const input = document.getElementById('custom-prompt-input');
+                    const previewContainer = document.getElementById('custom-prompt-preview-container');
+                    const previewImg = document.getElementById('custom-prompt-preview-img');
+                    
+                    document.getElementById('custom-prompt-title').textContent = title;
+                    document.getElementById('custom-prompt-message').textContent = message;
+                    input.value = defaultValue;
+                    
+                    if (previewSrc) {
+                        previewImg.src = previewSrc;
+                        previewContainer.classList.remove('hidden');
+                    } else {
+                        previewContainer.classList.add('hidden');
+                    }
+
+                    modal.classList.add('open');
+                    setTimeout(() => input.focus(), 100);
+                    document.getElementById('custom-prompt-ok').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve(input.value);
+                    };
+                    document.getElementById('custom-prompt-cancel').onclick = () => {
+                        modal.classList.remove('open');
+                        resolve(null);
+                    };
+                });
+            }
+        };
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                await initApp();
+                initApp();
             } else {
-                // Try Supabase first if firebase is missing
                 if (window.supabase) {
                     const { data: { session } } = await window.supabase.auth.getSession();
                     if (session) {
                         currentUser = session.user;
-                        await initApp();
+                        initApp();
                         return;
                     }
                 }
-
-                // If no supabase, try anonymous firebase
-                signInAnonymously(auth)
-                    .then(async (cred) => {
-                        currentUser = cred.user;
-                        await initApp();
-                    })
-                    .catch(err => {
-                        console.warn("Firebase Anonymous login restricted:", err.message);
-                        // Force visibility even on failure
-                        document.getElementById('daily-feed-container').classList.remove('invisible');
-                    });
+                signInAnonymously(auth).catch(err => console.warn("Firebase Anonymous login restricted:", err.message));
             }
         });
 
         async function initApp() {
-            try {
-                const uid = (currentUser.uid || currentUser.id);
-                isAdmin = await checkAdminStatus(uid);
-
-                await fetchSocialGraph();
-                await loadUserData();
-                
-                setupSidebarNav();
-                setupUploadLogic();
-            } catch (e) {
-                console.error("Dailyphoto init error:", e);
-            } finally {
-                document.getElementById('daily-feed-container').classList.remove('invisible');
-            }
-        }
-
-        async function loadUserData() {
             const uid = (currentUser.uid || currentUser.id);
-            const { data, error } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
-            if (data) {
-                userData = data;
-                processUserData(data);
-            }
-        }
+            isAdmin = await checkAdminStatus(uid);
 
-        function processUserData(data) {
-            const slotsUsed = (data.daily_slots_used || []).filter(id => id && id !== 'DELETED').length;
-            const slotCounter = document.querySelector('#daily-posts-section .text-indigo-400');
-            if (slotCounter) slotCounter.textContent = `${slotsUsed} / 5`;
+            await fetchSocialGraph();
 
-            renderMyPosts(data.daily_slots_used);
-
-            if (!window._feedLoaded) {
-                window._feedLoaded = true;
-                loadFeed();
-            }
+            setupSidebarNav();
+            setupFeedToggles();
+            setupRefreshButton();
+            listenToUser();
+            setupUserSearch();
+            setupSchoolSelection();
         }
 
         async function fetchSocialGraph() {
             const uid = (currentUser.uid || currentUser.id);
-            try {
-                const [followingRes, followersRes] = await Promise.all([
-                    supabase.from('follows').select('following_id').eq('follower_id', uid),
-                    supabase.from('follows').select('follower_id').eq('following_id', uid)
-                ]);
-
-                followingUids = (followingRes.data || []).map(f => f.following_id);
-                followerUids = (followersRes.data || []).map(f => f.follower_id);
-                mutualUids = followingUids.filter(id => followerUids.includes(id));
-            } catch (e) { console.error("Social graph error:", e); }
+            if (window.supabase) {
+                try {
+                    const [followingRes, followersRes] = await Promise.all([
+                        window.supabase.from('follows').select('following_id').eq('follower_id', uid),
+                        window.supabase.from('follows').select('follower_id').eq('following_id', uid)
+                    ]);
+                    if (!followingRes.error && !followersRes.error) {
+                        followingUids = followingRes.data.map(f => f.following_id);
+                        followerUids = followersRes.data.map(f => f.follower_id);
+                        mutualUids = followingUids.filter(id => followerUids.includes(id));
+                    }
+                } catch (e) { console.warn("Supabase social graph fetch failed:", e); }
+            }
         }
 
-        // --- FEED ---
+        function listenToUser() {
+            const uid = (currentUser.uid || currentUser.id);
+            if (unsubUser) unsubUser();
+
+            const processUserData = async (data) => {
+                if (!data) return;
+                userData = {
+                    ...data,
+                    schoolId: data.schoolId || data.school_name || data.school_id,
+                    schoolName: data.schoolName || data.school_name,
+                    districtId: data.districtId || data.district_id,
+                    schoolSkipped: data.schoolSkipped !== undefined ? data.schoolSkipped : data.school_skipped,
+                    dailySlotsUsed: data.dailySlotsUsed || data.daily_slots_used || []
+                };
+                blockedUsers = data.blocked_users || [];
+                
+                const schoolIndicator = document.getElementById('school-indicator-sidebar');
+                const sidebarSchoolName = document.getElementById('sidebar-school-name');
+                if (userData.schoolName) {
+                    sidebarSchoolName.textContent = userData.schoolName;
+                    schoolIndicator.classList.remove('hidden');
+                } else {
+                    schoolIndicator.classList.add('hidden');
+                }
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const forceChange = urlParams.get('changeSchool') === 'true';
+
+                if ((!userData.schoolId && !userData.schoolSkipped) || forceChange) {
+                    document.getElementById('announcement-modal').classList.add('open');
+                    if (forceChange) window.history.replaceState({}, '', window.location.pathname);
+                }
+
+                const slotsUsed = (userData.dailySlotsUsed || []).filter(id => id && id !== 'DELETED').length;
+                const slotCounter = document.querySelector('#daily-posts-section .text-mono');
+                if (slotCounter) slotCounter.textContent = `${slotsUsed} / 5`;
+
+                renderMyPosts(userData.dailySlotsUsed);
+
+                if (!window._feedLoaded) {
+                    window._feedLoaded = true;
+                    await loadFeed();
+                }
+
+                if (!document.getElementById('friends-section-wrapper').classList.contains('hidden')) renderMutualsList();
+                if (!document.getElementById('blocked-section').classList.contains('hidden')) renderBlockedList();
+            };
+
+            if (window.supabase) {
+                window.supabase.from('profiles').select('*').eq('id', uid).maybeSingle().then(({data}) => {
+                    if (data) processUserData(data);
+                });
+
+                const profileChannel = window.supabase.channel(`public:profiles:id=eq.${uid}`)
+                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` }, payload => {
+                        processUserData(payload.new);
+                    })
+                    .subscribe();
+                
+                unsubUser = () => {
+                    window.supabase.removeChannel(profileChannel);
+                };
+            }
+        }
+
         async function loadFeed() {
-            const feedEl = document.getElementById('photo-feed');
-            feedEl.innerHTML = `
-                <div class="col-span-full py-20 flex flex-col items-center justify-center opacity-20">
-                    <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
-                    <p class="text-xs font-black uppercase tracking-[0.2em]">Synchronizing Feed</p>
-                </div>
-            `;
+            const grid = document.getElementById('photo-feed');
+            const refreshBtn = document.getElementById('refresh-feed-btn');
 
-            let query = supabase.from('daily_photos').select('*').eq('status', 'active').order('created_at', { ascending: false });
+            grid.innerHTML = '<div class="col-span-full py-20 text-center"><i class="fas fa-spinner fa-spin opacity-20 text-3xl"></i></div>';
+            refreshBtn.disabled = true;
+            refreshBtn.querySelector('i').classList.add('fa-spin');
 
-            if (feedMode === 'school' && userData.school_id) {
-                query = query.eq('school_id', userData.school_id);
+            const today = new Date(); today.setHours(0,0,0,0);
+            const todayISO = today.toISOString();
+
+            try {
+                let posts = [];
+                const isNoSchool = !userData.schoolId || userData.schoolSkipped;
+
+                if (window.supabase) {
+                    let queryBuilder = window.supabase.from('daily_photos').select('*').eq('status', 'active').gte('created_at', todayISO);
+                    
+                    if (isNoSchool) {
+                        document.getElementById('feed-toggle-school').textContent = 'Mutuals';
+                        document.getElementById('feed-toggle-district').textContent = 'Public';
+
+                        if (feedMode === 'district' || feedMode === 'public') {
+                            queryBuilder = queryBuilder.is('school_id', null).limit(50);
+                        } else {
+                            const uids = [(currentUser.uid || currentUser.id), ...mutualUids].slice(0, 10);
+                            queryBuilder = queryBuilder.in('creator_uid', uids);
+                        }
+                    } else {
+                        document.getElementById('feed-toggle-school').textContent = 'School';
+                        document.getElementById('feed-toggle-district').textContent = 'District';
+
+                        if (feedMode === 'district') {
+                            queryBuilder = queryBuilder.eq('district_id', userData.districtId).limit(100);
+                        } else {
+                            queryBuilder = queryBuilder.eq('school_id', userData.schoolId).limit(50);
+                        }
+                    }
+
+                    const { data, error } = await queryBuilder;
+                    if (error) throw error;
+                    if (data) {
+                        posts = data.map(p => ({
+                            id: p.id,
+                            data: () => ({
+                                ...p,
+                                creatorUid: p.creator_uid,
+                                creatorUsername: p.creator_username,
+                                imageURL: p.image_url,
+                                createdAt: { toMillis: () => new Date(p.created_at).getTime(), toDate: () => new Date(p.created_at) }
+                            })
+                        }));
+                    }
+                }
+
+                const modeLabel = isNoSchool
+                    ? (feedMode === 'district' ? 'the network' : 'your mutuals')
+                    : (feedMode === 'district' ? 'your district' : 'your school');
+
+                if (posts.length === 0) {
+                    grid.innerHTML = `<p class="text-center col-span-full opacity-40 py-20 text-sm">No moments yet today from ${modeLabel}.</p>`;
+                    return;
+                }
+
+                const sortedDocs = posts
+                    .filter(d => !blockedUsers.includes(d.data().creatorUid))
+                    .sort((a, b) => {
+                        const da = a.data(), db_ = b.data();
+                        const aM = mutualUids.includes(da.creatorUid);
+                        const bM = mutualUids.includes(db_.creatorUid);
+                        if (aM && !bM) return -1;
+                        if (!aM && bM) return 1;
+                        return (db_.createdAt.toMillis() || 0) - (da.createdAt.toMillis() || 0);
+                    });
+
+                const fragment = document.createDocumentFragment();
+                sortedDocs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const isMutual = mutualUids.includes(data.creatorUid);
+
+                    const el = document.createElement('div');
+                    el.className = `photo-thumbnail ${isMutual ? 'is-mutual' : ''}`;
+                    el.setAttribute('data-post-id', docSnap.id);
+
+                    const metaLabel = (feedMode === 'district' && data.schoolId)
+                        ? `<div class="absolute bottom-12 left-3 z-20 text-[8px] font-black uppercase tracking-widest opacity-40 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/5 truncate max-w-[80%]">${data.schoolId}</div>`
+                        : '';
+
+                    el.innerHTML = `
+                        ${isMutual ? `<div class="mutual-badge"><i class="fas fa-heart"></i> Mutual</div>` : ''}
+                        <img src="${data.imageURL || data.imageBase64}" loading="lazy">
+                        <div class="overlay-grad"></div>
+                        <div class="absolute top-3 right-3 flex gap-2">
+                            <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
+                                <i class="fas fa-heart text-red-500"></i> <span class="heart-count">${data.hearts?.length || 0}</span>
+                            </span>
+                            <span class="text-white text-[10px] bg-[var(--accent-glow)] backdrop-blur-md px-2.5 py-1.5 rounded-full border border-[var(--accent-color)] flex items-center gap-1.5 font-bold shadow-2xl">
+                                <i class="fas fa-comment text-indigo-400"></i> <span class="comment-count">${data.comments?.length || 0}</span>
+                            </span>
+                        </div>
+                        ${metaLabel}
+                        <div class="title-overlay">${data.title}</div>
+                    `;
+                    el.onclick = () => window.viewPost(docSnap.id);
+                    fragment.appendChild(el);
+                });
+
+                grid.innerHTML = '';
+                grid.appendChild(fragment);
+
+            } catch (e) {
+                console.error("loadFeed error:", e);
+                grid.innerHTML = '<p class="text-center col-span-full opacity-40 py-20">Error loading feed. Check console.</p>';
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.querySelector('i').classList.remove('fa-spin');
             }
+        }
 
-            const { data: posts, error } = await query.limit(50);
+        function setupRefreshButton() {
+            document.getElementById('refresh-feed-btn').onclick = () => loadFeed();
+        }
 
-            if (error) {
-                feedEl.innerHTML = `<p class="col-span-full text-center opacity-30 italic py-20">Error loading feed.</p>`;
-                return;
-            }
+        window.viewPost = (postId) => {
+            const modal = document.getElementById('photo-modal');
+            const container = document.getElementById('modal-content-container');
+            modal.classList.add('open');
+            container.innerHTML = '<div class="w-full h-full flex items-center justify-center"><i class="fas fa-spinner fa-spin text-2xl"></i></div>';
 
-            feedEl.innerHTML = '';
-            if (posts.length === 0) {
-                feedEl.innerHTML = `<p class="col-span-full text-center opacity-30 italic py-20">No moments found in this network.</p>`;
-                return;
-            }
+            if (unsubModal) unsubModal();
 
-            posts.forEach(post => {
-                const item = document.createElement('div');
-                item.className = 'photo-thumbnail';
-                item.setAttribute('data-post-id', post.id);
-                item.innerHTML = `
-                    <img src="${post.image_url}" loading="lazy">
-                    <div class="overlay-grad"></div>
-                    <div class="title-overlay">
-                        <p class="truncate">@${post.creator_username}</p>
-                        <p class="text-[10px] opacity-60 font-light truncate">${post.title || 'Untitled'}</p>
+            const processPostData = async (data) => {
+                if (!data || data.status === 'deleted') { window.closeModal(); return; }
+                
+                const uid = (currentUser.uid || currentUser.id);
+                const hearts = data.hearts || [];
+                const comments = data.comments || [];
+                const isHearted = hearts.includes(uid);
+                const isOwner = data.creator_uid === uid;
+
+                // If modal is already showing this post, just update counters/comments/etc
+                const existingDisplay = document.getElementById('photo-display-area');
+                if (existingDisplay && container.getAttribute('data-viewing-id') === postId) {
+                    const heartBtn = document.getElementById('modal-heart-btn');
+                    if (heartBtn) {
+                        heartBtn.className = `w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all ${isHearted ? 'text-red-500 bg-red-500/10 border-red-500/20' : 'text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10'}`;
+                        heartBtn.innerHTML = `<i class="${isHearted ? 'fas' : 'far'} fa-heart"></i><span class="ml-2 text-xs font-bold">${hearts.length}</span>`;
+                    }
+                    
+                    const commentsSection = document.getElementById('comments-section');
+                    if (commentsSection) {
+                        commentsSection.innerHTML = comments.map(c => `
+                            <div class="mb-3 text-xs leading-relaxed">
+                                <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
+                                <span class="text-[var(--text-main)] opacity-90">${c.text}</span>
+                            </div>
+                        `).join('') || '<div class="h-full flex items-center justify-center opacity-20 italic text-xs py-10">No comments yet.</div>';
+                    }
+                    return;
+                }
+
+                container.setAttribute('data-viewing-id', postId);
+
+                let authorData = null;
+                try {
+                    const { data: profile } = await window.supabase.from('profiles').select('*').eq('id', data.creator_uid).maybeSingle();
+                    authorData = profile;
+                } catch (e) { console.warn("Error fetching author profile:", e); }
+
+                container.innerHTML = `
+                    <button onclick="window.closeModal()" class="modal-close-btn" title="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+
+                    <div id="photo-display-area" class="bg-[#050505]">
+                        <img src="${data.image_url || data.imageBase64}" class="photo-modal-img rounded-2xl shadow-2xl" onerror="this.src='/assets/placeholder-image.png'">
+                    </div>
+
+                    <div id="photo-info-panel" class="bg-[var(--bg-card)]">
+                        <div class="flex items-center gap-4 mb-6 shrink-0">
+                            <a href="/logged-in/@${data.creator_username}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity shrink-0">
+                                ${authorData ? getAvatarHTML({ ...authorData, displayName: authorData.display_name, pfpType: authorData.pfp_type, customPfp: authorData.avatar_url }, "w-12 h-12", false, currentUser) : `<div class="w-full h-full bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-lg uppercase">${(data.creator_username || '?').charAt(0)}</div>`}
+                            </a>
+                            <div class="min-w-0 flex-1">
+                                <a href="/logged-in/@${data.creator_username}" class="text-sm font-bold text-[var(--text-main)] truncate block hover:text-[var(--accent-color)] transition-colors">@${data.creator_username}</a>
+                                <p class="text-[10px] opacity-50 font-mono uppercase tracking-tighter">${data.created_at ? new Date(data.created_at).toLocaleString() : 'Just now'}</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button id="modal-heart-btn" class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all ${isHearted ? 'text-red-500 bg-red-500/10 border-red-500/20' : 'text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10'}" title="${isHearted ? 'Unlike' : 'Like'}">
+                                    <i class="${isHearted ? 'fas' : 'far'} fa-heart"></i>
+                                    <span class="ml-2 text-xs font-bold">${hearts.length}</span>
+                                </button>
+                                ${(isOwner || isAdmin) ? `
+                                    <button onclick="window.deletePost('${postId}')" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xs opacity-40 hover:opacity-100 hover:text-red-500 transition-all" title="Delete"><i class="fas fa-trash"></i></button>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <div id="comments-section" class="bg-black/20 p-4 rounded-2xl border border-white/5">
+                            ${comments.map(c => `
+                                <div class="mb-3 text-xs leading-relaxed">
+                                    <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
+                                    <span class="text-[var(--text-main)] opacity-90">${c.text}</span>
+                                </div>
+                            `).join('') || '<div class="h-full flex items-center justify-center opacity-20 italic text-xs py-10">No comments yet.</div>'}
+                        </div>
+
+                        <div class="mt-auto pt-4 shrink-0">
+                            <div class="flex gap-2">
+                                <input type="text" id="comment-input" placeholder="Add a comment..." class="flex-1 bg-white/5 border border-[var(--border-main)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent-color)] focus:bg-white/10 transition-all text-[var(--text-main)] placeholder:opacity-30">
+                                <button id="send-comment-btn" class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-color)] text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all shrink-0">
+                                    <i class="fas fa-paper-plane text-[10px]"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 `;
-                item.onclick = () => window.viewPost(post.id);
-                feedEl.appendChild(item);
+
+                const commentsSection = document.getElementById('comments-section');
+                if (commentsSection) commentsSection.scrollTop = commentsSection.scrollHeight;
+
+                const heartBtn = document.getElementById('modal-heart-btn');
+                if (heartBtn) {
+                    heartBtn.onclick = async () => {
+                        try {
+                            const newIsHearted = !isHearted;
+                            let newHearts = [...hearts];
+                            if (newIsHearted) newHearts.push(uid);
+                            else newHearts = newHearts.filter(h => h !== uid);
+                            await window.supabase.from('daily_photos').update({ hearts: newHearts }).eq('id', postId);
+                        } catch (e) { console.error("Error liking post:", e); }
+                    };
+                }
+
+                const commentInput = document.getElementById('comment-input');
+                const commentBtn = document.getElementById('send-comment-btn');
+
+                const handleSendComment = async () => {
+                    const text = commentInput.value.trim();
+                    if (!text) return;
+                    if (containsCursedText(text)) {
+                        await CustomUI.alert("Your comment contains prohibited characters.", "Filter Blocked");
+                        return;
+                    }
+
+                    const isProfane = await checkProfanity(text);
+                    if (isProfane) {
+                        await CustomUI.alert("Your comment contains inappropriate content and cannot be posted.", "Profanity Filter Blocked");
+                        return;
+                    }
+
+                    try {
+                        const { data: myProfile } = await window.supabase.from('profiles').select('username').eq('id', uid).maybeSingle();
+                        const myUsername = myProfile?.username || "Someone";
+                        const newComment = { uid: uid, username: myUsername, text: text, timestamp: new Date().toISOString() };
+                        const newComments = [...comments, newComment];
+                        await window.supabase.from('daily_photos').update({ comments: newComments }).eq('id', postId);
+                        commentInput.value = '';
+                    } catch (e) { console.error("Error adding comment:", e); }
+                };
+
+                if (commentBtn) commentBtn.onclick = handleSendComment;
+                if (commentInput) {
+                    commentInput.onkeydown = (e) => { if (e.key === 'Enter') handleSendComment(); };
+                }
+            };
+
+            window.supabase.from('daily_photos').select('*').eq('id', postId).maybeSingle().then(({data}) => {
+                if (data) processPostData(data);
+            });
+
+            const postChannel = window.supabase.channel(`public:daily_photos:id=eq.${postId}`)
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'daily_photos', filter: `id=eq.${postId}` }, payload => {
+                    processPostData(payload.new);
+                })
+                .subscribe();
+
+            unsubModal = () => {
+                window.supabase.removeChannel(postChannel);
+            };
+        };
+
+        async function renderMyPosts(usedSlots) {
+            const container = document.getElementById('daily-posts-container');
+            const fragment = document.createDocumentFragment();
+
+            const postPromises = (usedSlots || []).map(postId => {
+                if (postId && postId !== 'DELETED') {
+                    return window.supabase.from('daily_photos').select('*').eq('id', postId).maybeSingle();
+                }
+                return Promise.resolve({data: null});
+            });
+
+            const postRes = await Promise.all(postPromises);
+
+            for (let i = 0; i < 5; i++) {
+                const post = postRes[i]?.data;
+                const postId = usedSlots?.[i];
+                const div = document.createElement('div');
+                div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl overflow-hidden flex items-center p-2 gap-3 transition-all hover:border-[var(--accent-color)]';
+                
+                if (postId && postId !== 'DELETED' && post) {
+                    div.innerHTML = `
+                        <div class="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0">
+                            <img src="${post.image_url || post.imageBase64}" class="w-full h-full object-cover" loading="lazy">
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <p class="text-xs font-bold truncate">${post.title}</p>
+                            <p class="text-[10px] opacity-50">${new Date(post.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        <div class="flex gap-1 pr-1">
+                            <button onclick="window.viewPost('${postId}')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5" title="View"><i class="fas fa-eye text-xs"></i></button>
+                            <button onclick="window.deletePost('${postId}', ${i})" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-red-500/50 hover:text-red-500" title="Delete"><i class="fas fa-trash text-xs"></i></button>
+                        </div>
+                    `;
+                } else if (postId && postId !== 'DELETED') {
+                    div.innerHTML = `<span class="text-xs opacity-30 p-3 italic">Post missing...</span><button onclick="window.fixSlot(${i})" class="text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-lg ml-auto mr-2">Fix</button>`;
+                } else {
+                    div.innerHTML = `
+                        <div class="w-12 h-12 rounded-xl border border-dashed border-[var(--border-main)] flex items-center justify-center shrink-0 opacity-20"><i class="fas fa-plus text-xs"></i></div>
+                        <span class="text-xs opacity-30 italic">Empty Slot ${i+1}</span>
+                        <button onclick="window.openUpload(${i})" class="btn-icon w-8 h-8 rounded-lg ml-auto mr-1" title="Post Moment"><i class="fas fa-plus text-xs"></i></button>
+                    `;
+                }
+                fragment.appendChild(div);
+            }
+
+            container.innerHTML = '';
+            container.appendChild(fragment);
+        }
+
+        async function setupSchoolSelection() {
+            try {
+                const res = await fetch('/schools/states.json');
+                allStates = await res.json();
+            } catch (err) { console.error("Failed to load states:", err); }
+
+            document.getElementById('announcement-continue-btn').onclick = () => {
+                document.getElementById('announcement-modal').classList.remove('open');
+                document.getElementById('school-selection-modal').classList.add('open');
+            };
+
+            const stateInput = document.getElementById('state-search-input');
+            const stateResults = document.getElementById('state-results');
+            const schoolInput = document.getElementById('school-search-input');
+            const schoolResults = document.getElementById('school-results');
+
+            stateInput.oninput = () => {
+                const term = stateInput.value.trim().toLowerCase();
+                if (!term) { stateResults.innerHTML = ''; return; }
+                const filtered = allStates.filter(s => s.name.toLowerCase().includes(term) || s.abbr.toLowerCase().includes(term));
+                stateResults.innerHTML = filtered.map(s => `
+                    <div class="list-item-themed flex justify-between items-center group" onclick="window.selectState('${s.abbr}')">
+                        <span class="font-bold">${s.name}</span>
+                        <span class="text-xs opacity-40 group-hover:opacity-100 transition-opacity">${s.abbr}</span>
+                    </div>
+                `).join('');
+                updateScrollFades(stateResults, 'state-fade-top', 'state-fade-bottom');
+            };
+
+            stateResults.onscroll = () => updateScrollFades(stateResults, 'state-fade-top', 'state-fade-bottom');
+            schoolResults.onscroll = () => updateScrollFades(schoolResults, 'school-fade-top', 'school-fade-bottom');
+
+            window.selectState = async (abbr) => {
+                selectedState = allStates.find(s => s.abbr === abbr);
+                stateResults.innerHTML = '<div class="p-8 text-center"><i class="fas fa-spinner fa-spin text-2xl opacity-20"></i></div>';
+                try {
+                    const res = await fetch(`/schools/${abbr.trim()}.json`);
+                    currentStateSchools = await res.json();
+                    currentStateSchools.sort((a, b) => a.name.localeCompare(b.name));
+                    document.getElementById('state-step').classList.add('hidden');
+                    document.getElementById('school-step').classList.remove('hidden');
+                    renderSchools('');
+                } catch (err) { 
+                    console.error("Failed to load schools:", err); 
+                    alert("Failed to load schools for this state.");
+                }
+            };
+
+            schoolInput.oninput = () => renderSchools(schoolInput.value.trim());
+
+            function renderSchools(term) {
+                const search = term.toLowerCase();
+                const filtered = currentStateSchools.filter(s => {
+                    if (!search) return true;
+                    return s.name.toLowerCase().includes(search) || 
+                           (s.district && s.district.toLowerCase().includes(search)) ||
+                           (s.county && s.county.toLowerCase().includes(search));
+                }).slice(0, 100);
+
+                schoolResults.innerHTML = filtered.map(s => `
+                    <div class="list-item-themed" onclick="window.selectSchool('${s.name.replace(/'/g, "\\'")}', '${(s.district || '').replace(/'/g, "\\'")}')">
+                        <div class="font-bold text-sm mb-1">${s.name}</div>
+                        <div class="flex gap-3 text-[10px] opacity-40 uppercase tracking-widest font-bold">
+                            <span>${s.district || 'Independent'}</span>
+                            <span class="text-indigo-500/60">•</span>
+                            <span>${s.level}</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+                if (filtered.length === 0) {
+                    schoolResults.innerHTML = '<p class="text-center py-8 opacity-30 italic text-sm">No schools found matching your search.</p>';
+                }
+                updateScrollFades(schoolResults, 'school-fade-top', 'school-fade-bottom');
+            }
+
+            function updateScrollFades(el, topId, bottomId) {
+                const topFade = document.getElementById(topId);
+                const bottomFade = document.getElementById(bottomId);
+                if (!el || !topFade || !bottomFade) return;
+                const isAtTop = el.scrollTop <= 5;
+                const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 5;
+                const hasScroll = el.scrollHeight > el.clientHeight;
+                topFade.classList.toggle('scroll-fade-active', hasScroll && !isAtTop);
+                bottomFade.classList.toggle('scroll-fade-active', hasScroll && !isAtBottom);
+            }
+
+            window.selectSchool = async (schoolName, districtName) => {
+                if (await CustomUI.confirm(`Confirm selection: ${schoolName}?`)) {
+                    const uid = (currentUser.uid || currentUser.id);
+                    const currentMonth = new Date().getMonth() + 1;
+                    let changes = userData.schoolChangesThisMonth || 0;
+                    if ((userData.lastSchoolChangeMonth || 0) !== currentMonth) changes = 0;
+
+                    const { error } = await window.supabase.from('profiles').update({
+                        school_id: schoolName,
+                        school_name: schoolName,
+                        district_id: districtName || schoolName,
+                        state: selectedState.name,
+                        state_abbr: selectedState.abbr,
+                        school_skipped: false,
+                        school_changes_this_month: changes + 1,
+                        last_school_change_month: currentMonth
+                    }).eq('id', uid);
+
+                    if (error) {
+                        showMessage(document.getElementById('school-selection-message'), 'Failed to update school.', 'error');
+                        return;
+                    }
+
+                    document.getElementById('school-selection-modal').classList.remove('open');
+                    window._feedLoaded = false;
+                    await loadFeed();
+                }
+            };
+
+            document.getElementById('back-to-states').onclick = () => {
+                document.getElementById('school-step').classList.add('hidden');
+                document.getElementById('state-step').classList.remove('hidden');
+            };
+
+            document.getElementById('skip-school-btn').onclick = async () => {
+                if (await CustomUI.confirm("Skip school selection? You'll see moments from other users who also skipped.")) {
+                    const uid = (currentUser.uid || currentUser.id);
+                    await window.supabase.from('profiles').update({ 
+                        school_skipped: true,
+                        school_id: null,
+                        school_name: null,
+                        district_id: null,
+                        state: null,
+                        state_abbr: null
+                    }).eq('id', uid);
+                    document.getElementById('school-selection-modal').classList.remove('open');
+                    window._feedLoaded = false;
+                    await loadFeed();
+                }
+            };
+        }
+
+        window.openUpload = (slotIdx) => {
+            const modal = document.getElementById('upload-menu-modal');
+            const fileInput = document.getElementById('upload-file-input');
+            modal.classList.add('open');
+            fileInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                modal.classList.remove('open');
+                
+                let previewUrl = "";
+                if (file.type === 'image/gif') {
+                    previewUrl = URL.createObjectURL(file);
+                } else {
+                    previewUrl = await compressImage(file, 400);
+                }
+
+                const title = await CustomUI.prompt("Give your moment a title:", "Daily Moment", "Post Moment", previewUrl);
+                if (title === null) {
+                    if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
+                    return;
+                }
+
+                if (containsCursedText(title)) {
+                    await CustomUI.alert("Your title contains prohibited characters.", "Filter Blocked");
+                    if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
+                    return;
+                }
+
+                const isProfane = await checkProfanity(title);
+                if (isProfane) {
+                    await CustomUI.alert("Your title contains inappropriate content and cannot be posted.", "Profanity Filter Blocked");
+                    if (file.type === 'image/gif') URL.revokeObjectURL(previewUrl);
+                    return;
+                }
+                
+                try {
+                    await CustomUI.alert("Processing image, please wait...");
+                    const uid = (currentUser.uid || currentUser.id);
+                    const username = userData.username;
+
+                    let finalImageData = {};
+                    if (file.type === 'image/gif') {
+                        const storageRef = ref(storage, `daily_photos/${uid}/${Date.now()}_${file.name}`);
+                        const snapshot = await uploadBytes(storageRef, file);
+                        const downloadURL = await getDownloadURL(snapshot.ref);
+                        finalImageData = { image_url: downloadURL };
+                        URL.revokeObjectURL(previewUrl);
+                    } else {
+                        const base64Str = await compressImage(file);
+                        finalImageData = { image_url: base64Str }; 
+                    }
+
+                    const { data: post, error: postErr } = await window.supabase.from('daily_photos').insert({
+                        creator_uid: uid,
+                        creator_username: username,
+                        ...finalImageData,
+                        title: title,
+                        school_id: userData.schoolId || null,
+                        district_id: userData.districtId || null,
+                        status: 'active',
+                        hearts: [],
+                        comments: []
+                    }).select().single();
+
+                    if (postErr) throw postErr;
+
+                    const slots = userData.dailySlotsUsed || [];
+                    while (slots.length <= slotIdx) slots.push(null);
+                    slots[slotIdx] = post.id;
+                    await window.supabase.from('profiles').update({ daily_slots_used: slots }).eq('id', uid);
+                    
+                    await CustomUI.alert("Upload complete!");
+                    await loadFeed();
+                } catch (error) {
+                    console.error("Upload error:", error);
+                    await CustomUI.alert("Failed to upload image. Please try again.");
+                }
+            };
+        };
+
+        function compressImage(file, maxWidth = 800) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = event => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > maxWidth) {
+                            height = Math.round((height *= maxWidth / width));
+                            width = maxWidth;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.8));
+                    };
+                    img.onerror = error => reject(error);
+                };
+                reader.onerror = error => reject(error);
             });
         }
 
-        function setupSidebarNav() {
-            const globalBtn = document.getElementById('toggle-global-feed');
-            const schoolBtn = document.getElementById('toggle-school-feed');
-
-            globalBtn.onclick = () => {
-                if (feedMode === 'global') return;
-                feedMode = 'global';
-                globalBtn.classList.add('active');
-                schoolBtn.classList.remove('active');
-                document.getElementById('feed-title').textContent = 'Global Moments';
-                loadFeed();
-            };
-
-            schoolBtn.onclick = () => {
-                if (feedMode === 'school') return;
-                if (!userData.school_id) {
-                    alert("Please set your school in Settings first!");
-                    return;
-                }
-                feedMode = 'school';
-                schoolBtn.classList.add('active');
-                globalBtn.classList.remove('active');
-                document.getElementById('feed-title').textContent = `${userData.school_name || 'School'} Moments`;
-                loadFeed();
-            };
-        }
-
-        // --- UPLOAD ---
-        function setupUploadLogic() {
-            const openBtn = document.getElementById('open-upload-btn');
-            const dropzone = document.getElementById('upload-dropzone');
-            const fileInput = document.getElementById('upload-file');
-            const submitBtn = document.getElementById('submit-upload-btn');
-
-            openBtn.onclick = () => {
-                const slotsUsed = (userData.daily_slots_used || []).filter(id => id && id !== 'DELETED').length;
-                if (slotsUsed >= 5) {
-                    alert("You've shared your 5 moments for today! Come back tomorrow.");
-                    return;
-                }
-                document.getElementById('upload-modal').classList.add('open');
-            };
-
-            window.closeUpload = () => {
-                document.getElementById('upload-modal').classList.remove('open');
-                document.getElementById('upload-title').value = '';
-                document.getElementById('upload-preview-container').classList.add('hidden');
-                dropzone.classList.remove('hidden');
-                fileInput.value = '';
-            };
-
-            dropzone.onclick = () => fileInput.click();
-            fileInput.onchange = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (re) => {
-                    document.getElementById('upload-preview').src = re.target.result;
-                    document.getElementById('upload-preview-container').classList.remove('hidden');
-                    dropzone.classList.add('hidden');
-                };
-                reader.readAsDataURL(file);
-            };
-
-            submitBtn.onclick = async () => {
-                const title = document.getElementById('upload-title').value.trim();
-                const file = fileInput.files[0];
-                if (!file) { alert("Please select an image."); return; }
-
-                if (containsCursedText(title) || await checkProfanity(title)) {
-                    alert("Inappropriate title detected."); return;
-                }
-
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Posting...';
-
-                try {
-                    const uid = (currentUser.uid || currentUser.id);
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${uid}-${Date.now()}.${fileExt}`;
-                    const storageRef = ref(storage, `daily_photos/${uid}/${fileName}`);
-                    
-                    const snapshot = await uploadBytes(storageRef, file);
-                    const downloadUrl = await getDownloadURL(snapshot.ref);
-
-                    const { data: newPost, error } = await supabase.from('daily_photos').insert({
-                        creator_uid: uid,
-                        creator_username: userData.username,
-                        image_url: downloadUrl,
-                        title: title,
-                        school_id: userData.school_id,
-                        district_id: userData.district_id
-                    }).select().single();
-
-                    if (error) throw error;
-
-                    const slots = [...(userData.daily_slots_used || [])];
-                    slots.push(newPost.id);
-                    await supabase.from('profiles').update({ daily_slots_used: slots }).eq('id', uid);
-                    
-                    window.location.reload();
-                } catch (e) {
-                    console.error("Upload error:", e);
-                    alert("Failed to post moment.");
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Post Moment';
-                }
-            };
-        }
-
-        function renderMyPosts(slots = []) {
-            const container = document.getElementById('my-posts-slots');
-            container.innerHTML = '';
-            const activeSlots = slots.filter(s => s && s !== 'DELETED').slice(0, 5);
+        window.deletePost = async (postId, idx) => {
+            if (!(await CustomUI.confirm("Delete this moment? This cannot be undone."))) return;
+            const uid = (currentUser.uid || currentUser.id);
+            const slots = [...(userData.dailySlotsUsed || [])];
+            const slotIdx = idx !== undefined ? idx : slots.indexOf(postId);
             
-            for (let i = 0; i < 5; i++) {
-                const slotId = activeSlots[i];
-                const div = document.createElement('div');
-                div.className = `aspect-square rounded-xl border flex items-center justify-center overflow-hidden transition-all duration-300 ${slotId ? 'border-indigo-500/30' : 'border-dashed border-white/10 opacity-20'}`;
-                
-                if (slotId) {
-                    div.innerHTML = `<i class="fas fa-check text-indigo-400"></i>`;
-                    div.classList.add('cursor-pointer', 'hover:bg-white/5');
-                    div.onclick = () => window.viewPost(slotId);
-                } else {
-                    div.innerHTML = `<i class="fas fa-plus"></i>`;
-                }
-                container.appendChild(div);
+            if (slotIdx > -1) {
+                slots[slotIdx] = 'DELETED';
+                await window.supabase.from('profiles').update({ daily_slots_used: slots }).eq('id', uid);
             }
-        }
+            
+            await window.supabase.from('daily_photos').delete().eq('id', postId);
+            if (idx === undefined) window.closeModal();
+            const el = document.querySelector(`[data-post-id="${postId}"]`);
+            if (el) el.remove();
+        };
 
-        // --- VIEW MODAL ---
-        window.viewPost = async (postId) => {
-            const modal = document.getElementById('post-modal');
-            const container = document.getElementById('post-modal-container');
-            modal.classList.add('open');
-            container.innerHTML = `<div class="w-full h-full flex items-center justify-center opacity-20"><i class="fas fa-spinner fa-spin text-2xl"></i></div>`;
-
-            const { data: post, error } = await supabase.from('daily_photos').select('*').eq('id', postId).maybeSingle();
-            if (error || !post) { window.closeModal(); return; }
-
-            const isHearted = post.hearts.includes((currentUser.uid || currentUser.id));
-            const isOwner = post.creator_uid === (currentUser.uid || currentUser.id);
-
-            container.innerHTML = `
-                <div id="photo-display-area">
-                    <img src="${post.image_url}" class="photo-modal-img">
-                </div>
-                <div id="photo-info-panel">
-                    <div class="flex items-center gap-4 mb-8">
-                        <div class="w-12 h-12 rounded-2xl bg-white/5 overflow-hidden">
-                            <img src="/api/placeholder/100/100" class="w-full h-full object-cover">
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold text-white truncate">@${post.creator_username}</p>
-                            <p class="text-[10px] opacity-40 uppercase tracking-tighter">${new Date(post.created_at).toLocaleString()}</p>
-                        </div>
-                        <button onclick="window.closeModal()" class="btn-icon w-9 h-9"><i class="fas fa-times"></i></button>
-                    </div>
-
-                    <h3 class="text-xl font-light mb-6 text-white">${post.title || 'Moment'}</h3>
-
-                    <div id="comments-section" class="custom-scroll">
-                        ${post.comments.length === 0 ? '<p class="opacity-20 italic text-xs text-center py-10">No comments yet.</p>' : post.comments.map(c => `
-                            <div class="mb-4 text-xs">
-                                <span class="font-bold text-indigo-400 mr-1">@${c.username}</span>
-                                <span class="opacity-80">${c.text}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-
-                    <div class="mt-auto pt-6 flex gap-3">
-                        <button id="heart-btn" class="btn-toolbar-style ${isHearted ? 'active' : ''} flex-1">
-                            <i class="${isHearted ? 'fas' : 'far'} fa-heart"></i> ${post.hearts.length}
-                        </button>
-                        ${isOwner || isAdmin ? `<button id="del-btn" class="btn-toolbar-style text-red-400 border-red-900/20"><i class="fas fa-trash"></i></button>` : ''}
-                    </div>
-                    
-                    <div class="mt-4 flex gap-2">
-                        <input type="text" id="comment-input" class="modal-input flex-1" placeholder="Add a comment...">
-                        <button id="send-comment-btn" class="btn-icon w-11 h-11 btn-primary-override"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('heart-btn').onclick = async () => {
+        window.blockUser = async (targetUid, username) => {
+            if (await CustomUI.confirm(`Block @${username}? You won't see their posts anymore.`)) {
                 const uid = (currentUser.uid || currentUser.id);
-                let newHearts = [...post.hearts];
-                if (isHearted) newHearts = newHearts.filter(id => id !== uid);
-                else newHearts.push(uid);
-                await supabase.from('daily_photos').update({ hearts: newHearts }).eq('id', postId);
-                window.viewPost(postId);
-            };
+                const newBlocked = [...(userData.blocked_users || []), targetUid];
+                await window.supabase.from('profiles').update({ blocked_users: newBlocked }).eq('id', uid);
+                window.closeModal();
+                await loadFeed();
+            }
+        };
 
-            document.getElementById('send-comment-btn').onclick = async () => {
-                const input = document.getElementById('comment-input');
-                const text = input.value.trim();
-                if (!text || await checkProfanity(text)) return;
-                
-                const { data: profile } = await supabase.from('profiles').select('username').eq('id', (currentUser.uid || currentUser.id)).single();
-                const newComments = [...post.comments, { username: profile.username, text, timestamp: new Date().toISOString() }];
-                await supabase.from('daily_photos').update({ comments: newComments }).eq('id', postId);
-                window.viewPost(postId);
-            };
-
-            if (isOwner || isAdmin) {
-                document.getElementById('del-btn').onclick = async () => {
-                    if (!confirm("Delete this moment?")) return;
-                    await supabase.from('daily_photos').delete().eq('id', postId);
-                    window.closeModal();
-                    loadFeed();
-                };
+        window.reportPost = async (postId) => {
+            if (await CustomUI.confirm("Report this post for inappropriate content?")) {
+                console.log("Reported post:", postId);
+                await CustomUI.alert("Thank you. Our moderators will review this post.");
             }
         };
 
         window.closeModal = () => {
-            document.getElementById('post-modal').classList.remove('open');
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
+            if (unsubModal) unsubModal();
+            setTimeout(() => {
+                const container = document.getElementById('modal-content-container');
+                if (container) container.innerHTML = '';
+            }, 300);
         };
 
+        function setupSidebarNav() {
+            const btns = { posts: 'sidebar-nav-posts', friends: 'sidebar-nav-friends', blocked: 'sidebar-nav-blocked' };
+            const sections = { posts: 'daily-posts-section', friends: 'friends-section-wrapper', blocked: 'blocked-section' };
+            
+            Object.keys(btns).forEach(key => {
+                document.getElementById(btns[key]).onclick = () => {
+                    Object.values(btns).forEach(b => document.getElementById(b).classList.remove('active'));
+                    Object.values(sections).forEach(s => document.getElementById(s).classList.add('hidden'));
+                    document.getElementById(btns[key]).classList.add('active');
+                    document.getElementById(sections[key]).classList.remove('hidden');
+                    if (key === 'friends') renderMutualsList();
+                    if (key === 'blocked') renderBlockedList();
+                };
+            });
+        }
+
+        function setupFeedToggles() {
+            document.getElementById('feed-toggle-school').onclick = async () => {
+                feedMode = 'school';
+                document.getElementById('feed-toggle-school').classList.add('active', 'btn-primary-override');
+                document.getElementById('feed-toggle-district').classList.remove('active', 'btn-primary-override');
+                const isNoSchool = !userData.schoolId || userData.schoolSkipped;
+                document.getElementById('feed-desc').textContent = isNoSchool ? 'Moments from mutual friends.' : 'Moments from your school.';
+                await loadFeed();
+            };
+            document.getElementById('feed-toggle-district').onclick = async () => {
+                feedMode = 'district';
+                document.getElementById('feed-toggle-district').classList.add('active', 'btn-primary-override');
+                document.getElementById('feed-toggle-school').classList.remove('active', 'btn-primary-override');
+                const isNoSchool = !userData.schoolId || userData.schoolSkipped;
+                document.getElementById('feed-desc').textContent = isNoSchool ? 'Discover shared moments from across the network.' : 'Moments from across your district.';
+                await loadFeed();
+            };
+        }
+
+        function setupUserSearch() {
+            const input = document.getElementById('user-search-input');
+            const results = document.getElementById('search-results');
+            
+            input.oninput = async (e) => {
+                const term = e.target.value.trim().toLowerCase();
+                if (term.length < 2) { results.innerHTML = ''; return; }
+                const { data } = await window.supabase.from('profiles').select('username, display_name, pfp_type, avatar_url').ilike('username', `%${term}%`).limit(5);
+                results.innerHTML = '';
+                (data || []).forEach(d => {
+                    if (d.id === (currentUser.uid || currentUser.id)) return;
+                    const div = document.createElement('div');
+                    div.className = 'bg-[var(--bg-card)] border border-[var(--border-main)] rounded-xl p-2 flex items-center gap-3 cursor-pointer hover:border-[var(--accent-color)] transition-all';
+                    div.innerHTML = `
+                        <div class="w-8 h-8 rounded-lg overflow-hidden shrink-0">${getAvatarHTML({ ...d, displayName: d.display_name, pfpType: d.pfp_type, customPfp: d.avatar_url }, "w-8 h-8", false, currentUser)}</div>
+                        <span class="text-xs font-bold truncate">@${d.username}</span>
+                    `;
+                    div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
+                    results.appendChild(div);
+                });
+            };
+        }
+
+        async function renderMutualsList() {
+            const list = document.getElementById('friends-list-items');
+            list.innerHTML = '';
+            if (mutualUids.length === 0) {
+                list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No mutual friends yet.</p>';
+                return;
+            }
+            const { data } = await window.supabase.from('profiles').select('*').in('id', mutualUids);
+            (data || []).forEach(d => {
+                const div = document.createElement('div');
+                div.className = 'compact-list-item flex items-center gap-3 cursor-pointer hover:bg-white/5';
+                div.innerHTML = `
+                    <div class="w-6 h-6 rounded-lg overflow-hidden shrink-0">${getAvatarHTML({ ...d, displayName: d.display_name, pfpType: d.pfp_type, customPfp: d.avatar_url }, "w-6 h-6", false, currentUser)}</div>
+                    <span class="text-xs truncate">@${d.username}</span>
+                `;
+                div.onclick = () => window.location.href = `/logged-in/@${d.username}`;
+                list.appendChild(div);
+            });
+        }
+
+        async function renderBlockedList() {
+            const list = document.getElementById('blocked-list-items');
+            list.innerHTML = '';
+            if (blockedUsers.length === 0) { list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No users blocked.</p>'; return; }
+            const { data } = await window.supabase.from('profiles').select('id, username').in('id', blockedUsers);
+            (data || []).forEach(d => {
+                const div = document.createElement('div');
+                div.className = 'compact-list-item flex justify-between items-center';
+                div.innerHTML = `<span class="text-xs opacity-50">@${d.username || 'Unknown'}</span><button onclick="window.unblock('${d.id}')" class="text-[var(--accent-color)] text-[10px] border border-[var(--accent-color)]/20 px-2 py-1 rounded-lg hover:bg-[var(--accent-color)]/10">Unblock</button>`;
+                list.appendChild(div);
+            });
+        }
+
+        window.unblock = async (targetUid) => {
+            const uid = (currentUser.uid || currentUser.id);
+            const newBlocked = (userData.blocked_users || []).filter(id => id !== targetUid);
+            await window.supabase.from('profiles').update({ blocked_users: newBlocked }).eq('id', uid);
+        };
+
+        window.fixSlot = async (idx) => {
+            const uid = (currentUser.uid || currentUser.id);
+            const slots = [...(userData.dailySlotsUsed || [])];
+            slots[idx] = null;
+            await window.supabase.from('profiles').update({ daily_slots_used: slots }).eq('id', uid);
+        };
+
+        function showMessage(el, text, type) {
+            if (!el) return;
+            el.textContent = text;
+            el.className = `text-xs ${type === 'error' ? 'text-red-400' : 'text-green-400'}`;
+        }
+
+        document.getElementById('upload-menu-close-btn').onclick = () => window.closeModal();
     </script>
 </body>
 </html>
