@@ -118,28 +118,29 @@
         /* AVATAR                                                              */
         /* ------------------------------------------------------------------ */
         #avatar-preview {
-            border-radius: 32px;
+            border-radius: 40px;
             overflow: hidden;
             width: 100%;
             height: 100%;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+            border: 1px solid var(--border-faint);
         }
         #avatar-preview img, #avatar-preview div {
-            border-radius: 32px !important;
+            border-radius: 40px !important;
         }
 
         /* ------------------------------------------------------------------ */
         /* STATUS                                                              */
         /* ------------------------------------------------------------------ */
         .status-dot {
-            width: 14px; height: 14px;
+            width: 18px; height: 18px;
             border-radius: 50%;
             display: inline-block;
-            border: 3px solid var(--bg-card);
+            border: 4px solid var(--bg-card);
         }
         .status-online {
             background-color: var(--accent-color);
-            box-shadow: 0 0 12px var(--accent-glow);
+            box-shadow: 0 0 15px var(--accent-glow);
         }
         .status-offline { background-color: #333; }
 
@@ -182,6 +183,46 @@
             border: 1px solid rgba(255,255,255,0.1);
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             z-index: 10;
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* SIDEBAR COMPONENTS                                                  */
+        /* ------------------------------------------------------------------ */
+        .count-pill {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-main);
+            border-radius: 24px;
+            padding: 1.25rem 1.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .count-pill:hover {
+            background: rgba(255,255,255,0.04);
+            border-color: var(--accent-color);
+            transform: translateX(4px);
+        }
+
+        .nav-link-box {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: 16px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .nav-link-box i { width: 1.25rem; text-align: center; font-size: 1rem; }
+        .nav-link-box:hover {
+            background: var(--btn-bg);
+            color: var(--accent-color);
+            border-color: var(--accent-glow);
         }
 
         /* ------------------------------------------------------------------ */
@@ -357,14 +398,14 @@
     <main id="profile-main-content" class="invisible flex min-h-screen">
         
         <!-- SIDEBAR (Sticky, Full Height) -->
-        <aside class="w-[340px] shrink-0 border-r border-[var(--border-main)] bg-[var(--bg-card)] sticky top-0 h-screen overflow-y-auto custom-scroll">
-            <div class="p-8 pt-24 flex flex-col items-center min-h-full">
+        <aside class="w-[380px] shrink-0 border-r border-[var(--border-main)] bg-[var(--bg-card)] sticky top-0 h-screen overflow-y-auto custom-scroll">
+            <div class="p-10 pt-24 flex flex-col items-center min-h-full">
                 
                 <!-- Options menu -->
-                <div class="absolute top-20 right-5 flex gap-2">
+                <div class="absolute top-20 right-8 flex gap-2">
                     <div class="relative">
-                        <button id="profile-options-btn" class="btn-icon w-9 h-9">
-                            <i class="fas fa-ellipsis-vertical text-xs"></i>
+                        <button id="profile-options-btn" class="btn-icon w-10 h-10">
+                            <i class="fas fa-ellipsis-vertical text-sm"></i>
                         </button>
                         <div id="profile-options-menu" class="hidden absolute top-full right-0 mt-2 w-48 feature-card shadow-xl z-50 p-2 overflow-hidden">
                             <button id="btn-share-profile" class="w-full text-left p-3 hover:bg-white/5 rounded-xl transition flex items-center gap-3 text-sm" style="color: var(--text-muted);">
@@ -377,78 +418,93 @@
                     </div>
                 </div>
 
-                <!-- Avatar -->
-                <div id="avatar-container" class="mb-6 relative w-32 h-32">
+                <!-- Avatar Anchor -->
+                <div id="avatar-container" class="mb-8 relative w-48 h-48">
                     <div id="avatar-preview" class="w-full h-full bg-white/5"></div>
-                    <div id="status-indicator" class="absolute bottom-1.5 right-1.5 w-6 h-6 border-4 rounded-full status-offline" style="border-color: var(--bg-card);"></div>
+                    <div id="status-indicator" class="absolute bottom-2 right-2 w-8 h-8 border-[6px] rounded-full status-offline" style="border-color: var(--bg-card);"></div>
                 </div>
 
                 <!-- Name + username -->
-                <div class="text-center w-full mb-2">
-                    <div id="self-indicator" class="hidden mb-3">
-                        <span class="rank-tag" style="color: var(--accent-color); border-color: var(--accent-color); background: var(--btn-bg);">
-                            <i class="fas fa-user text-[8px]"></i> Your Profile
+                <div class="text-center w-full mb-10">
+                    <div id="self-indicator" class="hidden mb-4">
+                        <span class="rank-tag px-4 py-1.5" style="color: var(--accent-color); border-color: var(--accent-color); background: var(--btn-bg); font-size: 0.7rem;">
+                            <i class="fas fa-user text-[10px] mr-1"></i> Your Profile
                         </span>
                     </div>
-                    <h1 id="display-name" class="text-3xl font-light tracking-tight mb-1" style="color: var(--text-main);">--</h1>
-                    <p id="username" class="font-mono text-sm" style="color: var(--text-muted); opacity: 0.5;">@--</p>
+                    <h1 id="display-name" class="text-5xl font-light tracking-tight mb-2" style="color: var(--text-main);">--</h1>
+                    <p id="username" class="text-lg font-mono opacity-40" style="color: var(--text-muted);">@--</p>
                 </div>
 
                 <!-- School Info -->
-                <div id="school-info-container" class="hidden mb-6 flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/5 max-w-full">
-                    <i class="fas fa-school text-[10px] opacity-40"></i>
-                    <p id="school-name-display" class="text-[10px] font-bold uppercase tracking-widest truncate" style="color: var(--text-muted);"></p>
+                <div id="school-info-container" class="hidden mb-10 flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/5 border border-white/5 w-full">
+                    <i class="fas fa-school text-xs opacity-40"></i>
+                    <p id="school-name-display" class="text-xs font-bold uppercase tracking-widest truncate" style="color: var(--text-muted);"></p>
                 </div>
 
-                <!-- Follower / following counts -->
-                <div class="grid grid-cols-2 gap-3 w-full mb-6 py-6 border-y" style="border-color: var(--border-main);">
+                <!-- Stats (Dashboard Style) -->
+                <div class="flex flex-col gap-4 w-full mb-10">
                     <div class="count-pill" id="btn-show-followers">
-                        <p class="text-2xl font-medium" style="color: var(--text-main);" id="followers-count">0</p>
-                        <p class="text-[10px] uppercase tracking-widest font-bold mt-0.5" style="color: var(--text-muted); opacity: 0.5;">Followers</p>
+                        <span class="text-[10px] uppercase tracking-[0.2em] font-black opacity-40" style="color: var(--text-muted);">Followers</span>
+                        <p class="text-3xl font-medium" style="color: var(--text-main);" id="followers-count">0</p>
                     </div>
                     <div class="count-pill" id="btn-show-following">
-                        <p class="text-2xl font-medium" style="color: var(--text-main);" id="following-count">0</p>
-                        <p class="text-[10px] uppercase tracking-widest font-bold mt-0.5" style="color: var(--text-muted); opacity: 0.5;">Following</p>
+                        <span class="text-[10px] uppercase tracking-[0.2em] font-black opacity-40" style="color: var(--text-muted);">Following</span>
+                        <p class="text-3xl font-medium" style="color: var(--text-main);" id="following-count">0</p>
                     </div>
                 </div>
 
-                <!-- Description -->
-                <div class="text-center w-full mb-8">
-                    <p id="description" class="text-sm leading-relaxed italic px-2" style="color: var(--text-muted); opacity: 0.7;"></p>
+                <!-- Social Navigation -->
+                <div class="w-full flex flex-col gap-1 mb-10 border-t border-[var(--border-main)] pt-8">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 mb-4 px-2">Network</p>
+                    <a href="/logged-in/leaderboard.html" class="nav-link-box">
+                        <i class="fa-solid fa-trophy"></i> Global Leaderboard
+                    </a>
+                    <a href="/logged-in/dailyphoto.html" class="nav-link-box">
+                        <i class="fa-solid fa-camera-retro"></i> Social Feed
+                    </a>
+                    <a href="/logged-in/dashboard.html" class="nav-link-box">
+                        <i class="fa-solid fa-house"></i> Dashboard
+                    </a>
                 </div>
 
-                <!-- Actions -->
-                <div id="edit-profile-btn-container" class="hidden w-full space-y-3">
-                    <button id="open-edit-modal-btn" class="btn-toolbar-style btn-primary-override w-full py-3 text-[10px] font-bold uppercase tracking-widest">
-                        <i class="fas fa-pen-to-square text-xs"></i> Edit Profile
-                    </button>
+                <!-- Bio -->
+                <div class="text-center w-full mb-10 px-4">
+                    <p id="description" class="text-sm leading-relaxed italic" style="color: var(--text-muted); opacity: 0.6;"></p>
                 </div>
 
-                <div id="follow-actions" class="hidden w-full pt-4">
-                    <button id="follow-btn" class="btn-toolbar-style btn-primary-override w-full py-3 font-bold">Follow</button>
+                <!-- Final Actions (Pushed to bottom) -->
+                <div class="mt-auto w-full pt-10 border-t border-[var(--border-main)]">
+                    <div id="edit-profile-btn-container" class="hidden w-full">
+                        <button id="open-edit-modal-btn" class="btn-toolbar-style btn-primary-override w-full py-4 text-[10px] font-black uppercase tracking-[0.25em]">
+                            Edit My Profile
+                        </button>
+                    </div>
+                    <div id="follow-actions" class="hidden w-full">
+                        <button id="follow-btn" class="btn-toolbar-style btn-primary-override w-full py-4 text-[10px] font-black uppercase tracking-[0.25em]">Follow User</button>
+                    </div>
                 </div>
             </div>
         </aside>
 
         <!-- MAIN FEED -->
-        <section class="flex-1 min-w-0 p-12 pt-24">
-            <div class="max-w-5xl">
-                <div class="flex justify-between items-center mb-12">
+        <section class="flex-1 min-w-0 p-16">
+            <div class="max-w-[1100px] mx-auto">
+                <div class="flex justify-between items-end mb-16">
                     <div>
-                        <h2 class="text-5xl font-light tracking-tight" style="color: var(--text-main);">Shared Moments</h2>
-                        <p class="text-lg mt-2" style="color: var(--text-muted); opacity: 0.5;">Dailyphoto history and highlights.</p>
+                        <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2">Social Archive</p>
+                        <h2 class="text-6xl font-light tracking-tight" style="color: var(--text-main);">Shared Moments</h2>
+                        <p class="text-lg mt-3" style="color: var(--text-muted); opacity: 0.5;">Dailyphoto history and curated highlights.</p>
                     </div>
-                    <a href="/logged-in/dailyphoto.html" class="btn-toolbar-style text-[10px] font-bold uppercase tracking-widest">
-                        Go to Global Feed <i class="fas fa-arrow-right ml-1"></i>
+                    <a href="/logged-in/dailyphoto.html" class="btn-toolbar-style px-8 py-3 text-[10px] font-black uppercase tracking-widest">
+                        Enter Global Feed <i class="fas fa-arrow-right ml-2"></i>
                     </a>
                 </div>
 
-                <div id="dailyphoto-container" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div id="dailyphoto-container" class="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-8">
                     <!-- skeleton placeholders -->
-                    <div class="photo-grid-item skeleton"></div>
-                    <div class="photo-grid-item skeleton"></div>
-                    <div class="photo-grid-item skeleton"></div>
-                    <div class="photo-grid-item skeleton"></div>
+                    <div class="photo-grid-item skeleton h-[350px]"></div>
+                    <div class="photo-grid-item skeleton h-[350px]"></div>
+                    <div class="photo-grid-item skeleton h-[350px]"></div>
                 </div>
             </div>
         </section>
