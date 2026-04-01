@@ -52,20 +52,43 @@
             }
         }
 
-        export const getLetterAvatarTextColor = (hex) => {
-            if (!hex) return '#FFFFFF';
-            const cleanHex = hex.startsWith('#') ? hex : '#' + hex;
-            const rgb = parseInt(cleanHex.substring(1), 16);
-            const r = (rgb >> 16) & 0xff, g = (rgb >> 8) & 0xff, b = (rgb >> 0) & 0xff;
-            return (0.299 * r + 0.587 * g + 0.114 * b) > 128 ? '#000000' : '#FFFFFF';
+        export const getLetterAvatarTextColor = (colorOrGradient) => {
+            if (!colorOrGradient) return '#FFFFFF';
+            
+            // Extract first hex color if it's a gradient
+            const match = colorOrGradient.match(/#([0-9a-fA-F]{3}){1,2}/);
+            const hex = match ? match[0] : colorOrGradient;
+
+            if (!hex.startsWith('#')) return '#FFFFFF';
+            
+            try {
+                const cleanHex = hex.startsWith('#') ? hex : '#' + hex;
+                let r, g, b;
+                if (cleanHex.length === 4) {
+                    r = parseInt(cleanHex[1] + cleanHex[1], 16);
+                    g = parseInt(cleanHex[2] + cleanHex[2], 16);
+                    b = parseInt(cleanHex[3] + cleanHex[3], 16);
+                } else {
+                    r = parseInt(cleanHex.substring(1, 3), 16);
+                    g = parseInt(cleanHex.substring(3, 5), 16);
+                    b = parseInt(cleanHex.substring(5, 7), 16);
+                }
+                return (0.299 * r + 0.587 * g + 0.114 * b) > 128 ? '#000000' : '#FFFFFF';
+            } catch (e) {
+                return '#FFFFFF';
+            }
         };
 
         /**
          * Returns the HTML for a user's avatar, wrapped in a container.
          */
         export function getAvatarHTML(userData, sizeClass = "w-10 h-10", forceCSS = false, authUser = null, roundedClass = "rounded-xl", scaleClass = "", clipOuterContainer = true) {
-            const pT = userData?.pfpType || 'user';
-            const dN = userData?.username || userData?.displayName || authUser?.displayName || 'User';
+            // Normalize field access (Support both Firestore camelCase and Supabase snake_case)
+            const pT = userData?.pfp_type || userData?.pfpType || 'user';
+            const dN = userData?.display_name || userData?.displayName || userData?.username || authUser?.displayName || 'User';
+            const customPfp = userData?.avatar_url || userData?.customPfp || userData?.photoURL;
+            const letterBg = userData?.pfp_letter_bg || userData?.pfpLetterBg || userData?.letterAvatarColor || '#4f46e5';
+            const letterChar = userData?.pfp_letter_char || userData?.pfpLetterChar || userData?.letterAvatarText || dN;
             
             const sizeMap = { 
                 "w-32 h-32": 128, "w-28 h-28": 112, "w-24 h-24": 96, "w-16 h-16": 64, 
@@ -82,10 +105,10 @@
             const innerClasses = `block min-w-full min-h-full w-full h-full object-cover ${scaleClass}`;
 
             // 1. Try Specific Types First
-            if (pT === 'custom' && userData?.customPfp) {
-                innerHTML = `<img src="${userData.customPfp}" class="${innerClasses}">`;
-            } else if (pT === 'mibi' && (userData?.mibiConfig || userData?.mibiEyes)) {
-                const config = userData.mibiConfig || {
+            if (pT === 'custom' && customPfp) {
+                innerHTML = `<img src="${customPfp}" class="${innerClasses}">`;
+            } else if (pT === 'mibi' && (userData?.mibi_config || userData?.mibiConfig || userData?.mibiEyes)) {
+                const config = userData.mibi_config || userData.mibiConfig || {
                     eyes: userData.mibiEyes,
                     mouths: userData.mibiMouth,
                     hats: userData.mibiHat,
@@ -113,19 +136,18 @@
                     </div>
                 `;
             } else if (pT === 'letter') {
-                const bg = userData?.pfpLetterBg || userData?.letterAvatarColor || '#4f46e5';
-                const letter = (userData?.letterAvatarText || dN).charAt(0).toUpperCase();
+                const letter = letterChar.charAt(0).toUpperCase();
                 const fontSize = px * 0.35;
-                const tC = getLetterAvatarTextColor(bg);
-                innerHTML = `<div class="${innerClasses} flex items-center justify-center font-normal" style="background:${bg}; color: ${tC}; font-size: ${fontSize}px; line-height: 1;">${letter}</div>`;
+                const tC = getLetterAvatarTextColor(letterBg);
+                innerHTML = `<div class="${innerClasses} flex items-center justify-center font-normal" style="background:${letterBg}; color: ${tC}; font-size: ${fontSize}px; line-height: 1;">${letter}</div>`;
             } else {
-                // 2. Default Case (user, google, or undefined) -> Use photoURL if available
-                let gP = userData?.photoURL || userData?.avatar_url;
+                // 2. Default Case (user, google, or undefined) -> Use normalized customPfp (which includes avatar_url/photoURL)
+                let gP = customPfp;
 
-                // Priority 1: Supabase Raw Metadata (based on user JSON provided)
-                const rawMeta = userData?.raw_user_meta_data || authUser?.raw_user_meta_data || userData?.user_metadata || authUser?.user_metadata;
-                if (!gP && rawMeta) {
-                    gP = rawMeta.picture || rawMeta.avatar_url;
+                // Priority 1: Supabase Metadata (from auth user object or profile)
+                const meta = userData?.raw_user_meta_data || authUser?.raw_user_meta_data || userData?.user_metadata || authUser?.user_metadata;
+                if (!gP && meta) {
+                    gP = meta.picture || meta.avatar_url;
                 }
 
                 // Priority 2: Firebase Provider fallback
@@ -134,13 +156,10 @@
                     if (googleProvider) gP = googleProvider.photoURL;
                 }
 
-                // Priority 3: Root photoURL fallback
-                if (!gP && authUser?.photoURL) gP = authUser.photoURL;
-
                 if (gP) {
                     // Ensure high quality Google PFPs
-                    gP = gP.replace(/lh\d+\.googleusercontent\.com/g, 'lh3.googleusercontent.com');
                     if (gP.includes('googleusercontent.com')) {
+                        gP = gP.replace(/lh\d+\.googleusercontent\.com/g, 'lh3.googleusercontent.com');
                         if (gP.includes('=')) {
                             gP = gP.split('=')[0] + '=s500-c';
                         } else if (!gP.includes('=s500-c')) {
@@ -149,13 +168,12 @@
                     }
 
                     // Robust fallback for image errors: use letter avatar instead of icon
-                    const bg = userData?.pfpLetterBg || userData?.letterAvatarColor || '#4f46e5';
-                    const letter = (userData?.letterAvatarText || dN).charAt(0).toUpperCase();
+                    const letter = letterChar.charAt(0).toUpperCase();
                     const fontSizeLetter = px * 0.35;
-                    const tC = getLetterAvatarTextColor(bg);
-                    const fallbackHTML = `<div class='${innerClasses} flex items-center justify-center font-normal' style='background:${bg}; color: ${tC}; font-size: ${fontSizeLetter}px; line-height: 1;'>${letter}</div>`;
+                    const tC = getLetterAvatarTextColor(letterBg);
+                    const fallbackHTML = `<div class='flex items-center justify-center font-normal w-full h-full' style='background:${letterBg}; color: ${tC}; font-size: ${fontSizeLetter}px; line-height: 1;'>${letter}</div>`;
 
-                    innerHTML = `<img src="${gP}" class="${innerClasses}" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML=\`${fallbackHTML}\` ">`;
+                    innerHTML = `<img src="${gP}" class="${innerClasses}" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.parentElement.innerHTML=\`${fallbackHTML}\` ">`;
                 }
 
                 if (!innerHTML) {

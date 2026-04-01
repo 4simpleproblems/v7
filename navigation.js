@@ -561,39 +561,48 @@ let db;
             document.getElementById('auth-menu-container')?.classList.remove('open');
         };
 
-        const getLetterAvatarTextColor = (gradientBg) => {
-            if (!gradientBg) return '#FFFFFF'; 
-            const match = gradientBg.match(/#([0-9a-fA-F]{3}){1,2}/);
-            const firstHexColor = match ? match[0] : null;
-            if (!firstHexColor) return '#FFFFFF'; 
-            const rgb = hexToRgb(firstHexColor);
-            if (!rgb) return '#FFFFFF';
-            const luminance = getLuminance(rgb);
-            if (luminance > 0.5) { 
-                const darkenFactor = 0.5; 
-                const darkerR = Math.floor(rgb.r * darkenFactor);
-                const darkerG = Math.floor(rgb.g * darkenFactor);
-                const darkerB = Math.floor(rgb.b * darkenFactor);
-                return `#${((1 << 24) + (darkerR << 16) + (darkerG << 8) + darkerB).toString(16).slice(1)}`;
-            } else {
-                return '#FFFFFF';
-            }
+        const getLetterAvatarTextColor = (colorOrGradient) => {
+            if (!colorOrGradient) return '#FFFFFF';
+            const match = colorOrGradient.match(/#([0-9a-fA-F]{3}){1,2}/);
+            const hex = match ? match[0] : colorOrGradient;
+            if (!hex.startsWith('#')) return '#FFFFFF';
+            try {
+                const cleanHex = hex.startsWith('#') ? hex : '#' + hex;
+                let r, g, b;
+                if (cleanHex.length === 4) {
+                    r = parseInt(cleanHex[1] + cleanHex[1], 16);
+                    g = parseInt(cleanHex[2] + cleanHex[2], 16);
+                    b = parseInt(cleanHex[3] + cleanHex[3], 16);
+                } else {
+                    r = parseInt(cleanHex.substring(1, 3), 16);
+                    g = parseInt(cleanHex.substring(3, 5), 16);
+                    b = parseInt(cleanHex.substring(5, 7), 16);
+                }
+                return (0.299 * r + 0.587 * g + 0.114 * b) > 128 ? '#000000' : '#FFFFFF';
+            } catch (e) { return '#FFFFFF'; }
         };
 
         const getProfileButtonHtml = (user, userData) => {
             if (!user) return '';
+            
+            // Normalize field access
+            const pT = userData?.pfp_type || userData?.pfpType || 'google';
+            const dN = userData?.display_name || userData?.displayName || user.displayName || userData?.username || "user";
             const username = userData?.username || user.displayName?.toLowerCase().replace(/[^a-z0-9]/g, "") || "user";
-            const displayName = userData?.displayName || user.displayName || username;
-            const pfpType = userData?.pfpType || 'google'; 
+            const customPfp = userData?.avatar_url || userData?.customPfp || userData?.photoURL;
+            const letterBg = userData?.pfp_letter_bg || userData?.pfpLetterBg || DEFAULT_THEME['avatar-gradient'];
+            const letterChar = userData?.pfp_letter_char || userData?.pfpLetterChar || (userData?.letterAvatarText) || dN;
 
             let avatarHtml = '';
-            const initial = (userData?.letterAvatarText || displayName.charAt(0)).toUpperCase();
-            if (pfpType === 'custom' && userData?.customPfp) {
-                avatarHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
-            } else if (pfpType === 'mibi' && userData?.mibiConfig) {
-                const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = userData.mibiConfig;
+            const initial = letterChar.charAt(0).toUpperCase();
+
+            if (pT === 'custom' && customPfp) {
+                avatarHtml = `<img src="${customPfp}" class="w-full h-full object-cover" style="border-radius: 12px;" alt="Profile">`;
+            } else if (pT === 'mibi' && (userData?.mibi_config || userData?.mibiConfig)) {
+                const config = userData.mibi_config || userData.mibiConfig;
+                const { eyes, mouths, hats, bgColor, rotation, size, offsetX, offsetY } = config;
                 avatarHtml = `
-                    <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 14px;">
+                    <div class="w-full h-full relative overflow-hidden" style="background-color: ${bgColor || '#3B82F6'}; border-radius: 12px;">
                          <div class="absolute inset-0 w-full h-full" style="transform: translate(${offsetX || 0}%, ${offsetY || 0}%) rotate(${rotation || 0}deg) scale(${(size || 100) / 100}); transform-origin: center;">
                              <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
                              ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
@@ -602,24 +611,22 @@ let db;
                          </div>
                     </div>
                 `;
-            } else if (pfpType === 'letter') {
-                const bg = userData?.pfpLetterBg || DEFAULT_THEME['avatar-gradient'];
-                const textColor = getLetterAvatarTextColor(bg); 
-                const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
-                avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 14px;">${initial}</div>`;
+            } else if (pT === 'letter') {
+                const textColor = getLetterAvatarTextColor(letterBg); 
+                const fontSizeClass = initial.length >= 3 ? 'text-[10px]' : (initial.length === 2 ? 'text-xs' : 'text-sm'); 
+                avatarHtml = `<div class="initial-avatar w-full h-full font-bold ${fontSizeClass} flex items-center justify-center" style="background: ${letterBg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
             } else {
                 const googleProvider = user?.providerData?.find(p => p.providerId === 'google.com');
                 const rawMeta = user?.raw_user_meta_data || user?.user_metadata || userData?.raw_user_meta_data || userData?.user_metadata;
                 
-                let displayPhoto = rawMeta?.picture || rawMeta?.avatar_url || googleProvider?.photoURL || user.photoURL || userData?.customPfp || (userData?.avatar_url);
+                let displayPhoto = customPfp || rawMeta?.picture || rawMeta?.avatar_url || googleProvider?.photoURL || user.photoURL;
                 
                 if (displayPhoto) {
-                    avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 14px;" alt="Profile">`;
+                    avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover" style="border-radius: 12px;" alt="Profile">`;
                 } else {
-                    const bg = DEFAULT_THEME['avatar-gradient'];
-                    const textColor = getLetterAvatarTextColor(bg);
-                    const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
-                    avatarHtml = `<div class="initial-avatar w-full h-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}; border-radius: 14px;">${initial}</div>`;
+                    const textColor = getLetterAvatarTextColor(letterBg);
+                    const fontSizeClass = initial.length >= 3 ? 'text-[10px]' : (initial.length === 2 ? 'text-xs' : 'text-sm');
+                    avatarHtml = `<div class="initial-avatar w-full h-full font-bold ${fontSizeClass} flex items-center justify-center" style="background: ${letterBg}; color: ${textColor}; border-radius: 12px;">${initial}</div>`;
                 }
             }
 
@@ -645,9 +652,9 @@ let db;
 
             return `
                 <div id="profile-area-wrapper" class="relative flex-shrink-0 flex items-center">
-                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 14px; position: relative; background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));">
-                        <i class="fa-solid fa-address-card text-gray-300"></i>
-                        ${isOnline ? '<span class="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[var(--accent-color)] border-2 border-black rounded-full shadow-[0_0_5px_var(--accent-glow)]"></span>' : ''}
+                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition overflow-hidden p-0" style="border-radius: 14px; position: relative; background: var(--bg-secondary);">
+                        ${avatarHtml}
+                        ${isOnline ? '<span class="absolute bottom-0 right-0 w-3 h-3 bg-[var(--accent-color)] border-2 border-black rounded-full shadow-[0_0_5px_var(--accent-glow)]"></span>' : ''}
                     </button>
                     <div id="profile-menu-container" class="auth-menu-container closed">
                         <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center gap-3 pb-2 cursor-pointer hover:bg-white/5 transition rounded-2xl p-1" onclick="window.location.href='/logged-in/@${username}'">
@@ -656,7 +663,7 @@ let db;
                             </div>
                             <div class="min-w-0 flex-1 overflow-hidden">
                                 <div class="marquee-container" id="displayname-marquee">
-                                    <p class="text-sm auth-menu-displayname marquee-content">${displayName}</p>
+                                    <p class="text-sm auth-menu-displayname marquee-content">${dN}</p>
                                 </div>
                                 <div class="marquee-container" id="username-marquee">
                                     <p class="text-xs auth-menu-username-handle marquee-content">@${username}</p>
@@ -678,7 +685,7 @@ let db;
                     </div>
                 </div>
             `;
-        }
+        };
 
         const getNotificationButtonHtml = () => {
             return `
