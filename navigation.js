@@ -2252,18 +2252,29 @@ let db;
                         const { data: profile } = await window.supabase.from('profiles').select('*').eq('id', uid).single();
                         
                         // Extract metadata from Supabase user object if available
-                        const metadata = user.user_metadata || {};
+                        const metadata = user.user_metadata || user.raw_user_meta_data || {};
                         const metaName = metadata.full_name || metadata.name;
                         const metaPfp = metadata.picture || metadata.avatar_url;
 
                         if (profile) {
+                            // AUTO-SYNC: If profile is missing avatar_url but metadata has it, update DB
+                            if (!profile.avatar_url && metaPfp) {
+                                console.log("Navigation: Auto-syncing metadata PFP to profile...");
+                                window.supabase.from('profiles').update({ avatar_url: metaPfp }).eq('id', uid).then(() => {
+                                    // Trigger local update so UI reflects change without refresh
+                                    window.dispatchEvent(new CustomEvent('pfp-updated', { 
+                                        detail: { avatar_url: metaPfp } 
+                                    }));
+                                });
+                            }
+
                             userData = {
                                 ...profile,
                                 displayName: profile.display_name || metaName || profile.username || email.split('@')[0],
                                 username: profile.username || email.split('@')[0],
-                                pfpType: profile.pfp_type || (metaPfp ? 'custom' : 'letter'),
+                                pfpType: profile.pfp_type || (metaPfp ? 'google' : 'letter'),
                                 customPfp: profile.avatar_url || metaPfp,
-                                role: profile.role // Support role from Supabase
+                                role: profile.role 
                             };
 
                             // Sync theme if different
