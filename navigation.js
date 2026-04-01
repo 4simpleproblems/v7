@@ -652,9 +652,9 @@ let db;
 
             return `
                 <div id="profile-area-wrapper" class="relative flex-shrink-0 flex items-center">
-                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition overflow-hidden p-0" style="border-radius: 14px; position: relative; background: var(--bg-secondary);">
-                        ${avatarHtml}
-                        ${isOnline ? '<span class="absolute bottom-0 right-0 w-3 h-3 bg-[var(--accent-color)] border-2 border-black rounded-full shadow-[0_0_5px_var(--accent-glow)]"></span>' : ''}
+                    <button id="profile-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition" style="border-radius: 14px; position: relative; background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));">
+                        <i class="fa-solid fa-address-card text-gray-300"></i>
+                        ${isOnline ? '<span class="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[var(--accent-color)] border-2 border-black rounded-full shadow-[0_0_5px_var(--accent-glow)]"></span>' : ''}
                     </button>
                     <div id="profile-menu-container" class="auth-menu-container closed">
                         <div class="border-b border-gray-700 mb-2 w-full min-w-0 flex items-center gap-3 pb-2 cursor-pointer hover:bg-white/5 transition rounded-2xl p-1" onclick="window.location.href='/logged-in/@${username}'">
