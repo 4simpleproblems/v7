@@ -12,43 +12,22 @@
         const db = getFirestore(app);
 
         /**
-         * Syncs the user's Google profile picture URL to their Firestore document.
-         * Only runs if the user is authenticated via Google and the photoURL is missing or different.
+         * Syncs the user's Google profile picture URL to their Supabase profile.
          */
         export async function syncGooglePhoto(authUser) {
-            if (!authUser) return;
+            if (!authUser || !window.supabase) return;
             
             try {
-                // Determine UID and Google Photo URL based on source (Firebase vs Supabase)
                 let uid = authUser.uid || authUser.id;
-                let googlePhoto = null;
-
-                // Try Firebase providerData
-                const googleProvider = authUser?.providerData?.find(p => p.providerId === 'google.com');
-                googlePhoto = googleProvider ? googleProvider.photoURL : authUser.photoURL;
-
-                // Fallback to Supabase metadata if not found in Firebase provider
-                if (!googlePhoto && authUser?.user_metadata?.avatar_url) {
-                    googlePhoto = authUser.user_metadata.avatar_url;
-                }
+                const meta = authUser.user_metadata || authUser.raw_user_meta_data || {};
+                const googlePhoto = meta.picture || meta.avatar_url;
 
                 if (!googlePhoto) return;
 
-                const userRef = doc(db, 'users', uid);
-                const userSnap = await getDoc(userRef);
-
-                if (userSnap.exists()) {
-                    const data = userSnap.data();
-                    const currentPhoto = data.photoURL;
-
-                    // If photoURL is missing or different from Google's latest, update it
-                    if (currentPhoto !== googlePhoto) {
-                        console.log("Syncing Google PFP to Firestore...");
-                        await updateDoc(userRef, { photoURL: googlePhoto });
-                    }
-                }
+                // Update Supabase profiles table
+                await window.supabase.from('profiles').update({ avatar_url: googlePhoto }).eq('id', uid);
             } catch (e) {
-                console.error("Error syncing Google photo:", e);
+                console.error("Error syncing Google photo to Supabase:", e);
             }
         }
 
@@ -198,42 +177,21 @@
         }
 
         /**
-         * Checks if the current user is an admin by fetching their profile or admin document.
+         * Checks if the current user is an admin by fetching their profile from Supabase.
          */
         export async function checkAdminStatus(uid) {
-            if (!uid) return false;
+            if (!uid || !window.supabase) return false;
 
-            // 1. Try Supabase First (Modern Primary)
-            if (window.supabase) {
-                try {
-                    const { data } = await window.supabase
-                        .from('profiles')
-                        .select('is_admin')
-                        .eq('id', uid)
-                        .maybeSingle();
-                    if (data?.is_admin) return true;
-                } catch (e) {
-                    console.warn("Supabase admin check failed.");
-                }
-            }
-
-            // 2. Try Firestore (Legacy fallback)
             try {
-                const adminDocRef = doc(db, 'admins', uid);
-                const adminSnap = await getDoc(adminDocRef);
+                const { data } = await window.supabase
+                    .from('profiles')
+                    .select('is_admin')
+                    .eq('id', uid)
+                    .maybeSingle();
                 
-                if (adminSnap.exists()) {
-                    const data = adminSnap.data();
-                    return data.role === 'admin' || data.role === 'superadmin';
-                }
+                return data?.is_admin === true;
             } catch (e) {
-                if (e.code !== 'permission-denied') {
-                    console.error("Error checking legacy admin status:", e);
-                }
+                console.warn("Supabase admin check failed:", e);
+                return false;
             }
-
-            // 3. Email-based hardcoded override
-            if (uid === '709b99b3-ee28-4de1-8070-bd4db8ac46ed') return true; // 4simpleproblems@gmail.com
-
-            return false;
         }

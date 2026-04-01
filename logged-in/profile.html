@@ -717,16 +717,15 @@
             }
 
             firebaseAuthUser = user;
-            if (source === 'firebase') syncGooglePhoto(user);
 
             // ----------------------------------------------------------------
-            // RESOLVE USERNAME → UID
+            // RESOLVE USERNAME → UID (Supabase Only)
             // ----------------------------------------------------------------
             const urlParams = new URLSearchParams(window.location.search);
-            let path = urlParams.get('path') || window.location.pathname;
             let requestedUsername = urlParams.get('username') || null;
 
             if (!requestedUsername) {
+                const path = window.location.pathname;
                 if (path.includes('/@')) {
                     requestedUsername = path.split('/@')[1].split('?')[0].split('/')[0];
                 } else if (path.startsWith('/@')) {
@@ -736,21 +735,11 @@
 
             try {
                 const uid = user.uid || user.id;
-
-                // Lookup UID across both DBs if username provided
                 let ownerId = null;
+
                 if (requestedUsername) {
-                    // Try Supabase first
-                    if (window.supabase) {
-                        const { data: supUser } = await window.supabase.from('profiles').select('id').eq('username', requestedUsername).maybeSingle();
-                        if (supUser) ownerId = supUser.id;
-                    }
-                    
-                    if (!ownerId) {
-                        // Fallback to Firebase
-                        const usernameSnap = await getDocs(query(collection(db, 'users'), where('username', '==', requestedUsername), limit(1)));
-                        if (!usernameSnap.empty) ownerId = usernameSnap.docs[0].id;
-                    }
+                    const { data: supUser } = await window.supabase.from('profiles').select('id').eq('username', requestedUsername).maybeSingle();
+                    if (supUser) ownerId = supUser.id;
 
                     if (!ownerId) {
                         showStateOverlay('not-found-overlay');
@@ -761,34 +750,13 @@
                     }
                 } else {
                     ownerId = uid;
-                    let usernameResolved = false;
-                    try {
-                        const meSnap = await getDoc(doc(db, 'users', uid));
-                        if (meSnap.exists() && meSnap.data().username) {
-                            window.history.replaceState({}, '', `/logged-in/@${meSnap.data().username}`);
-                            usernameResolved = true;
-                        }
-                    } catch (e) { console.warn("Firebase username lookup failed, trying Supabase."); }
-
-                    if (!usernameResolved && window.supabase) {
-                        const { data: profile } = await window.supabase.from('profiles').select('username').eq('id', uid).maybeSingle();
-                        if (profile?.username) {
-                            window.history.replaceState({}, '', `/logged-in/@${profile.username}`);
-                        }
+                    const { data: profile } = await window.supabase.from('profiles').select('username').eq('id', uid).maybeSingle();
+                    if (profile?.username) {
+                        window.history.replaceState({}, '', `/logged-in/@${profile.username}`);
                     }
                 }
 
                 profileOwnerId = ownerId;
-
-                // Banned profile check
-                try {
-                    const banSnap = await getDoc(doc(db, 'bans', profileOwnerId));
-                    if (banSnap.exists()) {
-                        showStateOverlay('banned-overlay');
-                        return;
-                    }
-                } catch (e) { console.warn("Ban check failed (expected for non-admins)."); }
-
                 isOwnProfile = profileOwnerId === uid;
 
                 // Show/hide own-profile vs other-profile controls
@@ -801,26 +769,14 @@
                     if (socialFeedLink) socialFeedLink.classList.remove('hidden');
                 }
 
-                // Only setup Firestore snapshots/follows if we are authenticated with Firebase
-                // or if the action doesn't require Firebase auth.
-                // For now, wrap in try/catch to handle permission-denied gracefully.
-                try {
-                    setupMainProfileSnapshot();
-                    setupFollowModalListeners();
-                    setupEditProfileListeners();
-                    setupOptionsListeners();
-                    loadDailyphotos();
+                setupMainProfileSnapshot();
+                setupFollowModalListeners();
+                setupEditProfileListeners();
+                setupOptionsListeners();
+                loadDailyphotos();
 
-                    if (!isOwnProfile) {
-                        checkFollowStatus();
-                    }
-                } catch (e) {
-                    if (e.code === 'permission-denied') {
-                        console.warn("Firebase restricted: Some real-time features may be disabled for Supabase-only session.");
-                        // Fallback: Manually load once from public-facing fetch if available
-                    } else {
-                        console.error("Profile Setup Error:", e);
-                    }
+                if (!isOwnProfile) {
+                    checkFollowStatus();
                 }
 
             } catch (e) {
@@ -881,7 +837,7 @@
             let data = null;
             const uid = profileOwnerId;
 
-            // 1. Try Supabase First (Modern Primary)
+            // Supabase Only
             if (window.supabase) {
                 try {
                     const { data: profile } = await window.supabase
@@ -905,19 +861,6 @@
                     }
                 } catch (e) {
                     console.error("Supabase profile fetch failed:", e);
-                }
-            }
-
-            // 2. Try Firestore Fallback
-            if (!data) {
-                try {
-                    const userDocRef = doc(db, 'users', uid);
-                    const snap = await getDoc(userDocRef);
-                    if (snap.exists()) {
-                        data = snap.data();
-                    }
-                } catch (e) {
-                    console.warn("Firestore profile fallback failed.");
                 }
             }
 
@@ -1306,21 +1249,17 @@
                 const uid = (firebaseAuthUser.uid || firebaseAuthUser.id);
 
                 try {
-                    // 1. Update Firestore
-                    await updateDoc(doc(db, 'users', uid), {
-                        displayName: newName,
-                        description: newDesc
-                    });
-
-                    // 2. Mirror to Supabase
+                    // Update Supabase only
                     if (window.supabase) {
-                        await window.supabase
+                        const { error } = await window.supabase
                             .from('profiles')
                             .update({
                                 display_name: newName,
                                 description: newDesc
                             })
                             .eq('id', uid);
+                        
+                        if (error) throw error;
                     }
 
                     // Optimistic update

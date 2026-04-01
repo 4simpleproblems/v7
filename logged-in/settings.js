@@ -167,145 +167,110 @@
             { id: '_LIVE_CURRENT_TIME', name: 'Current Time', title: 'Live Time', favicon: '', category: 'live', live: true }
         ];
 
-        
         // --- Shared Helper Functions ---
-        const getUserDocRef = (userId) => doc(db, 'users', userId);
 
         /**
-         * Fetches user data from Firestore with a fallback to Supabase profiles.
+         * Fetches user data from Supabase profiles.
          */
         async function getUserData(uid) {
-            let data = null;
+            if (!window.supabase) return null;
 
-            // 1. Try Firestore
             try {
-                const userDocRef = getUserDocRef(uid);
-                const snap = await getDoc(userDocRef);
-                if (snap.exists()) {
-                    data = snap.data();
+                const { data: profile, error } = await window.supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', uid)
+                    .maybeSingle();
+                
+                if (error) throw error;
+
+                if (profile) {
+                    // Map Supabase snake_case to the app's internal camelCase
+                    return {
+                        ...profile,
+                        displayName: profile.display_name,
+                        pfpType: profile.pfp_type,
+                        customPfp: profile.avatar_url,
+                        pfpLetterBg: profile.pfp_letter_bg,
+                        pfpLetterChar: profile.pfp_letter_char,
+                        letterAvatarText: profile.pfp_letter_char,
+                        mibiConfig: profile.mibi_config
+                    };
                 }
             } catch (e) {
-                if (e.code === 'permission-denied') {
-                    console.warn("Firestore access denied. Falling back to Supabase if available.");
-                } else {
-                    console.error("Firestore error:", e);
-                }
+                console.error("Supabase profile fetch error:", e);
             }
 
-            // 2. Try Supabase Fallback if no data or firestore failed
-            if (!data && window.supabase) {
-                try {
-                    const { data: profile, error } = await window.supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', uid)
-                        .maybeSingle();
-                    
-                    if (profile) {
-                        // Map Supabase fields to Firestore fields if they differ
-                        data = {
-                            ...profile,
-                            displayName: profile.display_name || profile.displayName,
-                            pfpType: profile.pfp_type || profile.pfpType,
-                            customPfp: profile.avatar_url || profile.customPfp,
-                            pfpLetterBg: profile.pfp_letter_bg || profile.pfpLetterBg,
-                            pfpLetterChar: profile.pfp_letter_char || profile.pfpLetterChar,
-                            mibiConfig: profile.mibi_config || profile.mibiConfig
-                        };
-                    }
-                } catch (e) {
-                    console.error("Supabase fallback error:", e);
-                }
-            }
-
-            return data;
-            }
+            return null;
+        }
 
             /**
             * Saves user data to Firestore and mirrors to Supabase profiles.
             */
-            async function saveUserData(uid, updates) {
-            let firestoreSuccess = false;
-            let supabaseSuccess = false;
+        /**
+         * Saves user data to Supabase profiles.
+         */
+        async function saveUserData(uid, updates) {
+            if (!window.supabase) return;
 
-            // 1. Try Firestore
             try {
-                const userDocRef = getUserDocRef(uid);
-                await updateDoc(userDocRef, updates);
-                firestoreSuccess = true;
-            } catch (e) {
-                if (e.code === 'permission-denied') {
-                    console.warn("Firestore save denied. Relying on Supabase.");
-                } else {
-                    console.error("Firestore save error:", e);
-                }
-            }
+                // Map Firestore field names to Supabase snake_case if they differ
+                const supabaseUpdates = {};
+                const mapping = {
+                    pfpType: 'pfp_type',
+                    pfp_type: 'pfp_type',
+                    customPfp: 'avatar_url',
+                    photoURL: 'avatar_url',
+                    displayName: 'display_name',
+                    description: 'description',
+                    pfpLetterBg: 'pfp_letter_bg',
+                    pfpLetterChar: 'pfp_letter_char',
+                    letterAvatarText: 'pfp_letter_char',
+                    mibiConfig: 'mibi_config',
+                    showOffline: 'show_offline',
+                    leaderboardOptOut: 'leaderboard_opt_out',
+                    navbarTheme: 'navbar_theme',
+                    schoolId: 'school_id',
+                    schoolName: 'school_name',
+                    districtId: 'district_id',
+                    state: 'state',
+                    stateAbbr: 'state_abbr',
+                    schoolSkipped: 'school_skipped',
+                    schoolChangesThisMonth: 'school_changes_this_month',
+                    lastSchoolChangeMonth: 'last_school_change_month',
+                    usernameChangesThisMonth: 'username_changes_this_month',
+                    lastUsernameChangeMonth: 'last_username_change_month'
+                };
 
-            // 2. Mirror to Supabase
-            if (window.supabase) {
-                try {
-                    // Map Firestore field names to Supabase snake_case if they differ
-                    const supabaseUpdates = {};
-                    const mapping = {
-                        pfpType: 'pfp_type',
-                        pfp_type: 'pfp_type',
-                        customPfp: 'avatar_url',
-                        photoURL: 'avatar_url',
-                        displayName: 'display_name',
-                        description: 'description',
-                        pfpLetterBg: 'pfp_letter_bg',
-                        pfpLetterChar: 'pfp_letter_char',
-                        letterAvatarText: 'pfp_letter_char',
-                        mibiConfig: 'mibi_config',
-                        showOffline: 'show_offline',
-                        leaderboardOptOut: 'leaderboard_opt_out',
-                        navbarTheme: 'navbar_theme',
-                        schoolId: 'school_id',
-                        schoolName: 'school_name',
-                        districtId: 'district_id',
-                        state: 'state',
-                        stateAbbr: 'state_abbr',
-                        schoolSkipped: 'school_skipped',
-                        schoolChangesThisMonth: 'school_changes_this_month',
-                        lastSchoolChangeMonth: 'last_school_change_month',
-                        usernameChangesThisMonth: 'username_changes_this_month',
-                        lastUsernameChangeMonth: 'last_username_change_month'
-                    };
+                for (const key in updates) {
+                    const sbKey = mapping[key] || key;
+                    const value = updates[key];
 
-                    for (const key in updates) {
-                        const sbKey = mapping[key] || key;
-                        const value = updates[key];
-
-                        // Handle potential FieldValue types (Firestore specific)
-                        if (value && typeof value === 'object') {
-                            if (value._methodName === 'deleteField') {
-                                supabaseUpdates[sbKey] = null;
-                                continue;
-                            }
+                    // Handle legacy FieldValue types if still passed
+                    if (value && typeof value === 'object') {
+                        if (value._methodName === 'deleteField') {
+                            supabaseUpdates[sbKey] = null;
+                            continue;
                         }
-
-                        supabaseUpdates[sbKey] = value;
                     }
 
-                    // Logic: If we are switching to letter or mibi, clear avatar_url
-                    if (supabaseUpdates.pfp_type === 'letter' || supabaseUpdates.pfp_type === 'mibi') {
-                        supabaseUpdates.avatar_url = null;
-                    }
-
-                    const { error } = await window.supabase
-                        .from('profiles')
-                        .update(supabaseUpdates)
-                        .eq('id', uid);
-
-                    if (error) throw error;
-                    supabaseSuccess = true;
-                } catch (e) {
-                    console.error("Supabase sync error:", e);
+                    supabaseUpdates[sbKey] = value;
                 }
-            }
 
-            if (!firestoreSuccess && !supabaseSuccess) {
-                throw new Error("Failed to save data to both Firestore and Supabase.");
+                // Logic: If we are switching to letter or mibi, clear avatar_url
+                if (supabaseUpdates.pfp_type === 'letter' || supabaseUpdates.pfp_type === 'mibi') {
+                    supabaseUpdates.avatar_url = null;
+                }
+
+                const { error } = await window.supabase
+                    .from('profiles')
+                    .update(supabaseUpdates)
+                    .eq('id', uid);
+
+                if (error) throw error;
+            } catch (e) {
+                console.error("Supabase profile save error:", e);
+                throw e;
             }
         }
 
