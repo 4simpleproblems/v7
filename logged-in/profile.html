@@ -399,10 +399,10 @@
         
         <!-- SIDEBAR (Sticky, Full Height) -->
         <aside class="w-[380px] shrink-0 border-r border-[var(--border-main)] bg-[var(--bg-card)] sticky top-0 h-screen overflow-y-auto custom-scroll">
-            <div class="p-10 pt-24 flex flex-col items-center min-h-full">
+            <div class="p-10 flex flex-col items-center min-h-full">
                 
                 <!-- Options menu -->
-                <div class="absolute top-20 right-8 flex gap-2">
+                <div class="absolute top-8 right-8 flex gap-2">
                     <div class="relative">
                         <button id="profile-options-btn" class="btn-icon w-10 h-10">
                             <i class="fas fa-ellipsis-vertical text-sm"></i>
@@ -419,7 +419,7 @@
                 </div>
 
                 <!-- Avatar Anchor -->
-                <div id="avatar-container" class="mb-8 relative w-32 h-32">
+                <div id="avatar-container" class="mt-12 mb-8 relative w-32 h-32">
                     <div id="avatar-preview" class="w-full h-full bg-white/5"></div>
                     <div id="status-indicator" class="absolute bottom-1 right-1 w-6 h-6 border-4 rounded-full status-offline" style="border-color: var(--bg-card);"></div>
                 </div>
@@ -431,7 +431,7 @@
                             <i class="fas fa-user text-[10px] mr-1"></i> Your Profile
                         </span>
                     </div>
-                    <h1 id="display-name" class="text-5xl font-light tracking-tight mb-2" style="color: var(--text-main);">--</h1>
+                    <h1 id="display-name" class="text-5xl font-light tracking-tight mb-2 truncate" style="color: var(--text-main);">--</h1>
                     <p id="username" class="text-lg font-mono opacity-40" style="color: var(--text-muted);">@--</p>
                 </div>
 
@@ -453,17 +453,10 @@
                     </div>
                 </div>
 
-                <!-- Social Navigation (Hidden for testing) -->
-                <div class="hidden w-full flex flex-col gap-1 mb-10 border-t border-[var(--border-main)] pt-8">
-                    <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 mb-4 px-2">Network</p>
+                <!-- Quick Navigation -->
+                <div class="w-full flex flex-col gap-1 mb-10 border-t border-[var(--border-main)] pt-8">
                     <a href="/logged-in/leaderboard.html" class="nav-link-box">
                         <i class="fa-solid fa-trophy"></i> Global Leaderboard
-                    </a>
-                    <a href="/logged-in/dailyphoto.html" class="nav-link-box">
-                        <i class="fa-solid fa-camera-retro"></i> Social Feed
-                    </a>
-                    <a href="/logged-in/dashboard.html" class="nav-link-box">
-                        <i class="fa-solid fa-house"></i> Dashboard
                     </a>
                 </div>
 
@@ -472,15 +465,15 @@
                     <p id="description" class="text-sm leading-relaxed italic" style="color: var(--text-muted); opacity: 0.6;"></p>
                 </div>
 
-                <!-- Final Actions (Pushed to bottom) -->
-                <div class="mt-auto w-full pt-10 border-t border-[var(--border-main)]">
+                <!-- Final Actions -->
+                <div class="mt-auto w-full pt-10 border-t border-[var(--border-main)] pb-4">
                     <div id="edit-profile-btn-container" class="hidden w-full">
-                        <button id="open-edit-modal-btn" class="btn-toolbar-style btn-primary-override w-full py-4 text-[10px] font-black uppercase tracking-[0.25em]">
+                        <button id="open-edit-modal-btn" class="btn-toolbar-style btn-primary-override w-full py-3.5 text-[10px] font-black uppercase tracking-[0.25em]">
                             Edit My Profile
                         </button>
                     </div>
                     <div id="follow-actions" class="hidden w-full">
-                        <button id="follow-btn" class="btn-toolbar-style btn-primary-override w-full py-4 text-[10px] font-black uppercase tracking-[0.25em]">Follow User</button>
+                        <button id="follow-btn" class="btn-toolbar-style btn-primary-override w-full py-3.5 text-[10px] font-black uppercase tracking-[0.25em]">Follow User</button>
                     </div>
                 </div>
             </div>
