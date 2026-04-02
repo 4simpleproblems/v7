@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark"> 
+<html lang="en" class="dark custom-scroll"> 
 <head>
     <title>4SP - GAMES</title>
     <meta charset="UTF-8" />
@@ -87,7 +87,7 @@
             font-weight: 300;
             background-color: var(--bg-page);
             color: var(--text-main);
-            overflow: hidden; /* Main handles scrolling now */
+            overflow-x: hidden; /* Allows vertical scrolling naturally */
             min-height: 100vh;
         }
 
@@ -224,7 +224,7 @@
 
         /* Search Bar & Results */
         #bottom-fixed-bar {
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
             background-color: rgba(13, 13, 13, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -602,7 +602,7 @@
     <div id="navbar-container"></div>
 
     <main class="flex min-h-screen">
-        <section class="flex-1 min-w-0 p-8 md:p-16 pt-12 overflow-y-auto custom-scroll pb-32">
+        <section class="flex-1 min-w-0 p-8 md:p-16 pt-12 pb-32">
             <div class="max-w-[1400px] mx-auto relative">
                 
                 <button id="creditsBtn" class="absolute top-0 right-0 z-20 btn-toolbar-style border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10">
@@ -638,16 +638,18 @@
         </section>
     </main>
 
-    <div id="bottom-fixed-bar" class="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-lg z-50 transition-all duration-300 flex flex-col mx-4 md:mx-0">
-        <div id="searchResults" class="search-results-container w-full pt-2" style="display: none;"></div>
-        
-        <div id="searchDivider" class="w-full h-[1px] bg-[var(--border-main)] my-1" style="display: none;"></div>
+    <div class="fixed bottom-8 left-0 w-full flex justify-center z-50 pointer-events-none px-4">
+        <div id="bottom-fixed-bar" class="w-full max-w-lg pointer-events-auto transition-all duration-300 flex flex-col">
+            <div id="searchResults" class="search-results-container w-full pt-2" style="display: none;"></div>
+            
+            <div id="searchDivider" class="w-full h-[1px] bg-[var(--border-main)] my-1" style="display: none;"></div>
 
-        <div class="flex items-center w-full p-2">
-            <div class="pl-4 pr-3 text-[var(--text-muted)] opacity-60 text-lg">
-                <i class="fa-solid fa-magnifying-glass"></i>
+            <div class="flex items-center w-full p-2">
+                <div class="pl-4 pr-3 text-[var(--text-muted)] opacity-60 text-lg">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <input type="text" id="searchInput" placeholder="Search the catalog..." autocomplete="off" class="w-full py-3 pr-4 bg-transparent placeholder-[var(--text-muted)] opacity-80 focus:outline-none focus:ring-0 text-base font-medium text-white" />
             </div>
-            <input type="text" id="searchInput" placeholder="Search the catalog..." autocomplete="off" class="w-full py-3 pr-4 bg-transparent placeholder-[var(--text-muted)] opacity-80 focus:outline-none focus:ring-0 text-base font-medium text-white" />
         </div>
     </div>
     
