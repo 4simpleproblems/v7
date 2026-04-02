@@ -4,317 +4,285 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>4SP - DASHBOARD</title>
+    <base href="/">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="../injector.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
         :root {
-            --bg-page: var(--bg-primary, #040404);
-            --bg-container: var(--bg-secondary, #080808);
-            --border-color: var(--border-secondary, rgba(255,255,255,0.05));
-            --accent-color: var(--accent-primary, #4f46e5);
-            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --bg-page: var(--bg-primary, #000000);
+            --bg-card: var(--bg-secondary, #0d0d0d);
             --text-main: var(--text-primary, #ffffff);
             --text-muted: var(--text-secondary, #c0c0c0);
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #1a1a1a);
+            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --btn-text: var(--button-text, #4f46e5);
         }
+
+        * { box-sizing: border-box; }
 
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: var(--bg-page);
             color: var(--text-main);
+            background-color: var(--bg-page);
             font-weight: 300;
+            overflow: hidden;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
         }
 
-        #page-content {
-            flex-grow: 1;
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            grid-template-rows: repeat(12, minmax(0, 1fr));
-            gap: 1.5rem;
-            padding: 2.5rem;
-            width: 100%;
-            height: calc(100vh - 64px);
-            box-sizing: border-box;
-            overflow: hidden;
+        /* Subtle dot grid */
+        .grid-bg {
+            background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
+            background-size: 24px 24px;
         }
 
-        @media (max-width: 1024px) {
-            #page-content {
-                display: flex;
-                flex-direction: column;
-                height: auto;
-                overflow-y: visible;
-            }
-            .dashboard-card {
-                grid-column: span 12 !important;
-                grid-row: span 1 !important;
-                min-height: 200px;
-            }
+        #dynamic-background {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%);
+            pointer-events: none;
+            z-index: -1;
         }
 
-        .dashboard-card {
-            background: var(--bg-container);
-            border: 1px solid var(--border-color);
-            border-radius: 28px;
-            padding: 1.75rem;
-            position: relative;
+        /* ------------------------------------------------------------------ */
+        /* CARDS & COMPONENTS                                                 */
+        /* ------------------------------------------------------------------ */
+        .feature-card {
+            border-radius: 2rem;
+            border: 1px solid var(--border-main);
+            background: var(--bg-card);
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
         }
-
-        .dashboard-card:hover:not(.no-hover) {
+        .feature-card:hover:not(.no-hover) {
             border-color: var(--accent-color);
-            background: var(--bg-secondary);
             transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
         }
 
-        /* --- LAYOUT SLOTS --- */
-        #welcome-section {
-            grid-column: span 4;
-            grid-row: span 5;
-            background: transparent;
-            border: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding-left: 0;
-        }
-
-        #analytics-left {
-            grid-column: span 4;
-            grid-row: span 7;
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-            background: transparent;
-            border: none;
-            padding: 0;
-        }
-
-        #quick-access-section {
-            grid-column: span 8;
-            grid-row: span 7;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* --- COMPONENTS --- */
-        .time-display { font-size: 4.5rem; font-weight: 200; line-height: 1; letter-spacing: -0.04em; color: var(--text-main); }
-        
-        /* Scalable clock for large screens */
-        @media (min-width: 1600px) {
-            .time-display { font-size: 6vw; }
-        }
-
-        .date-display { font-size: 1.2rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 0.5rem; opacity: 0.6; }
-        .welcome-msg { font-size: 2rem; font-weight: 300; margin-top: 1.5rem; color: var(--text-secondary); }
-
-        .stat-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 1.25rem;
-            flex: 1;
+        .stat-pill {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-main);
+            border-radius: 1.5rem;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
         }
 
-        .label-tiny { font-size: 0.65rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.5; }
-        .val-big { font-size: 1.75rem; font-weight: 500; color: var(--text-main); margin-top: 0.25rem; }
-        #stat-total-time { font-size: 3rem; }
-        .val-sub { font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.25rem; opacity: 0.6; }
-
-        /* --- LEADERBOARD WIDGET --- */
-        #leaderboard-widget {
-            grid-column: span 8;
-            grid-row: span 5;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 28px;
-            padding: 2.5rem 3.5rem;
-            display: flex;
-            flex-direction: row; /* Horizontal layout */
+        .btn-toolbar-style {
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
+            border-radius: 16px;
+            color: var(--text-muted);
+            padding: 0.6rem 1.25rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 3rem;
-            transition: all 0.3s ease;
-            position: relative;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            outline: 1px solid transparent;
         }
+        .btn-primary-override {
+            background-color: var(--btn-bg) !important;
+            border: 1px solid var(--accent-color) !important;
+            color: var(--accent-color) !important;
+            outline: 1px solid var(--accent-glow);
+        }
+        .btn-primary-override:hover {
+            background-color: var(--accent-color) !important;
+            color: #fff !important;
+            transform: scale(1.02);
+            outline: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* LEADERBOARD WIDGET SPECIFICS                                        */
+        /* ------------------------------------------------------------------ */
         #leaderboard-widget.greyed-out {
-            filter: grayscale(1) brightness(0.5);
+            filter: grayscale(1) brightness(0.4);
         }
         #leaderboard-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(8px);
-            border-radius: 28px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 2rem;
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 20;
-            pointer-events: auto; /* Ensure clicks are captured */
+            pointer-events: auto;
         }
 
-        .page-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-            margin-top: 1rem;
-            /* Hide scrollbars and allow overflow for hover effects */
-            overflow: visible;
-        }
-
+        /* ------------------------------------------------------------------ */
+        /* RECENT PAGES                                                        */
+        /* ------------------------------------------------------------------ */
         .page-btn {
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding: 1rem;
+            padding: 1.25rem;
             background: rgba(255,255,255,0.02);
-            border: 1px solid var(--border-color);
-            border-radius: 18px;
+            border: 1px solid var(--border-main);
+            border-radius: 24px;
             transition: all 0.2s;
             cursor: pointer;
-            /* Ensure the button stays above others during animation */
             position: relative;
             z-index: 1;
         }
         .page-btn:hover {
-            background: var(--button-bg);
+            background: var(--bg-card);
             border-color: var(--accent-color);
-            transform: scale(1.05);
+            transform: scale(1.02) translateX(4px);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
             z-index: 10;
         }
-        .page-btn.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
-
         .icon-box {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: rgba(255,255,255,0.03);
+            width: 3rem;
+            height: 3rem;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.05);
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--accent-color);
-            font-size: 1.2rem;
+            font-size: 1.25rem;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .weather-row { display: flex; align-items: flex-end; justify-content: space-between; }
-        .temp-text { font-size: 4rem; font-weight: 500; line-height: 1; }
-        
-        #weather-loader { position: absolute; top: 1.5rem; right: 1.75rem; color: var(--accent-color); opacity: 0; }
-        #weather-loader.loading { opacity: 1; }
-
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar { width: 0; }
     </style>
 </head>
 
-<body>
-    <div id="page-content">
-        <!-- WELCOME SECTION -->
-        <div id="welcome-section" class="dashboard-card no-hover">
-            <div id="clock-date" class="date-display">--------</div>
-            <div id="clock-time" class="time-display">00:00:00</div>
-            <h2 class="welcome-msg">Good day, <span id="user-name-display" style="color: var(--accent-primary);">User</span>.</h2>
-        </div>
+<body class="grid-bg relative">
+    <div id="dynamic-background"></div>
+    <div id="navbar-container"></div>
 
-        <!-- LEADERBOARD WIDGET -->
-        <div id="leaderboard-widget" class="dashboard-card greyed-out">
-            <div class="flex flex-col justify-center border-r border-white/5 pr-10 h-full">
-                <div class="label-tiny">Your Rank</div>
-                <div id="leaderboard-rank" class="text-6xl font-bold mt-1" style="color: var(--accent-primary);">#--</div>
-                <div class="text-[12px] opacity-60 mt-1 uppercase tracking-widest font-bold" style="color: var(--text-muted);">Global Standing</div>
-            </div>
+    <main class="flex min-h-screen h-screen">
+        <section class="flex-1 min-w-0 p-8 md:p-16 pt-12 overflow-y-auto custom-scroll">
+            <div class="max-w-[1200px] mx-auto pb-20">
+                
+                <div class="mb-10 flex flex-col xl:flex-row justify-between items-start xl:items-end gap-8 border-b border-white/5 pb-8">
+                    <div>
+                        <p id="clock-date" class="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-4 opacity-80">--------</p>
+                        <h2 id="clock-time" class="text-6xl md:text-8xl font-light tracking-tight mb-2" style="color: var(--text-main);">00:00<span class="text-2xl md:text-4xl ml-3 opacity-30 uppercase font-light">--</span></h2>
+                        <p class="text-xl md:text-2xl mt-4" style="color: var(--text-muted); opacity: 0.7;">Good day, <span id="user-name-display" class="font-medium text-white opacity-100">User</span>.</p>
+                    </div>
 
-            <div class="flex-grow flex items-center gap-10 px-6">
-                <div id="user-avatar-widget" class="w-24 h-24 rounded-[32px] flex items-center justify-center overflow-hidden flex-shrink-0" style="background: var(--button-bg); border: 1px solid var(--border-color);">
-                    <i class="fas fa-user text-3xl" style="color: var(--accent-primary);"></i>
-                </div>
-                <div class="min-w-0">
-                    <div class="label-tiny">Your Statistics</div>
-                    <div id="user-stats-name" class="text-4xl font-semibold truncate mt-1" style="color: var(--text-primary);">Loading...</div>
-                    <div id="user-stats-time" class="text-sm font-mono mt-1" style="color: var(--text-secondary); opacity: 0.7;">0h 0m total</div>
-                </div>
-            </div>
-            
-            <div class="flex flex-col gap-2">
-                <a href="leaderboard.html" class="inline-flex items-center justify-center py-4 px-8 border rounded-3xl text-sm font-medium transition group" style="background: var(--button-bg); border-color: var(--border-primary); color: var(--accent-primary);">
-                    Rankings <i class="fas fa-trophy ml-2 group-hover:scale-110 transition-transform"></i>
-                </a>
-            </div>
+                    <div class="flex flex-col sm:flex-row gap-4 w-full xl:w-auto shrink-0 mb-2">
+                        <div class="stat-pill flex-1 xl:w-56 px-6 py-5">
+                            <div>
+                                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-2">Experience Time</p>
+                                <div id="stat-total-time" class="text-3xl font-light" style="color: var(--text-main);">0h 0m</div>
+                            </div>
+                            <p class="text-[10px] mt-4 opacity-40 uppercase tracking-widest" style="color: var(--text-muted);">Session Duration</p>
+                        </div>
 
-            <div id="leaderboard-overlay">
-                <div id="leaderboard-prompt-content" class="text-center p-4">
-                    <p id="leaderboard-prompt-text" class="text-xs mb-3" style="color: var(--text-muted); opacity: 0.8;">Join the leaderboard to see your rank</p>
-                    <button id="accept-leaderboard-btn" class="py-2.5 px-6 hover:opacity-90 rounded-2xl text-xs font-medium transition shadow-lg" style="background: var(--accent-primary); color: #fff;">
-                        Accept Terms
-                    </button>
-                    <div class="mt-2">
-                        <a href="../legal.html#leaderboard-terms" target="_blank" class="text-[10px] hover:underline text-white/80 hover:text-white transition-colors font-medium">View Terms</a>
+                        <div class="stat-pill flex-1 xl:w-56 px-6 py-5">
+                            <div>
+                                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-2">System Analytics</p>
+                                <div id="stat-browser" class="text-sm font-medium" style="color: var(--accent-primary);">Loading...</div>
+                                <div id="stat-os" class="text-[10px] mt-1 opacity-60 uppercase tracking-widest" style="color: var(--text-muted);">Detecting OS</div>
+                            </div>
+                            <p id="stat-device" class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 mt-4" style="color: var(--text-muted);">Project Niobium</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- ANALYTICS LEFT -->
-        <div id="analytics-left" class="dashboard-card no-hover">
-            <div class="stat-card">
-                <div>
-                    <div class="label-tiny">Experience Time</div>
-                    <div id="stat-total-time" class="val-big" style="color: var(--text-primary);">0h 0m</div>
-                </div>
-                <div class="val-sub">Total session duration in V6</div>
-            </div>
-            <div class="stat-card">
-                <div>
-                    <div class="label-tiny">System Analytics</div>
-                    <div id="stat-browser" class="text-sm font-medium" style="color: var(--accent-primary);">Loading...</div>
-                    <div id="stat-os" class="text-xs mt-1" style="color: var(--text-muted); opacity: 0.6;">Detecting OS</div>
-                </div>
-                <div id="stat-device" class="text-[10px] uppercase font-bold tracking-widest" style="color: var(--text-muted); opacity: 0.4;">Project Niobium</div>
-            </div>
-        </div>
+                <div class="flex flex-col gap-8">
+                    
+                    <div class="relative w-full">
+                        <div id="leaderboard-widget" class="feature-card px-10 py-6 flex flex-col md:flex-row items-center justify-between gap-6 greyed-out">
+                            
+                            <div class="flex flex-col justify-center border-b md:border-b-0 md:border-r border-white/10 pb-4 md:pb-0 md:pr-8 text-center md:text-left shrink-0">
+                                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-1">Your Rank</p>
+                                <div id="leaderboard-rank" class="text-5xl font-light tracking-tight" style="color: var(--accent-primary);">#--</div>
+                                <div class="text-[10px] opacity-40 mt-2 uppercase tracking-widest font-bold">Global Standing</div>
+                            </div>
 
-        <!-- QUICK ACCESS SECTION -->
-        <div id="quick-access-section" class="dashboard-card">
-            <div class="flex justify-between items-center">
-                <div>
-                    <div class="label-tiny">Recently Accessed</div>
-                    <h3 class="text-xl font-medium mt-1" style="color: var(--text-primary); opacity: 0.8;">Most Opened Pages</h3>
+                            <div class="flex-grow flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5 w-full">
+                                <div id="user-avatar-widget" class="w-20 h-20 rounded-[24px] flex items-center justify-center overflow-hidden shrink-0 border-2 border-white/5 bg-black/40 shadow-2xl">
+                                    <i class="fas fa-user text-2xl" style="color: var(--accent-primary);"></i>
+                                </div>
+                                <div class="min-w-0 mt-1">
+                                    <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-1">Your Statistics</p>
+                                    <div id="user-stats-name" class="text-2xl font-medium truncate" style="color: var(--text-main);">Loading...</div>
+                                    <div id="user-stats-time" class="text-xs font-mono mt-1 opacity-50" style="color: var(--text-muted);">0h 0m total</div>
+                                </div>
+                            </div>
+                            
+                            <div class="shrink-0 mt-2 md:mt-0">
+                                <a href="/logged-in/leaderboard.html" class="btn-toolbar-style border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10 py-3 px-6 rounded-[16px] shadow-lg">
+                                    Rankings <i class="fas fa-trophy ml-2"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div id="leaderboard-overlay" style="display: flex;">
+                            <div id="leaderboard-prompt-content" class="w-full max-w-3xl flex flex-col sm:flex-row items-center gap-8 p-6 md:p-8">
+                                <div class="w-16 h-16 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400 text-3xl shrink-0 shadow-inner">
+                                    <i class="fas fa-chart-simple"></i>
+                                </div>
+                                
+                                <div class="flex-grow text-center sm:text-left">
+                                    <p id="leaderboard-prompt-text" class="text-sm md:text-base leading-relaxed" style="color: var(--text-muted);">Join the leaderboard to see your rank and network standing.</p>
+                                </div>
+                                
+                                <div class="flex flex-col gap-3 shrink-0 w-full sm:w-auto">
+                                    <button id="accept-leaderboard-btn" class="btn-toolbar-style btn-primary-override w-full px-8 py-4 text-[10px] font-black uppercase tracking-widest shadow-2xl">
+                                        Accept Terms
+                                    </button>
+                                    <div class="text-center mt-1">
+                                        <a href="/legal.html#leaderboard-terms" target="_blank" class="text-[10px] opacity-40 hover:opacity-100 transition-opacity uppercase tracking-widest font-bold">View Terms</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feature-card p-10 no-hover">
+                        <div class="flex justify-between items-end mb-8 border-b border-white/5 pb-6">
+                            <div>
+                                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2">Recently Accessed</p>
+                                <h3 class="text-3xl font-light tracking-tight" style="color: var(--text-main);">Most Opened Pages</h3>
+                            </div>
+                            <div id="stat-pageviews" class="text-5xl font-light opacity-20" style="color: var(--text-muted);">0</div>
+                        </div>
+                        
+                        <div id="recent-pages-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div class="col-span-full py-16 flex flex-col items-center justify-center opacity-20">
+                                <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
+                                <p class="text-[10px] font-black uppercase tracking-[0.2em]">Synchronizing Analytics</p>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-                <div id="stat-pageviews" class="text-3xl font-light" style="color: var(--text-muted); opacity: 0.2;">0</div>
             </div>
-            
-            <div id="recent-pages-list" class="page-grid flex-grow">
-                <div class="col-span-2 py-20 text-center italic text-sm" style="color: var(--text-muted); opacity: 0.6;">Synchronizing analytics...</div>
-            </div>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <script type="module">
         import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, getDoc, collection, query, where, getDocs, updateDoc, increment, limit, orderBy, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { firebaseConfig } from '../firebase-config.js';
-        import { firebaseConfig2 } from '../firebase-config-2.js';
-        import { supabaseConfig } from '../supabase-config.js';
-        import { getAvatarHTML, syncGooglePhoto } from "../utils.js";
+        import { firebaseConfig } from '/firebase-config.js';
+        import { firebaseConfig2 } from '/firebase-config-2.js';
+        import { supabaseConfig } from '/supabase-config.js';
+        import { getAvatarHTML, syncGooglePhoto } from "/utils.js";
 
         // Initialize primary app
         if (!getApps().length) initializeApp(firebaseConfig);
@@ -335,8 +303,8 @@
         // Initialize Supabase (Reuse global instance if available)
         let supabase = window.supabase;
         if (!supabase) {
-            const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm");
             supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+            window.supabase = supabase;
         }
 
         const V6_PAGES = {
@@ -374,13 +342,13 @@
             // Load page identification config
             let pageConfig = {};
             try {
-                const response = await fetch('../page-identification.json');
+                const response = await fetch('/page-identification.json');
                 pageConfig = await response.json();
             } catch (e) {
                 console.error("Failed to load page identification config", e);
             }
 
-            // Primary Auth Listener (Firebase for legacy, Supabase for modern)
+            // Primary Auth Listener
             const handleUser = async (user, source = 'firebase') => {
                 if (user) {
                     console.log(`Dashboard: User authenticated via ${source}`, user.email);
@@ -449,7 +417,7 @@
                                     location.reload();
                                 };
                             } else {
-                                promptText.textContent = "Join the leaderboard to see your rank";
+                                promptText.textContent = "Join the leaderboard to see your rank and network standing.";
                                 acceptBtn.textContent = "Accept Terms";
                                 acceptBtn.onclick = async () => {
                                     if (source === 'supabase') {
@@ -463,7 +431,7 @@
                         }
                         loadAnalytics(uid, pageConfig, data);
                     } else {
-                        // Create basic doc if it doesn't exist (e.g. first time Supabase login)
+                        // Create basic doc if it doesn't exist
                         console.log("Dashboard: Creating missing user profile for", uid);
                         const username = user.user_metadata?.custom_claims?.global_name || user.email.split('@')[0];
                         if (source === 'supabase') {
@@ -489,7 +457,7 @@
                     // Only redirect if both fail. We check Supabase first.
                     const { data: { session } } = await supabase.auth.getSession();
                     if (!session) {
-                        window.location.replace('../index.html');
+                        window.location.replace('/index.html');
                     }
                 }
             };
@@ -529,7 +497,7 @@
                 // Fetch rank from Supabase profiles table
                 const { data: rankedUsers, error } = await supabase
                     .from('profiles')
-                    .select('id, username, display_name, total_v6_time, avatar_url')
+                    .select('id, username, display_name, total_v6_time, avatar_url, pfp_type')
                     .order('total_v6_time', { ascending: false })
                     .limit(100);
 
@@ -545,7 +513,9 @@
                         userDataRankInfo = {
                             ...rankedUsers[index],
                             totalV6Time: rankedUsers[index].total_v6_time,
-                            displayName: rankedUsers[index].display_name
+                            displayName: rankedUsers[index].display_name,
+                            pfpType: rankedUsers[index].pfp_type,
+                            customPfp: rankedUsers[index].avatar_url
                         };
                     }
                 }
@@ -567,8 +537,9 @@
                 const hours = Math.floor((rankData.totalV6Time || 0) / 3600);
                 const minutes = Math.floor(((rankData.totalV6Time || 0) % 3600) / 60);
                 document.getElementById('user-stats-time').textContent = `${hours}h ${minutes}m total`;
+                
                 const avatarWidget = document.getElementById('user-avatar-widget');
-                avatarWidget.innerHTML = getAvatarHTML(rankData, "w-24 h-24", false, null, "rounded-[32px]");
+                avatarWidget.innerHTML = getAvatarHTML(rankData, "w-full h-full", false, null, "rounded-[24px]");
             }
         }
 
@@ -584,11 +555,11 @@
                 document.getElementById('stat-total-time').textContent = `${hours}h ${minutes}m`;
             };
 
-            // Real-time time update via Supabase (if supported by project) or simple fetch
+            // Real-time time update via Supabase
             const { data: profile } = await supabase.from('profiles').select('total_v6_time').eq('id', uid).single();
             displayTime(profile?.total_v6_time || 0);
 
-            // Subscribe to real-time changes on profiles table
+            // Subscribe to real-time changes
             supabase
                 .channel('profile-updates')
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` }, payload => {
@@ -607,7 +578,7 @@
             listEl.innerHTML = '';
             
             if (recentPages.length === 0) {
-                listEl.innerHTML = '<div class="col-span-2 py-20 text-center italic text-sm" style="color: var(--text-muted); opacity: 0.6;">No recent activity found.</div>';
+                listEl.innerHTML = '<div class="col-span-full py-16 text-center italic text-sm opacity-40">No recent activity found.</div>';
                 return;
             }
 
@@ -625,13 +596,12 @@
                 }
                 
                 item.innerHTML = `
-                    <div class="icon-box">
-                        <i class="${icon}"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
+                    <div class="icon-box shadow-inner"><i class="${icon}"></i></div>
+                    <div class="flex-1 min-w-0 ml-2">
                         <p class="text-sm font-medium text-white truncate">${p.title}</p>
-                        <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">${new Date(p.ts).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                        <p class="text-[10px] text-[var(--text-muted)] opacity-60 uppercase tracking-widest font-bold mt-1">${new Date(p.ts).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                     </div>
+                    <i class="fas fa-chevron-right text-xs opacity-20 ml-2 group-hover:opacity-100 transition-opacity"></i>
                 `;
 
                 item.onclick = () => {
@@ -651,7 +621,7 @@
                 const now = new Date();
                 const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
                 const [time, ampm] = timeStr.split(' ');
-                document.getElementById('clock-time').innerHTML = `${time}<span class="text-3xl ml-2 opacity-60 uppercase font-light">${ampm}</span>`;
+                document.getElementById('clock-time').innerHTML = `${time}<span class="text-2xl md:text-4xl ml-3 opacity-30 uppercase font-light">${ampm}</span>`;
                 document.getElementById('clock-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
             };
             update();
@@ -662,4 +632,3 @@
     </script>
 </body>
 </html>
-<!-- Made with ❤️ from 4SP -->
