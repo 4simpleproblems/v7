@@ -87,7 +87,7 @@
             font-weight: 300;
             background-color: var(--bg-page);
             color: var(--text-main);
-            overflow-x: hidden; /* Allows vertical scrolling naturally */
+            overflow-x: hidden;
             min-height: 100vh;
         }
 
@@ -171,7 +171,6 @@
             border: 1px solid var(--border-main);
             border-radius: 1.5rem;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            overflow: hidden;
             position: relative;
         }
         .zone-item:hover {
@@ -188,7 +187,6 @@
             min-height: 280px;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
-            overflow: hidden;
             z-index: 1; 
         }
         .other-zone-item:hover {
@@ -1018,8 +1016,8 @@
 
             card.innerHTML = `
                 <div class="relative w-full h-full cursor-pointer group" style="min-height: 280px;">
-                    <img data-src="${resolvedImgSrc}" alt="${game.name}" loading="lazy" decoding="async" class="w-full h-full object-cover absolute inset-0">
-                    <div class="image-overlay absolute inset-0"></div>
+                    <img data-src="${resolvedImgSrc}" alt="${game.name}" loading="lazy" decoding="async" class="w-full h-full object-cover absolute inset-0 rounded-[2rem]">
+                    <div class="image-overlay absolute inset-0 rounded-[2rem]"></div>
                     <div class="absolute inset-0 p-6 sm:p-8 flex flex-col justify-between">
                         <div class="flex items-start justify-between w-full">
                             <h3 class="text-4xl md:text-5xl font-light tracking-tight ${smartTextClass} truncate drop-shadow-lg" style="max-width: 80%;" title="${game.name}">${game.name}</h3>
@@ -1053,14 +1051,54 @@
             }));
             
             const versionBtn = card.querySelector('.version-btn');
-            if (versionBtn) { versionBtn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.eagler-dropdown.show').forEach(d => d.classList.remove('show')); versionBtn.nextElementSibling.classList.toggle('show'); }); }
+            if (versionBtn) { 
+                versionBtn.addEventListener('click', (e) => { 
+                    e.stopPropagation(); 
+                    document.querySelectorAll('.eagler-dropdown.show').forEach(d => {
+                        if (d !== versionBtn.nextElementSibling) {
+                            d.classList.remove('show');
+                            const c = d.closest('.other-zone-item, .zone-item');
+                            if(c) c.style.zIndex = '';
+                        }
+                    }); 
+                    const drop = versionBtn.nextElementSibling;
+                    drop.classList.toggle('show'); 
+                    card.style.zIndex = drop.classList.contains('show') ? '50' : '';
+                }); 
+            }
             
-            card.querySelectorAll('.eagler-dropdown-link:not(.favorite-link)').forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openZone({ ...game, name: link.dataset.versionName ? `${game.name} - ${link.dataset.versionName}` : game.name, url: link.dataset.url }); link.closest('.eagler-dropdown').classList.remove('show'); }));
+            card.querySelectorAll('.eagler-dropdown-link:not(.favorite-link)').forEach(link => link.addEventListener('click', (e) => { 
+                e.preventDefault(); 
+                e.stopPropagation(); 
+                openZone({ ...game, name: link.dataset.versionName ? `${game.name} - ${link.dataset.versionName}` : game.name, url: link.dataset.url }); 
+                const drop = link.closest('.eagler-dropdown');
+                drop.classList.remove('show'); 
+                card.style.zIndex = '';
+            }));
 
             const favBtn = card.querySelector('.btn-card-action.fav-action');
             if (favBtn.classList.contains('version-favorite-btn')) {
-                favBtn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.eagler-dropdown.show').forEach(d => d.classList.remove('show')); favBtn.nextElementSibling.classList.toggle('show'); });
-                card.querySelectorAll('.favorite-link').forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(link.dataset.favoriteId); link.closest('.eagler-dropdown').classList.remove('show'); }));
+                favBtn.addEventListener('click', (e) => { 
+                    e.stopPropagation(); 
+                    document.querySelectorAll('.eagler-dropdown.show').forEach(d => {
+                        if (d !== favBtn.nextElementSibling) {
+                            d.classList.remove('show');
+                            const c = d.closest('.other-zone-item, .zone-item');
+                            if(c) c.style.zIndex = '';
+                        }
+                    }); 
+                    const drop = favBtn.nextElementSibling;
+                    drop.classList.toggle('show');
+                    card.style.zIndex = drop.classList.contains('show') ? '50' : '';
+                });
+                card.querySelectorAll('.favorite-link').forEach(link => link.addEventListener('click', (e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation(); 
+                    toggleFavorite(link.dataset.favoriteId); 
+                    const drop = link.closest('.eagler-dropdown');
+                    drop.classList.remove('show'); 
+                    card.style.zIndex = '';
+                }));
             } else {
                 favBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(game.id); });
             }
@@ -1091,8 +1129,8 @@
 
             card.innerHTML = `
                 <div class="relative w-full cursor-pointer group h-full flex flex-col">
-                    <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover"></div>
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover rounded-[1.5rem]"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[1.5rem]"></div>
                     <h3 class="absolute top-3 left-3 right-3 z-10 bg-black/60 backdrop-blur-md rounded-xl px-3 py-2 ${smartTextClass} truncate text-xs font-bold shadow-lg border border-white/10" title="${game.name}">${game.name}</h3>
                     <div class="absolute bottom-3 right-3 bg-black/60 backdrop-blur-xl rounded-2xl p-1.5 flex items-center gap-1.5 shadow-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
                         ${game.isDownload ? `<a class="btn-card-action download-action" href="${game.url}" target="_blank" title="Download Game"><i class="fa-solid fa-download"></i></a>` : `<button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play"></i></button>`}
@@ -1665,6 +1703,8 @@
                 if (!ev.target.closest('.version-btn') && !ev.target.closest('.version-favorite-btn') && !ev.target.closest('.eagler-dropdown')) {
                     document.querySelectorAll('.eagler-dropdown.show').forEach(d => {
                         d.classList.remove('show');
+                        const card = d.closest('.other-zone-item, .zone-item');
+                        if(card) card.style.zIndex = '';
                     });
                 }
             });
