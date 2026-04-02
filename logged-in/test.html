@@ -72,7 +72,6 @@
             background: rgba(255,255,255,0.02);
             border: 1px solid var(--border-main);
             border-radius: 1.5rem;
-            padding: 1.5rem;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -175,77 +174,85 @@
         <section class="flex-1 min-w-0 p-8 md:p-16 pt-12 overflow-y-auto custom-scroll">
             <div class="max-w-[1200px] mx-auto pb-20">
                 
-                <div class="mb-16">
-                    <p id="clock-date" class="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-4 opacity-80">--------</p>
-                    <h2 id="clock-time" class="text-6xl md:text-8xl font-light tracking-tight mb-2" style="color: var(--text-main);">00:00<span class="text-2xl md:text-4xl ml-3 opacity-30 uppercase font-light">--</span></h2>
-                    <p class="text-xl md:text-2xl mt-4" style="color: var(--text-muted); opacity: 0.7;">Good day, <span id="user-name-display" class="font-medium text-white opacity-100">User</span>.</p>
+                <div class="mb-10 flex flex-col xl:flex-row justify-between items-start xl:items-end gap-8 border-b border-white/5 pb-8">
+                    <div>
+                        <p id="clock-date" class="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-4 opacity-80">--------</p>
+                        <h2 id="clock-time" class="text-6xl md:text-8xl font-light tracking-tight mb-2" style="color: var(--text-main);">00:00<span class="text-2xl md:text-4xl ml-3 opacity-30 uppercase font-light">--</span></h2>
+                        <p class="text-xl md:text-2xl mt-4" style="color: var(--text-muted); opacity: 0.7;">Good day, <span id="user-name-display" class="font-medium text-white opacity-100">User</span>.</p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4 w-full xl:w-auto shrink-0 mb-2">
+                        <div class="stat-pill flex-1 xl:w-56 px-6 py-5">
+                            <div>
+                                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-2">Experience Time</p>
+                                <div id="stat-total-time" class="text-3xl font-light" style="color: var(--text-main);">0h 0m</div>
+                            </div>
+                            <p class="text-[10px] mt-4 opacity-40 uppercase tracking-widest" style="color: var(--text-muted);">Session Duration</p>
+                        </div>
+
+                        <div class="stat-pill flex-1 xl:w-56 px-6 py-5">
+                            <div>
+                                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-2">System Analytics</p>
+                                <div id="stat-browser" class="text-sm font-medium" style="color: var(--accent-primary);">Loading...</div>
+                                <div id="stat-os" class="text-[10px] mt-1 opacity-60 uppercase tracking-widest" style="color: var(--text-muted);">Detecting OS</div>
+                            </div>
+                            <p id="stat-device" class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 mt-4" style="color: var(--text-muted);">Project Niobium</p>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="flex flex-col gap-8">
                     
-                    <div class="lg:col-span-8 relative">
-                        <div id="leaderboard-widget" class="feature-card p-10 h-full flex flex-col md:flex-row items-center justify-between gap-8 greyed-out">
+                    <div class="relative w-full">
+                        <div id="leaderboard-widget" class="feature-card px-10 py-6 flex flex-col md:flex-row items-center justify-between gap-6 greyed-out">
                             
-                            <div class="flex flex-col justify-center border-b md:border-b-0 md:border-r border-white/10 pb-6 md:pb-0 md:pr-10 text-center md:text-left shrink-0">
-                                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-2">Your Rank</p>
-                                <div id="leaderboard-rank" class="text-6xl font-light tracking-tight" style="color: var(--accent-primary);">#--</div>
-                                <div class="text-[10px] opacity-40 mt-3 uppercase tracking-widest font-bold">Global Standing</div>
+                            <div class="flex flex-col justify-center border-b md:border-b-0 md:border-r border-white/10 pb-4 md:pb-0 md:pr-8 text-center md:text-left shrink-0">
+                                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-1">Your Rank</p>
+                                <div id="leaderboard-rank" class="text-5xl font-light tracking-tight" style="color: var(--accent-primary);">#--</div>
+                                <div class="text-[10px] opacity-40 mt-2 uppercase tracking-widest font-bold">Global Standing</div>
                             </div>
 
-                            <div class="flex-grow flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-6 w-full">
-                                <div id="user-avatar-widget" class="w-24 h-24 rounded-[32px] flex items-center justify-center overflow-hidden shrink-0 border-2 border-white/5 bg-black/40 shadow-2xl">
-                                    <i class="fas fa-user text-3xl" style="color: var(--accent-primary);"></i>
+                            <div class="flex-grow flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5 w-full">
+                                <div id="user-avatar-widget" class="w-20 h-20 rounded-[24px] flex items-center justify-center overflow-hidden shrink-0 border-2 border-white/5 bg-black/40 shadow-2xl">
+                                    <i class="fas fa-user text-2xl" style="color: var(--accent-primary);"></i>
                                 </div>
-                                <div class="min-w-0 mt-2">
+                                <div class="min-w-0 mt-1">
                                     <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-1">Your Statistics</p>
-                                    <div id="user-stats-name" class="text-3xl font-medium truncate" style="color: var(--text-main);">Loading...</div>
-                                    <div id="user-stats-time" class="text-sm font-mono mt-2 opacity-50" style="color: var(--text-muted);">0h 0m total</div>
+                                    <div id="user-stats-name" class="text-2xl font-medium truncate" style="color: var(--text-main);">Loading...</div>
+                                    <div id="user-stats-time" class="text-xs font-mono mt-1 opacity-50" style="color: var(--text-muted);">0h 0m total</div>
                                 </div>
                             </div>
                             
-                            <div class="shrink-0 mt-4 md:mt-0">
-                                <a href="/logged-in/leaderboard.html" class="btn-toolbar-style border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10 py-4 px-8 rounded-2xl shadow-lg">
+                            <div class="shrink-0 mt-2 md:mt-0">
+                                <a href="/logged-in/leaderboard.html" class="btn-toolbar-style border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10 py-3 px-6 rounded-xl shadow-lg">
                                     Rankings <i class="fas fa-trophy ml-2"></i>
                                 </a>
                             </div>
                         </div>
 
                         <div id="leaderboard-overlay" style="display: flex;">
-                            <div id="leaderboard-prompt-content" class="text-center p-8 max-w-sm">
-                                <div class="w-16 h-16 bg-indigo-500/10 border border-indigo-500/20 rounded-[20px] flex items-center justify-center text-indigo-400 text-2xl mx-auto mb-6">
+                            <div id="leaderboard-prompt-content" class="w-full max-w-3xl flex flex-col sm:flex-row items-center gap-8 p-6 md:p-8">
+                                <div class="w-16 h-16 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400 text-3xl shrink-0 shadow-inner">
                                     <i class="fas fa-chart-simple"></i>
                                 </div>
-                                <p id="leaderboard-prompt-text" class="text-sm mb-6 leading-relaxed" style="color: var(--text-muted);">Join the leaderboard to see your rank and network standing.</p>
-                                <button id="accept-leaderboard-btn" class="btn-toolbar-style btn-primary-override w-full py-4 text-[10px] font-black uppercase tracking-widest shadow-2xl">
-                                    Accept Terms
-                                </button>
-                                <div class="mt-4">
-                                    <a href="/legal.html#leaderboard-terms" target="_blank" class="text-[10px] opacity-40 hover:opacity-100 transition-opacity uppercase tracking-widest font-bold">View Terms</a>
+                                
+                                <div class="flex-grow text-center sm:text-left">
+                                    <p id="leaderboard-prompt-text" class="text-sm md:text-base leading-relaxed" style="color: var(--text-muted);">Join the leaderboard to see your rank and network standing.</p>
+                                </div>
+                                
+                                <div class="flex flex-col gap-3 shrink-0 w-full sm:w-auto">
+                                    <button id="accept-leaderboard-btn" class="btn-toolbar-style btn-primary-override w-full px-8 py-4 text-[10px] font-black uppercase tracking-widest shadow-2xl">
+                                        Accept Terms
+                                    </button>
+                                    <div class="text-center mt-1">
+                                        <a href="/legal.html#leaderboard-terms" target="_blank" class="text-[10px] opacity-40 hover:opacity-100 transition-opacity uppercase tracking-widest font-bold">View Terms</a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="lg:col-span-4 feature-card p-8 flex flex-col gap-6 no-hover">
-                        <div class="stat-pill flex-1">
-                            <div>
-                                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-2">Experience Time</p>
-                                <div id="stat-total-time" class="text-4xl font-light" style="color: var(--text-main);">0h 0m</div>
-                            </div>
-                            <p class="text-xs mt-4 opacity-40" style="color: var(--text-muted);">Total session duration in V6</p>
-                        </div>
-
-                        <div class="stat-pill flex-1">
-                            <div>
-                                <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-2">System Analytics</p>
-                                <div id="stat-browser" class="text-base font-medium" style="color: var(--accent-primary);">Loading...</div>
-                                <div id="stat-os" class="text-xs mt-1 opacity-60" style="color: var(--text-muted);">Detecting OS</div>
-                            </div>
-                            <p id="stat-device" class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 mt-4" style="color: var(--text-muted);">Project Niobium</p>
-                        </div>
-                    </div>
-
-                    <div class="lg:col-span-12 feature-card p-10 no-hover">
+                    <div class="feature-card p-10 no-hover">
                         <div class="flex justify-between items-end mb-8 border-b border-white/5 pb-6">
                             <div>
                                 <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2">Recently Accessed</p>
@@ -424,7 +431,7 @@
                         }
                         loadAnalytics(uid, pageConfig, data);
                     } else {
-                        // Create basic doc if it doesn't exist (e.g. first time Supabase login)
+                        // Create basic doc if it doesn't exist
                         console.log("Dashboard: Creating missing user profile for", uid);
                         const username = user.user_metadata?.custom_claims?.global_name || user.email.split('@')[0];
                         if (source === 'supabase') {
@@ -532,7 +539,7 @@
                 document.getElementById('user-stats-time').textContent = `${hours}h ${minutes}m total`;
                 
                 const avatarWidget = document.getElementById('user-avatar-widget');
-                avatarWidget.innerHTML = getAvatarHTML(rankData, "w-full h-full", false, null, "rounded-[32px]");
+                avatarWidget.innerHTML = getAvatarHTML(rankData, "w-full h-full", false, null, "rounded-[24px]");
             }
         }
 
