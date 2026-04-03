@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     blocked_users UUID[] DEFAULT '{}',
     is_admin BOOLEAN DEFAULT FALSE,
     is_tester BOOLEAN DEFAULT FALSE,
+    hide_streaks BOOLEAN DEFAULT FALSE,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -57,6 +58,7 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS daily_slots_used JSONB DEFA
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS blocked_users UUID[] DEFAULT '{}';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_tester BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS hide_streaks BOOLEAN DEFAULT FALSE;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
@@ -311,7 +313,7 @@ $$;
 
 -- Function to get all friend streaks for a user
 CREATE OR REPLACE FUNCTION public.get_my_friend_streaks()
-RETURNS TABLE(friend_id UUID, friend_username TEXT, friend_display_name TEXT, friend_avatar_url TEXT, pfp_type TEXT, streak_count INTEGER, last_streak_date DATE)
+RETURNS TABLE(friend_id UUID, friend_username TEXT, friend_display_name TEXT, friend_avatar_url TEXT, pfp_type TEXT, streak_count INTEGER, last_streak_date DATE, friend_hide_streaks BOOLEAN)
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
@@ -324,7 +326,8 @@ BEGIN
         p.avatar_url as friend_avatar_url,
         p.pfp_type,
         COALESCE(s.streak_count, 0) as streak_count,
-        s.last_streak_date
+        s.last_streak_date,
+        p.hide_streaks as friend_hide_streaks
     FROM public.follows f1
     JOIN public.follows f2 ON f1.follower_id = f2.following_id AND f1.following_id = f2.follower_id
     JOIN public.profiles p ON p.id = f1.following_id
@@ -337,7 +340,7 @@ $$;
 
 -- Function for Leaderboard: Get users with the most/highest streaks
 CREATE OR REPLACE FUNCTION public.get_streak_leaderboard()
-RETURNS TABLE(user_id UUID, username TEXT, display_name TEXT, avatar_url TEXT, pfp_type TEXT, total_streaks BIGINT, highest_streak INTEGER)
+RETURNS TABLE(user_id UUID, username TEXT, display_name TEXT, avatar_url TEXT, pfp_type TEXT, total_streaks BIGINT, highest_streak INTEGER, hide_streaks BOOLEAN)
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
@@ -350,7 +353,8 @@ BEGIN
         p.avatar_url,
         p.pfp_type,
         COUNT(s.streak_count) FILTER (WHERE s.streak_count > 0) as total_streaks,
-        MAX(COALESCE(s.streak_count, 0)) as highest_streak
+        MAX(COALESCE(s.streak_count, 0)) as highest_streak,
+        p.hide_streaks
     FROM public.profiles p
     LEFT JOIN public.friend_streaks s ON (s.user1_id = p.id OR s.user2_id = p.id)
     GROUP BY p.id
@@ -362,8 +366,8 @@ $$;
 -- New Function: Get top PAIRS of friends by streak count
 CREATE OR REPLACE FUNCTION public.get_top_friend_streaks()
 RETURNS TABLE(
-    user1_id UUID, user1_username TEXT, user1_display_name TEXT, user1_avatar_url TEXT, user1_pfp_type TEXT,
-    user2_id UUID, user2_username TEXT, user2_display_name TEXT, user2_avatar_url TEXT, user2_pfp_type TEXT,
+    user1_id UUID, user1_username TEXT, user1_display_name TEXT, user1_avatar_url TEXT, user1_pfp_type TEXT, user1_hide_streaks BOOLEAN,
+    user2_id UUID, user2_username TEXT, user2_display_name TEXT, user2_avatar_url TEXT, user2_pfp_type TEXT, user2_hide_streaks BOOLEAN,
     streak_count INTEGER
 )
 LANGUAGE plpgsql
@@ -372,8 +376,8 @@ AS $$
 BEGIN
     RETURN QUERY
     SELECT 
-        u1.id as user1_id, u1.username as user1_username, u1.display_name as user1_display_name, u1.avatar_url as user1_avatar_url, u1.pfp_type as user1_pfp_type,
-        u2.id as user2_id, u2.username as user2_username, u2.display_name as user2_display_name, u2.avatar_url as user2_avatar_url, u2.pfp_type as user2_pfp_type,
+        u1.id as user1_id, u1.username as user1_username, u1.display_name as user1_display_name, u1.avatar_url as user1_avatar_url, u1.pfp_type as user1_pfp_type, u1.hide_streaks as user1_hide_streaks,
+        u2.id as user2_id, u2.username as user2_username, u2.display_name as user2_display_name, u2.avatar_url as user2_avatar_url, u2.pfp_type as user2_pfp_type, u2.hide_streaks as user2_hide_streaks,
         s.streak_count
     FROM public.friend_streaks s
     JOIN public.profiles u1 ON s.user1_id = u1.id

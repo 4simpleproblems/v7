@@ -436,10 +436,21 @@
                         // Streak Pair Mode
                         const isPart = (data.user1_id === currentUid || data.user2_id === currentUid);
                         if (isPart) myRank = i;
-                        if (i === 1) updateChampionStreak(data);
+                        if (i === 1) updateChampionStreak(data, currentUid);
 
-                        const pfp1 = getAvatarHTML({ id: data.user1_id, username: data.user1_username, display_name: data.user1_display_name, pfp_type: data.user1_pfp_type, avatar_url: data.user1_avatar_url }, "w-full h-full", false, null, "rounded-xl");
-                        const pfp2 = getAvatarHTML({ id: data.user2_id, username: data.user2_username, display_name: data.user2_display_name, pfp_type: data.user2_pfp_type, avatar_url: data.user2_avatar_url }, "w-full h-full", false, null, "rounded-xl");
+                        const user1IsHidden = data.user1_hide_streaks && data.user1_id !== currentUid;
+                        const user2IsHidden = data.user2_hide_streaks && data.user2_id !== currentUid;
+
+                        const user1DisplayName = user1IsHidden ? 'Someone' : (data.user1_display_name || data.user1_username);
+                        const user2DisplayName = user2IsHidden ? 'Someone' : (data.user2_display_name || data.user2_username);
+                        
+                        const user1Username = user1IsHidden ? 'someone' : data.user1_username;
+                        const user2Username = user2IsHidden ? 'someone' : data.user2_username;
+
+                        const dummyUser = { display_name: 'Someone', pfp_type: 'letter', pfp_letter_bg: '#333333', pfp_letter_char: '?' };
+
+                        const pfp1 = getAvatarHTML(user1IsHidden ? dummyUser : { id: data.user1_id, username: data.user1_username, display_name: data.user1_display_name, pfp_type: data.user1_pfp_type, avatar_url: data.user1_avatar_url }, "w-full h-full", false, null, "rounded-xl");
+                        const pfp2 = getAvatarHTML(user2IsHidden ? dummyUser : { id: data.user2_id, username: data.user2_username, display_name: data.user2_display_name, pfp_type: data.user2_pfp_type, avatar_url: data.user2_avatar_url }, "w-full h-full", false, null, "rounded-xl");
 
                         item.innerHTML = `
                             <div class="rank-num ${rankClass}">${i}</div>
@@ -448,7 +459,7 @@
                                 <div class="pfp-slot">${pfp2}</div>
                             </div>
                             <div class="flex-grow ml-4 min-w-0">
-                                <div class="text-sm font-bold truncate text-white">@${data.user1_username} <span class="text-xs opacity-40 mx-1">&</span> @${data.user2_username}</div>
+                                <div class="text-sm font-bold truncate text-white">@${user1Username} <span class="text-xs opacity-40 mx-1">&</span> @${user2Username}</div>
                                 <div class="text-[10px] opacity-40 uppercase tracking-widest font-black mt-1">Shared DailyPhoto Duo</div>
                             </div>
                             <div class="streak-fire-badge">
@@ -472,18 +483,29 @@
             }
         }
 
-        function updateChampionStreak(data) {
-            document.getElementById('champion-name').textContent = `@${data.user1_username} & @${data.user2_username}`;
+        function updateChampionStreak(data, currentUid) {
+            const user1IsHidden = data.user1_hide_streaks && data.user1_id !== currentUid;
+            const user2IsHidden = data.user2_hide_streaks && data.user2_id !== currentUid;
+
+            const user1Username = user1IsHidden ? 'someone' : data.user1_username;
+            const user2Username = user2IsHidden ? 'someone' : data.user2_username;
+
+            document.getElementById('champion-name').textContent = `@${user1Username} & @${user2Username}`;
             document.getElementById('champion-time').textContent = `Shared streak of ${data.streak_count} days`;
             
+            const dummyUser = { display_name: 'Someone', pfp_type: 'letter', pfp_letter_bg: '#333333', pfp_letter_char: '?' };
             const champAvatarContainer = document.getElementById('champion-avatar');
-            const pfp1 = getAvatarHTML({ id: data.user1_id, username: data.user1_username, display_name: data.user1_display_name, pfp_type: data.user1_pfp_type, avatar_url: data.user1_avatar_url }, "w-10 h-10", false, null, "rounded-xl");
-            const pfp2 = getAvatarHTML({ id: data.user2_id, username: data.user2_username, display_name: data.user2_display_name, pfp_type: data.user2_pfp_type, avatar_url: data.user2_avatar_url }, "w-10 h-10", false, null, "rounded-xl");
+            const pfp1 = getAvatarHTML(user1IsHidden ? dummyUser : { id: data.user1_id, username: data.user1_username, display_name: data.user1_display_name, pfp_type: data.user1_pfp_type, avatar_url: data.user1_avatar_url }, "w-full h-full", false, null, "rounded-xl");
+            const pfp2 = getAvatarHTML(user2IsHidden ? dummyUser : { id: data.user2_id, username: data.user2_username, display_name: data.user2_display_name, pfp_type: data.user2_pfp_type, avatar_url: data.user2_avatar_url }, "w-full h-full", false, null, "rounded-xl");
             
+            champAvatarContainer.classList.add('no-hover');
+            champAvatarContainer.style.background = 'transparent';
+            champAvatarContainer.style.border = 'none';
+            champAvatarContainer.style.boxShadow = 'none';
             champAvatarContainer.innerHTML = `
-                <div class="dual-pfp p-4 scale-125">
-                    <div class="pfp-slot">${pfp1}</div>
-                    <div class="pfp-slot">${pfp2}</div>
+                <div class="dual-pfp scale-150 transform translate-y-2">
+                    <div class="pfp-slot" style="width: 4rem; height: 4rem; border-radius: 1.25rem;">${pfp1}</div>
+                    <div class="pfp-slot" style="width: 4rem; height: 4rem; border-radius: 1.25rem;">${pfp2}</div>
                 </div>
             `;
             
@@ -556,6 +578,10 @@
             document.getElementById('champion-time').textContent = `${hours}h ${minutes}m total activity`;
             
             const champAvatarContainer = document.getElementById('champion-avatar');
+            champAvatarContainer.classList.remove('no-hover');
+            champAvatarContainer.style.background = '';
+            champAvatarContainer.style.border = '';
+            champAvatarContainer.style.boxShadow = '';
             champAvatarContainer.innerHTML = getAvatarHTML({ ...data, displayName: data.display_name, pfpType: data.pfp_type, customPfp: data.avatar_url }, "w-full h-full", false, null, "rounded-[36px]");
             
             const championSection = document.getElementById('top-user-section');

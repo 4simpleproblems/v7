@@ -32,6 +32,7 @@
         const tabContent = {
             'general': { title: 'General Settings', icon: 'fa-gear' },
             'privacy': { title: 'Privacy & Security', icon: 'fa-shield-halved' },
+            'social': { title: 'Social Permissions', icon: 'fa-user-group' },
             'personalization': { title: 'Personalization', icon: 'fa-palette' },
             'data': { title: 'Data Management', icon: 'fa-database' },
             'about': { title: 'About 4SP', icon: 'fa-circle-info' },
@@ -166,6 +167,7 @@
                     mibiConfig: 'mibi_config',
                     showOffline: 'show_offline',
                     leaderboardOptOut: 'leaderboard_opt_out',
+                    hideStreaks: 'hide_streaks',
                     navbarTheme: 'navbar_theme',
                     schoolId: 'school_id',
                     schoolName: 'school_name',
@@ -1018,8 +1020,17 @@
                     
                     <div id="panicKeyGlobalMessage" class="general-message-area text-sm"></div>
                 </div>
+            `;
+        }
 
-                <div class="w-full mt-8">
+        /**
+         * NEW: Generates the HTML for the "Social Permissions" section.
+         */
+        function getSocialContent() {
+            return `
+                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-6">Social Permissions</h2>
+
+                <div class="w-full">
                     <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">School & District</h3>
                     <div id="schoolSettingsSection" class="settings-box transition-all duration-300 p-6 relative">
                         <!-- Current View -->
@@ -1107,11 +1118,20 @@
                                 <p class="text-xs font-light text-[var(--text-muted)] opacity-60">Show your profile and activity on the global leaderboard.</p>
                             </div>
                             <input type="checkbox" id="leaderboardToggle" checked class="custom-checkbox w-5 h-5">
-                        </div>                        
+                        </div>
+                        
+                        <div class="flex items-center justify-between border-t border-[var(--border-main)] pt-6">
+                            <div>
+                                <p class="text-emphasis">Hide Friend Streaks</p>
+                                <p class="text-xs font-light text-[var(--text-muted)] opacity-60">When enabled, mutual friend streaks will show as "Someone" with a placeholder pfp for other users.</p>
+                            </div>
+                            <input type="checkbox" id="hideStreaksToggle" class="custom-checkbox w-5 h-5">
+                        </div>
+
                         <div class="flex justify-between items-center pt-4 border-t border-[var(--border-main)]">
                             <p id="activityPresenceMessage" class="general-message-area text-sm"></p>
                             <button id="saveActivityPresenceBtn" class="btn-toolbar-style btn-primary-override w-36" style="padding: 0.5rem 0.75rem;">
-                                <i class="fa-solid fa-check mr-1"></i> Save Status
+                                <i class="fa-solid fa-check mr-1"></i> Save Socials
                             </button>
                         </div>
                     </div>
@@ -3498,8 +3518,13 @@
                     showMessage(urlChangerMessage, 'An error occurred while saving.', 'error');
                 }
             });
+        }
 
-            // --- School & District Logic ---
+        /**
+         * NEW: Loads data and adds event listeners for the Social Permissions tab.
+         */
+        async function loadSocialTab() {
+            // --- 1. School & District Logic ---
             const schoolDisplay = document.getElementById('current-school-display');
             const districtDisplay = document.getElementById('current-district-display');
             const changeSchoolBtn = document.getElementById('changeSchoolBtn');
@@ -3661,11 +3686,11 @@
                     if (confirm('Are you sure you want to remove your school and district affiliation?')) {
                         try {
                             await saveUserData(uid, {
-                                schoolId: deleteField(),
-                                schoolName: deleteField(),
-                                districtId: deleteField(),
-                                state: deleteField(),
-                                stateAbbr: deleteField(),
+                                schoolId: null,
+                                schoolName: null,
+                                districtId: null,
+                                state: null,
+                                stateAbbr: null,
                                 schoolSkipped: true,
                                 schoolChangesThisMonth: schoolChangesThisMonth + 1,
                                 lastSchoolChangeMonth: currentMonth
@@ -3678,9 +3703,10 @@
                 });
             }
 
-            // --- 4. Activity Presence Logic ---
+            // --- 2. Activity Presence Logic ---
             const showOfflineToggle = document.getElementById('showOfflineToggle');
             const leaderboardToggle = document.getElementById('leaderboardToggle');
+            const hideStreaksToggle = document.getElementById('hideStreaksToggle');
             const saveActivityPresenceBtn = document.getElementById('saveActivityPresenceBtn');
             const activityPresenceMessage = document.getElementById('activityPresenceMessage');
 
@@ -3690,6 +3716,7 @@
                 if (userData) {
                     showOfflineToggle.checked = !!userData.showOffline;
                     leaderboardToggle.checked = !userData.leaderboardOptOut;
+                    hideStreaksToggle.checked = !!userData.hide_streaks;
                 }
 
                 saveActivityPresenceBtn.addEventListener('click', async () => {
@@ -3699,18 +3726,20 @@
 
                         await saveUserData(uid, {
                             showOffline: showOfflineToggle.checked,
-                            leaderboardOptOut: !leaderboardToggle.checked
+                            leaderboardOptOut: !leaderboardToggle.checked,
+                            hideStreaks: hideStreaksToggle.checked
                         });
 
-                        showMessage(activityPresenceMessage, 'Presence settings saved!', 'success');
+                        showMessage(activityPresenceMessage, 'Social settings saved!', 'success');
                     } catch (e) {
-                        console.error("Error saving activity presence:", e);
+                        console.error("Error saving social permissions:", e);
                         showMessage(activityPresenceMessage, 'Error saving settings.', 'error');
                     } finally {
                         saveActivityPresenceBtn.disabled = false;
                     }
                 });
-            }        }
+            }
+        }
         
         
         /**
@@ -4424,8 +4453,12 @@
                 mainView.innerHTML = getPrivacyContent(); // Render HTML first
                 await loadPrivacyTab(); // Then load data and add listeners
             }
-            else if (tabId === 'personalization') {
-                // --- NEW: Load Personalization Tab ---
+            else if (tabId === 'social') {
+                // NEW: Load Social Tab
+                mainView.innerHTML = getSocialContent(); // Render HTML first
+                await loadSocialTab(); // Then load data and add listeners
+            }
+            else if (tabId === 'personalization') {                // --- NEW: Load Personalization Tab ---
                 mainView.innerHTML = getPersonalizationContent(); // Render HTML
                 await loadPersonalizationTab(); // Load data and add listeners
             }
