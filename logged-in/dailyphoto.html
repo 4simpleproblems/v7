@@ -361,6 +361,10 @@
                         <span>My Moments</span>
                     </div>
                     <div id="sidebar-nav-friends" class="sidebar-nav-item">
+                        <i class="fas fa-fire text-orange-500"></i>
+                        <span>Friend Streaks</span>
+                    </div>
+                    <div id="sidebar-nav-mutuals" class="sidebar-nav-item">
                         <i class="fas fa-user-friends"></i>
                         <span>Mutual Friends</span>
                     </div>
@@ -383,7 +387,18 @@
                     </div>
                 </div>
 
-                <!-- Friends Section (Hidden by default) -->
+                <!-- Streaks Section -->
+                <div id="streaks-section-wrapper" class="hidden">
+                    <div class="mb-4 flex items-center justify-between px-2">
+                        <span class="text-[10px] font-bold uppercase tracking-widest opacity-40">Active Streaks</span>
+                        <i class="fas fa-fire text-orange-500 text-xs"></i>
+                    </div>
+                    <div id="streaks-list-items" class="space-y-2">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Mutuals Section (Hidden by default) -->
                 <div id="friends-section-wrapper" class="hidden">
                     <div class="mb-6">
                         <div class="relative">
@@ -1296,6 +1311,15 @@
                     slots[slotIdx] = post.id;
                     await window.supabase.from('profiles').update({ daily_slots_used: slots }).eq('id', uid);
                     
+                    // Sync streaks with all mutual friends
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    if (mutualUids.length > 0) {
+                        const syncPromises = mutualUids.map(mid => 
+                            window.supabase.rpc('sync_friend_streak', { friend_id: mid, client_date: todayStr })
+                        );
+                        await Promise.allSettled(syncPromises);
+                    }
+
                     await CustomUI.alert("Upload complete!");
                     await loadFeed();
                 } catch (error) {
@@ -1376,8 +1400,8 @@
         };
 
         function setupSidebarNav() {
-            const btns = { posts: 'sidebar-nav-posts', friends: 'sidebar-nav-friends', blocked: 'sidebar-nav-blocked' };
-            const sections = { posts: 'daily-posts-section', friends: 'friends-section-wrapper', blocked: 'blocked-section' };
+            const btns = { posts: 'sidebar-nav-posts', streaks: 'sidebar-nav-friends', mutuals: 'sidebar-nav-mutuals', blocked: 'sidebar-nav-blocked' };
+            const sections = { posts: 'daily-posts-section', streaks: 'streaks-section-wrapper', mutuals: 'friends-section-wrapper', blocked: 'blocked-section' };
             
             Object.keys(btns).forEach(key => {
                 document.getElementById(btns[key]).onclick = () => {
@@ -1385,10 +1409,69 @@
                     Object.values(sections).forEach(s => document.getElementById(s).classList.add('hidden'));
                     document.getElementById(btns[key]).classList.add('active');
                     document.getElementById(sections[key]).classList.remove('hidden');
-                    if (key === 'friends') renderMutualsList();
+                    if (key === 'streaks') renderStreaksList();
+                    if (key === 'mutuals') renderMutualsList();
                     if (key === 'blocked') renderBlockedList();
                 };
             });
+        }
+
+        async function renderStreaksList() {
+            const list = document.getElementById('streaks-list-items');
+            list.innerHTML = '<div class="py-8 text-center opacity-20"><i class="fas fa-spinner fa-spin"></i></div>';
+            
+            try {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const { data: streaks, error } = await window.supabase.rpc('get_my_friend_streaks');
+                
+                if (error) throw error;
+                
+                list.innerHTML = '';
+                if (!streaks || streaks.length === 0) {
+                    list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No active streaks yet.</p>';
+                    return;
+                }
+
+                // Sync all streaks in parallel
+                const syncPromises = streaks.map(s => 
+                    window.supabase.rpc('sync_friend_streak', { friend_id: s.friend_id, client_date: todayStr })
+                );
+                await Promise.all(syncPromises);
+                
+                // Re-fetch synced streaks
+                const { data: syncedStreaks } = await window.supabase.rpc('get_my_friend_streaks');
+
+                (syncedStreaks || []).sort((a,b) => b.streak_count - a.streak_count).forEach(s => {
+                    if (s.streak_count === 0) return;
+                    
+                    const div = document.createElement('div');
+                    div.className = 'list-item-themed flex items-center justify-between group';
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg overflow-hidden shrink-0">
+                                ${getAvatarHTML({ ...s, display_name: s.friend_display_name, avatar_url: s.friend_avatar_url, pfp_type: s.pfp_type }, "w-8 h-8", false, currentUser)}
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold truncate">@${s.friend_username}</span>
+                                <span class="text-[9px] opacity-40 uppercase tracking-widest">Shared Streak</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                            <i class="fas fa-fire text-orange-500 text-[10px] animate-pulse"></i>
+                            <span class="text-xs font-black text-orange-400">${s.streak_count}</span>
+                        </div>
+                    `;
+                    div.onclick = () => window.location.href = `/logged-in/@${s.friend_username}`;
+                    list.appendChild(div);
+                });
+                
+                if (list.innerHTML === '') {
+                    list.innerHTML = '<p class="text-xs opacity-20 p-4 italic text-center">No active streaks yet.<br>Post today to start one!</p>';
+                }
+            } catch (e) {
+                console.error("renderStreaksList error:", e);
+                list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">Failed to load streaks.</p>';
+            }
         }
 
         function setupFeedToggles() {
