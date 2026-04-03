@@ -196,18 +196,34 @@ WITH CHECK (
 
 -- 7. TRAFFIC LOGS (For Analytics)
 CREATE TABLE IF NOT EXISTS public.traffic_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id TEXT PRIMARY KEY,
     user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-    session_id TEXT,
     hardware_id TEXT,
-    path TEXT,
-    title TEXT,
     user_agent TEXT,
     duration INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    page_views JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 ALTER TABLE public.traffic_logs ENABLE ROW LEVEL SECURITY;
+
+-- 12. ANALYTICS RPC FUNCTIONS
+CREATE OR REPLACE FUNCTION public.increment_v6_time(
+    uid UUID,
+    added_time INTEGER
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    UPDATE public.profiles
+    SET total_v6_time = total_v6_time + added_time,
+        last_active = NOW()
+    WHERE id = uid;
+END;
+$$;
 
 -- IMPORTANT FIX: drop the policy before recreating it (prevents 42710)
 DROP POLICY IF EXISTS "Admins can view traffic logs." ON public.traffic_logs;
