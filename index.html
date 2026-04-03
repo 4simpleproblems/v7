@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark custom-scroll">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,11 +9,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6659160370587814"
-      crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6659160370587814" crossorigin="anonymous"></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -22,14 +20,46 @@
 
     <style>
         :root {
-            --geist-foreground: 255, 255, 255;
-            --geist-background: 0, 0, 0;
+            --bg-page: var(--bg-primary, #000000);
+            --bg-card: var(--bg-secondary, #0d0d0d);
+            --text-main: var(--text-primary, #ffffff);
+            --text-muted: var(--text-secondary, #c0c0c0);
+            --accent-color: var(--accent-primary, #4f46e5);
+            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
+            --border-main: var(--border-primary, #1a1a1a);
+            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
+            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --btn-text: var(--button-text, #4f46e5);
         }
-        .dark { color-scheme: dark; }
-        body { font-family: 'Geist', sans-serif; }
-        
+
+        * { box-sizing: border-box; }
+
+        body { 
+            font-family: 'Geist', sans-serif; 
+            color: var(--text-main);
+            background-color: var(--bg-page);
+            font-weight: 300;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Subtle dot grid */
+        .grid-bg {
+            background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+
+        #dynamic-background {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%);
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.5; /* Always visible slightly instead of fade-in on scroll */
+        }
+
+        /* Gradient Text Animation */
         .gradient-text {
-            /* NEW: #FF7327 to Purple gradient */
             background-image: linear-gradient(90deg, #FF7327, #8b5cf6, #FF7327);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -37,293 +67,329 @@
             background-size: 300% auto;
             animation: shine 8s linear infinite;
         }
-
         @keyframes shine {
             to { background-position: 300% center; }
         }
 
-        .carousel-button {
-            width: 40px; 
-            height: 40px; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%; 
-            border: none;
-            cursor: pointer;
-            backdrop-filter: blur(8px) saturate(180%);
-            -webkit-backdrop-filter: blur(8px) saturate(180%);
-            transition: background-color 0.3s ease;
+        /* Feature Cards */
+        .feature-card {
+            border-radius: 2rem;
+            border: 1px solid var(--border-main);
+            background: var(--bg-card);
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .feature-card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
         }
 
-        .carousel-button-purple-hue { background-color: rgba(139, 92, 246, 0.3); }
-        .carousel-button-purple-hue:hover { background-color: rgba(139, 92, 246, 0.5); }
-        .carousel-button-blue-hue { background-color: rgba(96, 165, 250, 0.3); }
-        .carousel-button-blue-hue:hover { background-color: rgba(96, 165, 250, 0.5); }
-
-        #dynamic-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 50% 50%, #2e1a0b 0%, #000000 100%);
-            opacity: 0;
-            z-index: -10;
-            pointer-events: none;
-            transition: opacity 0.1s linear;
+        /* Hero Button */
+        .btn-primary-override {
+            background-color: var(--btn-bg) !important;
+            border: 1px solid var(--accent-color) !important;
+            color: var(--accent-color) !important;
+            outline: 1px solid var(--accent-glow);
+            border-radius: 1.5rem;
+            transition: all 0.2s ease;
+        }
+        .btn-primary-override:hover {
+            background-color: var(--accent-color) !important;
+            color: #fff !important;
+            transform: scale(1.02);
+            outline: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 30px -10px var(--accent-glow);
         }
 
-        /* --- NEW BUTTON STYLES --- */
+        /* Social Link Buttons */
         .hero-btn-base {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 0.6rem 1.5rem;
-            font-size: 0.875rem;
-            font-weight: 400;
-            color: #ffffff;
-            border-radius: 14px; 
+            padding: 0.75rem 1.5rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            border-radius: 1rem; 
             text-decoration: none;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-main);
             transition: all 0.2s ease;
         }
-
-        .btn-style-purple {
-            background-color: rgba(147, 51, 234, 0.1); 
-            border: 1px solid rgba(192, 132, 252, 0.5); 
-        }
         .btn-style-purple:hover {
-            background-color: rgba(192, 132, 252, 0.2);
-            border-color: rgba(192, 132, 252, 1);
-            box-shadow: 0 0 15px rgba(192, 132, 252, 0.3);
-        }
-
-        .btn-style-orange {
-            background-color: rgba(249, 115, 22, 0.1); 
-            border: 1px solid rgba(253, 186, 116, 0.5); 
+            background-color: rgba(147, 51, 234, 0.1);
+            border-color: rgba(192, 132, 252, 0.5);
+            color: #fff;
         }
         .btn-style-orange:hover {
-            background-color: rgba(253, 186, 116, 0.2);
-            border-color: rgba(253, 186, 116, 1);
+            background-color: rgba(249, 115, 22, 0.1);
+            border-color: rgba(253, 186, 116, 0.5);
+            color: #fff;
         }
+
+        /* Carousel controls */
+        .carousel-button {
+            width: 3rem; 
+            height: 3rem; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1rem; 
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.2s ease;
+            background: rgba(0,0,0,0.5);
+        }
+        .carousel-button:hover {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #fff;
+        }
+
+        /* Overlays */
+        .modal-backdrop {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-backdrop.open {
+            opacity: 1; pointer-events: auto;
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #333; }
     </style>
 
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-1D4F692C1Q');
-</script>    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-1D4F692C1Q');
+    </script>    
 </head>
-<body class="bg-black text-white min-h-screen relative">
-    
+
+<body class="grid-bg">
     <div id="dynamic-background"></div>
+    <div id="navbar-container"></div>
 
-    <main>
-        <section class="text-center border-b border-gray-900 relative overflow-hidden" style="padding-top: 4rem">
+    <main class="flex-1 min-w-0 pt-24 overflow-y-auto custom-scroll relative z-10">
+        
+        <section class="text-center px-6 lg:px-8 pb-20 max-w-6xl mx-auto">
+            <h1 class="text-xs md:text-sm font-black text-indigo-400 uppercase tracking-widest mb-6 opacity-80">
+                Trusted by over 700 students across 13+ schools.
+            </h1>
+            <h2 class="text-6xl md:text-8xl font-light tracking-tight mb-8 leading-tight">
+                <span class="gradient-text font-bold">Academic Collaboration, Reimagined.</span>
+            </h2>
+            <p class="text-lg md:text-2xl text-gray-400 max-w-3xl mx-auto mb-12 font-light leading-relaxed">
+                You're using <strong>4SP V6</strong> — a student-built platform featuring peer collaboration tools, focus audio, encrypted notes, and a personalized academic dashboard.
+            </p>
             
-            <div class="mx-auto max-w-5xl px-4 pb-16">
-                
-                <h1 class="text-3xl sm:text-4xl font-light text-gray-300 tracking-tighter mb-4 leading-tight">
-                    Trusted by over 700 students across 13+ schools.
-                 </h1>
-                <h2 class="text-5xl sm:text-7xl font-light tracking-tighter mb-6 leading-tight">
-                    <span class="gradient-text font-bold">Academic Collaboration, Reimagined.</span>
-                </h2>
-                <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-8 font-light leading-relaxed">
-                    You're using <strong>4SP V6</strong> — a student-built platform featuring peer collaboration tools, focus audio, encrypted notes, and a personalized academic dashboard.
-                </p>
-                <div id="auth-button-container" class="space-y-4">
-                    <a id="auth-button" href="../authentication.html" 
-                       class="inline-flex items-center justify-center px-8 py-4 border border-[#333] text-lg font-normal shadow-sm text-white bg-black hover:bg-[#0a0a0a] hover:border-gray-600 hover:scale-105 transition duration-300"
-                       style="border-radius: 22px;">
-                        Get Started Instantly <i class="fas fa-arrow-right ml-2"></i>
-                    </a>
-                </div>
-
-                <div class="flex flex-wrap items-center justify-center gap-4 mt-8">
-                    <a href="https://linktr.ee/4simpleproblems" target="_blank" class="hero-btn-base btn-style-purple">
-                        <i class="fas fa-link mr-2"></i> Linktree
-                    </a>
-                    <a href="https://discord.gg/zcADhddGQz" target="_blank" class="hero-btn-base btn-style-purple">
-                        <i class="fa-brands fa-discord mr-2"></i> Discord
-                    </a>
-                    <a href="https://4sp-organization.github.io" class="hero-btn-base btn-style-orange">
-                        <i class="fas fa-sitemap mr-2"></i> Organization
-                    </a>
-                </div>
-                
-                <p id="pronunciation-text" class="text-sm text-gray-600 mt-8 mb-2 italic font-light">
-                    Independently developed and maintained by students, for students — serving <span class="text-gray-400">700+ learners</span> across <span class="text-gray-400">13+ schools.</span>
-                </p>
+            <div id="auth-button-container" class="mb-12">
+                <a id="auth-button" href="/authentication.html" class="btn-primary-override inline-flex items-center justify-center px-10 py-5 text-lg md:text-xl font-bold uppercase tracking-widest shadow-2xl">
+                    Get Started Instantly <i class="fas fa-arrow-right ml-3"></i>
+                </a>
             </div>
+
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <a href="https://linktr.ee/4simpleproblems" target="_blank" class="hero-btn-base btn-style-purple">
+                    <i class="fas fa-link mr-2"></i> Linktree
+                </a>
+                <a href="https://discord.gg/zcADhddGQz" target="_blank" class="hero-btn-base btn-style-purple">
+                    <i class="fa-brands fa-discord mr-2"></i> Discord
+                </a>
+                <a href="https://4sp-organization.github.io" class="hero-btn-base btn-style-orange">
+                    <i class="fas fa-sitemap mr-2"></i> Organization
+                </a>
+            </div>
+            
+            <p class="text-xs text-gray-500 mt-12 italic font-mono opacity-60">
+                Independently developed and maintained by students, for students.
+            </p>
         </section>
 
-        <section id="features" class="py-16 mx-auto max-w-7xl px-4 space-y-24">
-             <h2 class="text-4xl font-light text-center mb-12"><span class="text-gray-500">V6 Exclusive:</span> What's New</h2>
+        <section id="features" class="max-w-7xl mx-auto px-6 lg:px-8 py-20 space-y-32">
+            
+            <div class="text-center mb-16">
+                <h2 class="text-5xl font-light tracking-tight text-white"><span class="opacity-40">V6 Exclusive:</span> What's New</h2>
+            </div>
 
-            <div class="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
-                <div class="lg:pr-4 order-2 lg:order-1 mb-6 lg:mb-0">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="text-sm font-light text-orange-400 uppercase tracking-widest block">Peer Network</span>
-                        <span class="text-xs bg-orange-400/10 text-orange-400 px-2 py-0.5 rounded border border-orange-400/20">NEW</span>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                <div class="order-2 lg:order-1">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-lg">Peer Network</span>
                     </div>
-                    <h3 class="text-5xl font-light mb-4 mt-2 text-white">Collaboration.</h3>
-                    <p class="text-xl text-gray-400 mb-6 font-light">
+                    <h3 class="text-4xl md:text-5xl font-light tracking-tight mb-6 text-white">Collaboration.</h3>
+                    <p class="text-xl text-gray-400 mb-8 font-light leading-relaxed">
                         Connect with classmates through our <strong>peer learning network</strong>. Follow fellow students to stay updated on shared study activity and academic progress in real-time.
                     </p>
-                    <a href="/logged-in/profile.html" class="inline-flex items-center text-orange-400 font-normal hover:text-orange-300 transition group">
-                        View Your Profile <i class="fas fa-user ml-2 text-xs group-hover:translate-x-1 transition-transform"></i>
+                    <a href="/logged-in/profile.html" class="inline-flex items-center text-sm font-bold uppercase tracking-widest text-orange-400 hover:text-orange-300 transition group">
+                        View Your Profile <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                     </a>
                 </div>
 
-                <div class="relative w-full h-72 overflow-hidden rounded-3xl border border-orange-600/30 shadow-[0_0_40px_-10px_rgba(249,115,22,0.2)] bg-gray-900 flex items-center justify-center order-1 lg:order-2 mb-6 lg:mb-0">
-                     <div class="image-carousel-container relative w-full h-full">
-                        <img src="doc-images/fireworks.png" alt="Social" class="carousel-image absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out opacity-100">
+                <div class="feature-card aspect-video w-full flex items-center justify-center order-1 lg:order-2 p-1">
+                    <div class="relative w-full h-full rounded-[1.75rem] overflow-hidden">
+                        <img src="doc-images/fireworks.png" alt="Social" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-500">
                     </div>
                 </div>
             </div>
 
-            <div class="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
-                <div class="relative w-full aspect-video overflow-hidden rounded-3xl border border-blue-800/50 shadow-2xl bg-gray-900 flex items-center justify-center order-1 lg:order-1 mb-6 lg:mb-0">
-                    <div class="image-carousel-container relative w-full h-full">
-                        <img src="doc-images/velium.png" alt="Velium" class="carousel-image absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out opacity-100">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                <div class="feature-card aspect-video w-full flex items-center justify-center p-1">
+                    <div class="relative w-full h-full rounded-[1.75rem] overflow-hidden">
+                        <img src="doc-images/velium.png" alt="Velium" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-500">
                     </div>
                 </div>
 
-                <div class="lg:pl-4 order-2 lg:order-2 mb-6 lg:mb-0">
-                    <span class="text-sm font-light text-blue-400 uppercase tracking-widest mb-2 block">Focus Audio</span>
-                    <h3 class="text-4xl font-light mb-3 mt-2">Velium Study Audio</h3>
-                    <p class="text-xl text-gray-400 mb-5 font-light">
-                        Our focus audio engine has been rebuilt for <strong>higher accuracy</strong>. Search through a curated library of study music, lo-fi, and concentration audio with smarter, more relevant results than ever before.
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-lg">Focus Audio</span>
+                    </div>
+                    <h3 class="text-4xl md:text-5xl font-light tracking-tight mb-6 text-white">Velium Study Audio.</h3>
+                    <p class="text-xl text-gray-400 mb-8 font-light leading-relaxed">
+                        Our focus audio engine has been rebuilt for <strong>higher accuracy</strong>. Search through a curated library of study music, lo-fi, and concentration audio with smarter, more relevant results.
                     </p>
-                    <ul class="space-y-2 text-lg text-gray-300">
-                        <li class="flex items-center"><i class="fas fa-check-circle fa-fw w-5 mr-3 text-blue-500"></i><span class="font-light mr-2">Better Search:</span>Enhanced algorithms for finding exactly what you need.</li>
-                        <li class="flex items-center"><i class="fas fa-bolt fa-fw w-5 mr-3 text-blue-500"></i><span class="font-light mr-2">Faster Loading:</span>Optimized metadata caching for instant playback.</li>
+                    <ul class="space-y-4 text-base text-gray-300">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle mt-1 mr-4 text-blue-500"></i>
+                            <div><span class="font-bold text-white block">Better Search</span><span class="opacity-60 text-sm">Enhanced algorithms for finding exactly what you need.</span></div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-bolt mt-1 mr-4 text-blue-500"></i>
+                            <div><span class="font-bold text-white block">Faster Loading</span><span class="opacity-60 text-sm">Optimized metadata caching for instant playback.</span></div>
+                        </li>
                     </ul>
                 </div>
             </div>
 
-            <div class="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
-                <div class="lg:pr-4 order-2 lg:order-1 mb-6 lg:mb-0">
-                    <span class="text-sm font-light text-purple-400 uppercase tracking-widest mb-2 block">Student Essentials</span>
-                    <h3 class="text-4xl font-light mb-3 mt-2">Academic Toolkit</h3>
-                    <p class="text-xl text-gray-400 mb-5 font-light">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                <div class="order-2 lg:order-1">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] bg-purple-500/10 border border-purple-500/20 px-3 py-1 rounded-lg">Student Essentials</span>
+                    </div>
+                    <h3 class="text-4xl md:text-5xl font-light tracking-tight mb-6 text-white">Academic Toolkit.</h3>
+                    <p class="text-xl text-gray-400 mb-8 font-light leading-relaxed">
                         A centralized suite of tools designed to support your daily schoolwork — from encrypted note-taking to interface customization that makes studying less exhausting.
                     </p>
-                    <ul class="space-y-2 text-lg text-gray-300">
-                        <li class="flex items-center"><i class="fas fa-sticky-note fa-fw w-5 mr-3 text-purple-500"></i><span class="font-light mr-2">Secure Notes:</span>Password-encrypted storage for your thoughts.</li>
-                        <li class="flex items-center"><i class="fas fa-palette fa-fw w-5 mr-3 text-purple-500"></i><span class="font-light mr-2">Dynamic Themes:</span>Customizable visuals to suit your environment.</li>
-                          <li class="flex items-center"><i class="fas fa-shield-halved fa-fw w-5 mr-3 text-purple-500"></i><span class="font-light mr-2">Privacy Tools:</span>Integrated features to manage your digital footprint.</li>
+                    <ul class="space-y-4 text-base text-gray-300">
+                        <li class="flex items-start">
+                            <div class="w-6 h-6 rounded-md bg-white/5 border border-white/10 flex items-center justify-center mr-4 shrink-0 mt-0.5"><i class="fas fa-sticky-note text-xs text-purple-400"></i></div>
+                            <span class="font-light">Secure, password-encrypted storage for notes.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="w-6 h-6 rounded-md bg-white/5 border border-white/10 flex items-center justify-center mr-4 shrink-0 mt-0.5"><i class="fas fa-palette text-xs text-purple-400"></i></div>
+                            <span class="font-light">Dynamic visual themes to suit your environment.</span>
+                        </li>
+                          <li class="flex items-start">
+                            <div class="w-6 h-6 rounded-md bg-white/5 border border-white/10 flex items-center justify-center mr-4 shrink-0 mt-0.5"><i class="fas fa-shield-halved text-xs text-purple-400"></i></div>
+                            <span class="font-light">Integrated privacy tools to manage your digital footprint.</span>
+                        </li>
                     </ul>
                 </div>
 
-                <div class="relative w-full aspect-video overflow-hidden rounded-3xl border border-purple-800/50 shadow-2xl bg-gray-900 flex items-center justify-center order-1 lg:order-2 mb-6 lg:mb-0">
-                    <div class="image-carousel-container relative w-full h-full">
+                <div class="feature-card aspect-video w-full flex items-center justify-center order-1 lg:order-2 p-1">
+                    <div class="image-carousel-container relative w-full h-full rounded-[1.75rem] overflow-hidden">
                         <img src="doc-images/pin_button.png" alt="Privacy" class="carousel-image absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out opacity-100">
                         <img src="doc-images/panic_key.png" alt="Tools" class="carousel-image absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out opacity-0">
                         <img src="doc-images/tab_disguise.png" alt="Tools" class="carousel-image absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out opacity-0">
 
-                        <button class="carousel-button carousel-button-purple-hue prev-button absolute top-1/2 left-4 -translate-y-1/2 p-2 text-white z-20">
-                            <i class="fas fa-arrow-left"></i>
+                        <button class="carousel-button prev-button absolute top-1/2 left-4 -translate-y-1/2 text-white z-20 shadow-xl border border-white/20 hover:scale-110">
+                            <i class="fas fa-chevron-left text-sm"></i>
                         </button>
-                        <button class="carousel-button carousel-button-purple-hue next-button absolute top-1/2 right-4 -translate-y-1/2 p-2 text-white z-20">
-                            <i class="fas fa-arrow-right"></i>
+                        <button class="carousel-button next-button absolute top-1/2 right-4 -translate-y-1/2 text-white z-20 shadow-xl border border-white/20 hover:scale-110">
+                            <i class="fas fa-chevron-right text-sm"></i>
                         </button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section class="py-12 mx-auto max-w-7xl px-4 text-center border-t border-gray-900">
-            <h2 class="text-xl font-light text-gray-400 mb-2">Powered by Firebase & Velium Study Audio</h2>
-            <p class="text-gray-500 text-lg font-light">
+        <section class="max-w-4xl mx-auto px-6 py-16 text-center border-t border-white/10 mt-20">
+            <h2 class="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4">Powered by Firebase</h2>
+            <p class="text-gray-400 text-lg font-light leading-relaxed">
                 4SP V6 uses a modern cloud backend. 
                 <strong class="text-white font-normal">Data integrity and student privacy are our priority</strong> as we continue to refine the platform.
             </p>
+            
+            <div class="mt-12 flex items-center justify-center gap-4 text-xs font-bold uppercase tracking-widest text-gray-600">
+                <span>&copy; 2026 4SP.</span>
+                <span class="opacity-30">•</span>
+                <a href="/legal.html#terms-of-service" class="hover:text-white transition-colors">Terms</a>
+                <span class="opacity-30">•</span>
+                <a href="/legal.html#privacy-policy" class="hover:text-white transition-colors">Privacy</a>
+            </div>
         </section>
 
     </main>
 
-    <footer class="border-t border-gray-900 py-6">
-        <div class="mx-auto max-w-7xl px-4 text-center text-gray-500 text-sm">
-            &copy; 2026 4SP. Student-Built Platform.
-            <span class="mx-2">|</span>
-            <a href="legal.html#terms-of-service" class="hover:underline">Terms</a>
-            <span class="mx-2">|</span>
-            <a href="legal.html#privacy-policy" class="hover:underline">Privacy</a>
-        </div>
-    </footer>
-
-    <div id="cookie-overlay" class="fixed inset-0 bg-black/70 z-[9999] transition-opacity duration-300 opacity-0" style="display: none;">
-        <div id="cookie-banner" class="absolute bottom-4 left-1/2 -translate-x-1/2 w-full max-w-7xl px-4">
-            <div class="bg-black/95 text-white p-4 sm:p-6 rounded-3xl border border-gray-700 shadow-2xl backdrop-blur-md flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0 md:space-x-6">
-                <div class="flex-1 min-w-0">
-                    <h3 class="text-xl font-normal mb-1">4SP Uses Cookies</h3>
-                    <p class="text-sm text-gray-300 mb-2 font-light">
-                        We use cookies for authentication and to save your Velium audio preferences.
-                    </p>
-                    <div class="space-x-3 text-xs">
-                        <a href="https://policies.google.com/technologies/cookies" target="_blank" class="text-blue-400 hover:text-blue-300 underline transition">Details</a>
-                        <a class="text-gray-500 pointer-events-none">|</a>
-                        <a href="../legal.html#privacy-policy" class="text-blue-400 hover:text-blue-300 underline transition">Privacy Policy</a>
-                    </div>
-                </div>
-                <div class="flex-shrink-0">
-                    <button id="accept-cookies-button" class="w-full md:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-normal rounded-xl text-white bg-purple-500/10 ring-1 ring-purple-500/50 hover:bg-purple-500/20 transition duration-150 transform hover:scale-[1.02]">
-                        I Understand
-                    </button>
+    <div id="cookie-overlay" class="modal-backdrop">
+        <div class="feature-card max-w-2xl w-full p-8 mx-4 flex flex-col md:flex-row items-center gap-8">
+            <div class="flex-1 text-center md:text-left">
+                <h3 class="text-2xl font-light tracking-tight mb-2 text-white">Cookie Consent</h3>
+                <p class="text-sm text-gray-400 font-light leading-relaxed mb-4">
+                    We use cookies for authentication and to save your preferences.
+                </p>
+                <div class="flex items-center justify-center md:justify-start gap-4 text-[10px] font-bold uppercase tracking-widest">
+                    <a href="https://policies.google.com/technologies/cookies" target="_blank" class="text-indigo-400 hover:text-indigo-300 transition-colors">Details</a>
+                    <span class="opacity-20">•</span>
+                    <a href="/legal.html#privacy-policy" class="text-indigo-400 hover:text-indigo-300 transition-colors">Policy</a>
                 </div>
             </div>
+            <button id="accept-cookies-button" class="btn-toolbar-style btn-primary-override px-8 py-3 text-xs font-black uppercase tracking-widest shrink-0">
+                I Understand
+            </button>
         </div>
     </div>
 
-    <div id="mobile-warning-overlay" class="fixed inset-0 bg-black/95 z-[10000] flex items-center justify-center p-6" style="display: none;">
-        <div class="max-w-md w-full text-center space-y-6">
-            <div class="text-5xl mb-4">🖥️</div>
-            <h2 class="text-3xl font-light text-white tracking-tight">Desktop Recommended</h2>
-            <p class="text-gray-400 text-lg font-light leading-relaxed">
-                4SP V6 features tools like Velium and the dashboard that are best experienced on a larger screen.
-                <br><br>
-                Please use a desktop for the full experience.
+    <div id="mobile-warning-overlay" class="modal-backdrop">
+        <div class="feature-card max-w-md w-full p-10 mx-4 text-center">
+            <div class="w-20 h-20 bg-indigo-500/10 border border-indigo-500/20 rounded-[24px] flex items-center justify-center text-indigo-400 text-3xl mx-auto mb-6">
+                <i class="fas fa-desktop"></i>
+            </div>
+            <h2 class="text-3xl font-light text-white tracking-tight mb-4">Desktop Recommended</h2>
+            <p class="text-gray-400 text-sm font-light leading-relaxed mb-8">
+                4SP V6 features tools like Velium and the dashboard that are best experienced on a larger screen. Please use a desktop for the full experience.
             </p>
-            <button id="dismiss-mobile-warning" class="inline-flex items-center justify-center px-8 py-3 border border-gray-600 text-base font-normal rounded-xl text-white bg-transparent hover:bg-white/10 transition duration-200">
-                Dismiss
+            <button id="dismiss-mobile-warning" class="btn-toolbar-style w-full py-4 text-[10px] font-black uppercase tracking-widest">
+                Dismiss Warning
             </button>
         </div>
     </div>
 
     <script>
-        window.addEventListener('scroll', () => {
-            const bgLayer = document.getElementById('dynamic-background');
-            const scrollPos = window.scrollY;
-            const triggerHeight = 600; 
-            let opacity = scrollPos / triggerHeight;
-            if (opacity > 1) opacity = 1;
-            if (bgLayer) bgLayer.style.opacity = opacity;
-        });
-
         (function() {
             const mobileOverlay = document.getElementById('mobile-warning-overlay');
             const dismissBtn = document.getElementById('dismiss-mobile-warning');
             const STORAGE_KEY = '4sp-v6-mobile-dismissed';
+            
             function checkAspectRatio() {
                 if (localStorage.getItem(STORAGE_KEY) === 'true') return;
                 if (window.innerHeight > window.innerWidth) {
-                    mobileOverlay.style.display = 'flex';
-                    document.body.style.overflow = 'hidden'; 
+                    mobileOverlay.classList.add('open');
                 } else {
-                    mobileOverlay.style.display = 'none';
-                    document.body.style.overflow = ''; 
+                    mobileOverlay.classList.remove('open');
                 }
             }
+            
             checkAspectRatio();
             window.addEventListener('resize', checkAspectRatio);
+            
             if (dismissBtn) {
                 dismissBtn.addEventListener('click', () => {
-                    mobileOverlay.style.display = 'none';
-                    document.body.style.overflow = '';
+                    mobileOverlay.classList.remove('open');
                     localStorage.setItem(STORAGE_KEY, 'true');
                 });
             }
@@ -332,29 +398,22 @@
     
     <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
-    <script type="module" src="../firebase-config.js"></script>
+    <script type="module" src="/firebase-config.js"></script>
 
     <script type="module">
         const COOKIE_KEY = '4sp-v6-cookie-consent';
         const cookieOverlay = document.getElementById('cookie-overlay');
         const acceptCookiesButton = document.getElementById('accept-cookies-button');
+        
         const hideCookieBanner = () => {
-            cookieOverlay.classList.remove('opacity-100');
-            cookieOverlay.classList.add('opacity-0');
-            setTimeout(() => {
-                cookieOverlay.style.display = 'none';
-                localStorage.setItem(COOKIE_KEY, 'accepted');
-                document.body.style.overflow = '';
-            }, 300);
+            cookieOverlay.classList.remove('open');
+            localStorage.setItem(COOKIE_KEY, 'accepted');
         };
+        
         const showCookieBanner = () => {
-            cookieOverlay.style.display = 'block';
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => {
-                cookieOverlay.classList.remove('opacity-0');
-                cookieOverlay.classList.add('opacity-100');
-            }, 10); 
+            cookieOverlay.classList.add('open');
         };
+        
         if (localStorage.getItem(COOKIE_KEY) !== 'accepted') {
             window.addEventListener('load', showCookieBanner);
         }
@@ -362,7 +421,8 @@
 
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
         import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
-        import { firebaseConfig } from '../firebase-config.js';
+        import { firebaseConfig } from '/firebase-config.js';
+        
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const authButton = document.getElementById('auth-button');
@@ -370,10 +430,10 @@
         onAuthStateChanged(auth, (user) => {
             if (user && authButton) {
                 authButton.href = '/logged-in/dashboard.html';
-                authButton.innerHTML = 'Go to Dashboard <i class="fas fa-arrow-right ml-2"></i>';
+                authButton.innerHTML = 'Go to Dashboard <i class="fas fa-arrow-right ml-3"></i>';
             } else if (authButton) {
-                authButton.href = '../authentication.html';
-                authButton.innerHTML = 'Get Started Instantly <i class="fas fa-arrow-right ml-2"></i>';
+                authButton.href = '/authentication.html';
+                authButton.innerHTML = 'Get Started Instantly <i class="fas fa-arrow-right ml-3"></i>';
             }
         });
     </script>
@@ -383,12 +443,14 @@
             const prevButton = container.querySelector('.prev-button');
             const nextButton = container.querySelector('.next-button');
             let currentIndex = 0;
+            
             function showImage(index) {
                 images.forEach((img, i) => {
                     img.classList.toggle('opacity-100', i === index);
                     img.classList.toggle('opacity-0', i !== index);
                 });
             }
+            
             if (prevButton && nextButton) {
                 prevButton.addEventListener('click', () => {
                     currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
@@ -404,4 +466,3 @@
     </script>
 </body>
 </html>
-<!-- Made with ❤️ from 4SP -->
