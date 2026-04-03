@@ -574,10 +574,6 @@
                 .subscribe();
 
             // Minimal system stats
-            const uaInfo = parseUA(navigator.userAgent);
-            document.getElementById('stat-browser').textContent = uaInfo.browser;
-            document.getElementById('stat-os').textContent = uaInfo.os;
-            document.getElementById('stat-device').textContent = window._LOCAL_MODE ? 'Local Client' : 'Cloud Access';
             document.getElementById('stat-pageviews').textContent = recentPages.length;
 
             const listEl = document.getElementById('recent-pages-list');

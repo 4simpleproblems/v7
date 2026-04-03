@@ -227,6 +227,35 @@ BEGIN
 END;
 $$;
 
+-- Follower Count Helpers
+CREATE OR REPLACE FUNCTION public.increment_follower_count(user_id UUID)
+RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE public.profiles SET follower_count = COALESCE(follower_count, 0) + 1 WHERE id = user_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.decrement_follower_count(user_id UUID)
+RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE public.profiles SET follower_count = GREATEST(0, COALESCE(follower_count, 0) - 1) WHERE id = user_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.increment_following_count(user_id UUID)
+RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE public.profiles SET following_count = COALESCE(following_count, 0) + 1 WHERE id = user_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.decrement_following_count(user_id UUID)
+RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE public.profiles SET following_count = GREATEST(0, COALESCE(following_count, 0) - 1) WHERE id = user_id;
+END;
+$$;
+
 -- 13. FRIEND STREAKS SYSTEM
 CREATE TABLE IF NOT EXISTS public.friend_streaks (
     user1_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -239,6 +268,7 @@ CREATE TABLE IF NOT EXISTS public.friend_streaks (
 );
 
 ALTER TABLE public.friend_streaks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Streaks are viewable by participants." ON public.friend_streaks;
 CREATE POLICY "Streaks are viewable by participants." ON public.friend_streaks FOR SELECT USING (auth.uid() = user1_id OR auth.uid() = user2_id);
 
 -- Function to update/sync streak when both friends have posted

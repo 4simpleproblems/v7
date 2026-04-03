@@ -825,7 +825,11 @@
                 profileOwnerId = ownerId;
                 isOwnProfile = profileOwnerId === uid;
 
-                // Show/hide own-profile vs other-profile controls
+                // Reset visibilities before re-applying
+                selfIndicator.classList.add('hidden');
+                editBtnContainer.classList.add('hidden');
+                followActions.classList.add('hidden');
+
                 if (isOwnProfile) {
                     selfIndicator.classList.remove('hidden');
                     editBtnContainer.classList.remove('hidden');
@@ -839,11 +843,12 @@
                 setupFollowModalListeners();
                 setupEditProfileListeners();
                 setupOptionsListeners();
-                loadDailyphotos();
 
                 if (!isOwnProfile) {
-                    checkFollowStatus();
+                    await checkFollowStatus();
                 }
+                
+                await loadDailyphotos();
 
             } catch (e) {
                 console.error("Profile Load Error:", e);
@@ -1085,10 +1090,12 @@
             
             // Check for mutual streak
             if (isMutual) {
+                const [u1, u2] = [myUid, profileOwnerId].sort();
                 const { data: streakData } = await supabase
                     .from('friend_streaks')
                     .select('streak_count')
-                    .or(`and(user1_id.eq.${myUid},user2_id.eq.${profileOwnerId}),and(user1_id.eq.${profileOwnerId},user2_id.eq.${myUid})`)
+                    .eq('user1_id', u1)
+                    .eq('user2_id', u2)
                     .maybeSingle();
                 
                 const streakCount = streakData?.streak_count || 0;
@@ -1168,9 +1175,6 @@
         // DAILY PHOTOS
         // ------------------------------------------------------------------
         async function loadDailyphotos() {
-            // Wait for relationship status to settle
-            await new Promise(resolve => setTimeout(resolve, 800));
-
             const { data: posts, error } = await supabase
                 .from('daily_photos')
                 .select('*')
@@ -1190,6 +1194,9 @@
                 const myUid = (firebaseAuthUser.uid || firebaseAuthUser.id);
                 const { data: me } = await supabase.from('profiles').select('district_id').eq('id', myUid).single();
                 const sameDistrict = me?.district_id && me.district_id === userDocData?.district_id;
+                
+                // If not mutual AND not same district, restrict feed.
+                // NOTE: We await checkFollowStatus in handleUser now, so isMutual is reliable.
                 isRestricted = !isMutual && !sameDistrict;
             }
 

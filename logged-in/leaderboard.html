@@ -594,11 +594,6 @@
             const minutes = Math.floor(((data.total_v6_time || 0) % 3600) / 60);
             document.getElementById('champion-time').textContent = `${hours}h ${minutes}m total activity`;
             
-            const champAvatarContainer = document.getElementById('champion-avatar');
-            champAvatarContainer.classList.remove('no-hover');
-            champAvatarContainer.style.background = '';
-            champAvatarContainer.style.border = '';
-            champAvatarContainer.style.boxShadow = '';
             champAvatarContainer.innerHTML = getAvatarHTML({ ...data, displayName: data.display_name, pfpType: data.pfp_type, customPfp: data.avatar_url }, "w-full h-full", false, null, "rounded-[36px]");
             
             const championSection = document.getElementById('top-user-section');
