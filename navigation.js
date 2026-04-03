@@ -1468,7 +1468,70 @@ let db;
 
                 globalClickListenerAdded = true;
             }
+
+            if (user) {
+                if (window._laggardInterval) clearInterval(window._laggardInterval);
+                setTimeout(checkLaggardNotifications, 5000);
+                window._laggardInterval = setInterval(checkLaggardNotifications, 45 * 60 * 1000);
+            }
         };
+
+    async function checkLaggardNotifications() {
+        if (!currentUser || !window.supabase) return;
+        
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        
+        try {
+            const { data: laggards, error } = await window.supabase.rpc('get_daily_photo_laggards', {
+                current_user_id: currentUser.uid || currentUser.id,
+                client_today_start: startOfDay.toISOString(),
+                client_today_end: endOfDay.toISOString()
+            });
+
+            if (error) {
+                console.error("Failed to check daily photo laggards:", error);
+                return;
+            }
+
+            if (laggards && laggards.length > 0) {
+                laggards.forEach(laggard => {
+                    const laggardName = laggard.laggard_display_name || laggard.laggard_username || 'a friend';
+                    showLaggardNotification(laggardName, laggard.laggard_id);
+                });
+            }
+        } catch (err) {
+            console.error("Error in checkLaggardNotifications:", err);
+        }
+    }
+
+    function showLaggardNotification(friendName, friendId) {
+        const existingNotif = document.getElementById(`laggard-notif-${friendId}`);
+        if (existingNotif) return;
+
+        const notifContainer = document.getElementById('viro-notif-container');
+        if (!notifContainer) return;
+
+        const notifId = `laggard-notif-${friendId}`;
+        const notifHtml = `
+            <div id="${notifId}" class="viro-notif" style="border-left: 4px solid #f97316;">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-orange-500/20 border border-orange-500/50 flex items-center justify-center flex-shrink-0">
+                        <span class="text-orange-500 text-lg leading-none" style="filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.5));">🔥</span>
+                    </div>
+                    <div class="viro-notif-content">
+                        Remind <span class="font-bold text-orange-400">${friendName}</span> to post!
+                    </div>
+                </div>
+                <button class="viro-notif-close" onclick="this.closest('.viro-notif').classList.add('fade-out'); setTimeout(() => this.closest('.viro-notif').remove(), 300);">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        `;
+        
+        notifContainer.insertAdjacentHTML('beforeend', notifHtml);
+    }
 
     const run = async () => {
         if (!document.getElementById('navbar-container')) {

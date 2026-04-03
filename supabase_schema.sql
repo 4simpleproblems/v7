@@ -309,3 +309,103 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT OR UPDATE ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 11. DAILY PHOTO STREAK NOTIFICATION LOGIC
+CREATE OR REPLACE FUNCTION public.get_daily_photo_notification_state(
+    current_user_id UUID,
+    friend_user_id UUID
+)
+RETURNS TABLE(sender_id UUID, laggard_id UUID, needs_notification BOOLEAN)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_current_user_posted BOOLEAN;
+    v_friend_posted BOOLEAN;
+    v_posted_at_current TIMESTAMPTZ;
+    v_posted_at_friend TIMESTAMPTZ;
+    v_today_start TIMESTAMPTZ;
+BEGIN
+    v_today_start := date_trunc('day', NOW() AT TIME ZONE 'UTC');
+
+    -- Check if the current user has posted today
+    SELECT created_at INTO v_posted_at_current
+    FROM public.daily_photos
+    WHERE creator_uid = current_user_id
+    AND created_at >= v_today_start
+    ORDER BY created_at DESC
+    LIMIT 1;
+
+    -- Check if the friend has posted today
+    SELECT created_at INTO v_posted_at_friend
+    FROM public.daily_photos
+    WHERE creator_uid = friend_user_id
+    AND created_at >= v_today_start
+    ORDER BY created_at DESC
+    LIMIT 1;
+
+    v_current_user_posted := v_posted_at_current IS NOT NULL;
+    v_friend_posted := v_posted_at_friend IS NOT NULL;
+
+    IF v_current_user_posted AND NOT v_friend_posted THEN
+        RETURN QUERY SELECT current_user_id, friend_user_id, TRUE;
+    ELSE
+        RETURN QUERY SELECT NULL::UUID, NULL::UUID, FALSE;
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.are_users_friends(user1_id UUID, user2_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1
+        FROM public.follows
+        WHERE (follower_id = user1_id AND following_id = user2_id)
+           OR (follower_id = user2_id AND following_id = user1_id)
+    );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_daily_photo_laggards(
+    current_user_id UUID,
+    client_today_start TIMESTAMPTZ,
+    client_today_end TIMESTAMPTZ
+)
+RETURNS TABLE(laggard_id UUID, laggard_username TEXT, laggard_display_name TEXT)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_current_user_posted_today BOOLEAN;
+BEGIN
+    -- Check if current user posted in their local "today" window
+    SELECT EXISTS (
+        SELECT 1 FROM public.daily_photos 
+        WHERE creator_uid = current_user_id 
+        AND created_at >= client_today_start
+        AND created_at <= client_today_end
+    ) INTO v_current_user_posted_today;
+
+    -- If current user hasn't posted, they don't need to remind anyone
+    IF NOT v_current_user_posted_today THEN
+        RETURN;
+    END IF;
+
+    RETURN QUERY
+    SELECT p.id, p.username, p.display_name
+    FROM public.follows f
+    JOIN public.profiles p ON p.id = f.following_id
+    WHERE f.follower_id = current_user_id
+      AND EXISTS (
+          SELECT 1 FROM public.follows f2 
+          WHERE f2.follower_id = f.following_id AND f2.following_id = current_user_id
+      )
+      AND NOT EXISTS (
+          SELECT 1 FROM public.daily_photos dp 
+          WHERE dp.creator_uid = f.following_id 
+          AND dp.created_at >= client_today_start
+          AND dp.created_at <= client_today_end
+      );
+END;
+$$;

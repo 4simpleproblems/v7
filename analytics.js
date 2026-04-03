@@ -18,7 +18,7 @@ async function init4SPAnalytics() {
     const TICK_MS = 5000
     const SYNC_INTERVAL_MS = 60000 
     const MIN_SYNC_GAP_MS = 10000
-    const INACTIVITY_THRESHOLD_MS = 60000
+    const INACTIVITY_THRESHOLD_MS = 15000 // Reduced to 15s to ensure active usage
 
     function getSessionId() {
         if (sessionId) return sessionId
@@ -91,16 +91,15 @@ async function init4SPAnalytics() {
 
         let lastActivityTime = Date.now()
 
+        // Track only intentional interactions, excluding mousemove and scroll to stop AFK scripts
         function updateUserActivity() {
             lastActivityTime = Date.now()
             isDirty = true
         }
 
-        document.addEventListener('mousemove', updateUserActivity)
         document.addEventListener('mousedown', updateUserActivity)
         document.addEventListener('keydown', updateUserActivity)
         document.addEventListener('touchstart', updateUserActivity)
-        document.addEventListener('scroll', updateUserActivity)
 
         setInterval(() => {
             const timeSinceLastActivity = Date.now() - lastActivityTime
