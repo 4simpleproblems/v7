@@ -365,6 +365,17 @@
             const rankingsEl = document.getElementById('rankings-list');
             rankingsEl.innerHTML = '<div class="py-20 flex flex-col items-center justify-center opacity-20"><i class="fas fa-spinner fa-spin text-4xl mb-4"></i><p class="text-xs font-black uppercase tracking-[0.2em]">Synchronizing Network</p></div>';
             
+            // Sidebar loading state
+            document.getElementById('champion-name').textContent = '---';
+            document.getElementById('champion-time').textContent = 'Synchronizing...';
+            const champAvatarContainer = document.getElementById('champion-avatar');
+            champAvatarContainer.innerHTML = '<i class="fas fa-spinner fa-spin text-2xl text-indigo-400 opacity-20"></i>';
+            champAvatarContainer.classList.add('flex', 'items-center', 'justify-center');
+            champAvatarContainer.classList.remove('no-hover');
+            champAvatarContainer.style.background = '';
+            champAvatarContainer.style.border = '';
+            champAvatarContainer.style.boxShadow = '';
+
             try {
                 let rankedItems = [];
                 let error = null;
@@ -498,14 +509,14 @@
             const pfp1 = getAvatarHTML(user1IsHidden ? dummyUser : { id: data.user1_id, username: data.user1_username, display_name: data.user1_display_name, pfp_type: data.user1_pfp_type, avatar_url: data.user1_avatar_url }, "w-full h-full", false, null, "rounded-xl");
             const pfp2 = getAvatarHTML(user2IsHidden ? dummyUser : { id: data.user2_id, username: data.user2_username, display_name: data.user2_display_name, pfp_type: data.user2_pfp_type, avatar_url: data.user2_avatar_url }, "w-full h-full", false, null, "rounded-xl");
             
-            champAvatarContainer.classList.add('no-hover');
+            champAvatarContainer.classList.add('no-hover', 'flex', 'justify-center', 'items-center');
             champAvatarContainer.style.background = 'transparent';
             champAvatarContainer.style.border = 'none';
             champAvatarContainer.style.boxShadow = 'none';
             champAvatarContainer.innerHTML = `
-                <div class="dual-pfp scale-150 transform translate-y-2">
-                    <div class="pfp-slot" style="width: 4rem; height: 4rem; border-radius: 1.25rem;">${pfp1}</div>
-                    <div class="pfp-slot" style="width: 4rem; height: 4rem; border-radius: 1.25rem;">${pfp2}</div>
+                <div class="dual-pfp scale-[1.8] transform translate-x-2">
+                    <div class="pfp-slot" style="width: 3.5rem; height: 3.5rem; border-radius: 1.25rem; border-width: 2px;">${pfp1}</div>
+                    <div class="pfp-slot" style="width: 3.5rem; height: 3.5rem; border-radius: 1.25rem; border-width: 2px;">${pfp2}</div>
                 </div>
             `;
             
@@ -572,6 +583,12 @@
         }
 
         function updateChampion(data) {
+            const champAvatarContainer = document.getElementById('champion-avatar');
+            champAvatarContainer.classList.remove('no-hover', 'flex', 'justify-center', 'items-center');
+            champAvatarContainer.style.background = '';
+            champAvatarContainer.style.border = '';
+            champAvatarContainer.style.boxShadow = '';
+            
             document.getElementById('champion-name').textContent = data.display_name || data.username || "Anonymous";
             const hours = Math.floor((data.total_v6_time || 0) / 3600);
             const minutes = Math.floor(((data.total_v6_time || 0) % 3600) / 60);
