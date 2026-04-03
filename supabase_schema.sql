@@ -225,6 +225,165 @@ BEGIN
 END;
 $$;
 
+-- 13. FRIEND STREAKS SYSTEM
+CREATE TABLE IF NOT EXISTS public.friend_streaks (
+    user1_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    user2_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    streak_count INTEGER DEFAULT 0,
+    last_streak_date DATE, -- Format: YYYY-MM-DD of the client
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    PRIMARY KEY (user1_id, user2_id),
+    CONSTRAINT user_order CHECK (user1_id < user2_id)
+);
+
+ALTER TABLE public.friend_streaks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Streaks are viewable by participants." ON public.friend_streaks FOR SELECT USING (auth.uid() = user1_id OR auth.uid() = user2_id);
+
+-- Function to update/sync streak when both friends have posted
+CREATE OR REPLACE FUNCTION public.sync_friend_streak(
+    friend_id UUID,
+    client_date DATE
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    u1 UUID;
+    u2 UUID;
+    current_user_id UUID := auth.uid();
+    today_posted_user BOOLEAN;
+    today_posted_friend BOOLEAN;
+    existing_streak RECORD;
+    new_streak_count INTEGER;
+BEGIN
+    IF current_user_id IS NULL OR friend_id IS NULL THEN RETURN 0; END IF;
+
+    -- Ensure u1 < u2
+    IF current_user_id < friend_id THEN
+        u1 := current_user_id; u2 := friend_id;
+    ELSE
+        u1 := friend_id; u2 := current_user_id;
+    END IF;
+
+    -- Check if both posted today (client_date)
+    SELECT EXISTS (
+        SELECT 1 FROM public.daily_photos 
+        WHERE creator_uid = current_user_id 
+        AND (created_at AT TIME ZONE 'UTC')::DATE = client_date
+    ) INTO today_posted_user;
+
+    SELECT EXISTS (
+        SELECT 1 FROM public.daily_photos 
+        WHERE creator_uid = friend_id 
+        AND (created_at AT TIME ZONE 'UTC')::DATE = client_date
+    ) INTO today_posted_friend;
+
+    IF NOT (today_posted_user AND today_posted_friend) THEN
+        SELECT streak_count INTO new_streak_count FROM public.friend_streaks WHERE user1_id = u1 AND user2_id = u2;
+        RETURN COALESCE(new_streak_count, 0);
+    END IF;
+
+    -- Both posted today. Update streak.
+    SELECT * INTO existing_streak FROM public.friend_streaks WHERE user1_id = u1 AND user2_id = u2;
+
+    IF existing_streak IS NULL THEN
+        INSERT INTO public.friend_streaks (user1_id, user2_id, streak_count, last_streak_date)
+        VALUES (u1, u2, 1, client_date);
+        new_streak_count := 1;
+    ELSIF existing_streak.last_streak_date = client_date THEN
+        new_streak_count := existing_streak.streak_count;
+    ELSIF existing_streak.last_streak_date = client_date - INTERVAL '1 day' THEN
+        UPDATE public.friend_streaks 
+        SET streak_count = streak_count + 1, last_streak_date = client_date, updated_at = NOW()
+        WHERE user1_id = u1 AND user2_id = u2;
+        new_streak_count := existing_streak.streak_count + 1;
+    ELSE
+        UPDATE public.friend_streaks 
+        SET streak_count = 1, last_streak_date = client_date, updated_at = NOW()
+        WHERE user1_id = u1 AND user2_id = u2;
+        new_streak_count := 1;
+    END IF;
+
+    RETURN new_streak_count;
+END;
+$$;
+
+-- Function to get all friend streaks for a user
+CREATE OR REPLACE FUNCTION public.get_my_friend_streaks()
+RETURNS TABLE(friend_id UUID, friend_username TEXT, friend_display_name TEXT, friend_avatar_url TEXT, pfp_type TEXT, streak_count INTEGER, last_streak_date DATE)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        p.id as friend_id,
+        p.username as friend_username,
+        p.display_name as friend_display_name,
+        p.avatar_url as friend_avatar_url,
+        p.pfp_type,
+        COALESCE(s.streak_count, 0) as streak_count,
+        s.last_streak_date
+    FROM public.follows f1
+    JOIN public.follows f2 ON f1.follower_id = f2.following_id AND f1.following_id = f2.follower_id
+    JOIN public.profiles p ON p.id = f1.following_id
+    LEFT JOIN public.friend_streaks s ON 
+        (s.user1_id = f1.follower_id AND s.user2_id = f1.following_id) OR
+        (s.user1_id = f1.following_id AND s.user2_id = f1.follower_id)
+    WHERE f1.follower_id = auth.uid();
+END;
+$$;
+
+-- Function for Leaderboard: Get users with the most/highest streaks
+CREATE OR REPLACE FUNCTION public.get_streak_leaderboard()
+RETURNS TABLE(user_id UUID, username TEXT, display_name TEXT, avatar_url TEXT, pfp_type TEXT, total_streaks BIGINT, highest_streak INTEGER)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        p.id,
+        p.username,
+        p.display_name,
+        p.avatar_url,
+        p.pfp_type,
+        COUNT(s.streak_count) FILTER (WHERE s.streak_count > 0) as total_streaks,
+        MAX(COALESCE(s.streak_count, 0)) as highest_streak
+    FROM public.profiles p
+    LEFT JOIN public.friend_streaks s ON (s.user1_id = p.id OR s.user2_id = p.id)
+    GROUP BY p.id
+    ORDER BY highest_streak DESC NULLS LAST, total_streaks DESC
+    LIMIT 50;
+END;
+$$;
+
+-- New Function: Get top PAIRS of friends by streak count
+CREATE OR REPLACE FUNCTION public.get_top_friend_streaks()
+RETURNS TABLE(
+    user1_id UUID, user1_username TEXT, user1_display_name TEXT, user1_avatar_url TEXT, user1_pfp_type TEXT,
+    user2_id UUID, user2_username TEXT, user2_display_name TEXT, user2_avatar_url TEXT, user2_pfp_type TEXT,
+    streak_count INTEGER
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        u1.id as user1_id, u1.username as user1_username, u1.display_name as user1_display_name, u1.avatar_url as user1_avatar_url, u1.pfp_type as user1_pfp_type,
+        u2.id as user2_id, u2.username as user2_username, u2.display_name as user2_display_name, u2.avatar_url as user2_avatar_url, u2.pfp_type as user2_pfp_type,
+        s.streak_count
+    FROM public.friend_streaks s
+    JOIN public.profiles u1 ON s.user1_id = u1.id
+    JOIN public.profiles u2 ON s.user2_id = u2.id
+    WHERE s.streak_count > 0
+    ORDER BY s.streak_count DESC
+    LIMIT 50;
+END;
+$$;
+
 -- IMPORTANT FIX: drop the policy before recreating it (prevents 42710)
 DROP POLICY IF EXISTS "Admins can view traffic logs." ON public.traffic_logs;
 CREATE POLICY "Admins can view traffic logs."

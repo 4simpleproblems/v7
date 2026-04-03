@@ -49,6 +49,44 @@
             background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%);
             pointer-events: none;
             z-index: -1;
+            transition: background 0.8s ease;
+        }
+
+        body.streak-mode #dynamic-background {
+            background: radial-gradient(circle at 50% 20%, rgba(249, 115, 22, 0.4), transparent 65%);
+        }
+
+        .dual-pfp {
+            display: flex;
+            align-items: center;
+            margin-left: -0.5rem;
+        }
+        .dual-pfp .pfp-slot {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 1rem;
+            border: 3px solid var(--bg-card);
+            overflow: hidden;
+            background: #000;
+            margin-left: -1rem;
+            transition: transform 0.3s ease;
+        }
+        .dual-pfp .pfp-slot:first-child { margin-left: 0; z-index: 2; }
+        .dual-pfp .pfp-slot:last-child { z-index: 1; }
+        .leader-item:hover .dual-pfp .pfp-slot:first-child { transform: translateX(-4px); }
+        .leader-item:hover .dual-pfp .pfp-slot:last-child { transform: translateX(4px); }
+
+        .streak-fire-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            background: rgba(249, 115, 22, 0.1);
+            border: 1px solid rgba(249, 115, 22, 0.2);
+            color: #f97316;
+            font-weight: 900;
+            font-size: 0.875rem;
         }
 
         .feature-card {
@@ -240,8 +278,12 @@
                 <div class="flex justify-between items-end mb-16">
                     <div>
                         <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2">Active Roster</p>
-                        <h2 class="text-6xl font-light tracking-tight" style="color: var(--text-main);">Top 50 Users</h2>
-                        <p class="text-lg mt-3" style="color: var(--text-muted); opacity: 0.5;">Synchronized real-time network activity rankings.</p>
+                        <h2 id="leaderboard-title" class="text-6xl font-light tracking-tight" style="color: var(--text-main);">Top 50 Users</h2>
+                        <p id="leaderboard-desc" class="text-lg mt-3" style="color: var(--text-muted); opacity: 0.5;">Synchronized real-time network activity rankings.</p>
+                    </div>
+                    <div class="flex gap-2 p-1.5 bg-white/5 border border-white/10 rounded-2xl">
+                        <button id="mode-time" class="btn-toolbar-style active px-6">By Time</button>
+                        <button id="mode-streaks" class="btn-toolbar-style px-6">Top Streaks</button>
                     </div>
                 </div>
 
@@ -277,6 +319,7 @@
         window.supabase = supabase;
 
         window.__PAGE_KEY = 'leaderboard';
+        let leaderboardMode = 'time';
 
         async function initLeaderboard() {
             onAuthStateChanged(auth, async (user) => {
@@ -288,6 +331,7 @@
 
                 if (uid) {
                     loadUserRankings(uid);
+                    setupModeToggles(uid);
                 } else if (!window._LOCAL_MODE) {
                     window.location.replace('/authentication.html');
                 }
@@ -296,21 +340,53 @@
             document.getElementById('leaderboard-page-container').classList.remove('invisible');
         }
 
+        function setupModeToggles(uid) {
+            document.getElementById('mode-time').onclick = () => {
+                leaderboardMode = 'time';
+                document.body.classList.remove('streak-mode');
+                document.getElementById('mode-time').classList.add('active', 'btn-primary-override');
+                document.getElementById('mode-streaks').classList.remove('active', 'btn-primary-override');
+                document.getElementById('leaderboard-title').textContent = 'Top 50 Users';
+                document.getElementById('leaderboard-desc').textContent = 'Synchronized real-time network activity rankings.';
+                loadUserRankings(uid);
+            };
+            document.getElementById('mode-streaks').onclick = () => {
+                leaderboardMode = 'streaks';
+                document.body.classList.add('streak-mode');
+                document.getElementById('mode-streaks').classList.add('active', 'btn-primary-override');
+                document.getElementById('mode-time').classList.remove('active', 'btn-primary-override');
+                document.getElementById('leaderboard-title').textContent = 'Elite Streaks';
+                document.getElementById('leaderboard-desc').textContent = 'The most dedicated DailyPhoto duos in the network.';
+                loadUserRankings(uid);
+            };
+        }
+
         async function loadUserRankings(currentUid) {
             const rankingsEl = document.getElementById('rankings-list');
+            rankingsEl.innerHTML = '<div class="py-20 flex flex-col items-center justify-center opacity-20"><i class="fas fa-spinner fa-spin text-4xl mb-4"></i><p class="text-xs font-black uppercase tracking-[0.2em]">Synchronizing Network</p></div>';
             
             try {
-                // Fetch rankings from Supabase
-                const { data: rankedUsers, error } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .order('total_v6_time', { ascending: false })
-                    .limit(50);
+                let rankedItems = [];
+                let error = null;
+
+                if (leaderboardMode === 'time') {
+                    const res = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .order('total_v6_time', { ascending: false })
+                        .limit(50);
+                    rankedItems = res.data;
+                    error = res.error;
+                } else {
+                    const res = await supabase.rpc('get_top_friend_streaks');
+                    rankedItems = res.data;
+                    error = res.error;
+                }
 
                 if (error) throw error;
 
-                if (!rankedUsers || rankedUsers.length === 0) {
-                    rankingsEl.innerHTML = '<p class="text-center opacity-30 italic py-20">No users found.</p>';
+                if (!rankedItems || rankedItems.length === 0) {
+                    rankingsEl.innerHTML = '<p class="text-center opacity-30 italic py-20">No rankings found.</p>';
                     return;
                 }
                 
@@ -323,52 +399,96 @@
                 rankingsEl.innerHTML = '';
                 
                 let myRank = 0;
-                rankedUsers.forEach((data, index) => {
-                    const uid = data.id;
+                rankedItems.forEach((data, index) => {
                     const i = index + 1;
-                    if (uid === currentUid) myRank = i;
-                    
-                    const hours = Math.floor((data.total_v6_time || 0) / 3600);
-                    const minutes = Math.floor(((data.total_v6_time || 0) % 3600) / 60);
-
-                    if (i === 1) updateChampion(data);
-
                     const item = document.createElement('div');
                     item.className = 'leader-item';
                     
-                    const isFollowing = following.has(uid);
                     const rankClass = i === 1 ? 'rank-1-text' : (i === 2 ? 'rank-2-text' : (i === 3 ? 'rank-3-text' : ''));
 
-                    item.innerHTML = `
-                        <div class="rank-num ${rankClass}">${i}</div>
-                        ${getAvatarHTML({ ...data, displayName: data.display_name, pfpType: data.pfp_type, customPfp: data.avatar_url }, "w-12 h-12", false, null, "rounded-xl")}
-                        <div class="flex-grow ml-4 min-w-0">
-                            <div class="text-base font-bold truncate" style="color: var(--text-main);">${data.display_name || data.username || "Anonymous"}</div>
-                            <div class="text-xs opacity-40 font-mono" style="color: var(--text-muted);">${hours}h ${minutes}m activity</div>
-                        </div>
-                        ${uid !== currentUid ? `
-                            <button class="follow-btn ${isFollowing ? 'following' : ''}" data-uid="${uid}">
-                                ${isFollowing ? 'Following' : 'Follow'}
-                            </button>
-                        ` : '<span class="text-[10px] opacity-40 font-black uppercase tracking-[0.2em]">Me</span>'}
-                    `;
+                    if (leaderboardMode === 'time') {
+                        const uid = data.id;
+                        if (uid === currentUid) myRank = i;
+                        if (i === 1) updateChampion(data);
 
-                    item.onclick = (e) => {
-                        if (e.target.closest('.follow-btn')) return;
-                        if (data.username) window.location.href = `/logged-in/@${data.username}`;
-                    };
+                        const hours = Math.floor((data.total_v6_time || 0) / 3600);
+                        const minutes = Math.floor(((data.total_v6_time || 0) % 3600) / 60);
+                        const isFollowing = following.has(uid);
+
+                        item.innerHTML = `
+                            <div class="rank-num ${rankClass}">${i}</div>
+                            ${getAvatarHTML({ ...data, displayName: data.display_name, pfpType: data.pfp_type, customPfp: data.avatar_url }, "w-12 h-12", false, null, "rounded-xl")}
+                            <div class="flex-grow ml-4 min-w-0">
+                                <div class="text-base font-bold truncate" style="color: var(--text-main);">${data.display_name || data.username || "Anonymous"}</div>
+                                <div class="text-xs opacity-40 font-mono" style="color: var(--text-muted);">${hours}h ${minutes}m activity</div>
+                            </div>
+                            ${uid !== currentUid ? `
+                                <button class="follow-btn ${isFollowing ? 'following' : ''}" data-uid="${uid}">
+                                    ${isFollowing ? 'Following' : 'Follow'}
+                                </button>
+                            ` : '<span class="text-[10px] opacity-40 font-black uppercase tracking-[0.2em]">Me</span>'}
+                        `;
+                        item.onclick = (e) => {
+                            if (e.target.closest('.follow-btn')) return;
+                            if (data.username) window.location.href = `/logged-in/@${data.username}`;
+                        };
+                    } else {
+                        // Streak Pair Mode
+                        const isPart = (data.user1_id === currentUid || data.user2_id === currentUid);
+                        if (isPart) myRank = i;
+                        if (i === 1) updateChampionStreak(data);
+
+                        const pfp1 = getAvatarHTML({ id: data.user1_id, username: data.user1_username, display_name: data.user1_display_name, pfp_type: data.user1_pfp_type, avatar_url: data.user1_avatar_url }, "w-full h-full", false, null, "rounded-xl");
+                        const pfp2 = getAvatarHTML({ id: data.user2_id, username: data.user2_username, display_name: data.user2_display_name, pfp_type: data.user2_pfp_type, avatar_url: data.user2_avatar_url }, "w-full h-full", false, null, "rounded-xl");
+
+                        item.innerHTML = `
+                            <div class="rank-num ${rankClass}">${i}</div>
+                            <div class="dual-pfp shrink-0">
+                                <div class="pfp-slot">${pfp1}</div>
+                                <div class="pfp-slot">${pfp2}</div>
+                            </div>
+                            <div class="flex-grow ml-4 min-w-0">
+                                <div class="text-sm font-bold truncate text-white">@${data.user1_username} <span class="text-xs opacity-40 mx-1">&</span> @${data.user2_username}</div>
+                                <div class="text-[10px] opacity-40 uppercase tracking-widest font-black mt-1">Shared DailyPhoto Duo</div>
+                            </div>
+                            <div class="streak-fire-badge">
+                                <i class="fas fa-fire animate-pulse"></i>
+                                <span>${data.streak_count}</span>
+                            </div>
+                        `;
+                    }
 
                     rankingsEl.appendChild(item);
-
-                    const fBtn = item.querySelector('.follow-btn');
-                    if (fBtn) fBtn.onclick = () => toggleFollow(fBtn, uid, currentUid);
+                    if (leaderboardMode === 'time') {
+                        const fBtn = item.querySelector('.follow-btn');
+                        if (fBtn) fBtn.onclick = () => toggleFollow(fBtn, data.id, currentUid);
+                    }
                 });
 
-                if (myRank > 0) updateGlobalNavRank(myRank);
+                if (myRank > 0 && leaderboardMode === 'time') updateGlobalNavRank(myRank);
             } catch (e) {
                 console.error("Leaderboard error:", e);
                 rankingsEl.innerHTML = '<p class="text-center text-red-400 italic py-20">Error synchronizing ranking data.</p>';
             }
+        }
+
+        function updateChampionStreak(data) {
+            document.getElementById('champion-name').textContent = `@${data.user1_username} & @${data.user2_username}`;
+            document.getElementById('champion-time').textContent = `Shared streak of ${data.streak_count} days`;
+            
+            const champAvatarContainer = document.getElementById('champion-avatar');
+            const pfp1 = getAvatarHTML({ id: data.user1_id, username: data.user1_username, display_name: data.user1_display_name, pfp_type: data.user1_pfp_type, avatar_url: data.user1_avatar_url }, "w-10 h-10", false, null, "rounded-xl");
+            const pfp2 = getAvatarHTML({ id: data.user2_id, username: data.user2_username, display_name: data.user2_display_name, pfp_type: data.user2_pfp_type, avatar_url: data.user2_avatar_url }, "w-10 h-10", false, null, "rounded-xl");
+            
+            champAvatarContainer.innerHTML = `
+                <div class="dual-pfp p-4 scale-125">
+                    <div class="pfp-slot">${pfp1}</div>
+                    <div class="pfp-slot">${pfp2}</div>
+                </div>
+            `;
+            
+            const championSection = document.getElementById('top-user-section');
+            championSection.onclick = null;
         }
 
         function updateGlobalNavRank(rank) {
