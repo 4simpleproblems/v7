@@ -32,6 +32,28 @@
         }
     }
 
+    // --- BareMux MessagePort fix for service worker communication ---
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+        if (!window.__4sp_baremux_listener_added) {
+            window.__4sp_baremux_listener_added = true;
+            
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'getPort' && event.data.port) {
+                    try {
+                        // Create a fresh connection for every request to ensure a unique, un-neutered port
+                        let workerPath = "/logged-in/baremux/worker.js";
+                        let tempWorker = new SharedWorker(workerPath, "bare-mux-worker");
+                        
+                        // Transfer the port back to the service worker
+                        event.data.port.postMessage(tempWorker.port, [tempWorker.port]);
+                    } catch (e) {
+                        console.error("Injector: Failed to provide BareMux port:", e);
+                    }
+                }
+            });
+        }
+    }
+
     // --- Stub Global Loader Control (to prevent errors in other scripts) ---
     window.hideLoader = () => {
         const loader = document.getElementById('universal-loader');

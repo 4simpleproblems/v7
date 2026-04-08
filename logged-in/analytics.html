@@ -38,6 +38,7 @@
                 <button class="tab-btn active" data-tab="overview">Overview</button>
                 <button class="tab-btn" data-tab="users">Users</button>
                 <button class="tab-btn" data-tab="traffic">Traffic</button>
+                <button class="tab-btn" data-tab="bans">Ban Requests</button>
             </div>
         </header>
 
@@ -115,6 +116,31 @@
                 </div>
             </div>
         </div>
+
+        <!-- Bans Tab -->
+        <div id="tab-bans" class="tab-content hidden">
+            <div class="stat-card p-0 overflow-hidden">
+                <div class="p-4 border-b border-white/5 bg-white/5">
+                    <h3 class="text-white">Active Ban Requests</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-xs text-gray-500 uppercase tracking-widest border-b border-white/5">
+                                <th class="p-4">Target User</th>
+                                <th class="p-4">Reason</th>
+                                <th class="p-4">Requested By</th>
+                                <th class="p-4">Date</th>
+                                <th class="p-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ban-requests-body" class="text-sm">
+                            <!-- Injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modals (Simplified) -->
@@ -122,9 +148,10 @@
         <div class="stat-card w-full max-w-md">
             <h3 class="text-xl text-white mb-6">Manage Permissions</h3>
             <div id="admin-target-info" class="mb-6 p-4 bg-white/5 rounded-xl border border-white/5"></div>
-            <div class="flex gap-3">
-                <button id="make-admin-btn" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold">Make Admin</button>
-                <button id="remove-admin-btn" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold">Remove Admin</button>
+            <div class="flex flex-col gap-3">
+                <button id="make-admin-btn" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold">Give Full Admin</button>
+                <button id="make-subadmin-btn" class="w-full py-3 bg-teal-600 text-white rounded-xl font-bold">Give Sub Admin</button>
+                <button id="remove-admin-btn" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold">Clear Roles</button>
             </div>
             <button onclick="closeModal()" class="w-full mt-4 text-gray-500 text-sm">Cancel</button>
         </div>
@@ -154,17 +181,20 @@
             }
             currentUser = session.user;
             
-            // Hardcode check
-            const isSuperAdmin = currentUser.email === PRIVILEGED_EMAIL;
-            
+            // Fetch profile and roles
             const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', currentUser.id).single();
+            const { data: roles } = await supabase.from('roles').select('role').eq('user_id', currentUser.id);
             
-            if (!isSuperAdmin && (!profile || !profile.is_admin)) {
+            const isAdmin = roles?.some(r => r.role === 'full_admin') || profile?.is_admin || currentUser.email === PRIVILEGED_EMAIL;
+            const isSubAdmin = roles?.some(r => r.role === 'sub_admin');
+
+            if (!isAdmin && !isSubAdmin) {
                 alert("Access Denied: Administrative privileges required.");
                 window.location.href = '../logged-in/dashboard.html';
                 return;
             }
 
+            window.userRole = isAdmin ? 'admin' : 'subadmin';
             initDashboard();
         }
 
@@ -172,8 +202,82 @@
             loadStats();
             loadUsers();
             loadTraffic();
+            loadBanRequests();
             setupTabs();
         }
+
+        async function loadBanRequests() {
+            const { data: requests } = await supabase.from('ban_requests').select('*').eq('status', 'pending');
+            const tbody = document.getElementById('ban-requests-body');
+            
+            if (!requests || requests.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">No pending ban requests.</td></tr>';
+                return;
+            }
+
+            // Fetch profiles for both targets and requesters
+            const uids = [...new Set([...requests.map(r => r.target_user_id), ...requests.map(r => r.requester_id)])];
+            const { data: profiles } = await supabase.from('profiles').select('id, username, email').in('id', uids);
+            
+            const profileMap = Object.fromEntries(profiles?.map(p => [p.id, p]) || []);
+
+            tbody.innerHTML = requests.map(req => {
+                const target = profileMap[req.target_user_id] || { username: 'Unknown', email: req.target_user_id };
+                const requester = profileMap[req.requester_id] || { username: 'Unknown', email: req.requester_id };
+                
+                return `
+                    <tr class="border-b border-white/5 hover:bg-white/[0.02] transition">
+                        <td class="p-4">
+                            <div class="flex flex-col">
+                                <span class="text-white font-medium">${target.username}</span>
+                                <span class="text-[10px] text-gray-500 font-mono">${target.email}</span>
+                            </div>
+                        </td>
+                        <td class="p-4 text-gray-400">${req.reason}</td>
+                        <td class="p-4 text-gray-500 text-xs">${requester.username}</td>
+                        <td class="p-4 text-gray-500 text-xs">${new Date(req.requested_at).toLocaleDateString()}</td>
+                        <td class="p-4">
+                            <div class="flex gap-2">
+                                <button class="action-btn btn-blue" onclick="approveBanRequest('${req.id}', '${req.target_user_id}', '${req.reason}')">Approve</button>
+                                <button class="action-btn btn-red" onclick="rejectBanRequest('${req.id}')">Reject</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        window.approveBanRequest = async (id, targetId, reason) => {
+            if (!confirm("Approve this ban request?")) return;
+            
+            // 1. Create the ban
+            await supabase.from('bans').insert({
+                user_id: targetId,
+                reason: reason,
+                banned_by: currentUser.id
+            });
+
+            // 2. Update request status
+            await supabase.from('ban_requests').update({
+                status: 'approved',
+                processed_at: new Date().toISOString(),
+                processed_by: currentUser.id
+            }).eq('id', id);
+
+            loadBanRequests();
+        };
+
+        window.rejectBanRequest = async (id) => {
+            if (!confirm("Reject this ban request?")) return;
+            
+            await supabase.from('ban_requests').update({
+                status: 'rejected',
+                processed_at: new Date().toISOString(),
+                processed_by: currentUser.id
+            }).eq('id', id);
+
+            loadBanRequests();
+        };
 
         function setupTabs() {
             document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -302,11 +406,19 @@
             document.getElementById('admin-modal').classList.remove('hidden');
             
             document.getElementById('make-admin-btn').onclick = async () => {
+                await supabase.from('roles').upsert({ user_id: id, role: 'full_admin' });
                 await supabase.from('profiles').update({ is_admin: true }).eq('id', id);
                 closeModal();
                 loadUsers();
             };
+            document.getElementById('make-subadmin-btn').onclick = async () => {
+                await supabase.from('roles').upsert({ user_id: id, role: 'sub_admin' });
+                await supabase.from('profiles').update({ is_admin: false }).eq('id', id);
+                closeModal();
+                loadUsers();
+            };
             document.getElementById('remove-admin-btn').onclick = async () => {
+                await supabase.from('roles').delete().eq('user_id', id);
                 await supabase.from('profiles').update({ is_admin: false }).eq('id', id);
                 closeModal();
                 loadUsers();

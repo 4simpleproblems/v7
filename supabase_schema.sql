@@ -618,3 +618,100 @@ BEGIN
       );
 END;
 $$;
+
+-- 14. USER ROLES & BANS SYSTEM (Added in V6.5)
+
+-- Create Roles Table
+CREATE TABLE IF NOT EXISTS public.roles (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('full_admin', 'sub_admin')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
+
+-- Create Bans Table
+CREATE TABLE IF NOT EXISTS public.bans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    reason TEXT,
+    banned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    banned_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL
+);
+ALTER TABLE public.bans ENABLE ROW LEVEL SECURITY;
+
+-- Create Hardware Bans Table
+CREATE TABLE IF NOT EXISTS public.hardware_bans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    hardware_id TEXT NOT NULL UNIQUE,
+    reason TEXT,
+    banned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    banned_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL
+);
+ALTER TABLE public.hardware_bans ENABLE ROW LEVEL SECURITY;
+
+-- Create Ban Requests Table
+CREATE TABLE IF NOT EXISTS public.ban_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    requester_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    target_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    requested_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    processed_at TIMESTAMP WITH TIME ZONE,
+    processed_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL
+);
+ALTER TABLE public.ban_requests ENABLE ROW LEVEL SECURITY;
+
+-- POLICIES (Roles, Bans, Ban Requests)
+
+DROP POLICY IF EXISTS "Admins and self can view roles." ON public.roles;
+CREATE POLICY "Admins and self can view roles." ON public.roles FOR SELECT
+USING (
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = TRUE) OR 
+  auth.uid() = user_id
+);
+
+DROP POLICY IF EXISTS "Admins can manage roles." ON public.roles;
+CREATE POLICY "Admins can manage roles." ON public.roles FOR ALL
+USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (email = '4simpleproblems@gmail.com' OR is_admin = TRUE))
+);
+
+DROP POLICY IF EXISTS "Admins can manage all bans." ON public.bans;
+CREATE POLICY "Admins can manage all bans." ON public.bans FOR ALL
+USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (email = '4simpleproblems@gmail.com' OR is_admin = TRUE))
+);
+
+DROP POLICY IF EXISTS "Users can view their own ban status." ON public.bans;
+CREATE POLICY "Users can view their own ban status." ON public.bans FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can manage hardware bans." ON public.hardware_bans;
+CREATE POLICY "Admins can manage hardware bans." ON public.hardware_bans FOR ALL
+USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (email = '4simpleproblems@gmail.com' OR is_admin = TRUE))
+);
+
+DROP POLICY IF EXISTS "Full admins can view all ban requests." ON public.ban_requests;
+CREATE POLICY "Full admins can view all ban requests." ON public.ban_requests FOR SELECT
+USING (
+  EXISTS (SELECT 1 FROM public.roles WHERE user_id = auth.uid() AND role = 'full_admin') OR 
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (email = '4simpleproblems@gmail.com' OR is_admin = TRUE))
+);
+
+DROP POLICY IF EXISTS "Sub-admins can create ban requests." ON public.ban_requests;
+CREATE POLICY "Sub-admins can create ban requests." ON public.ban_requests FOR INSERT
+WITH CHECK (
+  auth.uid() = requester_id AND (
+    EXISTS (SELECT 1 FROM public.roles WHERE user_id = auth.uid() AND role IN ('full_admin', 'sub_admin')) OR 
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (email = '4simpleproblems@gmail.com' OR is_admin = TRUE))
+  )
+);
+
+-- INITIAL ADMIN ROLE
+INSERT INTO public.roles (user_id, role)
+SELECT id, 'full_admin'
+FROM auth.users
+WHERE email = '4simpleproblems@gmail.com'
+ON CONFLICT (user_id) DO NOTHING;

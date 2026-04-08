@@ -65,19 +65,16 @@
 
     <!-- Supabase Imports and Initialization -->
     <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js';
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
         import { supabaseConfig } from "../supabase-config.js";
 
-        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
-        window.supabase = supabase;
-
-        // Removed Firebase initialization and imports
-        // import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
-        // import { firebaseConfig } from "../firebase-config.js"; 
-        // const app = initializeApp(firebaseConfig);
-        // const functions = getFunctions(app); 
-        // window.chatWithGroq = httpsCallable(functions, 'chatWithGroq');
+        try {
+            const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+            window.supabase = supabase;
+            console.log("Vana: Supabase client initialized.");
+        } catch (e) {
+            console.error("Vana: Failed to initialize Supabase:", e);
+        }
     </script>
 
     <style>
@@ -505,7 +502,7 @@
         <i class="fa-solid fa-trash"></i>
     </button>
 
-    <script>
+    <script type="module">
         // --- CONFIGURATION ---
         const MODELS = {
             FAST: 'llama-3.1-8b-instant',
@@ -525,27 +522,29 @@
         // --- STATE ---
         let conversationHistory = [];
 
-        // --- Supabase Configuration and Auth ---
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js';
-        import { supabaseConfig } from "../supabase-config.js";
-
-        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
-        window.supabase = supabase;
-
-        // --- REMOVED Firebase initialization and imports ---
-
         // Function to get Groq API Key from Supabase Vault
         async function getGroqApiKey() {
+            if (!window.supabase) {
+                console.error("getGroqApiKey: window.supabase is not defined.");
+                throw new Error("Supabase client not initialized.");
+            }
             try {
-                // This is a hypothetical call to Supabase Vault.
-                // Adjust 'Vana Key 1' if the actual key name in Vault is different.
-                const { data, error } = await supabase.from('vault').select('value').eq('key', 'Vana Key 1').single();
-                if (error) throw error;
-                if (!data || !data.value) throw new Error("Groq API Key not found in Supabase Vault.");
+                // Attempt to fetch from 'vault' table. 
+                // If it fails with PGRST205 (table not found), provide a clear error.
+                const { data, error } = await window.supabase.from('vault').select('value').eq('key', 'Vana Key 1').single();
+                
+                if (error) {
+                    if (error.code === 'PGRST205') {
+                        throw new Error("Supabase Vault table ('public.vault') not found. Please ensure it is created and accessible.");
+                    }
+                    throw error;
+                }
+                
+                if (!data || !data.value) throw new Error("Groq API Key not found in Supabase Vault ('Vana Key 1').");
                 return data.value;
             } catch (e) {
-                console.error("Error fetching Groq API key from Supabase Vault:", e);
-                throw new Error("Failed to retrieve Groq API key. Please check Supabase Vault configuration.");
+                console.error("Error fetching Groq API key:", e);
+                throw e;
             }
         }
 
@@ -587,25 +586,47 @@ print("Hello World")
 
         // --- Supabase Authentication Check ---
         async function checkSupabaseAuth() {
-            const { data: { session } } = await supabase.auth.getSession();
+            if (!window.supabase) {
+                console.warn("checkSupabaseAuth: window.supabase not ready, retrying in 100ms...");
+                setTimeout(checkSupabaseAuth, 100);
+                return;
+            }
+            const { data: { session } } = await window.supabase.auth.getSession();
             const authed = !!session;
 
             if (authed) {
                 console.log("User authenticated with Supabase.");
-                // Load API keys and initialize page components
-                await loadApiKeys(); 
                 // Initialize conversation history with system prompt if not already loaded
                 if (conversationHistory.length === 0) {
                     conversationHistory.push({ role: "system", content: SYSTEM_PROMPT });
                 }
             } else {
-                console.log("User not authenticated with Supabase. Redirecting to index.");
-                window.location.href = '../index.html'; 
+                // Wait for a brief moment to see if it's a blip
+                console.log("Vana: No session found, checking again in 1s...");
+                setTimeout(async () => {
+                    const { data: { session: secondCheck } } = await window.supabase.auth.getSession();
+                    if (!secondCheck) {
+                        console.log("Vana: Session definitely gone, redirecting...");
+                        window.location.href = '../index.html';
+                    } else {
+                        // Recovered
+                        if (conversationHistory.length === 0) {
+                            conversationHistory.push({ role: "system", content: SYSTEM_PROMPT });
+                        }
+                    }
+                }, 1000);
             }
         }
 
-        // Trigger auth check when the script loads
+        // Trigger auth check
         checkSupabaseAuth();
+
+        // Export functions to window since this is now a module
+        window.sendMessage = sendMessage;
+        window.clearChat = clearChat;
+        window.handleInput = handleInput;
+        window.setModel = setModel;
+
 
         // --- SEARCH ---
         async function searchWeb(query) {

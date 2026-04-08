@@ -35,7 +35,7 @@ const configs = {
     },
     vern: {
         prefix: '/VERN/uv/service/',
-        bare: '/bare/',
+        bare: '/api/bare',
         bundle: '/VERN/uv/uv.bundle.js',
         config: '/VERN/uv/uv.config.js',
         sw: '/VERN/uv/uv.sw.js',
@@ -45,7 +45,7 @@ const configs = {
     },
     vana: {
         prefix: '/logged-in/uv/service/',
-        bare: '/bare/',
+        bare: '/api/bare',
         bundle: '/logged-in/uv/uv.bundle.js',
         config: '/logged-in/uv/uv.config.js',
         sw: '/logged-in/uv/uv.sw.js',
@@ -55,7 +55,7 @@ const configs = {
     },
     games: {
         prefix: '/GAMES/uv/service/',
-        bare: '/bare/',
+        bare: '/api/bare',
         bundle: '/GAMES/uv/uv.bundle.js',
         config: '/GAMES/uv/uv.config.js',
         sw: '/GAMES/uv/uv.sw.js',
@@ -65,7 +65,7 @@ const configs = {
     },
     valo: {
         prefix: '/VERN/uv/service/',
-        bare: '/bare/',
+        bare: '/api/bare',
         bundle: '/VERN/uv/uv.bundle.js',
         config: '/VERN/uv/uv.config.js',
         sw: '/VERN/uv/uv.sw.js',
@@ -96,7 +96,7 @@ const transportPromise = new Promise(resolve => {
 });
 
 async function getBareClient() {
-    if (transportReady) return bareClient;
+    if (transportReady && bareClient) return bareClient;
     await transportPromise;
     return bareClient;
 }
@@ -111,27 +111,26 @@ function updateTransport(path, port = null) {
     const hasNewPort = !!port;
 
     if (hasPathChanged || hasNewPort) {
-        // Prevent overwriting a valid port with a path-based search if the path is the same
-        if (connection.port && !hasNewPort && !hasPathChanged) {
-            return;
-        }
-
         if (hasPathChanged) {
             console.log("Root SW: Switching BareMux Worker to " + path);
             currentWorkerPath = path;
         }
         
         try {
-            // Re-initialize connection. If port is provided, it's used directly.
-            // Otherwise, use the path to create a new connection that will search for a port
-            connection = new BareMux.WorkerConnection(port || currentWorkerPath);
+            // Use the most robust connection type available
+            if (port) {
+                connection = new BareMux.BareMuxConnection(port);
+            } else {
+                connection = new BareMux.BareMuxConnection(currentWorkerPath);
+            }
+            
             bareClient = new BareMux.BareClient(connection);
             
             // Re-inject the updated client into all active UV instances
             for (const key in instances) {
                 instances[key].bareClient = bareClient;
             }
-            console.log(`Root SW: Transport updated. Port source: ${hasNewPort ? 'Explicit (Message)' : 'Path-based'}. Connection Port Valid: ${!!connection.port}`);
+            console.log(`Root SW: Transport updated. Source: ${hasNewPort ? 'Port' : 'Path'}. Ready: true`);
         } catch (e) {
             console.error("Root SW: Failed to update transport:", e);
         }

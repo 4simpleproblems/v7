@@ -53,25 +53,49 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { firebaseConfig } from "../firebase-config.js";
         import { checkAdminStatus } from "../utils.js";
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
+        // Supabase client is initialized by injector.js and available as window.supabase
         const pageContent = document.getElementById('page-content');
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                pageContent.style.display = 'flex'; // Show content for everyone logged in
-            } else {
-                // User is signed out, redirect to authentication page
-                window.location.href = '../authentication.html';
+        async function checkSession() {
+            if (!window.supabase) {
+                console.warn("Vern: Supabase not ready, waiting...");
+                setTimeout(checkSession, 100);
+                return;
             }
-        });
+
+            const { data: { session } } = await window.supabase.auth.getSession();
+            
+            if (session) {
+                pageContent.style.display = 'flex';
+            } else {
+                // Wait for a brief moment to see if it's a blip
+                console.log("Vern: No session found, checking again in 1s...");
+                setTimeout(async () => {
+                    const { data: { session: secondCheck } } = await window.supabase.auth.getSession();
+                    if (!secondCheck) {
+                        console.log("Vern: Session definitely gone, redirecting...");
+                        window.location.href = '../authentication.html';
+                    } else {
+                        pageContent.style.display = 'flex';
+                    }
+                }, 1000);
+            }
+        }
+
+        // Listen for auth changes
+        if (window.supabase) {
+            window.supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT') {
+                    window.location.href = '../authentication.html';
+                } else if (session) {
+                    pageContent.style.display = 'flex';
+                }
+            });
+        }
+
+        checkSession();
     </script>
 </body>
 </html>
