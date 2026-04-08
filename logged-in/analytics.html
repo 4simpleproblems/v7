@@ -295,12 +295,19 @@
 
         async function loadStats() {
             const supabase = window.supabase;
-            const { data: profiles } = await supabase.from('profiles').select('total_v6_time, created_at');
-            const { count: sessionCount } = await supabase.from('traffic_logs').select('*', { count: 'exact', head: true });
+            const { data: profiles, error: pError } = await supabase.from('profiles').select('total_v6_time, created_at');
+            const { count: sessionCount, error: sError } = await supabase.from('traffic_logs').select('*', { count: 'exact', head: true });
             
+            if (pError || sError) {
+                console.error("Error loading stats:", pError || sError);
+                return;
+            }
+
+            if (!profiles) return;
+
             const totalSecs = profiles.reduce((sum, p) => sum + (p.total_v6_time || 0), 0);
             const today = new Date().toISOString().split('T')[0];
-            const newToday = profiles.filter(p => p.created_at.startsWith(today)).length;
+            const newToday = profiles.filter(p => p.created_at && p.created_at.startsWith(today)).length;
 
             document.getElementById('stat-total-time').textContent = formatDuration(totalSecs);
             document.getElementById('stat-total-users').textContent = profiles.length;
@@ -313,13 +320,17 @@
         async function loadUsers() {
             const supabase = window.supabase;
             const { data: profiles, error } = await supabase.from('profiles').select('*').order('total_v6_time', { ascending: false });
-            if (error) return;
+            if (error || !profiles) {
+                console.error("Error loading users:", error);
+                return;
+            }
             allUsers = profiles;
             renderUserTable(profiles);
         }
 
         function renderUserTable(users) {
             const tbody = document.getElementById('user-table-body');
+            if (!users) return;
             tbody.innerHTML = users.map(u => `
                 <tr class="border-b border-white/5 hover:bg-white/[0.02] transition">
                     <td class="p-4">
@@ -334,7 +345,7 @@
                         </div>
                     </td>
                     <td class="p-4 text-gray-400 font-mono">${formatDuration(u.total_v6_time)}</td>
-                    <td class="p-4 text-gray-500 text-xs">${new Date(u.created_at).toLocaleDateString()}</td>
+                    <td class="p-4 text-gray-500 text-xs">${u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A'}</td>
                     <td class="p-4">
                         ${u.is_admin ? '<span class="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded-full border border-indigo-500/20 font-bold uppercase">Admin</span>' : '<span class="text-[10px] text-gray-600 uppercase font-bold">User</span>'}
                     </td>
@@ -350,8 +361,13 @@
 
         async function loadTraffic() {
             const supabase = window.supabase;
-            const { data: logs } = await supabase.from('traffic_logs').select('*').order('updated_at', { ascending: false }).limit(20);
+            const { data: logs, error } = await supabase.from('traffic_logs').select('*').order('updated_at', { ascending: false }).limit(20);
             
+            if (error || !logs) {
+                console.error("Error loading traffic logs:", error);
+                return;
+            }
+
             const sessionsList = document.getElementById('recent-sessions-list');
             sessionsList.innerHTML = logs.map(l => `
                 <div class="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">

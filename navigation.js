@@ -352,4 +352,5 @@ const hexToRgb = (hex) => {
 
     run();
 })();
+}
 // Made with ❤️ from 4SP

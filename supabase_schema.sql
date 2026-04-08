@@ -37,10 +37,12 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     is_tester BOOLEAN DEFAULT FALSE,
     hide_streaks BOOLEAN DEFAULT FALSE,
     user_tag JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- REPAIR / MIGRATION:
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS auth_method TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS pfp_type TEXT DEFAULT 'letter';
