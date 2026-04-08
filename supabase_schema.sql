@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     is_admin BOOLEAN DEFAULT FALSE,
     is_tester BOOLEAN DEFAULT FALSE,
     hide_streaks BOOLEAN DEFAULT FALSE,
+    user_tag JSONB,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -59,8 +60,73 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS blocked_users UUID[] DEFAUL
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_tester BOOLEAN DEFAULT FALSE;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS hide_streaks BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS user_tag JSONB;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- ... (rest of the file remains similar until RPC section)
+
+-- 12. ANALYTICS RPC FUNCTIONS
+-- ... (existing functions)
+
+-- Social & Administrative RPCs
+CREATE OR REPLACE FUNCTION public.like_photo(photo_id UUID)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+    u_id UUID := auth.uid();
+BEGIN
+    UPDATE public.daily_photos
+    SET hearts = CASE 
+        WHEN u_id = ANY(hearts) THEN array_remove(hearts, u_id)
+        ELSE array_append(hearts, u_id)
+    END
+    WHERE id = photo_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.comment_on_photo(photo_id UUID, comment_text TEXT)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+    u_id UUID := auth.uid();
+    u_name TEXT;
+    new_comment JSONB;
+BEGIN
+    SELECT username INTO u_name FROM public.profiles WHERE id = u_id;
+    new_comment := jsonb_build_object(
+        'userId', u_id,
+        'username', COALESCE(u_name, 'Anonymous'),
+        'text', comment_text,
+        'createdAt', NOW()
+    );
+    UPDATE public.daily_photos
+    SET comments = COALESCE(comments, '[]'::jsonb) || new_comment
+    WHERE id = photo_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.set_user_tag(target_user_id UUID, tag_text TEXT, tag_color TEXT)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    -- Check if caller is admin or super admin
+    IF EXISTS (
+        SELECT 1 FROM public.profiles 
+        WHERE id = auth.uid() AND (is_admin = TRUE OR email = '4simpleproblems@gmail.com')
+    ) OR EXISTS (
+        SELECT 1 FROM public.roles
+        WHERE user_id = auth.uid() AND role IN ('full_admin', 'sub_admin')
+    ) THEN
+        UPDATE public.profiles
+        SET user_tag = CASE 
+            WHEN tag_text IS NULL OR tag_text = '' THEN NULL
+            ELSE jsonb_build_object('text', tag_text, 'color', tag_color)
+        END
+        WHERE id = target_user_id;
+    ELSE
+        RAISE EXCEPTION 'Unauthorized: Only admins can set user tags.';
+    END IF;
+END;
+$$;
+
 
 -- 3. POLICIES (Profiles)
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone." ON public.profiles;

@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/injector.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <style>
@@ -158,14 +159,9 @@
     </div>
 
     <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
         // Use the same config as the rest of the app
         const supabaseUrl = window.SUPABASE_CONFIG?.url || 'https://pldmeqmlfslexdexznob.supabase.co';
-        const supabaseKey = window.SUPABASE_CONFIG?.key || 'AIzaSy...'; // Placeholder, will be injected or read from global
-        
-        // Better: grab from local storage or global if defined by navigation.js
-        const supabase = window.supabase;
+        const supabaseKey = window.SUPABASE_CONFIG?.key || 'AIzaSy...'; 
 
         let currentUser = null;
         let allUsers = [];
@@ -174,6 +170,12 @@
         const PRIVILEGED_EMAIL = '4simpleproblems@gmail.com';
 
         async function checkAuth() {
+            if (!window.supabase) {
+                console.warn("Analytics: Supabase not ready, retrying...");
+                setTimeout(checkAuth, 100);
+                return;
+            }
+            const supabase = window.supabase;
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
                 window.location.href = '../authentication.html';
@@ -207,6 +209,7 @@
         }
 
         async function loadBanRequests() {
+            const supabase = window.supabase;
             const { data: requests } = await supabase.from('ban_requests').select('*').eq('status', 'pending');
             const tbody = document.getElementById('ban-requests-body');
             
@@ -249,7 +252,7 @@
 
         window.approveBanRequest = async (id, targetId, reason) => {
             if (!confirm("Approve this ban request?")) return;
-            
+            const supabase = window.supabase;
             // 1. Create the ban
             await supabase.from('bans').insert({
                 user_id: targetId,
@@ -269,7 +272,7 @@
 
         window.rejectBanRequest = async (id) => {
             if (!confirm("Reject this ban request?")) return;
-            
+            const supabase = window.supabase;
             await supabase.from('ban_requests').update({
                 status: 'rejected',
                 processed_at: new Date().toISOString(),
@@ -291,6 +294,7 @@
         }
 
         async function loadStats() {
+            const supabase = window.supabase;
             const { data: profiles } = await supabase.from('profiles').select('total_v6_time, created_at');
             const { count: sessionCount } = await supabase.from('traffic_logs').select('*', { count: 'exact', head: true });
             
@@ -307,6 +311,7 @@
         }
 
         async function loadUsers() {
+            const supabase = window.supabase;
             const { data: profiles, error } = await supabase.from('profiles').select('*').order('total_v6_time', { ascending: false });
             if (error) return;
             allUsers = profiles;
@@ -344,6 +349,7 @@
         }
 
         async function loadTraffic() {
+            const supabase = window.supabase;
             const { data: logs } = await supabase.from('traffic_logs').select('*').order('updated_at', { ascending: false }).limit(20);
             
             const sessionsList = document.getElementById('recent-sessions-list');
@@ -370,8 +376,6 @@
 
         function renderChart(profiles) {
             const ctx = document.getElementById('usageChart').getContext('2d');
-            // Logic to aggregate data by day...
-            // For brevity, using a placeholder linear growth based on current users
             if (chart) chart.destroy();
             chart = new Chart(ctx, {
                 type: 'line',
@@ -398,6 +402,7 @@
         }
 
         window.managePermissions = async (id) => {
+            const supabase = window.supabase;
             const user = allUsers.find(u => u.id === id);
             document.getElementById('admin-target-info').innerHTML = `
                 <div class="text-white font-medium">${user.username || 'Anonymous'}</div>
@@ -430,6 +435,7 @@
         };
 
         window.deleteUser = async (id) => {
+            const supabase = window.supabase;
             if (confirm("Permanently delete this user profile?")) {
                 await supabase.from('profiles').delete().eq('id', id);
                 loadUsers();
