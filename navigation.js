@@ -2284,6 +2284,7 @@ let db;
                 if (source === 'supabase' && window.supabase) {
                     try {
                         const { data: profile } = await window.supabase.from('profiles').select('*').eq('id', uid).single();
+                        const { data: roles } = await window.supabase.from('roles').select('role').eq('user_id', uid);
                         
                         // Extract metadata from Supabase user object if available
                         const metadata = user.user_metadata || user.raw_user_meta_data || {};
@@ -2308,13 +2309,18 @@ let db;
                                 username: profile.username || email.split('@')[0],
                                 pfpType: profile.pfp_type || (metaPfp ? 'google' : 'letter'),
                                 customPfp: profile.avatar_url || metaPfp,
-                                role: profile.role 
+                                role: roles?.[0]?.role || profile.role 
                             };
 
                             // Sync theme if different
                             if (userData.navbarTheme && JSON.stringify(userData.navbarTheme) !== JSON.stringify(savedTheme)) {
                                 window.applyTheme(userData.navbarTheme);
                                 localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(userData.navbarTheme));
+                            }
+
+                            // Check Admin Status from Supabase roles
+                            if (roles?.some(r => r.role === 'full_admin' || r.role === 'sub_admin') || profile.is_admin) {
+                                isPrivilegedUser = true;
                             }
                         } else if (metaName || metaPfp) {
                             // Fallback if profile row doesn't exist yet but we have metadata
