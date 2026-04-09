@@ -995,11 +995,8 @@
                 if (heartBtn) {
                     heartBtn.onclick = async () => {
                         try {
-                            const newIsHearted = !isHearted;
-                            let newHearts = [...hearts];
-                            if (newIsHearted) newHearts.push(uid);
-                            else newHearts = newHearts.filter(h => h !== uid);
-                            await window.supabase.from('daily_photos').update({ hearts: newHearts }).eq('id', postId);
+                            const { error } = await window.supabase.rpc('like_photo', { photo_id: postId });
+                            if (error) throw error;
                         } catch (e) { console.error("Error liking post:", e); }
                     };
                 }
@@ -1022,11 +1019,11 @@
                     }
 
                     try {
-                        const { data: myProfile } = await window.supabase.from('profiles').select('username').eq('id', uid).maybeSingle();
-                        const myUsername = myProfile?.username || "Someone";
-                        const newComment = { uid: uid, username: myUsername, text: text, timestamp: new Date().toISOString() };
-                        const newComments = [...comments, newComment];
-                        await window.supabase.from('daily_photos').update({ comments: newComments }).eq('id', postId);
+                        const { error } = await window.supabase.rpc('comment_on_photo', { 
+                            photo_id: postId, 
+                            comment_text: text 
+                        });
+                        if (error) throw error;
                         commentInput.value = '';
                     } catch (e) { console.error("Error adding comment:", e); }
                 };

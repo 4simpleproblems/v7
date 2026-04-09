@@ -152,6 +152,7 @@
             <div class="flex flex-col gap-3">
                 <button id="make-admin-btn" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold">Give Full Admin</button>
                 <button id="make-subadmin-btn" class="w-full py-3 bg-teal-600 text-white rounded-xl font-bold">Give Sub Admin</button>
+                <button id="manage-tag-btn" class="w-full py-3 bg-purple-600 text-white rounded-xl font-bold">Manage Creator Tag</button>
                 <button id="remove-admin-btn" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold">Clear Roles</button>
             </div>
             <button onclick="closeModal()" class="w-full mt-4 text-gray-500 text-sm">Cancel</button>
@@ -435,6 +436,22 @@
             document.getElementById('make-subadmin-btn').onclick = async () => {
                 await supabase.from('roles').upsert({ user_id: id, role: 'sub_admin' });
                 await supabase.from('profiles').update({ is_admin: false }).eq('id', id);
+                closeModal();
+                loadUsers();
+            };
+            document.getElementById('manage-tag-btn').onclick = async () => {
+                const tagText = prompt("Enter Tag Text (e.g. Creator, Developer) - Leave empty to remove:");
+                let tagColor = "#4f46e5";
+                if (tagText) {
+                    tagColor = prompt("Enter Tag Color (Hex):", "#4f46e5") || "#4f46e5";
+                }
+                const { error } = await supabase.rpc('set_user_tag', {
+                    target_user_id: id,
+                    tag_text: tagText,
+                    tag_color: tagColor
+                });
+                if (error) alert("Error setting tag: " + error.message);
+                else alert("Tag updated!");
                 closeModal();
                 loadUsers();
             };

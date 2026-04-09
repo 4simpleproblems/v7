@@ -97,7 +97,6 @@ const DEFAULT_THEME = {
 
         const adminSection = isAdmin ? `
             <div class="border-t border-white/5 pt-2 mt-2 flex flex-col gap-1">
-                <button id="set-user-tag-btn" class="auth-menu-button"><i class="fa-solid fa-tag w-4"></i> Set User Tag</button>
                 <a href="/logged-in/analytics.html" class="auth-menu-link"><i class="fa-solid fa-chart-line w-4"></i> Analytics</a>
             </div>
         ` : '';
@@ -153,19 +152,6 @@ const DEFAULT_THEME = {
             logout.onclick = async () => {
                 await window.supabase.auth.signOut();
                 window.location.href = '/authentication.html';
-            };
-        }
-
-        const setTag = document.getElementById('set-user-tag-btn');
-        if (setTag) {
-            setTag.onclick = async () => {
-                const targetId = prompt("Enter User ID (UUID) to tag:");
-                if (!targetId) return;
-                const tagText = prompt("Enter Tag Text:");
-                const tagColor = prompt("Enter Tag Color (Hex):", "#4f46e5") || "#4f46e5";
-                const { error } = await window.supabase.rpc('set_user_tag', { target_user_id: targetId, tag_text: tagText, tag_color: tagColor });
-                if (error) alert("Error: " + error.message);
-                else { alert("Success!"); location.reload(); }
             };
         }
 
