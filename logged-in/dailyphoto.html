@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4SP - DAILYPHOTO (v6.7.1)</title>
+    <title>4SP - DAILYPHOTO</title>
     <meta name="description" content="Share your day with friends through daily photos.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -247,7 +247,7 @@
             border-radius: 32px;
             width: 95%;
             max-width: 1000px;
-            max-height: 90vh;
+            height: 85vh; /* Set height relative to the screen */
             display: flex;
             overflow: hidden;
             transform: scale(0.95);
@@ -285,7 +285,7 @@
         #comments-section {
             flex: 1;
             overflow-y: auto;
-            margin: 1.5rem 0;
+            margin: 0;
             padding: 1.25rem;
             border-radius: 24px;
             background-color: rgba(0,0,0,0.2);
@@ -310,7 +310,9 @@
             transition: all 0.2s;
         }
         .modal-close-btn:hover {
-            background: rgba(255,255,255,0.1);
+            background: var(--btn-bg);
+            color: var(--accent-color);
+            border-color: var(--accent-color);
             transform: rotate(90deg);
         }
 
@@ -338,14 +340,13 @@
         @media (max-width: 900px) {
             .app-container { grid-template-areas: "main"; grid-template-columns: 1fr; }
             .sidebar { display: none; }
-            .modal-container { flex-direction: column; max-height: 95vh; }
+            .modal-container { flex-direction: column; height: 95vh; }
             #photo-info-panel { border-left: none; border-top: 1px solid var(--border-main); }
         }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="flex items-center justify-between mb-6">
@@ -376,29 +377,24 @@
             </div>
 
             <div class="sidebar-content">
-                <!-- My Posts Section -->
                 <div id="daily-posts-section" class="space-y-4">
                     <div class="flex items-center justify-between opacity-40 mb-4">
                         <span class="text-[10px] font-bold uppercase tracking-widest">Today's Slots</span>
                         <span class="text-[10px] font-mono">0 / 5</span>
                     </div>
                     <div id="daily-posts-container" class="space-y-2">
-                        <!-- Filled by JS -->
-                    </div>
+                        </div>
                 </div>
 
-                <!-- Streaks Section -->
                 <div id="streaks-section-wrapper" class="hidden">
                     <div class="mb-4 flex items-center justify-between px-2">
                         <span class="text-[10px] font-bold uppercase tracking-widest opacity-40">Active Streaks</span>
                         <i class="fas fa-fire text-orange-500 text-xs"></i>
                     </div>
                     <div id="streaks-list-items" class="space-y-2">
-                        <!-- Filled by JS -->
-                    </div>
+                        </div>
                 </div>
 
-                <!-- Mutuals Section (Hidden by default) -->
                 <div id="friends-section-wrapper" class="hidden">
                     <div class="mb-6">
                         <div class="relative">
@@ -409,20 +405,16 @@
                     </div>
                     
                     <div id="friends-list-items" class="space-y-1">
-                        <!-- Filled by JS -->
-                    </div>
+                        </div>
                 </div>
 
-                <!-- Blocked Section (Hidden by default) -->
                 <div id="blocked-section" class="hidden">
                     <div id="blocked-list-items" class="space-y-1">
-                        <!-- Filled by JS -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Feed Area -->
         <main class="main-content">
             <div class="content-scroll">
                 <header class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -440,22 +432,18 @@
                 </header>
 
                 <div id="photo-feed" class="photo-feed-grid">
-                    <!-- Photo thumbnails go here -->
-                </div>
+                    </div>
             </div>
         </main>
     </div>
 
-    <!-- Photo View Modal -->
     <div id="photo-modal" class="modal-backdrop">
         <div class="modal-container" id="modal-content-container">
-            <!-- Filled by JS -->
-        </div>
+            </div>
     </div>
 
-    <!-- Upload Menu Modal -->
     <div id="upload-menu-modal" class="modal-backdrop">
-        <div class="modal-container max-w-md flex-col p-8 items-center text-center">
+        <div class="modal-container max-w-md flex-col p-8 items-center text-center !h-auto">
             <div class="w-20 h-20 bg-indigo-500/10 border border-indigo-500/20 rounded-3xl flex items-center justify-center text-indigo-400 text-3xl mb-6">
                 <i class="fas fa-cloud-upload-alt"></i>
             </div>
@@ -470,9 +458,8 @@
         </div>
     </div>
 
-    <!-- School Selection Modal -->
     <div id="school-selection-modal" class="modal-backdrop">
-        <div class="modal-container max-w-2xl flex-col p-10 overflow-hidden relative">
+        <div class="modal-container max-w-2xl flex-col p-10 overflow-hidden relative !h-auto">
             <h3 class="text-2xl font-bold mb-2">Select Your School</h3>
             <p class="text-sm opacity-40 mb-8">This determines which feed you see. You can change this twice per month.</p>
             
@@ -508,9 +495,8 @@
         </div>
     </div>
 
-    <!-- Simple Custom Modals -->
     <div id="custom-alert-modal" class="modal-backdrop">
-        <div class="modal-container max-w-sm flex-col p-8 items-center text-center">
+        <div class="modal-container max-w-sm flex-col p-8 items-center text-center !h-auto">
             <h3 id="custom-alert-title" class="text-xl font-bold mb-2">Notice</h3>
             <p id="custom-alert-message" class="text-sm opacity-50 mb-8 font-light"></p>
             <button id="custom-alert-btn" class="btn-toolbar-style btn-primary-override w-full py-3">OK</button>
@@ -518,7 +504,7 @@
     </div>
 
     <div id="custom-confirm-modal" class="modal-backdrop">
-        <div class="modal-container max-w-sm flex-col p-8 items-center text-center">
+        <div class="modal-container max-w-sm flex-col p-8 items-center text-center !h-auto">
             <h3 id="custom-confirm-title" class="text-xl font-bold mb-2">Confirm</h3>
             <p id="custom-confirm-message" class="text-sm opacity-50 mb-8 font-light"></p>
             <div class="flex gap-3 w-full">
@@ -529,7 +515,7 @@
     </div>
 
     <div id="custom-prompt-modal" class="modal-backdrop">
-        <div class="modal-container max-w-md flex-col p-8 items-center">
+        <div class="modal-container max-w-md flex-col p-8 items-center !h-auto">
             <h3 id="custom-prompt-title" class="text-xl font-bold mb-2">Input</h3>
             <p id="custom-prompt-message" class="text-sm opacity-50 mb-6 font-light text-center"></p>
             <div id="custom-prompt-preview-container" class="hidden mb-6 w-full aspect-square max-w-[200px] rounded-2xl overflow-hidden border border-[var(--border-main)]">
@@ -543,9 +529,8 @@
         </div>
     </div>
 
-    <!-- Announcement Modal -->
     <div id="announcement-modal" class="modal-backdrop">
-        <div class="modal-container max-w-xl flex-col p-12 items-center text-center">
+        <div class="modal-container max-w-xl flex-col p-12 items-center text-center !h-auto">
             <div class="w-24 h-24 bg-indigo-500/10 border border-indigo-500/20 rounded-[40px] flex items-center justify-center text-indigo-400 text-4xl mb-8">
                 <i class="fas fa-school"></i>
             </div>
@@ -916,9 +901,15 @@
                     const heartBtn = document.getElementById('modal-heart-btn');
                     if (heartBtn) {
                         heartBtn.className = `w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all ${isHearted ? 'text-red-500 bg-red-500/10 border-red-500/20' : 'text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10'}`;
-                        heartBtn.innerHTML = `<i class="${isHearted ? 'fas' : 'far'} fa-heart"></i><span class="ml-2 text-xs font-bold">${hearts.length}</span>`;
+                        heartBtn.innerHTML = `<i class="${isHearted ? 'fas' : 'far'} fa-heart"></i>`;
                     }
                     
+                    const heartCount = document.getElementById('modal-heart-count');
+                    if (heartCount) heartCount.textContent = hearts.length;
+                    
+                    const commentCount = document.getElementById('modal-comment-count');
+                    if (commentCount) commentCount.textContent = comments.length;
+
                     const commentsSection = document.getElementById('comments-section');
                     if (commentsSection) {
                         commentsSection.innerHTML = comments.map(c => `
@@ -948,27 +939,36 @@
                         <img src="${data.image_url || data.imageBase64}" class="photo-modal-img rounded-2xl shadow-2xl" onerror="this.src='/assets/placeholder-image.png'">
                     </div>
 
-                    <div id="photo-info-panel" class="bg-[var(--bg-card)]">
-                        <div class="flex items-center gap-4 mb-6 shrink-0">
-                            <a href="/logged-in/@${data.creator_username}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity shrink-0">
-                                ${authorData ? getAvatarHTML({ ...authorData, displayName: authorData.display_name, pfpType: authorData.pfp_type, customPfp: authorData.avatar_url }, "w-12 h-12", false, currentUser) : `<div class="w-full h-full bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-lg uppercase">${(data.creator_username || '?').charAt(0)}</div>`}
-                            </a>
-                            <div class="min-w-0 flex-1">
-                                <a href="/logged-in/@${data.creator_username}" class="text-sm font-bold text-[var(--text-main)] truncate block hover:text-[var(--accent-color)] transition-colors">@${data.creator_username}</a>
-                                <p class="text-[10px] opacity-50 font-mono uppercase tracking-tighter">${data.created_at ? new Date(data.created_at).toLocaleString() : 'Just now'}</p>
+                    <div id="photo-info-panel" class="bg-[var(--bg-card)] flex flex-col">
+                        <div class="flex flex-col gap-4 mb-4 shrink-0 border-b border-[var(--border-main)] pb-4">
+                            <div class="flex items-center gap-4">
+                                <a href="/logged-in/@${data.creator_username}" class="w-12 h-12 rounded-2xl overflow-hidden bg-black/20 hover:opacity-80 transition-opacity shrink-0">
+                                    ${authorData ? getAvatarHTML({ ...authorData, displayName: authorData.display_name, pfpType: authorData.pfp_type, customPfp: authorData.avatar_url }, "w-12 h-12", false, currentUser) : `<div class="w-full h-full bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-lg uppercase">${(data.creator_username || '?').charAt(0)}</div>`}
+                                </a>
+                                <div class="min-w-0 flex-1">
+                                    <a href="/logged-in/@${data.creator_username}" class="text-sm font-bold text-[var(--text-main)] truncate block hover:text-[var(--accent-color)] transition-colors">@${data.creator_username}</a>
+                                    <p class="text-[10px] opacity-50 font-mono uppercase tracking-tighter">${data.created_at ? new Date(data.created_at).toLocaleString() : 'Just now'}</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button id="modal-heart-btn" class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all ${isHearted ? 'text-red-500 bg-red-500/10 border-red-500/20' : 'text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10'}" title="${isHearted ? 'Unlike' : 'Like'}">
+                                        <i class="${isHearted ? 'fas' : 'far'} fa-heart"></i>
+                                    </button>
+                                    ${(isOwner || isAdmin) ? `
+                                        <button onclick="window.deletePost('${postId}')" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xs opacity-40 hover:opacity-100 hover:text-red-500 transition-all" title="Delete"><i class="fas fa-trash"></i></button>
+                                    ` : ''}
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <button id="modal-heart-btn" class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all ${isHearted ? 'text-red-500 bg-red-500/10 border-red-500/20' : 'text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10'}" title="${isHearted ? 'Unlike' : 'Like'}">
-                                    <i class="${isHearted ? 'fas' : 'far'} fa-heart"></i>
-                                    <span class="ml-2 text-xs font-bold">${hearts.length}</span>
-                                </button>
-                                ${(isOwner || isAdmin) ? `
-                                    <button onclick="window.deletePost('${postId}')" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xs opacity-40 hover:opacity-100 hover:text-red-500 transition-all" title="Delete"><i class="fas fa-trash"></i></button>
-                                ` : ''}
+                            
+                            <div>
+                                <h3 class="text-lg font-bold text-[var(--text-main)] mb-2 leading-tight">${data.title || 'Untitled'}</h3>
+                                <div class="flex items-center gap-4 text-[11px] font-bold opacity-50 uppercase tracking-widest">
+                                    <span><i class="fas fa-heart text-red-500 mr-1.5"></i><span id="modal-heart-count">${hearts.length}</span> Likes</span>
+                                    <span><i class="fas fa-comment text-[var(--accent-color)] mr-1.5"></i><span id="modal-comment-count">${comments.length}</span> Comments</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div id="comments-section" class="bg-black/20 p-4 rounded-2xl border border-white/5">
+                        <div id="comments-section" class="bg-black/20 p-4 rounded-2xl border border-white/5 flex-1 overflow-y-auto m-0">
                             ${comments.map(c => `
                                 <div class="mb-3 text-xs leading-relaxed">
                                     <span class="font-bold text-[var(--accent-color)] mr-1">@${c.username}</span>
@@ -1569,4 +1569,3 @@
     </script>
 </body>
 </html>
-<!-- Made with ❤️ from 4SP -->
