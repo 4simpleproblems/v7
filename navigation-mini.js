@@ -1599,7 +1599,7 @@ let db;
         osc.stop(audioCtx.currentTime + 0.015);
     };
 
-    window.showNotification = function(message, iconClass = 'fa-solid fa-info-circle', type = 'info') {
+    window.showNotification = function(message, iconClass = 'fa-solid fa-info-circle', type = 'info', duration = 3000) {
         const notificationContainer = document.getElementById('notification-container');
         if (!notificationContainer) return;
         
@@ -1620,7 +1620,7 @@ let db;
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => { if (toast.parentElement) toast.remove(); }, 300);
-        }, 3000);
+        }, duration);
     };
 
     if (document.readyState === 'loading') {

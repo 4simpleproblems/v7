@@ -1,6 +1,6 @@
 /**
- * ban-enforcer.js (v6.8 - Supabase High-Performance Enforcement)
- * Optimized for rapid detection and immediate redirection of banned users.
+ * ban-enforcer.js (v7.0 - Remade for v6 Analytics Integration)
+ * Remade to fit with the banning system and provide toast notifications on redirect.
  */
 
 (async function() {
@@ -8,17 +8,22 @@
     if (window._banEnforcerLoaded) return;
     window._banEnforcerLoaded = true;
 
-    // Initialize Supabase
-    if (!window.supabase) return;
-    const supabase = window.supabase;
+    // Wait for Supabase to be available (initialized by injector.js)
+    const waitForSupabase = () => {
+        return new Promise((resolve) => {
+            if (window.supabase) resolve(window.supabase);
+            const interval = setInterval(() => {
+                if (window.supabase) {
+                    clearInterval(interval);
+                    resolve(window.supabase);
+                }
+            }, 50);
+        });
+    };
 
-    // --- Global State ---
-    let currentBanData = null;
-    let isUserAdmin = false;
-    let hwId = null;
-    
+    const supabase = await waitForSupabase();
     const OWNER_EMAIL = "4simpleproblems@gmail.com";
-    const REDIRECT_TARGET = "../index.html";
+    const REDIRECT_TARGET = "/index.html";
     
     const EXEMPT_PAGES = [
         '/',
@@ -36,72 +41,85 @@
         return EXEMPT_PAGES.some(p => path === p || path.endsWith(p));
     }
 
-    // --- 1. Fast Hardware ID ---
-    async function getHwId() {
-        if (hwId) return hwId;
+    function getHwId() {
         let id = localStorage.getItem('__4sp_hw_id');
         if (!id) {
-            const canvas = document.createElement('canvas');
             const data = [navigator.userAgent, screen.width, screen.height, navigator.language].join('|');
             let hash = 0;
             for (let i = 0; i < data.length; i++) hash = ((hash << 5) - hash) + data.charCodeAt(i);
             id = 'HW-' + Math.abs(hash).toString(16).toUpperCase();
             localStorage.setItem('__4sp_hw_id', id);
         }
-        hwId = id;
         return id;
     }
 
-    // --- 2. Immediate Enforcement ---
     function lockDown(reason) {
         if (isExempt()) return;
         console.warn("Security: Enforcement active. Access restricted.", reason);
+        localStorage.setItem('__4sp_ban_reason', reason || "No reason specified.");
         window.location.replace(REDIRECT_TARGET);
     }
 
-    async function checkHwBan() {
-        const id = await getHwId();
-        const { data } = await supabase.from('hardware_bans').select('*').eq('hardware_id', id).maybeSingle();
-        if (data) {
-            lockDown("Hardware Blacklist");
-            return true;
+    async function checkBans(user) {
+        if (!user) return;
+        
+        // 1. Check Hardcoded Owner
+        if (user.email === OWNER_EMAIL) return;
+
+        // 2. Check Admin Roles (Admins are exempt from being banned via the enforcer)
+        const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+        const { data: roles } = await supabase.from('roles').select('role').eq('user_id', user.id);
+        const isAdmin = profile?.is_admin || roles?.some(r => r.role === 'full_admin');
+        if (isAdmin) return;
+
+        // 3. Check Account Ban
+        const { data: accountBan } = await supabase.from('bans').select('reason').eq('user_id', user.id).maybeSingle();
+        if (accountBan) {
+            lockDown(accountBan.reason);
+            return;
         }
-        return false;
+
+        // 4. Check Hardware Ban
+        const hwId = getHwId();
+        const { data: hwBan } = await supabase.from('hardware_bans').select('reason').eq('hardware_id', hwId).maybeSingle();
+        if (hwBan) {
+            lockDown(hwBan.reason || "Hardware Blacklist");
+            return;
+        }
     }
 
-    // --- 3. Real-time Monitoring ---
-    async function setupListeners(user) {
-        const uid = user.id;
-        const id = await getHwId();
-
-        // Account Ban Listener
-        supabase.channel(`ban-${uid}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bans', filter: `user_id=eq.${uid}` }, () => lockDown("Account Suspension")).subscribe();
-
-        // Hardware Ban Listener
-        supabase.channel(`hw-${id}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hardware_bans', filter: `hardware_id=eq.${id}` }, () => lockDown("Hardware Blacklist")).subscribe();
-            
-        // Initial Account Check
-        const { data: ban } = await supabase.from('bans').select('*').eq('user_id', uid).maybeSingle();
-        if (ban && !isUserAdmin) lockDown(ban.reason);
+    // --- Initial Check ---
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+        await checkBans(session.user);
     }
 
-    async function main() {
-        const isHwLocked = await checkHwBan();
-        if (isHwLocked) return;
+    // --- Real-time Auth Changes ---
+    supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user) {
+            await checkBans(session.user);
+        }
+    });
 
-        supabase.auth.onAuthStateChange(async (event, session) => {
-            const user = session?.user;
-            if (!user) return;
+    // --- Real-time Ban Monitoring ---
+    if (session?.user) {
+        const uid = session.user.id;
+        const hwId = getHwId();
 
-            // Fast Role Check
-            const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
-            const { data: roles } = await supabase.from('roles').select('role').eq('user_id', user.id);
-            
-            isUserAdmin = roles?.some(r => r.role === 'full_admin') || profile?.is_admin || user.email === OWNER_EMAIL;
-            
-            if (!isUserAdmin) await setupListeners(user);
-        });
+        // Listen for new bans on this account
+        supabase.channel(`public:bans:user_id=eq.${uid}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bans', filter: `user_id=eq.${uid}` }, (payload) => {
+                lockDown(payload.new.reason);
+            })
+            .subscribe();
+
+        // Listen for hardware bans
+        supabase.channel(`public:hardware_bans:hardware_id=eq.${hwId}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hardware_bans', filter: `hardware_id=eq.${hwId}` }, (payload) => {
+                lockDown(payload.new.reason || "Hardware Blacklist");
+            })
+            .subscribe();
     }
 
-    main();
 })();
+// Made with ❤️ from 4SP

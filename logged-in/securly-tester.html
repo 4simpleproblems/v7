@@ -10,7 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../navigation.js"></script>
+    
+    <!-- V6 Universal Injector -->
+    <script src="/injector.js"></script>
 
     <!-- VERN Proxy Scripts -->
     <script src="/logged-in/uv/uv.bundle.js"></script>
@@ -36,13 +38,6 @@
                     await navigator.serviceWorker.register("/sw.js", {
                         scope: "/logged-in/"
                     });
-                    console.log("VERN SW Registered");
-                    navigator.serviceWorker.addEventListener('controllerchange', () => {
-                        if (navigator.serviceWorker.controller) {
-                            console.log("SW active, reloading...");
-                            window.location.reload();
-                        }
-                    });
                 } catch (e) {
                     console.error("SW Register Failed", e);
                 }
@@ -53,7 +48,6 @@
                 await connection.setTransport("/logged-in/libcurl/index.mjs", [
                     { websocket: wispUrl }
                 ]);
-                console.log("BareMux Initialized");
             } catch (e) {
                 console.error("BareMux Init Failed", e);
             }
@@ -63,7 +57,6 @@
             if (window.__uv$config && window.__uv$config.prefix && window.__uv$config.encodeUrl) {
                 return window.__uv$config.prefix + window.Ultraviolet.codec.xor.encode(url);
             }
-            // Fallback
             if (window.Ultraviolet && window.Ultraviolet.codec && window.Ultraviolet.codec.xor) {
                  return "/logged-in/uv/service/" + window.Ultraviolet.codec.xor.encode(url);
             }
@@ -96,11 +89,10 @@
             overflow: hidden;
         }
 
-        /* --- UI COMPONENTS --- */
         .btn-toolbar-style {
             background: var(--bg-page);
             border: 1px solid var(--border-main);
-            border-radius: 14px; /* Updated to 14px */
+            border-radius: 14px;
             color: var(--text-muted);
             padding: 0.75rem 1.25rem;
             font-weight: 500;
@@ -116,19 +108,11 @@
             color: var(--text-main);
             transform: translateY(-1px);
         }
-        .btn-toolbar-style:active {
-            transform: scale(0.98);
-        }
 
         .btn-primary-override {
             background-color: var(--btn-bg);
             border: 1px solid var(--accent-color);
             color: var(--accent-color);
-        }
-        .btn-primary-override:hover {
-            background-color: var(--accent-glow);
-            border-color: var(--accent-color);
-            color: var(--text-main);
         }
 
         .input-text-style {
@@ -136,101 +120,81 @@
             padding: 0.75rem; 
             border: 1px solid var(--border-main); 
             background-color: var(--bg-page); 
-            border-radius: 14px; /* Updated to 14px */
+            border-radius: 14px;
             color: var(--text-main); 
             transition: all 0.2s;
             outline: none;
         }
         .input-text-style:focus { 
             border-color: var(--accent-color); 
-            box-shadow: 0 0 0 2px var(--accent-glow);
-            transform: scale(1.01);
         }
 
         .card-box {
             background-color: var(--bg-card);
             border: 1px solid var(--border-main);
-            border-radius: 1.25rem; /* Updated to 1.25rem */
-            padding: 2rem;
-            width: 100%;
-            max-width: 600px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 20px;
+            padding: 1.5rem;
         }
 
-        /* Status Colors */
         .status-box {
+            border-radius: 14px;
             padding: 1rem;
-            border-radius: 14px; /* Updated to 14px */
             text-align: center;
-            font-weight: 500;
-            margin-top: 1.5rem;
-            border: 1px solid transparent;
-            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-top: 1rem;
         }
-        .status-blocked {
-            background-color: rgba(185, 28, 28, 0.1);
-            border-color: #7f1d1d;
-            color: #fca5a5;
-        }
-        .status-allowed {
-            background-color: rgba(21, 128, 61, 0.1);
-            border-color: #14532d;
-            color: #86efac;
-        }
-        .status-info {
-            background-color: var(--bg-page);
-            border: 1px solid var(--border-main);
-            color: var(--text-muted);
-        }
-        
-        .loading-spinner {
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .status-info { background: rgba(79, 70, 229, 0.1); color: #818cf8; border: 1px solid rgba(79, 70, 229, 0.2); }
+        .status-allowed { background: rgba(34, 197, 94, 0.1); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); }
+        .status-blocked { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+
+        .loading-spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
-<body>
+<body class="p-6 md:p-12 items-center justify-center">
 
-    <div class="flex-grow flex flex-col items-center justify-center p-4">
+    <div class="max-w-xl w-full flex flex-col gap-6">
         
-        <div class="mb-8 text-center">
-            <h1 class="text-3xl text-[var(--text-main)] font-light tracking-tight mb-2">Securly URL Tester</h1>
-            <p class="text-[var(--text-muted)] opacity-60 text-sm">Check if a website is blocked on the US-EAST server.</p>
+        <div class="flex items-center justify-between mb-2">
+            <div>
+                <h1 class="text-2xl font-black text-white tracking-tight">URL Tester</h1>
+                <p class="text-xs text-gray-500">Check if a site is restricted by Securly in real-time.</p>
+            </div>
+            <a href="/logged-in/dashboard.html" class="btn-toolbar-style">
+                <i class="fa-solid fa-house"></i>
+            </a>
         </div>
 
-        <div class="card-box">
-            
-            <div class="mb-6">
-                <label class="block text-[var(--text-muted)] opacity-60 text-xs uppercase tracking-wider mb-2 font-semibold">Student Email</label>
-                <input type="email" id="email-input" class="input-text-style font-mono text-sm !bg-[var(--bg-card)] !border-[var(--border-main)]" placeholder="student@school.edu">
+        <div class="card-box flex flex-col gap-4">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] uppercase font-black tracking-widest text-indigo-400">Target URL</label>
+                <input id="url-input" type="text" class="input-text-style" placeholder="example.com" autofocus>
             </div>
 
-            <div class="mb-6">
-                <label class="block text-[var(--text-muted)] opacity-60 text-xs uppercase tracking-wider mb-2 font-semibold">Target URL</label>
-                <input type="text" id="url-input" class="input-text-style" placeholder="example.com" value="zapatopi.net/treeoctopus/">
+            <div class="flex flex-col gap-1.5 opacity-50 pointer-events-none" id="email-container">
+                <label class="text-[10px] uppercase font-black tracking-widest text-indigo-400">Authenticated Email</label>
+                <input id="email-input" type="text" class="input-text-style" readonly placeholder="Detecting user...">
             </div>
 
-            <button id="check-btn" class="btn-toolbar-style btn-primary-override w-full justify-center">
+            <button id="check-btn" class="btn-toolbar-style btn-primary-override w-full py-4 mt-2 font-black text-xs uppercase tracking-widest">
                 <i class="fa-solid fa-search"></i> Check Status
             </button>
 
-            <div id="result-box" class="status-box status-info">
-                Ready to check
-            </div>
-            
-            <p class="mt-4 text-xs text-center text-[var(--text-muted)] opacity-40">
-                <i class="fa-solid fa-shield-halved mr-1"></i> Uses CORS Proxy to bypass local restrictions.
-            </p>
+            <div id="result-box" class="hidden status-box"></div>
+        </div>
 
+        <div class="px-4">
+            <p class="text-[10px] text-center text-gray-600 leading-relaxed uppercase tracking-widest font-bold">
+                This tool simulates a Securly broker request using your current session identity.
+            </p>
         </div>
     </div>
 
     <script type="module">
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        
-        // Import config from relative path
-        import { firebaseConfig } from "../firebase-config.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { firebaseConfig } from "/firebase-config.js";
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -239,109 +203,72 @@
         const urlInput = document.getElementById('url-input');
         const checkBtn = document.getElementById('check-btn');
         const resultBox = document.getElementById('result-box');
-        
-        const SECURLY_SERVER = 'https://useast-www.securly.com';
+        const SECURLY_SERVER = 'https://www.securly.com';
 
-        // --- AUTH DETECTION ---
-        function detectUser() {
-            let userEmail = '';
-            
-            // 1. Try Firebase Auth Direct
-            if (auth.currentUser && !auth.currentUser.isAnonymous) {
-                userEmail = auth.currentUser.email;
+        const handleUser = (user) => {
+            if (user && user.email) {
+                emailInput.value = user.email;
+                document.getElementById('email-container').classList.remove('opacity-50');
             }
-            // 2. Try Supabase session (ensure supabase is ready)
-            else if (window.supabase && window.supabase.auth) {
-                window.supabase.auth.getSession().then(({data}) => {
-                    if (data?.session?.user?.email) {
-                        emailInput.value = data.session.user.email;
-                        console.log("Supabase user detected:", data.session.user.email);
+        };
+
+        const runAuth = async () => {
+            const waitForSupabase = () => {
+                return new Promise((resolve) => {
+                    if (window.supabase) resolve(window.supabase);
+                    const interval = setInterval(() => {
+                        if (window.supabase) {
+                            clearInterval(interval);
+                            resolve(window.supabase);
+                        }
+                    }, 50);
+                });
+            };
+
+            const supabase = await waitForSupabase();
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session) {
+                handleUser(session.user);
+            } else {
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        handleUser(user);
                     } else {
-                        console.log("Supabase session found but no user email.");
-                        // Optionally clear input or set a specific "Not logged in" state if desired
+                        // Dashboard-style check: only if BOTH fail
+                        const { data: { session: s2 } } = await supabase.auth.getSession();
+                        if (!s2) {
+                            console.warn("Securly Tester: No session found, but navigation.js handles redirect.");
+                        }
                     }
-                }).catch(error => {
-                    console.error("Error fetching Supabase session:", error);
-                    // Handle error, maybe clear input or indicate error state
                 });
             }
-            // 3. Try injected window.currentUser (from navigation.js injection)
-            else if (window.currentUser && window.currentUser.email) {
-                userEmail = window.currentUser.email;
-                console.log("Injected currentUser detected:", userEmail);
-            } 
-            // 4. Try parent scope if accessible
-            else if (window.parent && window.parent.currentUser && window.parent.currentUser.email) {
-                userEmail = window.parent.currentUser.email;
-                console.log("Parent scope currentUser detected:", userEmail);
-            }
-            
-            // If a valid email was found from any source, update the input
-            if (userEmail) {
-                emailInput.value = userEmail;
-                console.log("Setting email input to:", userEmail);
-            } else {
-                // If no authenticated email is found, ensure input reflects that
-                // It might already be default if not explicitly set above.
-                // We can explicitly set a placeholder if needed, but for now,
-                // the checkStatus function will handle preventing actions with default values.
-                console.log("No authenticated user email found.");
-            }
-        }
-        
-        // Listen for Firebase Auth updates
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                detectUser();
-            } else {
-                // If Firebase auth state changes to logged out, try to detect again
-                // or explicitly clear the input if desired.
-                console.log("Firebase user logged out, attempting to re-detect.");
-                detectUser(); // Re-run detection in case other methods are available
-            }
-        });
+        };
 
-        // Attempt initial detection on load
-        // Delaying slightly to allow Supabase to potentially initialize if it's injected asynchronously
-        setTimeout(detectUser, 500);
+        runAuth();
 
-        // --- CHECK LOGIC ---
         async function checkStatus() {
             const rawUrl = urlInput.value.trim();
             const userEmail = emailInput.value.trim();
 
-            // Prevent check if email input has default/placeholder values indicating no logged-in user
-            if (!rawUrl || !userEmail || userEmail === 'client@4sp' || userEmail === 'student@school.edu') {
-                if (!rawUrl) {
-                    alert("Please enter a Target URL.");
-                } else {
-                    alert("Please log in or ensure your email is correctly set to check status.");
-                    // Optionally reset input to a more explicit "Not logged in" state if desired
-                    // emailInput.value = ""; 
-                }
-                return; // Stop execution if no valid email or URL
-            }
+            if (!rawUrl) { alert("Please enter a URL."); return; }
+            if (!userEmail || userEmail.includes('...')) { alert("Identity detection failed. Please log in."); return; }
             
-            // Normalize URL
             let targetUrl = rawUrl;
-            if (!targetUrl.startsWith('http')) {
-                targetUrl = 'https://' + targetUrl;
-            }
-            urlInput.value = targetUrl; // Update input with normalized URL
+            if (!targetUrl.startsWith('http')) targetUrl = 'https://' + targetUrl;
+            urlInput.value = targetUrl;
 
-            // UI Loading
             checkBtn.disabled = true;
             checkBtn.innerHTML = '<i class="fa-solid fa-spinner loading-spinner"></i> Checking...';
+            resultBox.classList.remove('hidden');
             resultBox.className = 'status-box status-info';
             resultBox.innerHTML = 'Connecting to Securly...';
 
             try {
-                // Construct Securly Broker URL
                 let hostname;
                 try { hostname = new URL(targetUrl).hostname; } catch(e) { hostname = targetUrl; }
 
                 const securlyUrl = `${SECURLY_SERVER}/crextn/broker?useremail=${encodeURIComponent(userEmail)}&reason=crextn&host=${encodeURIComponent(hostname)}&url=${btoa(targetUrl)}&msg=&ver=2.97.13&cu=${encodeURIComponent(SECURLY_SERVER + "/crextn")}&uf=1&cf=1`;
-                
                 const proxyUrl = getProxyUrl(securlyUrl);
 
                 const response = await fetch(proxyUrl);
@@ -350,15 +277,10 @@
                 if (text.includes('DENY')) {
                     resultBox.className = 'status-box status-blocked';
                     resultBox.innerHTML = '<i class="fa-solid fa-ban mr-2"></i> BLOCKED (DENY)';
-                } else if (text.includes('ALLOW')) {
+                } else {
                     resultBox.className = 'status-box status-allowed';
                     resultBox.innerHTML = '<i class="fa-solid fa-check-circle mr-2"></i> ALLOWED';
-                } else {
-                    resultBox.className = 'status-box status-info';
-                    resultBox.innerHTML = '<i class="fa-solid fa-question-circle mr-2"></i> STATUS UNKNOWN';
-                    console.log('Securly Response:', text);
                 }
-
             } catch (err) {
                 console.error(err);
                 resultBox.className = 'status-box status-blocked';
@@ -369,24 +291,9 @@
             }
         }
 
-        checkBtn.addEventListener('click', checkStatus);
-        urlInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') checkStatus();
-        });
-
-        // Initialize Supabase client if available
-        if (window.supabase) {
-            console.log("Supabase client found, attempting auth session check.");
-            // Call detectUser after a small delay to ensure Supabase might be ready
-            setTimeout(detectUser, 500); 
-        } else {
-            console.warn("Supabase client not found globally. Auth detection may be limited.");
-            // Still call detectUser to try other methods
-            setTimeout(detectUser, 500);
-        }
-
+        checkBtn.onclick = checkStatus;
+        urlInput.onkeypress = (e) => { if (e.key === 'Enter') checkStatus(); };
     </script>
 </body>
 </html>
 <!-- Made with ❤️ from 4SP -->
-

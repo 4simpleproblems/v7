@@ -207,6 +207,29 @@
         Promise.all(loadingPromises)
             .then(() => {
                 console.log('--- All application scripts loaded successfully! ---');
+                
+                // --- V6.9 Banning Toast Notification ---
+                // If the user was redirected due to a ban, show the reason on the landing page
+                const checkBanToast = () => {
+                    const reason = localStorage.getItem('__4sp_ban_reason');
+                    if (reason) {
+                        if (window.showNotification) {
+                            // Detect which notification system is active
+                            const isMini = !!document.getElementById('notification-container');
+                            if (isMini) {
+                                // navigation-mini.js signature: (message, iconClass, type, duration)
+                                window.showNotification(`Suspended: ${reason}`, 'fa-solid fa-ban', 'error', 10000);
+                            } else {
+                                // navigation.js signature: (message, skipHistory, duration)
+                                window.showNotification(`Suspended: ${reason}`, true, 10000);
+                            }
+                            localStorage.removeItem('__4sp_ban_reason');
+                        } else {
+                            setTimeout(checkBanToast, 100);
+                        }
+                    }
+                };
+                setTimeout(checkBanToast, 1000);
             })
             .catch(error => {
                 console.error('Loader encountered errors during script loading:', error);

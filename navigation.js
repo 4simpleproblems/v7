@@ -2489,9 +2489,9 @@ let db;
     const activeNotifs = new Map(); // message -> { element, count, timeout }
     const notificationHistory = [];
 
-    window.showNotification = function(message, skipHistory = false) {
+    window.showNotification = function(message, skipHistory = false, duration = 3000) {
         if (!message) return;
-        
+
         if (!skipHistory) {
             // Add to history if it's a local/manual notification (like alert override)
             notificationHistory.unshift({
@@ -2510,7 +2510,7 @@ let db;
         if (activeNotifs.has(message)) {
             const data = activeNotifs.get(message);
             data.count++;
-            
+
             // Update UI
             let badge = data.element.querySelector('.viro-notif-badge');
             if (!badge) {
@@ -2522,7 +2522,7 @@ let db;
 
             // Reset timeout
             clearTimeout(data.timeout);
-            data.timeout = setTimeout(() => removeNotif(message), 3000);
+            data.timeout = setTimeout(() => removeNotif(message), duration);
             return;
         }
 
@@ -2549,10 +2549,9 @@ let db;
         if (window.playClickSound) window.playClickSound();
 
         // Store and Set Auto-remove
-        const timeout = setTimeout(() => removeNotif(message), 3000);
+        const timeout = setTimeout(() => removeNotif(message), duration);
         activeNotifs.set(message, { element: notif, count: 1, timeout });
     };
-
     function updateNotificationMenu() {
         const listContent = document.getElementById('notification-list-content');
         if (!listContent) return;
