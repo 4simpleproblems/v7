@@ -692,11 +692,11 @@
     <script>
         // --- Configuration & Globals ---
         
-        const GN_ZONES_URL = "https://cdn.jsdelivr.net/gh/gn-math/assets@main/zones.json";
-        const GN_COVER_URL_BASE = "https://cdn.jsdelivr.net/gh/gn-math/covers@main";
+        const GN_ZONES_URL = "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/assets-main//zones.json";
+        const GN_COVER_URL_BASE = "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/covers-main/";
         
         // UPDATED: Use cdn.jsdelivr.net for GN-Math and handle content injection
-        const GN_HTML_URL_BASE = "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main";
+        const GN_HTML_URL_BASE = "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/";
         
         const DV_SERVICE_LFS_ROOT = "https://dv-service-lfs.4simpleproblems.workers.dev/";
         const STRONGDOG_ROOT = "https://strongdog.com/";
@@ -1222,8 +1222,8 @@
             if (!game || !game.url) return;
 
             // Auto-replace legacy GN-Math URLs
-            if (game.category === 'GN-Math' && game.url.includes('raw.githack.com/gn-math/html/main/')) {
-                game.url = game.url.replace('raw.githack.com/gn-math/html/main/', 'cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/');
+            if (game.category === 'GN-Math' && game.url.includes('cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/')) {
+                game.url = game.url.replace('cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/', 'cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/');
             }
 
             updateURL(categories[currentCategoryIndex], game.id || null);
