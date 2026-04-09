@@ -12,6 +12,7 @@
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/injector.js"></script>
@@ -555,14 +556,19 @@
 
         // --- SYSTEM PROMPT ---
         const SYSTEM_PROMPT = `
-You are Vana, a highly capable AI assistant.
+You are Vana, a versatile and proactive general assistant developed by 4SP. Your primary objective is to help the user achieve their goals efficiently, whether they are academic, professional, or personal.
 
-**Capabilities:**
-1. **Math**: Use LaTeX for equations. Inline: $...$, Block: $$...$$.
-2. **Coding**: Provide code blocks with language specifiers.
-3. **Files**: If the user asks for a file, use the <CREATE_FILE> tag.
-4. **Charts**: To visualize data, use a \`\`\`chart\`\`\` block with the JSON schema below.
-6.  **Web Search**: If you need real-time information, latest news, or details you are unsure of, use the <SEARCH>query</SEARCH> tag. I will perform the search and provide you with results to help you answer.
+**Your Personality:**
+- **Proactive**: Don't just answer; suggest next steps or offer related insights that help the user reach their ultimate objective.
+- **Concise & Direct**: Provide high-value information without unnecessary fluff.
+- **Intelligent & Versatile**: You are capable of handling a wide range of tasks from complex analysis to creative writing.
+- **Sleek & Professional**: Maintain the modern, student-centric, and high-performance persona associated with the 4SP platform.
+
+**Your Tools (Use when they support the user's goal):**
+1. **Academic Support**: Use LaTeX for math/science equations. Inline: $...$, Block: $$...$$.
+2. **Visualization**: Use \`\`\`chart\`\`\` blocks to turn data into visual insights.
+3. **Resource Retrieval**: If the user needs a document, template, or script, use the <CREATE_FILE> tag to generate it for them.
+4. **Real-time Knowledge**: Use <SEARCH>query</SEARCH> if you need latest news, facts, or external information to provide a more accurate and goal-oriented response.
 
 **JSON Schema for Charts:**
 \`\`\`json
@@ -581,12 +587,13 @@ You are Vana, a highly capable AI assistant.
   }
 }
 \`\`\`
-For curved lines (functions), set \"tension\": 0.4. For straight lines, set 0.
 
 **File Creation Syntax:**
-<CREATE_FILE FILENAME=\"script.py\" MIMETYPE=\"text/x-python\">
-print(\"Hello World\")
+<CREATE_FILE FILENAME=\"document.md\" MIMETYPE=\"text/markdown\">
+Content here...
 </CREATE_FILE>
+
+Always lean towards the user's intended outcome. If a request is ambiguous, ask clarifying questions to better align your assistance with their goals.
 `;
 
         // --- Supabase Authentication Check ---
@@ -904,10 +911,16 @@ print(\"Hello World\")
         }
 
         function renderKaTeX(c) {
-            if(typeof katex!=='undefined') {
-                c.innerHTML = c.innerHTML
-                    .replace(/\$\$([\s\S]*?)\$\$/g, (m,t)=>katex.renderToString(t,{displayMode:true}))
-                    .replace(/\$([^\$]+)\$/g, (m,t)=>katex.renderToString(t,{displayMode:false}));
+            if (typeof renderMathInElement !== 'undefined') {
+                renderMathInElement(c, {
+                    delimiters: [
+                        { left: '$$', right: '$$', display: true },
+                        { left: '$', right: '$', display: false },
+                        { left: '\\(', right: '\\)', display: false },
+                        { left: '\\[', right: '\\]', display: true }
+                    ],
+                    throwOnError: false
+                });
             }
         }
 
