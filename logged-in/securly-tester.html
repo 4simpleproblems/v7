@@ -250,30 +250,42 @@
             if (auth.currentUser && !auth.currentUser.isAnonymous) {
                 userEmail = auth.currentUser.email;
             }
-            // 2. Try Supabase session
-            else if (window.supabase) {
+            // 2. Try Supabase session (ensure supabase is ready)
+            else if (window.supabase && window.supabase.auth) {
                 window.supabase.auth.getSession().then(({data}) => {
                     if (data?.session?.user?.email) {
                         emailInput.value = data.session.user.email;
+                        console.log("Supabase user detected:", data.session.user.email);
+                    } else {
+                        console.log("Supabase session found but no user email.");
+                        // Optionally clear input or set a specific "Not logged in" state if desired
                     }
+                }).catch(error => {
+                    console.error("Error fetching Supabase session:", error);
+                    // Handle error, maybe clear input or indicate error state
                 });
             }
             // 3. Try injected window.currentUser (from navigation.js injection)
             else if (window.currentUser && window.currentUser.email) {
                 userEmail = window.currentUser.email;
+                console.log("Injected currentUser detected:", userEmail);
             } 
             // 4. Try parent scope if accessible
             else if (window.parent && window.parent.currentUser && window.parent.currentUser.email) {
                 userEmail = window.parent.currentUser.email;
+                console.log("Parent scope currentUser detected:", userEmail);
             }
             
-            if (!userEmail) {
-                userEmail = 'client@4sp'; 
-            }
-
-            // Only update if input is empty or has default value
-            if (emailInput.value === '' || emailInput.value === 'client@4sp' || emailInput.value === 'student@school.edu') {
+            // If a valid email was found from any source, update the input
+            if (userEmail) {
                 emailInput.value = userEmail;
+                console.log("Setting email input to:", userEmail);
+            } else {
+                // If no authenticated email is found, ensure input reflects that
+                // It might already be default if not explicitly set above.
+                // We can explicitly set a placeholder if needed, but for now,
+                // the checkStatus function will handle preventing actions with default values.
+                console.log("No authenticated user email found.");
             }
         }
         
@@ -281,24 +293,41 @@
         auth.onAuthStateChanged((user) => {
             if (user) {
                 detectUser();
+            } else {
+                // If Firebase auth state changes to logged out, try to detect again
+                // or explicitly clear the input if desired.
+                console.log("Firebase user logged out, attempting to re-detect.");
+                detectUser(); // Re-run detection in case other methods are available
             }
         });
 
-        // Also run on load
-        detectUser();
+        // Attempt initial detection on load
+        // Delaying slightly to allow Supabase to potentially initialize if it's injected asynchronously
+        setTimeout(detectUser, 500);
 
         // --- CHECK LOGIC ---
         async function checkStatus() {
             const rawUrl = urlInput.value.trim();
             const userEmail = emailInput.value.trim();
-            if (!rawUrl || !userEmail) return;
+
+            // Prevent check if email input has default/placeholder values indicating no logged-in user
+            if (!rawUrl || !userEmail || userEmail === 'client@4sp' || userEmail === 'student@school.edu') {
+                if (!rawUrl) {
+                    alert("Please enter a Target URL.");
+                } else {
+                    alert("Please log in or ensure your email is correctly set to check status.");
+                    // Optionally reset input to a more explicit "Not logged in" state if desired
+                    // emailInput.value = ""; 
+                }
+                return; // Stop execution if no valid email or URL
+            }
             
             // Normalize URL
             let targetUrl = rawUrl;
             if (!targetUrl.startsWith('http')) {
                 targetUrl = 'https://' + targetUrl;
             }
-            urlInput.value = targetUrl; // Update input
+            urlInput.value = targetUrl; // Update input with normalized URL
 
             // UI Loading
             checkBtn.disabled = true;
@@ -345,7 +374,14 @@
             if (e.key === 'Enter') checkStatus();
         });
 
-    </script>
-</body>
-</html>
-<!-- Made with ❤️ from 4SP -->
+        // Initialize Supabase client if available
+        if (window.supabase) {
+            console.log("Supabase client found, attempting auth session check.");
+            // Call detectUser after a small delay to ensure Supabase might be ready
+            setTimeout(detectUser, 500); 
+        } else {
+            console.warn("Supabase client not found globally. Auth detection may be limited.");
+            // Still call detectUser to try other methods
+            setTimeout(detectUser, 500);
+        }
+
