@@ -1189,10 +1189,6 @@
         async function openZone(game) {
             if (!game || !game.url) return;
 
-            if (game.category === 'GN-Math' && game.url.includes('cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/')) {
-                game.url = game.url.replace('cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/', 'cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/');
-            }
-
             updateURL(categories[currentCategoryIndex], game.id || null);
             
             const zoneViewer = document.getElementById('zoneViewer');
@@ -1273,7 +1269,8 @@
             const sandboxRules = 'allow-scripts allow-same-origin allow-forms allow-pointer-lock';
             zoneFrame.setAttribute('sandbox', sandboxRules);
 
-            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP';
+            // Updated to include GN-Math in the standard URL loading flow 
+            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP' || game.category === 'GN-Math';
             
             const attemptLoad = async (retriesLeft) => {
                 try {
