@@ -663,8 +663,8 @@ let db;
             const followersDisplay = followers > 999 ? (followers / 1000).toFixed(1) + 'k' : followers;
             const followingDisplay = following > 999 ? (following / 1000).toFixed(1) + 'k' : following;
 
-            const userTagHtml = (userData?.userTag) 
-                ? `<div class="text-xs font-italic" style="color: ${userData.userTag.color}; font-style: italic; margin-top: 2px;">${userData.userTag.text}</div>`
+            const userTagHtml = (userData?.user_tag || userData?.userTag) 
+                ? `<div class="text-xs font-italic" style="color: ${(userData.user_tag || userData.userTag).color}; font-style: italic; margin-top: 2px;">${(userData.user_tag || userData.userTag).text}</div>`
                 : '';
 
             const statusHtml = isOnline 
@@ -737,6 +737,7 @@ let db;
         const getAuthControlsHtml = () => {
             const user = currentUser;
             const userData = currentUserData;
+            const isAdmin = currentIsPrivileged;
 
             const loggedOutView = `
                 <div id="auth-button-container" class="relative flex-shrink-0 flex items-center">
@@ -778,6 +779,19 @@ let db;
                     ? `<button id="show-pin-button" class="auth-menu-link"><i class="fa-solid fa-map-pin w-4"></i>Show Pin Button</button>` 
                     : '';
 
+                const adminSection = isAdmin ? `
+                    <div class="border-t border-white/5 pt-2 mt-2 flex flex-col gap-1">
+                        <p class="text-[9px] uppercase tracking-widest font-black opacity-30 px-3 mb-1">Administrative</p>
+                        <a href="/logged-in/analytics.html" class="auth-menu-link">
+                            <i class="fa-solid fa-chart-line w-4"></i> Analytics
+                        </a>
+                    </div>
+                ` : '';
+
+                const userTagHtml = (userData?.user_tag || userData?.userTag) 
+                    ? `<div class="text-[10px] font-italic px-2 mb-1" style="color: ${(userData.user_tag || userData.userTag).color}; font-style: italic;">${(userData.user_tag || userData.userTag).text}</div>`
+                    : '';
+
                 return `
                     <div id="auth-button-container" class="relative flex-shrink-0 flex items-center">
                         <button id="auth-toggle" class="w-10 h-10 border border-gray-600 flex items-center justify-center hover:bg-gray-700 transition overflow-hidden p-0" style="border-radius: 14px; position: relative; background: var(--bg-secondary);">
@@ -789,6 +803,7 @@ let db;
                                     <div class="marquee-container" id="email-marquee-auth">
                                         <p class="text-xs text-gray-400 auth-menu-email marquee-content">${user.email || 'No email'}</p>
                                     </div>
+                                    ${userTagHtml}
                                 </div>
                             </div>
                             <a href="/logged-in/settings.html" class="auth-menu-link">
@@ -796,6 +811,7 @@ let db;
                                 Settings
                             </a>
                             ${showPinOption}
+                            ${adminSection}
                             <button id="logout-button" class="auth-menu-button text-red-400 hover:bg-red-900/50 hover:text-red-300">
                                 <i class="fa-solid fa-right-from-bracket w-4"></i>
                                 Log Out

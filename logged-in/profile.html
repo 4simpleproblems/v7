@@ -494,7 +494,10 @@
                             <i class="fas fa-user text-[10px] mr-1"></i> Your Profile
                         </span>
                     </div>
-                    <h1 id="display-name" class="text-5xl font-light tracking-tight mb-2 truncate" style="color: var(--text-main);">--</h1>
+                    <div class="flex items-center justify-center gap-3 mb-2">
+                        <h1 id="display-name" class="text-5xl font-light tracking-tight truncate" style="color: var(--text-main);">--</h1>
+                        <div id="user-tag-badge"></div>
+                    </div>
                     <p id="username" class="text-lg font-mono opacity-40 mb-4" style="color: var(--text-muted);">@--</p>
                     
                     <!-- Bio -->
@@ -952,6 +955,16 @@
             avatarPreview.innerHTML = getAvatarHTML(data, 'w-full h-full', false, firebaseAuthUser);
             displayNameEl.textContent = data.displayName || data.display_name || 'Anonymous';
             usernameEl.textContent = `@${data.username}`;
+            
+            // Render Tag
+            const tagContainer = document.getElementById('user-tag-badge');
+            if (tagContainer) {
+                if (data.user_tag) {
+                    tagContainer.innerHTML = `<span class="rank-tag" style="color: ${data.user_tag.color}; border-color: ${data.user_tag.color}; background: ${data.user_tag.color}15;">${data.user_tag.text}</span>`;
+                } else {
+                    tagContainer.innerHTML = '';
+                }
+            }
             
             const bioText = data.description || '';
             descriptionEl.textContent = bioText;
