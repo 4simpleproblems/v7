@@ -783,3 +783,20 @@ SELECT id, 'full_admin'
 FROM auth.users
 WHERE email = '4simpleproblems@gmail.com'
 ON CONFLICT (user_id) DO NOTHING;
+
+-- 15. VAULT ACCESS RPC
+-- This function allows the frontend to retrieve secrets from Supabase Vault
+CREATE OR REPLACE FUNCTION public.get_secret(secret_name TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN (
+    SELECT decrypted_secret 
+    FROM vault.decrypted_secrets 
+    WHERE name = secret_name
+  );
+END;
+$$;
+

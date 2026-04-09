@@ -516,13 +516,22 @@
             }
 
             const fetchKey = async (keyName) => {
-                // Try RPC first (Recommended)
+                // 1. Try RPC (Recommended)
                 const { data: rpcData, error: rpcError } = await window.supabase.rpc('get_secret', { secret_name: keyName });
                 if (!rpcError && rpcData) return rpcData;
 
-                // Try 'vault' table fallback
-                const { data: tableData, error: tableError } = await window.supabase.from('vault').select('value').eq('key', keyName).maybeSingle();
-                if (!tableError && tableData?.value) return tableData.value;
+                if (rpcError && rpcError.code === 'PGRST202') {
+                    console.warn(`Vana: RPC 'get_secret' not found. Ensure you ran the SQL from supabase_schema.sql.`);
+                }
+
+                // 2. Try 'decrypted_secrets' view fallback (if exposed in public)
+                const { data: viewData, error: viewError } = await window.supabase
+                    .from('decrypted_secrets')
+                    .select('decrypted_secret')
+                    .eq('name', keyName)
+                    .maybeSingle();
+                
+                if (!viewError && viewData?.decrypted_secret) return viewData.decrypted_secret;
                 
                 return null;
             };
@@ -533,11 +542,11 @@
                 if (key) return key;
 
                 // Try Fallback Key
-                console.warn("Vana: Primary key not found, trying Vana Key 2...");
+                console.warn("Vana: 'Vana Key 1' not found, trying 'Vana Key 2'...");
                 key = await fetchKey('Vana Key 2');
                 if (key) return key;
 
-                throw new Error("Groq API Key not found in Supabase Vault (Checked 'Vana Key 1' and 'Vana Key 2').");
+                throw new Error("Groq API Key not found in Supabase Vault (Checked 'Vana Key 1' and 'Vana Key 2'). Ensure your secret names match exactly.");
             } catch (e) {
                 console.error("Error fetching Groq API key:", e);
                 throw e;
