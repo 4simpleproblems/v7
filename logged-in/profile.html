@@ -1107,12 +1107,26 @@
                 const [u1, u2] = [myUid, profileOwnerId].sort();
                 const { data: streakData } = await supabase
                     .from('friend_streaks')
-                    .select('streak_count')
+                    .select('*')
                     .eq('user1_id', u1)
                     .eq('user2_id', u2)
                     .maybeSingle();
                 
-                const streakCount = streakData?.streak_count || 0;
+                let streakCount = streakData?.streak_count || 0;
+                
+                // --- 24-Hour Streak Enforcement ---
+                if (streakCount > 0) {
+                    const now = new Date();
+                    const lastUpdate = new Date(streakData.updated_at || streakData.last_streak_date);
+                    const hoursSince = (now - lastUpdate) / (1000 * 60 * 60);
+                    if (hoursSince > 24) {
+                        await supabase.from('friend_streaks')
+                            .update({ streak_count: 0, updated_at: now.toISOString() })
+                            .eq('user1_id', u1).eq('user2_id', u2);
+                        streakCount = 0;
+                    }
+                }
+
                 const streakPill = document.getElementById('streak-stat-pill');
                 const streakDisplay = document.getElementById('streak-count-display');
                 

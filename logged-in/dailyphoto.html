@@ -1317,11 +1317,13 @@
                         await Promise.allSettled(syncPromises);
                     }
 
-                    await CustomUI.alert("Upload complete!");
+                    if (window.showNotification) window.showNotification("Upload complete!", false);
+                    else await CustomUI.alert("Upload complete!");
                     await loadFeed();
                 } catch (error) {
                     console.error("Upload error:", error);
-                    await CustomUI.alert("Failed to upload image. Please try again.");
+                    if (window.showNotification) window.showNotification("Failed to upload image. Please try again.", false);
+                    else await CustomUI.alert("Failed to upload image. Please try again.");
                 }
             };
         };
@@ -1427,6 +1429,20 @@
                 if (!streaks || streaks.length === 0) {
                     list.innerHTML = '<p class="text-xs opacity-20 p-4 italic">No active streaks yet.</p>';
                     return;
+                }
+
+                // --- 24-Hour Streak Enforcement ---
+                const now = new Date();
+                for (const s of streaks) {
+                    const lastUpdate = new Date(s.updated_at || s.last_streak_date);
+                    const hoursSince = (now - lastUpdate) / (1000 * 60 * 60);
+                    if (s.streak_count > 0 && hoursSince > 24) {
+                        const [u1, u2] = [currentUser.id, s.friend_id].sort();
+                        await window.supabase.from('friend_streaks')
+                            .update({ streak_count: 0, updated_at: new Date().toISOString() })
+                            .eq('user1_id', u1).eq('user2_id', u2);
+                        s.streak_count = 0;
+                    }
                 }
 
                 // Sync all streaks in parallel
@@ -1569,3 +1585,4 @@
     </script>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->

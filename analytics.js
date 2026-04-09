@@ -16,9 +16,9 @@ async function init4SPAnalytics() {
     let unreportedDuration = 0
 
     const TICK_MS = 5000
-    const SYNC_INTERVAL_MS = 60000 
-    const MIN_SYNC_GAP_MS = 10000
-    const INACTIVITY_THRESHOLD_MS = 15000 // Reduced to 15s to ensure active usage
+    const SYNC_INTERVAL_MS = 30000 // Sync every 30s instead of 60s for better accuracy
+    const MIN_SYNC_GAP_MS = 5000
+    const INACTIVITY_THRESHOLD_MS = 600000 // 10 minutes - much less strict
 
     function getSessionId() {
         if (sessionId) return sessionId
@@ -91,21 +91,30 @@ async function init4SPAnalytics() {
 
         let lastActivityTime = Date.now()
 
-        // Track only intentional interactions, excluding mousemove and scroll to stop AFK scripts
+        // Throttled activity updater
         function updateUserActivity() {
-            lastActivityTime = Date.now()
-            isDirty = true
+            const now = Date.now()
+            if (now - lastActivityTime > 2000) {
+                lastActivityTime = now
+                isDirty = true
+            }
         }
 
+        // Broaden activity detection
         document.addEventListener('mousedown', updateUserActivity)
         document.addEventListener('keydown', updateUserActivity)
         document.addEventListener('touchstart', updateUserActivity)
+        document.addEventListener('mousemove', updateUserActivity)
+        document.addEventListener('scroll', updateUserActivity)
 
         setInterval(() => {
             const timeSinceLastActivity = Date.now() - lastActivityTime
-            if (document.visibilityState === 'visible' && timeSinceLastActivity < INACTIVITY_THRESHOLD_MS) {
-                sessionDuration += 5
-                unreportedDuration += 5
+            // Track if user was active recently, even if tab is hidden (background usage)
+            // But only track half-time if hidden to be fair to server resources
+            if (timeSinceLastActivity < INACTIVITY_THRESHOLD_MS) {
+                const increment = document.visibilityState === 'visible' ? 5 : 2
+                sessionDuration += increment
+                unreportedDuration += increment
                 isDirty = true
             }
         }, TICK_MS)

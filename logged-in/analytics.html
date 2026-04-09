@@ -527,11 +527,11 @@
                     recentList.innerHTML = '<p class="text-gray-500 italic text-center py-4 opacity-40">No recent traffic logged.</p>';
                 }
 
-                // Fetch top pages (Aggregating from page_views JSONB if possible, or using a simple count)
-                // If we assume analytics.js is sending sessionPayload with page_views array
+                // Fetch top pages (Aggregating from page_views JSONB)
+                // Selecting * to avoid 400 error on specific JSONB column if the schema is strict
                 const { data: allLogs, error: aError } = await supabase
                     .from('traffic_logs')
-                    .select('page_views')
+                    .select('*')
                     .limit(100);
 
                 if (aError) throw aError;
@@ -626,27 +626,30 @@
             const supabase = window.supabase;
             if (!supabase) return;
             
-            // Fetch everything we need for the table
-            const { data: profiles, error: pError } = await supabase.from('profiles').select('*').order('total_v6_time', { ascending: false });
-            const { data: bans, error: bError } = await supabase.from('bans').select('user_id');
-            const { data: roles, error: rError } = await supabase.from('roles').select('*');
+            try {
+                // Fetch everything we need for the table
+                const [pRes, bRes, rRes] = await Promise.all([
+                    supabase.from('profiles').select('*').order('total_v6_time', { ascending: false }),
+                    supabase.from('bans').select('user_id'),
+                    supabase.from('roles').select('*')
+                ]);
 
-            if (pError) {
-                console.error("Error loading users:", pError);
-                return;
+                if (pRes.error) throw pRes.error;
+
+                // Map data for easy lookup
+                const banSet = new Set(bRes.data?.map(b => b.user_id) || []);
+                const roleMap = Object.fromEntries(rRes.data?.map(r => [r.user_id, r.role]) || []);
+
+                allUsers = pRes.data.map(u => ({
+                    ...u,
+                    isBanned: banSet.has(u.id),
+                    currentRole: roleMap[u.id] || (u.is_admin ? 'full_admin' : null)
+                }));
+
+                renderUserTable(allUsers);
+            } catch (err) {
+                console.error("Error loading users:", err);
             }
-
-            // Map data for easy lookup
-            const banSet = new Set(bans?.map(b => b.user_id) || []);
-            const roleMap = Object.fromEntries(roles?.map(r => [r.user_id, r.role]) || []);
-
-            allUsers = profiles.map(u => ({
-                ...u,
-                isBanned: banSet.has(u.id),
-                currentRole: roleMap[u.id] || (u.is_admin ? 'full_admin' : null)
-            }));
-
-            renderUserTable(allUsers);
         }
 
         function renderUserTable(users) {
@@ -709,10 +712,13 @@
             if (!confirm("Are you sure you want to lift this suspension?")) return;
             
             const { error } = await supabase.from('bans').delete().eq('user_id', id);
-            if (error) alert("Error lifting ban: " + error.message);
-            else {
-                alert("Suspension lifted successfully.");
-                loadUsers();
+            if (error) {
+                if (window.showNotification) window.showNotification("Error: " + error.message, true);
+                else alert("Error: " + error.message);
+            } else {
+                if (window.showNotification) window.showNotification("Suspension lifted successfully.", false);
+                else alert("Suspension lifted successfully.");
+                setTimeout(loadUsers, 500); // Re-fetch after short delay
             }
         };
 
@@ -816,14 +822,26 @@
             if (!reason) { alert("Please specify a reason."); return; }
 
             if (myRole === 'admin') {
-                await supabase.from('bans').insert({ user_id: currentBanTargetId, reason: reason, banned_by: currentUser.id });
-                alert("Enforcement Successful.");
+                const { error } = await supabase.from('bans').insert({ user_id: currentBanTargetId, reason: reason, banned_by: currentUser.id });
+                if (error) {
+                    if (window.showNotification) window.showNotification("Error: " + error.message, false);
+                    else alert("Error: " + error.message);
+                } else {
+                    if (window.showNotification) window.showNotification("Enforcement Successful.", false);
+                    else alert("Enforcement Successful.");
+                }
             } else {
-                await supabase.from('ban_requests').insert({ target_user_id: currentBanTargetId, requester_id: currentUser.id, reason: reason });
-                alert("Violation report submitted for review.");
+                const { error } = await supabase.from('ban_requests').insert({ target_user_id: currentBanTargetId, requester_id: currentUser.id, reason: reason });
+                if (error) {
+                    if (window.showNotification) window.showNotification("Error: " + error.message, false);
+                    else alert("Error: " + error.message);
+                } else {
+                    if (window.showNotification) window.showNotification("Violation report submitted for review.", false);
+                    else alert("Violation report submitted for review.");
+                }
             }
             closeBanModal();
-            loadUsers();
+            setTimeout(loadUsers, 500);
         };
 
         checkAuth();
