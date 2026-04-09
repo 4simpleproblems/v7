@@ -452,21 +452,174 @@
             const supabase = window.supabase;
             if (!supabase) return;
             
-            // Handle missing columns gracefully
-            const { data: profiles, error: pError } = await supabase.from('profiles').select('*');
-            const { count: sessionCount, error: sError } = await supabase.from('traffic_logs').select('*', { count: 'exact', head: true });
+            try {
+                // Fetch stats concurrently
+                const [profilesRes, sessionsRes] = await Promise.all([
+                    supabase.from('profiles').select('*'),
+                    supabase.from('traffic_logs').select('*', { count: 'exact', head: true })
+                ]);
+
+                if (profilesRes.error) throw profilesRes.error;
+                const profiles = profilesRes.data || [];
+                const sessionCount = sessionsRes.count || 0;
+
+                const totalSecs = profiles.reduce((sum, p) => sum + (p.total_v6_time || 0), 0);
+                const today = new Date().toISOString().split('T')[0];
+                const newToday = profiles.filter(p => p.created_at && p.created_at.startsWith(today)).length;
+
+                document.getElementById('stat-total-time').textContent = formatDuration(totalSecs);
+                document.getElementById('stat-total-users').textContent = profiles.length;
+                document.getElementById('stat-new-today').textContent = newToday;
+                document.getElementById('stat-active-sessions').textContent = sessionCount;
+                
+                renderChart(profiles);
+            } catch (error) {
+                console.error("Error loading stats:", error);
+                document.getElementById('stat-total-time').textContent = "Error";
+            }
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds) return "0s";
+            const levels = [
+                [Math.floor(seconds / 31536000), 'y'],
+                [Math.floor((seconds % 31536000) / 2592000), 'mo'],
+                [Math.floor((seconds % 2592000) / 86400), 'd'],
+                [Math.floor((seconds % 86400) / 3600), 'h'],
+                [Math.floor((seconds % 3600) / 60), 'm'],
+                [seconds % 60, 's'],
+            ];
+            let res = '';
+            for (let i = 0; i < levels.length; i++) {
+                if (levels[i][0] > 0) res += ' ' + levels[i][0] + levels[i][1];
+            }
+            return res.trim() || "0s";
+        }
+
+        async function loadTraffic() {
+            const supabase = window.supabase;
+            if (!supabase) return;
+
+            try {
+                // Fetch recent sessions
+                const { data: recent, error: rError } = await supabase
+                    .from('traffic_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (rError) throw rError;
+
+                const recentList = document.getElementById('recent-sessions-list');
+                if (recent && recent.length > 0) {
+                    recentList.innerHTML = recent.map(log => `
+                        <div class="flex justify-between items-center p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-white text-xs truncate font-mono">${log.user_id || 'Anonymous'}</span>
+                                <span class="text-[10px] text-gray-500 truncate">${log.session_id || 'No Session ID'}</span>
+                            </div>
+                            <span class="text-[10px] text-gray-600 font-mono whitespace-nowrap ml-4">
+                                ${new Date(log.created_at || Date.now()).toLocaleTimeString()}
+                            </span>
+                        </div>
+                    `).join('');
+                } else {
+                    recentList.innerHTML = '<p class="text-gray-500 italic text-center py-4 opacity-40">No recent traffic logged.</p>';
+                }
+
+                // Fetch top pages (Aggregating from page_views JSONB if possible, or using a simple count)
+                // If we assume analytics.js is sending sessionPayload with page_views array
+                const { data: allLogs, error: aError } = await supabase
+                    .from('traffic_logs')
+                    .select('page_views')
+                    .limit(100);
+
+                if (aError) throw aError;
+
+                const topList = document.getElementById('top-pages-list');
+                if (allLogs && allLogs.length > 0) {
+                    const counts = {};
+                    allLogs.forEach(log => {
+                        const views = log.page_views || [];
+                        views.forEach(v => {
+                            const name = v.title || v.path || 'Unknown';
+                            counts[name] = (counts[name] || 0) + 1;
+                        });
+                    });
+                    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                    
+                    topList.innerHTML = sorted.map(([name, count]) => `
+                        <div class="flex justify-between items-center p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                            <span class="text-white text-xs truncate mr-4">${name}</span>
+                            <span class="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-1 rounded-full border border-indigo-500/20 font-black">
+                                ${count} hits
+                            </span>
+                        </div>
+                    `).join('');
+                } else {
+                    topList.innerHTML = '<p class="text-gray-500 italic text-center py-4 opacity-40">No page view data available.</p>';
+                }
+            } catch (err) {
+                console.error("Traffic load error:", err);
+            }
+        }
+
+        function renderChart(profiles) {
+            const ctx = document.getElementById('usageChart').getContext('2d');
             
-            if (pError || sError || !profiles) return;
+            // Usage Trajectory: Group users by creation date
+            const dateCounts = {};
+            profiles.forEach(p => {
+                if (p.created_at) {
+                    const date = p.created_at.split('T')[0];
+                    dateCounts[date] = (dateCounts[date] || 0) + 1;
+                }
+            });
 
-            const totalSecs = profiles.reduce((sum, p) => sum + (p.total_v6_time || 0), 0);
-            const today = new Date().toISOString().split('T')[0];
-            const newToday = profiles.filter(p => p.created_at && p.created_at.startsWith(today)).length;
+            const sortedDates = Object.keys(dateCounts).sort();
+            const cumulativeData = [];
+            let sum = 0;
+            sortedDates.forEach(date => {
+                sum += dateCounts[date];
+                cumulativeData.push(sum);
+            });
 
-            document.getElementById('stat-total-time').textContent = formatDuration(totalSecs);
-            document.getElementById('stat-total-users').textContent = profiles.length;
-            document.getElementById('stat-new-today').textContent = newToday;
-            document.getElementById('stat-active-sessions').textContent = sessionCount || 0;
-            renderChart(profiles);
+            if (chart) chart.destroy();
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedDates,
+                    datasets: [{
+                        label: 'Total Users over Time',
+                        data: cumulativeData,
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#6b7280', font: { size: 10 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#6b7280', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
         }
 
         async function loadUsers() {

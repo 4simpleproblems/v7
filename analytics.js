@@ -157,7 +157,7 @@ async function init4SPAnalytics() {
         try {
             await window.supabase
                 .from('traffic_logs')
-                .upsert(sessionPayload, { onConflict: 'session_id' })
+                .upsert(sessionPayload)
 
             if (currentUser !== 'anonymous' && timeToReport > 0) {
                 await window.supabase.rpc('increment_v6_time', {

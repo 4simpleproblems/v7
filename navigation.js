@@ -2395,18 +2395,23 @@ let db;
                 
                 // Set offline on tab close
                 window.addEventListener('beforeunload', () => {
-                    const url = `${supabaseConfig.url}/rest/v1/profiles?id=eq.${uid}`;
-                    fetch(url, {
-                        method: 'PATCH',
-                        headers: {
-                            'apikey': supabaseConfig.anonKey,
-                            'Authorization': `Bearer ${supabaseConfig.anonKey}`,
-                            'Content-Type': 'application/json',
-                            'Prefer': 'return=minimal'
-                        },
-                        body: JSON.stringify({ is_online: false }),
-                        keepalive: true
-                    });
+                    const supabaseUrl = window.supabaseConfig?.url || window.supabase.supabaseUrl;
+                    const supabaseAnonKey = window.supabaseConfig?.anonKey || window.supabase.supabaseKey;
+
+                    if (supabaseUrl && supabaseAnonKey) {
+                        const url = `${supabaseUrl}/rest/v1/profiles?id=eq.${uid}`;
+                        fetch(url, {
+                            method: 'PATCH',
+                            headers: {
+                                'apikey': supabaseAnonKey,
+                                'Authorization': `Bearer ${supabaseAnonKey}`,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify({ is_online: false }),
+                            keepalive: true
+                        });
+                    }
                 });
             }
 
@@ -2603,5 +2608,3 @@ let db;
 }
 })();
 }
-
-// Made with ❤️ from 4SP

@@ -427,15 +427,39 @@
         const auth = getAuth(app);
         const authButton = document.getElementById('auth-button');
 
-        onAuthStateChanged(auth, (user) => {
-            if (user && authButton) {
+        const updateButtonState = (isLoggedIn) => {
+            if (!authButton) return;
+            if (isLoggedIn) {
                 authButton.href = '/logged-in/dashboard.html';
                 authButton.innerHTML = 'Go to Dashboard <i class="fas fa-arrow-right ml-3"></i>';
-            } else if (authButton) {
+            } else {
                 authButton.href = '/authentication.html';
                 authButton.innerHTML = 'Get Started Instantly <i class="fas fa-arrow-right ml-3"></i>';
             }
+        };
+
+        // Firebase Auth listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                updateButtonState(true);
+            } else {
+                // If no firebase user, check supabase
+                checkSupabase();
+            }
         });
+
+        // Supabase Auth check
+        async function checkSupabase() {
+            if (window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session) {
+                    updateButtonState(true);
+                }
+            } else {
+                setTimeout(checkSupabase, 500);
+            }
+        }
+        checkSupabase();
     </script>
     <script type="module">
         document.querySelectorAll('.image-carousel-container').forEach(container => {

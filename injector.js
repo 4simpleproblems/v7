@@ -68,6 +68,7 @@
         try {
             const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm");
             const { supabaseConfig } = await import("/supabase-config.js");
+            window.supabaseConfig = supabaseConfig; // Global for scripts like navigation.js
             window.supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
             console.log("Supabase: Global client initialized.");
         } catch (e) {
@@ -214,4 +215,3 @@
     start();
 
 })();
-// Made with ❤️ from 4SP
