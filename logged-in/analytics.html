@@ -320,9 +320,6 @@
     </div>
 
     <script type="module">
-        import { getAvatarHTML } from "/utils.js";
-        const supabase = window.supabase;
-
         let currentUser = null;
         let allUsers = [];
         let chart = null;
@@ -383,6 +380,8 @@
         }
 
         async function loadBanRequests() {
+            const supabase = window.supabase;
+            if (!supabase) return;
             const { data: requests } = await supabase.from('ban_requests').select('*').eq('status', 'pending');
             const tbody = document.getElementById('ban-requests-body');
             
@@ -422,6 +421,8 @@
         }
 
         window.approveBanRequest = async (id, targetId, reason) => {
+            const supabase = window.supabase;
+            if (!supabase) return;
             if (!confirm("Approve this ban request?")) return;
             await supabase.from('bans').insert({ user_id: targetId, reason: reason, banned_by: currentUser.id });
             await supabase.from('ban_requests').update({ status: 'approved', processed_at: new Date().toISOString(), processed_by: currentUser.id }).eq('id', id);
@@ -429,6 +430,8 @@
         };
 
         window.rejectBanRequest = async (id) => {
+            const supabase = window.supabase;
+            if (!supabase) return;
             if (!confirm("Reject this ban request?")) return;
             await supabase.from('ban_requests').update({ status: 'rejected', processed_at: new Date().toISOString(), processed_by: currentUser.id }).eq('id', id);
             loadBanRequests();
@@ -446,8 +449,13 @@
         }
 
         async function loadStats() {
-            const { data: profiles, error: pError } = await supabase.from('profiles').select('total_v6_time, created_at');
+            const supabase = window.supabase;
+            if (!supabase) return;
+            
+            // Handle missing columns gracefully
+            const { data: profiles, error: pError } = await supabase.from('profiles').select('*');
             const { count: sessionCount, error: sError } = await supabase.from('traffic_logs').select('*', { count: 'exact', head: true });
+            
             if (pError || sError || !profiles) return;
 
             const totalSecs = profiles.reduce((sum, p) => sum + (p.total_v6_time || 0), 0);
@@ -457,11 +465,13 @@
             document.getElementById('stat-total-time').textContent = formatDuration(totalSecs);
             document.getElementById('stat-total-users').textContent = profiles.length;
             document.getElementById('stat-new-today').textContent = newToday;
-            document.getElementById('stat-active-sessions').textContent = sessionCount;
+            document.getElementById('stat-active-sessions').textContent = sessionCount || 0;
             renderChart(profiles);
         }
 
         async function loadUsers() {
+            const supabase = window.supabase;
+            if (!supabase) return;
             const { data: profiles, error } = await supabase.from('profiles').select('*').order('total_v6_time', { ascending: false });
             if (error || !profiles) return;
             allUsers = profiles;
@@ -502,6 +512,8 @@
         }
 
         async function loadTraffic() {
+            const supabase = window.supabase;
+            if (!supabase) return;
             const { data: logs, error } = await supabase.from('traffic_logs').select('*').order('updated_at', { ascending: false }).limit(20);
             if (error || !logs) return;
             const sessionsList = document.getElementById('recent-sessions-list');
@@ -554,6 +566,8 @@
         }
 
         window.managePermissions = async (id) => {
+            const supabase = window.supabase;
+            if (!supabase) return;
             if (myRole !== 'admin') { alert("Unauthorized: Only Full Admins can modify permissions."); return; }
             const user = allUsers.find(u => u.id === id);
             document.getElementById('admin-target-info').innerHTML = `
@@ -590,6 +604,8 @@
         window.closeModal = () => document.getElementById('admin-modal').classList.remove('open');
 
         window.deleteUser = async (id) => {
+            const supabase = window.supabase;
+            if (!supabase) return;
             if (myRole !== 'admin') return;
             if (confirm("Expunge this identity from the database?")) {
                 await supabase.from('profiles').delete().eq('id', id);
@@ -618,6 +634,8 @@
         };
 
         document.getElementById('confirm-ban-btn').onclick = async () => {
+            const supabase = window.supabase;
+            if (!supabase) return;
             const reason = document.getElementById('ban-reason').value.trim();
             if (!reason) { alert("Please specify a reason."); return; }
 

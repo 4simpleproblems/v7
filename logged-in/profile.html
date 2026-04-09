@@ -959,8 +959,9 @@
             // Render Tag
             const tagContainer = document.getElementById('user-tag-badge');
             if (tagContainer) {
-                if (data.user_tag) {
-                    tagContainer.innerHTML = `<span class="rank-tag" style="color: ${data.user_tag.color}; border-color: ${data.user_tag.color}; background: ${data.user_tag.color}15;">${data.user_tag.text}</span>`;
+                const flair = data.user_tag || data.userTag;
+                if (flair) {
+                    tagContainer.innerHTML = `<span class="rank-tag" style="color: ${flair.color}; border-color: ${flair.color}; background: ${flair.color}15;">${flair.text}</span>`;
                 } else {
                     tagContainer.innerHTML = '';
                 }
