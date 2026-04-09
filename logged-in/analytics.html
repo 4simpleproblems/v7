@@ -472,128 +472,151 @@
         async function loadUsers() {
             const supabase = window.supabase;
             if (!supabase) return;
-            const { data: profiles, error } = await supabase.from('profiles').select('*').order('total_v6_time', { ascending: false });
-            if (error || !profiles) return;
-            allUsers = profiles;
-            renderUserTable(profiles);
+            
+            // Fetch everything we need for the table
+            const { data: profiles, error: pError } = await supabase.from('profiles').select('*').order('total_v6_time', { ascending: false });
+            const { data: bans, error: bError } = await supabase.from('bans').select('user_id');
+            const { data: roles, error: rError } = await supabase.from('roles').select('*');
+
+            if (pError) {
+                console.error("Error loading users:", pError);
+                return;
+            }
+
+            // Map data for easy lookup
+            const banSet = new Set(bans?.map(b => b.user_id) || []);
+            const roleMap = Object.fromEntries(roles?.map(r => [r.user_id, r.role]) || []);
+
+            allUsers = profiles.map(u => ({
+                ...u,
+                isBanned: banSet.has(u.id),
+                currentRole: roleMap[u.id] || (u.is_admin ? 'full_admin' : null)
+            }));
+
+            renderUserTable(allUsers);
         }
 
         function renderUserTable(users) {
             const tbody = document.getElementById('user-table-body');
-            tbody.innerHTML = users.map(u => `
-                <tr class="border-b border-white/5 hover:bg-white/[0.02] transition">
-                    <td class="p-6">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/20 flex items-center justify-center text-xs font-black text-indigo-400">
-                                ${(u.username || u.email || '?').charAt(0).toUpperCase()}
+            tbody.innerHTML = users.map(u => {
+                let roleBadge = '<span class="text-[9px] text-gray-600 uppercase font-black tracking-widest opacity-40">Standard</span>';
+                if (u.currentRole === 'full_admin') {
+                    roleBadge = '<span class="text-[9px] bg-indigo-500/10 text-indigo-400 px-3 py-1.5 rounded-full border border-indigo-500/20 font-black uppercase tracking-widest">Admin</span>';
+                } else if (u.currentRole === 'sub_admin') {
+                    roleBadge = '<span class="text-[9px] bg-teal-500/10 text-teal-400 px-3 py-1.5 rounded-full border border-teal-500/20 font-black uppercase tracking-widest">Sub-Admin</span>';
+                }
+
+                if (u.isBanned) {
+                    roleBadge = '<span class="text-[9px] bg-red-500/10 text-red-400 px-3 py-1.5 rounded-full border border-red-500/20 font-black uppercase tracking-widest">Suspended</span>';
+                }
+
+                return `
+                    <tr class="border-b border-white/5 hover:bg-white/[0.02] transition">
+                        <td class="p-6">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/20 flex items-center justify-center text-xs font-black text-indigo-400">
+                                    ${(u.username || u.email || '?').charAt(0).toUpperCase()}
+                                </div>
+                                <div class="flex flex-col min-w-0">
+                                    <span class="text-white font-medium truncate">${u.username || 'Anonymous'}</span>
+                                    <span class="text-[10px] text-gray-500 font-mono truncate opacity-50">${u.email || u.id}</span>
+                                </div>
                             </div>
-                            <div class="flex flex-col min-w-0">
-                                <span class="text-white font-medium truncate">${u.username || 'Anonymous'}</span>
-                                <span class="text-[10px] text-gray-500 font-mono truncate opacity-50">${u.email || u.id}</span>
+                        </td>
+                        <td class="p-6 text-gray-400 font-mono text-xs">${formatDuration(u.total_v6_time)}</td>
+                        <td class="p-6 text-gray-500 text-[10px] font-mono">${u.created_at ? new Date(u.created_at).toLocaleDateString() : 'LEGACY'}</td>
+                        <td class="p-6">
+                            ${roleBadge}
+                        </td>
+                        <td class="p-6 text-right">
+                            <div class="flex justify-end gap-2">
+                                <button class="action-btn btn-blue" onclick="managePermissions('${u.id}')" title="Manage Permissions"><i class="fa-solid fa-shield-halved"></i></button>
+                                
+                                ${u.isBanned ? `
+                                    <button class="action-btn btn-blue" style="border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.05);" onclick="unbanUser('${u.id}')" title="Lift Suspension">
+                                        <i class="fa-solid fa-unlock"></i> Unban
+                                    </button>
+                                ` : `
+                                    <button class="action-btn btn-red" onclick="openBanModal('${u.id}')" title="Enforce Suspension">
+                                        <i class="fa-solid fa-ban"></i> ${myRole === 'admin' ? 'Ban' : 'Request Ban'}
+                                    </button>
+                                `}
+
+                                ${myRole === 'admin' ? `<button class="action-btn btn-red" onclick="deleteUser('${u.id}')" title="Expunge Account"><i class="fa-solid fa-trash-can"></i></button>` : ''}
                             </div>
-                        </div>
-                    </td>
-                    <td class="p-6 text-gray-400 font-mono text-xs">${formatDuration(u.total_v6_time)}</td>
-                    <td class="p-6 text-gray-500 text-[10px] font-mono">${u.created_at ? new Date(u.created_at).toLocaleDateString() : 'LEGACY'}</td>
-                    <td class="p-6">
-                        ${u.is_admin ? '<span class="text-[9px] bg-indigo-500/10 text-indigo-400 px-3 py-1.5 rounded-full border border-indigo-500/20 font-black uppercase tracking-widest">Admin</span>' : '<span class="text-[9px] text-gray-600 uppercase font-black tracking-widest opacity-40">Standard</span>'}
-                    </td>
-                    <td class="p-6 text-right">
-                        <div class="flex justify-end gap-2">
-                            <button class="action-btn btn-blue" onclick="managePermissions('${u.id}')"><i class="fa-solid fa-shield-halved"></i></button>
-                            <button class="action-btn btn-red" onclick="openBanModal('${u.id}')">
-                                <i class="fa-solid fa-ban"></i> ${myRole === 'admin' ? 'Ban' : 'Request Ban'}
-                            </button>
-                            ${myRole === 'admin' ? `<button class="action-btn btn-red" onclick="deleteUser('${u.id}')"><i class="fa-solid fa-trash-can"></i></button>` : ''}
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
-        async function loadTraffic() {
+        window.unbanUser = async (id) => {
             const supabase = window.supabase;
             if (!supabase) return;
-            const { data: logs, error } = await supabase.from('traffic_logs').select('*').order('updated_at', { ascending: false }).limit(20);
-            if (error || !logs) return;
-            const sessionsList = document.getElementById('recent-sessions-list');
-            sessionsList.innerHTML = logs.map(l => `
-                <div class="flex justify-between items-center p-4 bg-white/[0.02] rounded-2xl border border-white/5">
-                    <div class="flex flex-col">
-                        <span class="text-xs text-white font-mono opacity-80">${l.session_id.substring(0,8)}...</span>
-                        <span class="text-[10px] text-gray-500 font-bold uppercase tracking-tight">${moment(l.updated_at).fromNow()}</span>
-                    </div>
-                    <div class="text-xs text-indigo-400 font-black tracking-widest">${formatDuration(l.duration)}</div>
-                </div>
-            `).join('');
-        }
-
-        function formatDuration(seconds) {
-            if (!seconds) return '0s';
-            const h = Math.floor(seconds / 3600);
-            const m = Math.floor((seconds % 3600) / 60);
-            const s = Math.floor(seconds % 60);
-            if (h > 0) return `${h}h ${m}m`;
-            if (m > 0) return `${m}m ${s}s`;
-            return `${s}s`;
-        }
-
-        function renderChart(profiles) {
-            const ctx = document.getElementById('usageChart').getContext('2d');
-            if (chart) chart.destroy();
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [...Array(7).keys()].map(i => moment().subtract(6-i, 'days').format('MMM DD')),
-                    datasets: [{
-                        label: 'Usage',
-                        data: [1200, 1900, 1500, 2500, 3200, 2800, 4500],
-                        borderColor: '#4f46e5',
-                        tension: 0.4,
-                        fill: true,
-                        backgroundColor: 'rgba(79, 70, 229, 0.05)'
-                    }]
-                },
-                options: {
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: '#444' } },
-                        x: { grid: { display: false }, ticks: { color: '#444' } }
-                    }
-                }
-            });
-        }
+            if (!confirm("Are you sure you want to lift this suspension?")) return;
+            
+            const { error } = await supabase.from('bans').delete().eq('user_id', id);
+            if (error) alert("Error lifting ban: " + error.message);
+            else {
+                alert("Suspension lifted successfully.");
+                loadUsers();
+            }
+        };
 
         window.managePermissions = async (id) => {
             const supabase = window.supabase;
             if (!supabase) return;
             if (myRole !== 'admin') { alert("Unauthorized: Only Full Admins can modify permissions."); return; }
+            
             const user = allUsers.find(u => u.id === id);
+            const role = user.currentRole;
+
             document.getElementById('admin-target-info').innerHTML = `
                 <div class="text-white font-bold text-lg">${user.username || 'Anonymous'}</div>
                 <div class="text-[10px] text-gray-500 font-mono opacity-40 mt-1">${user.id}</div>
             `;
+            
+            const adminBtn = document.getElementById('make-admin-btn');
+            const subAdminBtn = document.getElementById('make-subadmin-btn');
+
+            adminBtn.textContent = role === 'full_admin' ? 'Remove Full Admin' : 'Elevate to Full Admin';
+            adminBtn.className = `action-btn ${role === 'full_admin' ? 'btn-red' : 'btn-blue'} w-full py-4 uppercase tracking-widest text-[10px] font-black`;
+            
+            subAdminBtn.textContent = role === 'sub_admin' ? 'Remove Sub-Admin' : 'Appoint Sub-Admin';
+            subAdminBtn.className = `action-btn ${role === 'sub_admin' ? 'btn-red' : 'btn-purple'} w-full py-4 uppercase tracking-widest text-[10px] font-black`;
+
             document.getElementById('admin-modal').classList.add('open');
             
-            document.getElementById('make-admin-btn').onclick = async () => {
-                await supabase.from('roles').upsert({ user_id: id, role: 'full_admin' });
-                await supabase.from('profiles').update({ is_admin: true }).eq('id', id);
+            adminBtn.onclick = async () => {
+                if (role === 'full_admin') {
+                    await supabase.from('roles').delete().eq('user_id', id).eq('role', 'full_admin');
+                    await supabase.from('profiles').update({ is_admin: false }).eq('id', id);
+                } else {
+                    await supabase.from('roles').upsert({ user_id: id, role: 'full_admin' });
+                    await supabase.from('profiles').update({ is_admin: true }).eq('id', id);
+                }
                 closeModal(); loadUsers();
             };
-            document.getElementById('make-subadmin-btn').onclick = async () => {
-                await supabase.from('roles').upsert({ user_id: id, role: 'sub_admin' });
-                await supabase.from('profiles').update({ is_admin: false }).eq('id', id);
+
+            subAdminBtn.onclick = async () => {
+                if (role === 'sub_admin') {
+                    await supabase.from('roles').delete().eq('user_id', id).eq('role', 'sub_admin');
+                } else {
+                    await supabase.from('roles').upsert({ user_id: id, role: 'sub_admin' });
+                    await supabase.from('profiles').update({ is_admin: false }).eq('id', id);
+                }
                 closeModal(); loadUsers();
             };
+
             document.getElementById('manage-tag-btn').onclick = async () => {
-                const tagText = prompt("Tag Text (e.g. Creator):");
-                let tagColor = "#4f46e5";
-                if (tagText) tagColor = prompt("Tag Color (Hex):", "#4f46e5") || "#4f46e5";
+                const tagText = prompt("Tag Text (e.g. Creator):", user.user_tag?.text || "");
+                let tagColor = user.user_tag?.color || "#4f46e5";
+                if (tagText) tagColor = prompt("Tag Color (Hex):", tagColor) || tagColor;
                 const { error } = await supabase.rpc('set_user_tag', { target_user_id: id, tag_text: tagText, tag_color: tagColor });
                 if (error) alert(error.message); else alert("Identity Flair Updated.");
                 closeModal(); loadUsers();
             };
+
             document.getElementById('remove-admin-btn').onclick = async () => {
                 await supabase.from('roles').delete().eq('user_id', id);
                 await supabase.from('profiles').update({ is_admin: false }).eq('id', id);
