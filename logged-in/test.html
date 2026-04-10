@@ -704,8 +704,8 @@
             "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/assets-main/zones.json"
         ];
         let zonesURL = zonesurls[Math.floor(Math.random() * zonesurls.length)];
-        const coverURL = "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/covers-main/";
-        const htmlURL = "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main/";
+        const coverURL = "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/covers-main";
+        const htmlURL = "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main";
         
         const WORKER_ROOT = "https://dv-service-lfs.4simpleproblems.workers.dev/";
         const GAMES_BASE_URL = "https://dv-service-lfs.4simpleproblems.workers.dev/GAMES/";
@@ -1264,12 +1264,11 @@
             zoneNameEl.textContent = game.name;
             zoneFrame.src = 'about:blank';
             
-            zoneFrame.setAttribute('allow', 'autoplay; fullscreen; pointer-lock; clipboard-write');
+            zoneFrame.setAttribute('allow', 'autoplay; fullscreen; clipboard-write');
             
             const sandboxRules = 'allow-scripts allow-same-origin allow-forms allow-pointer-lock';
             zoneFrame.setAttribute('sandbox', sandboxRules);
 
-            // Updated to include GN-Math in the standard URL loading flow 
             const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP' || game.category === 'GN-Math';
             
             const attemptLoad = async (retriesLeft) => {
@@ -1598,7 +1597,6 @@
                         shajson = await sharesponse.json();
                         sha = shajson[0]['sha'];
                         if (sha) {
-                            // FIXED: Use jsDelivr's GitHub endpoint (/gh/) for commit SHAs
                             zonesURL = `https://cdn.jsdelivr.net/gh/gn-math/assets@${sha}/zones.json`;
                         }
                     } catch (error) {
@@ -1607,7 +1605,6 @@
                             if (secondarysharesponse && secondarysharesponse.status === 200) {
                                 sha = (await secondarysharesponse.text()).trim();
                                 if (sha) {
-                                    // FIXED: Use jsDelivr's GitHub endpoint (/gh/) for commit SHAs
                                     zonesURL = `https://cdn.jsdelivr.net/gh/gn-math/assets@${sha}/zones.json`;
                                 }
                             }
@@ -1634,14 +1631,19 @@
                 const response = await fetch(zonesURL+"?t="+Date.now());
                 const gnMathRaw = await response.json();
                 
-                const gnMathGames = gnMathRaw.map(g => ({ 
-                    id: `gn-${g.id}`, 
-                    name: g.name, 
-                    imgSrc: g.cover.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL), 
-                    category: 'GN-Math', 
-                    url: g.url.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL),
-                    popularity: popularityData[g.id] || 0
-                }));
+                const gnMathGames = gnMathRaw.map(g => {
+                    let fixedImgSrc = g.cover.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL);
+                    fixedImgSrc = fixedImgSrc.replace(/([^:]\/)\/+/g, "$1");
+                    
+                    return { 
+                        id: `gn-${g.id}`, 
+                        name: g.name, 
+                        imgSrc: fixedImgSrc, 
+                        category: 'GN-Math', 
+                        url: `${htmlURL}/${g.id}.html`,
+                        popularity: popularityData[g.id] || 0
+                    };
+                });
                 
                 allGames = [...strongdogGames, ...gnMathGames, ...filteredOthers];
             } catch (error) { 
