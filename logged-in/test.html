@@ -34,6 +34,8 @@
                         'brand-border': '#1a1a1a',
                         'strongdog-orange': '#FFA500',
                         'gn-math': '#FB2651',
+                        'elite-cyan': '#00FFFF',
+                        'diesmos-pink': '#ff66b2',
                         'gameboy': '#9A2257', 
                         'other-grey': '#AAAAAA', 
                     },
@@ -697,7 +699,7 @@
         }
 
         // Configuration & Globals
-        let zonesURL = "https://cdn.jsdelivr.net/gh/gn-math/assets@main/zones.json";
+        let zonesURL = "https://raw.githubusercontent.com/gn-math/assets/main/zones.json";
         
         const WORKER_ROOT = "https://dv-service-lfs.4simpleproblems.workers.dev/";
         const GAMES_BASE_URL = "https://dv-service-lfs.4simpleproblems.workers.dev/GAMES/";
@@ -712,6 +714,8 @@
         const categoryColors = {
             'StrongdogXP': 'text-strongdog-orange',
             'GN-Math': 'text-gn-math',
+            'Elite Gamez': 'text-elite-cyan',
+            'Diesmos': 'text-diesmos-pink',
             'Gameboy Games': 'text-gameboy',
             'Others': 'text-other-grey', 
         };
@@ -735,6 +739,22 @@
                 ],
                 logo: "./images/credits/gn_logo.png",
                 color: "#FD2E59"
+            },
+            'Elite Gamez': {
+                desc: "Created by Bloxcraft Studios and Tharun9772Gaming! A premier hub for unblocked games and apps, brought to you by Elite Gamez.",
+                links: [
+                    { type: 'github', url: "https://github.com/elite-gamez", label: "GitHub" }
+                ],
+                logo: "https://cdn.jsdelivr.net/gh/elite-gamez/elite-gamez.github.io@main/images/bloxcraft_transparent.webp",
+                color: "#00FFFF"
+            },
+            'Diesmos': {
+                desc: "Created by Marcco and Jalen. A valentine-themed game site filled with amazing things to discover and play.",
+                links: [
+                    { type: 'github', url: "https://github.com/waycrosspublicmedia/HTMLFILES", label: "GitHub" }
+                ],
+                logo: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' fill='white' font-size='90'>🎮</text></svg>",
+                color: "#ff66b2"
             },
             'Others': { 
                 desc: "A tribute to the open-source community. This section features projects like Eaglercraft, JS-DOS, and Doom, developed by talented individuals who believe in accessible software for everyone.",
@@ -1261,8 +1281,8 @@
             const sandboxRules = 'allow-scripts allow-same-origin allow-forms allow-pointer-lock';
             zoneFrame.setAttribute('sandbox', sandboxRules);
 
-            // GN-Math should NOT be a standard URL game so it gets fetched and injected properly
-            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP';
+            // New categories typically act like standard URL games
+            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP' || game.category === 'Elite Gamez' || game.category === 'Diesmos';
             
             const attemptLoad = async (retriesLeft, useFallback = false) => {
                 try {
@@ -1327,7 +1347,7 @@
                 } catch (e) {
                     console.warn(`Load failed for ${game.name}. Retries left: ${retriesLeft}`, e);
                     if (!useFallback && game.fallbackUrl) {
-                        console.warn(`Trying NPM fallback for ${game.name}...`);
+                        console.warn(`Trying fallback URL for ${game.name}...`);
                         attemptLoad(retriesLeft, true);
                     } else if (retriesLeft > 0) {
                         setTimeout(() => attemptLoad(retriesLeft - 1, useFallback), 1000);
@@ -1466,8 +1486,7 @@
                 linkEl.dataset.gameId = game.id;
                 let isFavorite = favorites.includes(String(game.id));
 
-                const catLabel = game.category === 'StrongdogXP' ? 'StrongdogXP' : (game.category === 'GN-Math' ? 'GN-Math' : 'Others');
-
+                const catLabel = game.category;
                 const smartTextClass = getSmartTextColor();
                 
                 linkEl.innerHTML = `
@@ -1605,7 +1624,7 @@
                         shajson = await sharesponse.json();
                         sha = shajson[0]['sha'];
                         if (sha) {
-                            zonesURL = `https://cdn.jsdelivr.net/gh/gn-math/assets@${sha}/zones.json`;
+                            zonesURL = `https://raw.githubusercontent.com/gn-math/assets/${sha}/zones.json`;
                         }
                     } catch (error) {
                         try {
@@ -1613,7 +1632,7 @@
                             if (secondarysharesponse && secondarysharesponse.status === 200) {
                                 sha = (await secondarysharesponse.text()).trim();
                                 if (sha) {
-                                    zonesURL = `https://cdn.jsdelivr.net/gh/gn-math/assets@${sha}/zones.json`;
+                                    zonesURL = `https://raw.githubusercontent.com/gn-math/assets/${sha}/zones.json`;
                                 }
                             }
                         } catch(error) {}
@@ -1639,11 +1658,10 @@
                 const response = await fetch(zonesURL+"?t="+Date.now());
                 const gnMathRaw = await response.json();
                 
-                const ghBase = `https://cdn.jsdelivr.net/gh/gn-math/assets@${sha || 'main'}`;
-                const npmBase = `https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest`;
+                const ghBase = `https://raw.githubusercontent.com/gn-math/assets/${sha || 'main'}`;
+                const npmBase = `https://unpkg.com/gn-math.github.io-main@latest`;
 
                 const gnMathGames = gnMathRaw.map(g => {
-                    // Extract just the filename/path cleanly to rebuild URLs
                     let coverPath = g.cover.split('/').pop(); 
                     let htmlPath = g.url ? g.url.split('/').pop() : `${g.id}.html`;
                     
@@ -1664,6 +1682,55 @@
                 console.warn("Failed to load GN-Math, falling back to others.", error);
                 allGames = [...strongdogGames, ...filteredOthers]; 
             }
+
+            // -------------------------------------------------------------
+            // Elite Gamez Fetch
+            // -------------------------------------------------------------
+            let eliteGames = [];
+            try {
+                const egRes = await fetch("https://cdn.jsdelivr.net/gh/elite-gamez/elite-gamez.github.io@main/games.json?t=" + Date.now());
+                if (egRes.ok) {
+                    const egRaw = await egRes.json();
+                    eliteGames = egRaw.map(g => {
+                        let img = g.image || g.imgSrc || '';
+                        let u = g.url || g.link || '';
+                        return {
+                            id: `eg-${(g.title || g.name || 'unnamed').replace(/[^a-z0-9]/gi, '-').toLowerCase()}`,
+                            name: g.title || g.name,
+                            description: g.description || '',
+                            imgSrc: img.startsWith('http') ? img : `https://cdn.jsdelivr.net/gh/elite-gamez/elite-gamez.github.io@main/${img}`,
+                            category: 'Elite Gamez',
+                            url: u.startsWith('http') ? u : `https://cdn.jsdelivr.net/gh/elite-gamez/elite-gamez.github.io@main/${u}`
+                        };
+                    });
+                }
+            } catch (error) { console.warn("Failed to load Elite Gamez", error); }
+
+            // -------------------------------------------------------------
+            // Diesmos Fetch
+            // -------------------------------------------------------------
+            let diesmosGames = [];
+            try {
+                const dRes = await fetch("https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/games.json?t=" + Date.now());
+                if (dRes.ok) {
+                    const dRaw = await dRes.json();
+                    diesmosGames = dRaw.map(g => {
+                        let img = g.image || g.imgSrc || g.thumb || '';
+                        let u = g.url || g.link || g.file || '';
+                        return {
+                            id: `d-${(g.title || g.name || 'unnamed').replace(/[^a-z0-9]/gi, '-').toLowerCase()}`,
+                            name: g.title || g.name,
+                            description: g.description || '',
+                            imgSrc: img.startsWith('http') ? img : `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/${img}`,
+                            category: 'Diesmos',
+                            url: u.startsWith('http') ? u : `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/${u}`
+                        };
+                    });
+                }
+            } catch (error) { console.warn("Failed to load Diesmos", error); }
+
+            // Assemble the final game array
+            allGames = [...allGames, ...eliteGames, ...diesmosGames];
 
             try {
                 const blacklistRes = await fetch("https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/blacklisted_games.json");
@@ -1693,7 +1760,7 @@
                 }
             });
 
-            categories = ['StrongdogXP', 'GN-Math', 'Gameboy Games', 'Others'].filter(cat => allGames.some(g => g.category === cat));
+            categories = ['StrongdogXP', 'GN-Math', 'Elite Gamez', 'Diesmos', 'Gameboy Games', 'Others'].filter(cat => allGames.some(g => g.category === cat));
 
             const { category: urlCat } = parseURL();
             if (urlCat) currentCategoryIndex = Math.max(0, categories.findIndex(c => c.replace(/\s+/g, '-').toLowerCase() === urlCat.toLowerCase()));
