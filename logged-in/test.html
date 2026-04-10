@@ -697,15 +697,7 @@
         }
 
         // Configuration & Globals
-        const zonesurls = [
-            "https://cdn.jsdelivr.net/%67%68/%67%6e%2d%6d%61%74%68/%61%73%73%65%74%73@%6d%61%69%6e/%7a%6f%6e%65%73%2e%6a%73%6f%6e",
-            "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/assets-main//zones.json",
-            "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/assets-main@master/zones.json",
-            "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/assets-main/zones.json"
-        ];
-        let zonesURL = zonesurls[Math.floor(Math.random() * zonesurls.length)];
-        const coverURL = "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/covers-main";
-        const htmlURL = "https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest/html-main";
+        let zonesURL = "https://cdn.jsdelivr.net/gh/gn-math/assets@main/zones.json";
         
         const WORKER_ROOT = "https://dv-service-lfs.4simpleproblems.workers.dev/";
         const GAMES_BASE_URL = "https://dv-service-lfs.4simpleproblems.workers.dev/GAMES/";
@@ -1016,7 +1008,7 @@
 
             card.innerHTML = `
                 <div class="relative w-full h-full cursor-pointer group" style="min-height: 280px;">
-                    <img data-src="${resolvedImgSrc}" alt="${game.name}" loading="lazy" decoding="async" class="w-full h-full object-cover absolute inset-0 rounded-[2rem]">
+                    <img data-src="${resolvedImgSrc}" ${game.fallbackImgSrc ? `data-fallback="${game.fallbackImgSrc}" onerror="if(this.src !== this.dataset.fallback) this.src=this.dataset.fallback;"` : ''} alt="${game.name}" loading="lazy" decoding="async" class="w-full h-full object-cover absolute inset-0 rounded-[2rem]">
                     <div class="image-overlay absolute inset-0 rounded-[2rem]"></div>
                     <div class="absolute inset-0 p-6 sm:p-8 flex flex-col justify-between">
                         <div class="flex items-start justify-between w-full">
@@ -1129,7 +1121,7 @@
 
             card.innerHTML = `
                 <div class="relative w-full cursor-pointer group h-full flex flex-col">
-                    <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover rounded-[1.5rem]"></div>
+                    <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" ${game.fallbackImgSrc ? `data-fallback="${game.fallbackImgSrc}" onerror="if(this.src !== this.dataset.fallback) this.src=this.dataset.fallback;"` : ''} alt="${game.name}" class="w-full h-full object-cover rounded-[1.5rem]"></div>
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[1.5rem]"></div>
                     <h3 class="absolute top-3 left-3 right-3 z-10 bg-black/60 backdrop-blur-md rounded-xl px-3 py-2 ${smartTextClass} truncate text-xs font-bold shadow-lg border border-white/10" title="${game.name}">${game.name}</h3>
                     <div class="absolute bottom-3 right-3 bg-black/60 backdrop-blur-xl rounded-2xl p-1.5 flex items-center gap-1.5 shadow-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
@@ -1155,7 +1147,7 @@
                     if (game.category === 'Others' || game.category === 'Gameboy Games') {
                         gUrl = resolveGameUrl(gUrl);
                     }
-                    openZone({ ...game, url: gUrl });
+                    openZone({ ...game, url: gUrl, fallbackUrl: game.fallbackUrl });
                 }
             };
 
@@ -1269,15 +1261,18 @@
             const sandboxRules = 'allow-scripts allow-same-origin allow-forms allow-pointer-lock';
             zoneFrame.setAttribute('sandbox', sandboxRules);
 
-            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP' || game.category === 'GN-Math';
+            // GN-Math should NOT be a standard URL game so it gets fetched and injected properly
+            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP';
             
-            const attemptLoad = async (retriesLeft) => {
+            const attemptLoad = async (retriesLeft, useFallback = false) => {
                 try {
-                    const check = await fetch(game.url, { method: 'HEAD' });
+                    let currentUrl = useFallback && game.fallbackUrl ? game.fallbackUrl : game.url;
+                    
+                    const check = await fetch(currentUrl, { method: 'HEAD' });
                     if (!check.ok) throw new Error(`HTTP ${check.status}`);
                     
                     if (isStandardURLGame) {
-                        zoneFrame.src = game.url;
+                        zoneFrame.src = currentUrl;
                         zoneFrame.onload = () => {
                             try {
                                 const doc = zoneFrame.contentDocument;
@@ -1292,9 +1287,19 @@
                             } catch (e) {}
                         };
                     } else {
-                        const response = await fetch(`${game.url}?t=${Date.now()}`);
+                        const response = await fetch(`${currentUrl}?t=${Date.now()}`);
                         if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-                        const html = await response.text();
+                        let html = await response.text();
+                        
+                        // Inject base tag to fix relative assets
+                        const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1);
+                        const baseTag = `<base href="${baseUrl}">`;
+                        if (html.includes('<head>')) {
+                            html = html.replace('<head>', `<head>${baseTag}`);
+                        } else {
+                            html = baseTag + html;
+                        }
+
                         const doc = zoneFrame.contentWindow.document;
                         doc.open();
                         doc.write(html);
@@ -1321,8 +1326,11 @@
 
                 } catch (e) {
                     console.warn(`Load failed for ${game.name}. Retries left: ${retriesLeft}`, e);
-                    if (retriesLeft > 0) {
-                        setTimeout(() => attemptLoad(retriesLeft - 1), 1000);
+                    if (!useFallback && game.fallbackUrl) {
+                        console.warn(`Trying NPM fallback for ${game.name}...`);
+                        attemptLoad(retriesLeft, true);
+                    } else if (retriesLeft > 0) {
+                        setTimeout(() => attemptLoad(retriesLeft - 1, useFallback), 1000);
                     } else {
                         show404("The game files could not be loaded after multiple attempts.");
                     }
@@ -1464,7 +1472,7 @@
                 
                 linkEl.innerHTML = `
                     <div class="flex items-center truncate min-w-0">
-                        <img src="${imgSrc}" alt="${game.name}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-white/10">
+                        <img src="${imgSrc}" ${game.fallbackImgSrc ? `data-fallback="${game.fallbackImgSrc}" onerror="if(this.src !== this.dataset.fallback) this.src=this.dataset.fallback;"` : ''} alt="${game.name}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-white/10">
                         <div class="flex flex-col ml-3 truncate min-w-0">
                             <span class="font-medium truncate ${smartTextClass}" title="${game.name}">${game.name}</span>
                             <span class="category-badge w-fit opacity-60 text-white">${catLabel}</span>
@@ -1631,16 +1639,22 @@
                 const response = await fetch(zonesURL+"?t="+Date.now());
                 const gnMathRaw = await response.json();
                 
+                const ghBase = `https://cdn.jsdelivr.net/gh/gn-math/assets@${sha || 'main'}`;
+                const npmBase = `https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest`;
+
                 const gnMathGames = gnMathRaw.map(g => {
-                    let fixedImgSrc = g.cover.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL);
-                    fixedImgSrc = fixedImgSrc.replace(/([^:]\/)\/+/g, "$1");
+                    // Extract just the filename/path cleanly to rebuild URLs
+                    let coverPath = g.cover.split('/').pop(); 
+                    let htmlPath = g.url ? g.url.split('/').pop() : `${g.id}.html`;
                     
                     return { 
                         id: `gn-${g.id}`, 
                         name: g.name, 
-                        imgSrc: fixedImgSrc, 
+                        imgSrc: `${ghBase}/covers/${coverPath}`, 
+                        fallbackImgSrc: `${npmBase}/covers-main/${coverPath}`,
                         category: 'GN-Math', 
-                        url: `${htmlURL}/${g.id}.html`,
+                        url: `${ghBase}/html/${htmlPath}`,
+                        fallbackUrl: `${npmBase}/html-main/${htmlPath}`,
                         popularity: popularityData[g.id] || 0
                     };
                 });
