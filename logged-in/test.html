@@ -1286,62 +1286,25 @@
             const sandboxRules = 'allow-scripts allow-same-origin allow-forms allow-pointer-lock';
             zoneFrame.setAttribute('sandbox', sandboxRules);
 
-            // Using direct frame loading for standard games
-            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP' || game.category === 'GN-Math' || game.category === 'Elite Gamez' || game.category === 'Diesmos';
-            
             const attemptLoad = async (retriesLeft) => {
                 try {
                     const check = await fetch(game.url, { method: 'HEAD' });
                     if (!check.ok) throw new Error(`HTTP ${check.status}`);
                     
-                    if (isStandardURLGame) {
-                        zoneFrame.src = game.url;
-                        zoneFrame.onload = () => {
-                            try {
-                                const doc = zoneFrame.contentDocument;
-                                const title = doc.title;
-                                if (title.includes("CDN files") || title.includes("Index of") || title.includes("Directory listing") || (doc.body && doc.body.textContent.includes("4sp-dv CDN files"))) {
-                                     console.warn("Directory listing detected. Aborting.");
-                                     closeZoneViewer();
-                                     return;
-                                }
-                                zoneFrame.contentWindow.focus();
-                                zoneFrame.focus();
-                            } catch (e) {}
-                        };
-                    } else {
-                        const response = await fetch(`${game.url}?t=${Date.now()}`);
-                        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-                        let html = await response.text();
-                        
-                        // Inject base tag to fix relative assets
-                        const baseUrl = game.url.substring(0, game.url.lastIndexOf('/') + 1);
-                        const baseTag = `<base href="${baseUrl}">`;
-                        if (html.includes('<head>')) {
-                            html = html.replace('<head>', `<head>${baseTag}`);
-                        } else {
-                            html = baseTag + html;
-                        }
-
-                        const doc = zoneFrame.contentWindow.document;
-                        doc.open();
-                        doc.write(html);
-                        doc.close();
-                        
-                        let focusAttempts = 0;
-                        const forceFocusInterval = setInterval(() => {
-                            if (zoneFrame.contentWindow) {
-                                zoneFrame.contentWindow.focus();
-                                zoneFrame.focus();
+                    zoneFrame.src = game.url;
+                    zoneFrame.onload = () => {
+                        try {
+                            const doc = zoneFrame.contentDocument;
+                            const title = doc.title;
+                            if (title.includes("CDN files") || title.includes("Index of") || title.includes("Directory listing") || (doc.body && doc.body.textContent.includes("4sp-dv CDN files"))) {
+                                 console.warn("Directory listing detected. Aborting.");
+                                 closeZoneViewer();
+                                 return;
                             }
-                            focusAttempts++;
-                            if (focusAttempts > 20) clearInterval(forceFocusInterval);
-                        }, 100);
-                        
-                        zoneFrame.contentWindow.addEventListener('click', () => {
                             zoneFrame.contentWindow.focus();
-                        });
-                    }
+                            zoneFrame.focus();
+                        } catch (e) {}
+                    };
 
                     zoneViewer.classList.remove('animate-fade-out');
                     zoneViewer.classList.add('active', 'animate-fade-in');
@@ -1612,31 +1575,13 @@
             
             const strongdogGames = gamesData.map(g => ({ ...g, category: 'StrongdogXP' }));
             
+            // -------------------------------------------------------------
+            // GN-Math Fetch
+            // -------------------------------------------------------------
+            const popularityData = {};
             try {
-                let sharesponse;
-                let shajson;
-                let sha;
-                try {
-                    sharesponse = await fetch("https://api.github.com/repos/gn-math/assets/commits?t="+Date.now());
-                } catch (error) {}
-                if (sharesponse && sharesponse.status === 200) {
-                    try {
-                        shajson = await sharesponse.json();
-                        sha = shajson[0]['sha'];
-                    } catch (error) {
-                        try {
-                            let secondarysharesponse = await fetch("https://raw.githubusercontent.com/gn-math/xml/refs/heads/main/sha.txt?t="+Date.now());
-                            if (secondarysharesponse && secondarysharesponse.status === 200) {
-                                sha = (await secondarysharesponse.text()).trim();
-                            }
-                        } catch(error) {}
-                    }
-                }
-
-                const popularityData = {};
-                try {
-                    const response = await fetch("https://data.jsdelivr.com/v1/stats/packages/npm/gn-math.github.io-main/files?period=year");
-                    if (!response.ok) throw new Error("Stats API failed");
+                const response = await fetch("https://data.jsdelivr.com/v1/stats/packages/npm/gn-math.github.io-main/files?period=year");
+                if (response.ok) {
                     const data = await response.json();
                     data.forEach(file => {
                         const idMatch = file.name.match(/\/(\d+)\.html$/);
@@ -1645,33 +1590,40 @@
                             popularityData[id] = file.hits.total;
                         }
                     });
-                } catch (error) {}
+                }
+            } catch (error) {}
 
-                const npmBase = `https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest`;
-                const zonesURL = `${npmBase}/assets-main/zones.json?t=${Date.now()}`;
-                
-                const response = await fetch(zonesURL);
-                const gnMathRaw = await response.json();
-
-                const gnMathGames = gnMathRaw.map(g => {
-                    let coverPath = g.cover.split('/').pop(); 
-                    let htmlPath = `${g.id}.html`; 
-                    
-                    return { 
-                        id: `gn-${g.id}`, 
-                        name: g.name, 
-                        imgSrc: `${npmBase}/covers-main/${coverPath}`, 
-                        category: 'GN-Math', 
-                        url: `${npmBase}/html-main/${htmlPath}`,
-                        popularity: popularityData[g.id] || 0
-                    };
-                });
-                
-                allGames = [...strongdogGames, ...gnMathGames, ...filteredOthers];
-            } catch (error) { 
-                console.warn("Failed to load GN-Math, falling back to others.", error);
-                allGames = [...strongdogGames, ...filteredOthers]; 
+            const npmBase = `https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest`;
+            let gnMathRaw = [];
+            try {
+                // Try games.json first as requested
+                const res1 = await fetch(`${npmBase}/games.json?t=${Date.now()}`);
+                if (!res1.ok) throw new Error("games.json failed");
+                gnMathRaw = await res1.json();
+            } catch (e1) {
+                try {
+                    // Fallback to zones.json
+                    const res2 = await fetch(`${npmBase}/assets-main/zones.json?t=${Date.now()}`);
+                    if (!res2.ok) throw new Error("zones.json failed");
+                    gnMathRaw = await res2.json();
+                } catch (e2) {
+                    console.warn("Failed to load GN-Math JSONs:", e2);
+                }
             }
+
+            const gnMathGames = gnMathRaw.map(g => {
+                let coverPath = g.cover ? g.cover.split('/').pop() : `${g.id}.png`; 
+                let htmlPath = g.url ? g.url.split('/').pop() : `${g.id}.html`; 
+                
+                return { 
+                    id: `gn-${g.id}`, 
+                    name: g.name, 
+                    imgSrc: `${npmBase}/covers-main/${coverPath}`, 
+                    category: 'GN-Math', 
+                    url: `${npmBase}/html-main/${htmlPath}`,
+                    popularity: popularityData[g.id] || 0
+                };
+            });
 
             // -------------------------------------------------------------
             // Elite Gamez Fetch
@@ -1701,7 +1653,7 @@
             // -------------------------------------------------------------
             let diesmosGames = [];
             try {
-                const dRes = await fetch("https://raw.githubusercontent.com/waycrosspublicmedia/HTMLFILES/main/games.json?t=" + Date.now());
+                const dRes = await fetch("https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/games.json?t=" + Date.now());
                 if (dRes.ok) {
                     const dRaw = await dRes.json();
                     diesmosGames = dRaw.map(g => {
@@ -1711,16 +1663,16 @@
                             id: `d-${(g.title || g.name || 'unnamed').replace(/[^a-z0-9]/gi, '-').toLowerCase()}`,
                             name: g.title || g.name,
                             description: g.description || '',
-                            imgSrc: img.startsWith('http') ? img : `https://raw.githubusercontent.com/waycrosspublicmedia/HTMLFILES/main/${img}`,
+                            imgSrc: img.startsWith('http') ? img : `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/${img}`,
                             category: 'Diesmos',
-                            url: u.startsWith('http') ? u : `https://raw.githack.com/waycrosspublicmedia/HTMLFILES/main/${u}`
+                            url: u.startsWith('http') ? u : `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/${u}`
                         };
                     });
                 }
             } catch (error) { console.warn("Failed to load Diesmos", error); }
 
             // Assemble the final game array
-            allGames = [...allGames, ...eliteGames, ...diesmosGames];
+            allGames = [...strongdogGames, ...gnMathGames, ...eliteGames, ...diesmosGames, ...filteredOthers];
 
             try {
                 const blacklistRes = await fetch("https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/blacklisted_games.json");
