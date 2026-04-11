@@ -3,631 +3,315 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4SP - TEST 2</title>
-    <meta name="description" content="A simple soundboard application for the 4SP website.">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
+    <title>NIOBIUM - ANALYTICS V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script src="../injector.js"></script>
-
-    <script type="module">
-        import { firebaseConfig } from '../firebase-config.js';
-        // Expose config for use by the modular script below
-        window.firebaseConfig = firebaseConfig;
-    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        /* --- FONT & BASE STYLING --- */
         :root {
-            --bg-page: var(--bg-primary, #040404);
-            --bg-card: var(--bg-secondary, #000000);
-            --text-main: var(--text-primary, #ffffff);
-            --text-muted: var(--text-secondary, #c0c0c0);
-            --accent-color: var(--accent-primary, #4f46e5);
-            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
-            --border-main: var(--border-primary, #333);
-            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
-            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
-            --btn-text: var(--button-text, #4f46e5);
+            --bg-page: #050505;
+            --bg-card: #0a0a0a;
+            --accent: #4f46e5;
+            --border: #1a1a1a;
         }
-
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: var(--bg-page); 
-            color: var(--text-muted); 
-            transition: all 0.3s ease;
-            font-size: 16px;
-            overflow-x: hidden;
-            font-weight: 300;
+            background: var(--bg-page); 
+            color: #fff; 
+            font-size: 13px;
         }
-
-        h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-widest {
-            font-weight: 400 !important;
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Layout Containers */
+        #list-view { display: block; }
+        #grid-view { display: none; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+        
+        /* Dense Table Style */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { 
+            text-align: left; padding: 8px; border-bottom: 1px solid var(--border);
+            text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em; color: #444;
         }
+        .data-table td { padding: 6px 8px; border-bottom: 1px solid #0f0f0f; vertical-align: middle; }
+        .data-table tr:hover { background: rgba(255,255,255,0.02); }
 
-        /* --- UI COMPONENTS --- */
-        .btn-toolbar-style {
-            background: var(--bg-card);
-            border: 1px solid var(--border-main);
-            border-radius: 14px;
-            color: var(--text-muted);
-            padding: 0.5rem 1rem;
-            font-weight: 500;
-            cursor: pointer;
+        /* Grid Card Style */
+        .grid-card {
+            background: #0d0d0d; border: 1px solid var(--border); border-radius: 12px;
+            padding: 12px; display: flex; flex-direction: column; gap: 8px;
             transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
         }
-        .btn-toolbar-style:hover {
-            background-color: var(--bg-card);
-            border-color: var(--text-main);
-            color: var(--text-main);
+        .grid-card:hover { border-color: #333; transform: translateY(-2px); }
+
+        /* Visual Table Connections */
+        .schema-viz {
+            display: flex; gap: 40px; padding: 20px; overflow-x: auto;
+            background: radial-gradient(circle at 50% 50%, #111 0%, #050505 100%);
+            border-bottom: 1px solid var(--border);
         }
+        .table-node {
+            background: #0f0f0f; border: 1px solid #333; border-radius: 8px;
+            width: 180px; flex-shrink: 0; position: relative; z-index: 2;
+        }
+        .node-header { background: #1a1a1a; padding: 6px 10px; font-weight: bold; font-size: 11px; border-radius: 8px 8px 0 0; }
+        .node-field { padding: 4px 10px; font-size: 10px; color: #888; display: flex; justify-content: space-between; }
+        .connector {
+            position: absolute; width: 40px; height: 1px; background: var(--accent);
+            right: -40px; top: 50%; opacity: 0.4; z-index: 1;
+        }
+
+        /* Search & Controls */
+        .search-container {
+            background: #0d0d0d; border: 1px solid var(--border);
+            border-radius: 12px; padding: 8px 16px; display: flex; align-items: center; gap: 12px;
+        }
+        .search-input { background: transparent; border: none; outline: none; width: 100%; color: #fff; font-size: 14px; }
         
-        .btn-toolbar-style.btn-primary-override {
-            background-color: var(--btn-bg);
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
+        .btn-niobium {
+            background: #0d0d0d; border: 1px solid var(--border); border-radius: 8px;
+            color: #888; padding: 6px 12px; cursor: pointer; transition: all 0.2s;
         }
-        .btn-toolbar-style.btn-primary-override:hover {
-            background-color: var(--accent-glow);
-            border-color: var(--accent-color);
-            color: var(--text-main);
-        }
+        .btn-niobium:hover, .btn-niobium.active { border-color: var(--accent); color: #fff; }
 
-        /* Dropdown Styling */
-        .dropdown-menu {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            margin-top: 0.5rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border-main);
-            border-radius: 1.25rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-            z-index: 1010;
-            min-width: 280px;
-            padding: 0.75rem;
-        }
-
-        .dropdown-item {
-            padding: 0.5rem 0.75rem;
-            font-size: 0.875rem;
-            color: var(--text-muted);
-            border-radius: 14px;
-            cursor: pointer;
-            transition: background-color 0.15s, color 0.15s;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-        .dropdown-item:hover {
-            background-color: var(--accent-glow);
-            color: var(--text-main);
-        }
-        .dropdown-header {
-            padding: 0.5rem 0.75rem;
-            color: var(--text-muted);
-            opacity: 0.6;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            border-bottom: 1px solid var(--border-main);
-            margin-bottom: 0.5rem;
-        }
-
-        /* --- CUSTOM CHECKBOX STYLE --- */
-        .custom-checkbox {
-            appearance: none;
-            -webkit-appearance: none;
-            background-color: var(--bg-page);
-            border: 1px solid var(--border-main);
-            border-radius: 14px; /* Consistent with notes.html */
-            width: 1rem;
-            height: 1rem;
-            cursor: pointer;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-
-        .custom-checkbox:checked {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-
-        .custom-checkbox:checked::after {
-            content: '\f00c';
-            font-family: 'Font Awesome 6 Free'; 
-            font-weight: 900;
-            color: #ffffff;
-            font-size: 0.75rem;
-        }
-        /* --- END CUSTOM CHECKBOX STYLE --- */
-
-        .custom-input {
-            background: var(--bg-page);
-            border: 1px solid var(--border-main);
-            color: var(--text-main);
-            padding: 0.25rem 0.5rem;
-            border-radius: 14px; /* Consistent with notes.html */
-            width: 70px;
-            font-size: 0.875rem;
-        }
-
-        /* --- Page Layout --- */
-        #page-content {
-            min-height: calc(100vh - 4rem);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .section-header {
-            font-size: 1.25rem;
-            border-bottom: 1px solid var(--border-main);
-            padding-bottom: 0.5rem;
-            margin-bottom: 1rem;
-            margin-top: 2rem;
-            color: var(--text-main);
-        }
-
-        /* --- Sound Buttons Grid --- */
-        .sound-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 1rem;
-            padding: 0 1rem;
-        }
-
-        /* --- Sound Button Style (Highly Rounded) --- */
-        .sound-btn {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-main);
-            color: var(--text-muted);
-            border-radius: 1.5rem; /* Highly rounded */
-            padding: 1rem;
-            min-height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.9rem;
-            word-break: break-word;
-            user-select: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
+        .pfp-micro { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); object-fit: cover; }
+        .pfp-medium { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); object-fit: cover; }
         
-        .sound-btn:hover {
-            background-color: var(--bg-page);
-            border-color: var(--accent-color);
-            color: var(--text-main);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-        
-        .sound-btn:active,
-        .sound-btn.sound-btn-playing {
-            background-color: var(--accent-glow);
-            border-color: var(--accent-color);
-            transform: translateY(0);
-            box-shadow: none;
-            color: var(--text-main);
-        }
-
-        /* --- Toaster/Status --- */
-        #status-toaster {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            background-color: var(--bg-card);
-            backdrop-filter: blur(5px);
-            padding: 0.75rem 1.5rem;
-            border-radius: 9999px;
-            border: 1px solid var(--border-main);
-            font-size: 0.85rem;
-            color: var(--text-main);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        #status-toaster.visible {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
+        .status-badge { padding: 2px 6px; border-radius: 99px; font-size: 8px; font-weight: 800; letter-spacing: 0.05em; }
+        .badge-admin { background: rgba(79,70,229,0.2); color: #818cf8; border: 1px solid rgba(79,70,229,0.3); }
+        .badge-user { background: rgba(255,255,255,0.05); color: #888; border: 1px solid rgba(255,255,255,0.1); }
     </style>
-
-        /* --- Toaster/Status --- */
-        #status-toaster {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            background-color: rgba(13, 13, 13, 0.95);
-            backdrop-filter: blur(5px);
-            padding: 0.75rem 1.5rem;
-            border-radius: 9999px;
-            border: 1px solid #333;
-            font-size: 0.85rem;
-            color: #fff;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        #status-toaster.visible {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-    </style>
-    
 </head>
-<body class="min-h-screen">
+<body class="custom-scroll">
 
-    <div id="loading-screen" class="fixed inset-0 bg-[var(--bg-page)] flex items-center justify-center z-50">
-        <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+    <div class="grid grid-cols-5 gap-0 border-b border-[#1a1a1a]">
+        <div class="p-4 border-r border-[#1a1a1a]">
+            <p class="text-[9px] uppercase tracking-widest text-gray-500">Total Network Time</p>
+            <h4 id="stat-total-time" class="text-xl font-light mono">0h</h4>
+        </div>
+        <div class="p-4 border-r border-[#1a1a1a]">
+            <p class="text-[9px] uppercase tracking-widest text-gray-500">Average Session</p>
+            <h4 id="stat-avg-time" class="text-xl font-light mono">0m</h4>
+        </div>
+        <div class="p-4 border-r border-[#1a1a1a]">
+            <p class="text-[9px] uppercase tracking-widest text-gray-500">Most Followed</p>
+            <h4 id="stat-most-followed" class="text-xl font-light text-indigo-400">---</h4>
+        </div>
+        <div class="p-4 border-r border-[#1a1a1a]">
+            <p class="text-[9px] uppercase tracking-widest text-gray-500">First Citizen</p>
+            <h4 id="stat-first-user" class="text-xl font-light text-gray-300">---</h4>
+        </div>
+        <div class="p-4 relative">
+            <p class="text-[9px] uppercase tracking-widest text-gray-500">Global Roster</p>
+            <h4 id="stat-count" class="text-xl font-light mono">0</h4>
+            <div id="loading-spinner" class="absolute top-4 right-4 text-indigo-500 hidden">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+        </div>
     </div>
 
-    <div id="page-content" class="hidden">
-        
-        <header class="flex justify-between items-center p-4 border-b border-[var(--border-main)] sticky top-0 bg-[var(--bg-page)] z-40">
-            <h1 class="text-2xl font-bold text-white">4SP Soundboard</h1>
-            
-            <div class="flex items-center gap-2">
-                <div id="options-menu-container" class="relative">
-                    <button id="options-menu-btn" class="btn-toolbar-style btn-primary-override">
-                        <i class="fa-solid fa-sliders"></i> <span>Options</span>
-                    </button>
-
-                    <div id="options-dropdown" class="dropdown-menu hidden">
-                        <div class="dropdown-header">Playback Settings</div>
-                        
-                        <label class="dropdown-item">
-                            <span><i class="fa-solid fa-layer-group w-5"></i> Sound Overlay</span>
-                            <input type="checkbox" id="soundOverlayCheckbox" class="custom-checkbox">
-                        </label>
-
-                        <label class="dropdown-item">
-                            <span><i class="fa-solid fa-computer-mouse w-5"></i> Auto Clicker</span>
-                            <input type="checkbox" id="autoClickerCheckbox" class="custom-checkbox">
-                        </label>
-
-                        <div id="delay-settings" class="dropdown-item hidden">
-                            <span class="text-sm">Delay (ms)</span>
-                            <div class="flex gap-2">
-                                <input type="number" id="autoClickDelay" value="1000" min="0" class="custom-input">
-                                <button id="applyDelayBtn" class="btn-toolbar-style" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">Set</button>
-                            </div>
-                        </div>
-
-                        <div class="dropdown-divider border-t border-[#333] my-2"></div>
-                        
-
-                        <div class="dropdown-divider border-t border-[#333] my-2"></div>
-                        
-                        <div id="clear-sounds-btn" class="dropdown-item text-red-500 hover:bg-red-900/20">
-                            <span><i class="fa-solid fa-volume-xmark w-5"></i> Stop All Sounds</span>
-                            <span class="text-xs text-gray-500 border border-[#333] px-1 rounded">SHIFT+C</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <main class="flex-grow p-5 md:p-8 max-w-7xl mx-auto w-full">
-            <div class="mb-10">
-                <h2 class="section-header">Normal Sounds</h2>
-                <div id="normalSoundsContainer" class="sound-grid"></div>
-            </div>
-
-            <div class="mb-10">
-                <h2 class="section-header text-red-400/80 border-red-900/30">Explicit Sounds</h2>
-                <div id="explicitSoundsContainer" class="sound-grid"></div>
-            </div>
-        </main>
+    <div class="schema-viz">
+        <div class="table-node">
+            <div class="node-header text-indigo-400">profiles</div>
+            <div class="node-field">id <span class="mono">uuid</span></div>
+            <div class="node-field">username <span class="mono">text</span></div>
+            <div class="node-field">total_v6_time <span class="mono">int</span></div>
+            <div class="connector"></div>
+        </div>
+        <div class="table-node">
+            <div class="node-header text-orange-400">daily_photos</div>
+            <div class="node-field">id <span class="mono">uuid</span></div>
+            <div class="node-field">creator_uid <span class="mono">uuid</span></div>
+            <div class="node-field">hearts <span class="mono">uuid[]</span></div>
+            <div class="connector" style="width: 20px; right: -20px;"></div>
+        </div>
+        <div class="table-node">
+            <div class="node-header text-green-400">follows</div>
+            <div class="node-field">follower_id <span class="mono">uuid</span></div>
+            <div class="node-field">following_id <span class="mono">uuid</span></div>
+        </div>
     </div>
 
-    <div id="status-toaster"></div>
+    <div class="p-6">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div class="search-container w-full md:w-1/2">
+                <i class="fas fa-search text-gray-600"></i>
+                <input type="text" id="master-search" class="search-input" placeholder="Search... try 'is:admin', 'is:following', or 'time>1000'">
+            </div>
+            <div class="flex gap-2">
+                <button id="btn-grid" onclick="setLayout('grid')" class="btn-niobium"><i class="fas fa-th-large"></i></button>
+                <button id="btn-list" onclick="setLayout('list')" class="btn-niobium active"><i class="fas fa-list"></i></button>
+            </div>
+        </div>
+
+        <div id="list-view" class="overflow-x-auto border border-[#1a1a1a] rounded-xl bg-[#0a0a0a]">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>UID</th>
+                        <th>Time</th>
+                        <th>Role</th>
+                        <th>Joined</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="user-rows"></tbody>
+            </table>
+        </div>
+
+        <div id="grid-view" class="grid"></div>
+    </div>
 
     <script type="module">
-        import { firebaseConfig } from '../firebase-config.js';
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+        import { supabaseConfig } from '/supabase-config.js';
+
+        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
         
-        // Import Modular SDKs directly
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        // Firebase Storage is still needed for the actual MP3 files
-        import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js"; 
+        let allUsers = [];
+        let currentFilteredUsers = [];
+        let myFollowing = new Set();
+        let currentLayout = 'list';
 
-        // --- UI & State References ---
-        const loadingScreen = document.getElementById('loading-screen');
-        const pageContent = document.getElementById('page-content');
-        const optionsMenuBtn = document.getElementById('options-menu-btn');
-        const optionsDropdown = document.getElementById('options-dropdown');
-        const soundOverlayCheckbox = document.getElementById('soundOverlayCheckbox');
-        const autoClickerCheckbox = document.getElementById('autoClickerCheckbox');
-        const delaySettings = document.getElementById('delay-settings');
-        const autoClickDelayInput = document.getElementById('autoClickDelay');
-        const applyDelayBtn = document.getElementById('applyDelayBtn');
-        const clearSoundsBtn = document.getElementById('clear-sounds-btn');
-        const statusToaster = document.getElementById('status-toaster');
-        const normalSoundsContainer = document.getElementById('normalSoundsContainer');
-        const explicitSoundsContainer = document.getElementById('explicitSoundsContainer');
+        async function init() {
+            document.getElementById('loading-spinner').classList.remove('hidden');
 
-        // --- Soundboard Logic State ---
-        let playingAudios = [];
-        let autoClickInterval;
-        let requestAnimationFrameId = null;
-        let currentlyHoveredButton = null;
-        let toasterTimeout = null;
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return alert("Must be logged in.");
 
-        // --- Firebase Initialization (Modular) ---
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const storage = getStorage(app);
+            const { data: profile } = await supabase.from('profiles').select('is_admin, email').eq('id', user.id).single();
+            
+            if (profile?.email !== '4simpleproblems@gmail.com' && !profile?.is_admin) {
+                document.body.innerHTML = "<div class='p-20 text-center text-red-500 font-mono text-xl'>UNAUTHORIZED ACCESS: SECURITY EXCEPTION</div>";
+                return;
+            }
 
-        /**
-         * Sets up the Firebase Authentication listener and loads sounds on successful authentication.
-         */
-        function setupAuthAndLoad() {
-            try {
-                // Modular: using 'onAuthStateChanged(auth, ...)'
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        loadingScreen.style.display = 'none';
-                        pageContent.classList.remove('hidden');
-                        loadSoundsLocally(); // *** MODIFIED: Call the local loading function ***
-                    } else {
-                        // Redirect unauthenticated users
-                        window.location.href = '../index.html'; 
-                    }
-                });
-            } catch (e) {
-                console.error("Auth Setup Error", e);
+            // Fetch who the admin follows for the "is:following" search tag
+            const { data: follows } = await supabase.from('follows').select('following_id').eq('follower_id', user.id);
+            if (follows) follows.forEach(f => myFollowing.add(f.following_id));
+
+            await loadStats();
+            await loadUsers();
+            
+            document.getElementById('loading-spinner').classList.add('hidden');
+        }
+
+        async function loadStats() {
+            const { data } = await supabase.from('analytics_v2_summary').select('*').single();
+            if (data) {
+                document.getElementById('stat-total-time').innerText = Math.floor((data.global_total_time || 0) / 3600) + 'h';
+                document.getElementById('stat-avg-time').innerText = Math.floor((data.global_avg_time || 0) / 60) + 'm';
+                document.getElementById('stat-most-followed').innerText = data.most_followed_user ? '@' + data.most_followed_user : '---';
+                document.getElementById('stat-first-user').innerText = data.first_user ? '@' + data.first_user : '---';
+                document.getElementById('stat-count').innerText = data.total_user_count || 0;
             }
         }
 
-        /**
-         * Displays a temporary status message (toaster notification).
-         * @param {string} message - The message to display.
-         * @param {('info'|'error'|'success')} type - The type of message.
-         */
-        function showStatus(message, type = 'info') {
-            statusToaster.textContent = message;
-            statusToaster.className = ''; 
-            if (type === 'error') statusToaster.style.borderColor = '#ef4444';
-            else if (type === 'success') statusToaster.style.borderColor = '#22c55e';
-            else statusToaster.style.borderColor = '#333';
-            statusToaster.classList.add('visible');
-            if (toasterTimeout) clearTimeout(toasterTimeout);
-            toasterTimeout = setTimeout(() => statusToaster.classList.remove('visible'), 2000);
+        async function loadUsers() {
+            const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+            allUsers = data || [];
+            currentFilteredUsers = [...allUsers];
+            render();
         }
 
-        /**
-         * Fetches the list of sounds from the local configuration file: ../soundboard_names.json.
-         * *** MODIFIED: This function now fetches the JSON file locally instead of from Firebase Storage. ***
-         */
-        async function loadSoundsLocally() {
-            const SOUNDS_CONFIG_PATH = '../soundboard_names.json'; 
-            try {
-                // Fetch the local JSON file
-                const response = await fetch(SOUNDS_CONFIG_PATH);
-                if (!response.ok) throw new Error(`HTTP ${response.status} fetching ${SOUNDS_CONFIG_PATH}`);
+        function getAvatar(u) {
+            if (u.avatar_url) return u.avatar_url;
+            return `https://ui-avatars.com/api/?name=${u.username || 'U'}&background=${(u.pfp_letter_bg || '#333').replace('#','')}&color=fff`;
+        }
+
+        function render() {
+            if (currentLayout === 'list') {
+                document.getElementById('list-view').style.display = 'block';
+                document.getElementById('grid-view').style.display = 'none';
                 
-                const data = await response.json();
-
-                // Create buttons for normal and explicit sounds
-                if (data.NormalSounds) data.NormalSounds.forEach(f => createSoundButton(f, normalSoundsContainer));
-                if (data.ExplicitSounds) data.ExplicitSounds.forEach(f => createSoundButton(f, explicitSoundsContainer));
-
-            } catch (error) {
-                console.error("Local Config Error:", error);
-                
-                let errorMsg = `Unable to load sounds from ${SOUNDS_CONFIG_PATH}.`;
-                if (error.message.includes("Failed to fetch")) {
-                    errorMsg = `Config file missing or path incorrect: ${SOUNDS_CONFIG_PATH}. Check file existence.`;
-                }
-                
-                showStatus(errorMsg, "error");
-                normalSoundsContainer.innerHTML = `<p class="text-red-500 text-sm italic border border-red-900/50 p-2 rounded bg-red-900/10">${errorMsg} (Check Console)</p>`;
-            }
-        }
-
-        /**
-         * Creates a clickable sound button element and sets up Firebase Storage path for playback.
-         * @param {string} fileName - The name of the sound file (e.g., "sound_name.mp3").
-         * @param {HTMLElement} container - The container element to append the button to.
-         */
-        function createSoundButton(fileName, container) {
-            const soundName = fileName.replace('.mp3', '').replace(/_/g, ' ');
-            const btn = document.createElement('div');
-            btn.className = 'sound-btn';
-            btn.textContent = soundName;
-            // The audio file path remains pointing to Firebase Storage, rooted in the 'Soundboard' folder
-            btn.dataset.storagePath = `Soundboard/${fileName}`; 
-            
-            btn.addEventListener('click', async () => {
-                // Stop all sounds if 'Sound Overlay' is disabled
-                if (!soundOverlayCheckbox.checked) stopAllAudios();
-
-                try {
-                    // Get the download URL for the specific audio file from Firebase Storage
-                    const audioRef = ref(storage, btn.dataset.storagePath);
-                    const audioUrl = await getDownloadURL(audioRef);
-                    
-                    const audio = new Audio(audioUrl);
-                    audio.soundButton = btn; // Store reference to the button for UI updates
-                    playingAudios.push(audio);
-                    
-                    audio.addEventListener('ended', () => {
-                        playingAudios = playingAudios.filter(a => a !== audio);
-                        btn.classList.remove('sound-btn-playing'); // Remove class when ended
-                    });
-                    
-                    btn.classList.add('sound-btn-playing'); // Add class when playing
-                    await audio.play();
-                } catch (err) {
-                    console.error("Playback failed:", err);
-                    showStatus('Error playing sound (Check Firebase path/permissions)', 'error');
-                    btn.classList.remove('sound-btn-playing'); // Remove class on error
-                }
-            });
-
-            // Handle Auto Clicker on hover
-            btn.addEventListener('mouseenter', () => {
-                currentlyHoveredButton = btn;
-                if (autoClickerCheckbox.checked) startAutoClicker();
-            });
-            btn.addEventListener('mouseleave', () => {
-                if (currentlyHoveredButton === btn) {
-                    currentlyHoveredButton = null;
-                    stopAutoClicker();
-                }
-            });
-
-            container.appendChild(btn);
-        }
-
-        /**
-         * Stops all currently playing audio elements.
-         * @param {boolean} showToaster - Whether to display a status message.
-         */
-        function stopAllAudios(showToaster = false) {
-            if (playingAudios.length === 0) return;
-            
-            playingAudios.forEach(audio => {
-                audio.pause();
-                audio.currentTime = 0;
-                // Safely remove the playing style from the associated button
-                if (audio.soundButton) {
-                    audio.soundButton.classList.remove('sound-btn-playing');
-                }
-            });
-            playingAudios = [];
-            
-            if (showToaster) showStatus('All sounds muted', 'success');
-        }
-
-        // --- Auto Clicker Functions ---
-
-        /** The loop for the interval-based auto clicker (for delays > 0). */
-        function clickLoop() {
-            if (currentlyHoveredButton && autoClickerCheckbox.checked) currentlyHoveredButton.click();
-        }
-
-        /** The recursive loop for the requestAnimationFrame (fastest possible) auto clicker (for delay = 0). */
-        function fastClicker() {
-            if (currentlyHoveredButton && autoClickerCheckbox.checked) {
-                currentlyHoveredButton.click();
-                requestAnimationFrameId = requestAnimationFrame(fastClicker);
-            }
-        }
-
-        /** Initializes the appropriate auto clicker based on the configured delay. */
-        function startAutoClicker() {
-            stopAutoClicker(); // Stop any existing clicker first
-            const delay = parseInt(autoClickDelayInput.value, 10) || 0;
-            
-            if (!currentlyHoveredButton || !autoClickerCheckbox.checked) return;
-            
-            if (delay === 0) {
-                // Use requestAnimationFrame for the fastest possible clicking
-                requestAnimationFrameId = requestAnimationFrame(fastClicker);
+                const tbody = document.getElementById('user-rows');
+                tbody.innerHTML = currentFilteredUsers.map(u => `
+                    <tr>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <img src="${getAvatar(u)}" class="pfp-micro">
+                                <span class="font-medium">${u.display_name || u.username}</span>
+                                <span class="text-[10px] text-gray-500 mono">@${u.username}</span>
+                            </div>
+                        </td>
+                        <td class="mono text-[10px] text-gray-500">${u.id.substring(0,8)}...</td>
+                        <td class="mono">${u.total_v6_time || 0}s</td>
+                        <td>
+                            <span class="status-badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">
+                                ${u.is_admin ? 'ADMIN' : 'USER'}
+                            </span>
+                        </td>
+                        <td class="text-gray-500 text-[10px]">${new Date(u.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <button class="text-gray-600 hover:text-white" onclick="window.open('/logged-in/@${u.username}', '_blank')">
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
             } else {
-                // Use setInterval for controlled clicking with a set delay
-                autoClickInterval = setInterval(clickLoop, delay);
+                document.getElementById('list-view').style.display = 'none';
+                document.getElementById('grid-view').style.display = 'grid';
+                
+                const grid = document.getElementById('grid-view');
+                grid.innerHTML = currentFilteredUsers.map(u => `
+                    <div class="grid-card">
+                        <div class="flex justify-between items-start">
+                            <img src="${getAvatar(u)}" class="pfp-medium">
+                            <span class="status-badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">
+                                ${u.is_admin ? 'ADMIN' : 'USER'}
+                            </span>
+                        </div>
+                        <div class="mt-2">
+                            <p class="font-bold truncate">${u.display_name || u.username}</p>
+                            <p class="text-[10px] text-gray-500 mono truncate">@${u.username}</p>
+                        </div>
+                        <div class="mt-auto pt-3 border-t border-[#1a1a1a] flex justify-between text-[10px] mono text-gray-400">
+                            <span><i class="fas fa-clock mr-1"></i>${Math.floor((u.total_v6_time||0)/60)}m</span>
+                            <button onclick="window.open('/logged-in/@${u.username}', '_blank')" class="hover:text-white"><i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                `).join('');
             }
         }
 
-        /** Stops both interval and requestAnimationFrame clickers. */
-        function stopAutoClicker() {
-            if (autoClickInterval) { clearInterval(autoClickInterval); autoClickInterval = null; }
-            if (requestAnimationFrameId) { cancelAnimationFrame(requestAnimationFrameId); requestAnimationFrameId = null; }
-        }
+        window.setLayout = (mode) => {
+            currentLayout = mode;
+            document.getElementById('btn-grid').classList.toggle('active', mode === 'grid');
+            document.getElementById('btn-list').classList.toggle('active', mode === 'list');
+            render();
+        };
 
-        // --- Event Listeners ---
-        
-        // Options menu toggle
-        optionsMenuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            optionsDropdown.classList.toggle('hidden');
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!optionsDropdown.classList.contains('hidden') && !optionsMenuBtn.contains(e.target) && !optionsDropdown.contains(e.target)) {
-                optionsDropdown.classList.add('hidden');
-            }
-        });
-
-        // Sound Overlay Checkbox logic
-        soundOverlayCheckbox.addEventListener('change', (e) => {
-            localStorage.setItem('soundOverlay', e.target.checked);
-            if (!e.target.checked) stopAllAudios();
-        });
-
-        // Auto Clicker Checkbox logic
-        autoClickerCheckbox.addEventListener('change', (e) => {
-            localStorage.setItem('autoClicker', e.target.checked);
-            if (e.target.checked) {
-                delaySettings.classList.remove('hidden');
-                // If the user is currently hovering over a button, start the clicker immediately
-                if (currentlyHoveredButton) startAutoClicker();
-            } else {
-                delaySettings.classList.add('hidden');
-                stopAutoClicker();
-            }
-        });
-
-        // Apply Delay Button logic
-        applyDelayBtn.addEventListener('click', () => {
-            const val = autoClickDelayInput.value;
-            localStorage.setItem('autoClickDelay', val);
-            // Restart clicker with new delay if currently active
-            if (autoClickerCheckbox.checked && currentlyHoveredButton) startAutoClicker();
-            showStatus(`Delay set to ${val}ms`);
-        });
-
-        // Stop All Sounds button logic
-        clearSoundsBtn.addEventListener('click', () => {
-            stopAllAudios(true);
-            optionsDropdown.classList.add('hidden');
-        });
-
-        // Global keyboard shortcut to stop all sounds (SHIFT + C)
-        document.addEventListener('keydown', (e) => {
-            if (e.shiftKey && e.key.toLowerCase() === 'c') stopAllAudios(true);
-        });
-
-        // --- Init ---
-        // Load saved settings from localStorage and start Firebase setup on page load.
-        window.addEventListener('load', () => {
-            const savedOverlay = localStorage.getItem('soundOverlay') === 'true';
-            const savedAutoClick = localStorage.getItem('autoClicker') === 'true';
-            const savedDelay = localStorage.getItem('autoClickDelay') || '1000';
-
-            soundOverlayCheckbox.checked = savedOverlay;
-            autoClickerCheckbox.checked = savedAutoClick;
-            autoClickDelayInput.value = savedDelay;
-
-            if (savedAutoClick) delaySettings.classList.remove('hidden');
+        // Custom Query Parser
+        document.getElementById('master-search').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase().trim();
             
-            // Start the auth check and sound loading process
-            setupAuthAndLoad();
+            currentFilteredUsers = allUsers.filter(u => {
+                let match = true;
+                
+                // Parse commands
+                if (term.includes('is:admin') && !u.is_admin) match = false;
+                if (term.includes('is:following') && !myFollowing.has(u.id)) match = false;
+                
+                // Parse time logic (e.g. time>3600)
+                const timeMatch = term.match(/time>(\d+)/);
+                if (timeMatch && (u.total_v6_time || 0) <= parseInt(timeMatch[1])) match = false;
+
+                // Strip commands to check text
+                const textOnly = term.replace(/is:\w+/g, '').replace(/time>\d+/g, '').trim();
+                
+                if (textOnly && match) {
+                    const searchStr = `${u.username} ${u.display_name} ${u.id}`.toLowerCase();
+                    if (!searchStr.includes(textOnly)) match = false;
+                }
+                
+                return match;
+            });
+            render();
         });
+
+        init();
     </script>
 </body>
 </html>
-<!-- Made with ❤️ from 4SP -->
