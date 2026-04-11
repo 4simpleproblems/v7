@@ -7,7 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <script src="../navigation.js"></script>
+    
+    <script src="/injector.js"></script>
 
     <style>
         :root {
@@ -89,7 +90,7 @@
         #inspector-panel {
             position: fixed; top: 0; right: -450px; width: 450px; height: 100vh;
             background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-left: 1px solid var(--border); z-index: 100;
+            border-left: 1px solid var(--border); z-index: 100000;
             transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex; flex-direction: column;
             box-shadow: -20px 0 50px rgba(0,0,0,0.5);
@@ -112,8 +113,7 @@
     </style>
 </head>
 <body class="custom-scroll">
-
-    <div class="grid grid-cols-5 gap-0 border-b border-[#1a1a1a]">
+    <div id="navbar-container"></div> <div class="grid grid-cols-5 gap-0 border-b border-[#1a1a1a] pt-16">
         <div class="p-4 border-r border-[#1a1a1a]">
             <p class="text-[9px] uppercase tracking-widest text-gray-500">Total Network Time</p>
             <h4 id="stat-total-time" class="text-xl font-light mono">0h</h4>
@@ -236,6 +236,10 @@
 
         const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
         
+        // CRITICAL FIX: Attach supabase globally immediately so navigation.js detects it 
+        // and doesn't kick you back to the index.html
+        window.supabase = supabase;
+        
         let allUsers = [];
         let currentFilteredUsers = [];
         let myFollowing = new Set();
@@ -250,7 +254,7 @@
 
             const { data: profile } = await supabase.from('profiles').select('is_admin, email').eq('id', user.id).single();
             if (profile?.email !== '4simpleproblems@gmail.com' && !profile?.is_admin) {
-                document.body.innerHTML = "<div class='p-20 text-center text-red-500 font-mono text-xl'>UNAUTHORIZED ACCESS: SECURITY EXCEPTION</div>";
+                document.body.innerHTML = "<div class='p-20 text-center text-red-500 font-mono text-xl pt-32'>UNAUTHORIZED ACCESS: SECURITY EXCEPTION</div>";
                 return;
             }
 
@@ -379,7 +383,6 @@
             const user = allUsers.find(u => u.id === uid);
             if (!user) return;
 
-            // Fetch live relationships and roles because of high importance for admins
             const [{ count: followers }, { count: following }, { data: roleData }, { data: banData }] = await Promise.all([
                 supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', uid),
                 supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', uid),
@@ -463,7 +466,6 @@
                     }
                 }
                 
-                // Update local memory & re-render background list
                 const uIndex = allUsers.findIndex(u => u.id === uid);
                 if(uIndex > -1) {
                     allUsers[uIndex].is_admin = (newRole === 'full_admin');
