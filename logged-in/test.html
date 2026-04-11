@@ -11,13 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
-    <script>
-        const originalWarn = console.warn;
-        console.warn = function(...args) {
-            if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com should not be used')) return;
-            originalWarn.apply(console, args);
-        };
-    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/injector.js"></script>
     
@@ -41,8 +34,6 @@
                         'brand-border': '#1a1a1a',
                         'strongdog-orange': '#FFA500',
                         'gn-math': '#FB2651',
-                        'elite-cyan': '#00FFFF',
-                        'diesmos-pink': '#ff66b2',
                         'gameboy': '#9A2257', 
                         'other-grey': '#AAAAAA', 
                     },
@@ -706,6 +697,14 @@
         }
 
         // Configuration & Globals
+        const CONFIG = {
+            zonesBase: "https://cdn.jsdelivr.net/gh/freebuisness/assets",
+            covers: "https://cdn.jsdelivr.net/gh/freebuisness/covers@main",
+            htmlBase: "https://cdn.jsdelivr.net/gh/freebuisness/html"
+        };
+        let zonesURL = `${CONFIG.zonesBase}@latest/zones.json`;
+        let htmlCommitHash = "main";
+        
         const WORKER_ROOT = "https://dv-service-lfs.4simpleproblems.workers.dev/";
         const GAMES_BASE_URL = "https://dv-service-lfs.4simpleproblems.workers.dev/GAMES/";
         const CARDS_DATA_URL = "https://dv-service-lfs.4simpleproblems.workers.dev/GAMES/cards-data.js";
@@ -719,8 +718,6 @@
         const categoryColors = {
             'StrongdogXP': 'text-strongdog-orange',
             'GN-Math': 'text-gn-math',
-            'Elite Gamez': 'text-elite-cyan',
-            'Diesmos': 'text-diesmos-pink',
             'Gameboy Games': 'text-gameboy',
             'Others': 'text-other-grey', 
         };
@@ -732,7 +729,7 @@
                     { type: 'github', url: "https://github.com/jman1593/", label: "GitHub" },
                     { type: 'discord', url: "https://discord.com/invite/sdxp", label: "Discord" }
                 ],
-                logo: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' fill='white' font-size='90'>🐕</text></svg>",
+                logo: "./images/credits/strongdog_logo.png",
                 color: "#FF8C00"
             },
             'GN-Math': { 
@@ -742,29 +739,13 @@
                     { type: 'github', url: "https://github.com/genizy", label: "Genizy" },
                     { type: 'discord', url: "https://discord.com/invite/gn-math", label: "Discord" }
                 ],
-                logo: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' fill='white' font-size='90'>🧮</text></svg>",
+                logo: "./images/credits/gn_logo.png",
                 color: "#FD2E59"
-            },
-            'Elite Gamez': {
-                desc: "Created by Bloxcraft Studios and Tharun9772Gaming! A premier hub for unblocked games and apps, brought to you by Elite Gamez.",
-                links: [
-                    { type: 'github', url: "https://github.com/elite-gamez", label: "GitHub" }
-                ],
-                logo: "https://cdn.jsdelivr.net/gh/elite-gamez/elite-gamez.github.io@main/images/bloxcraft_transparent.webp",
-                color: "#00FFFF"
-            },
-            'Diesmos': {
-                desc: "Created by Marcco and Jalen. A valentine-themed game site filled with amazing things to discover and play.",
-                links: [
-                    { type: 'github', url: "https://github.com/waycrosspublicmedia/HTMLFILES", label: "GitHub" }
-                ],
-                logo: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' fill='white' font-size='90'>🎮</text></svg>",
-                color: "#ff66b2"
             },
             'Others': { 
                 desc: "A tribute to the open-source community. This section features projects like Eaglercraft, JS-DOS, and Doom, developed by talented individuals who believe in accessible software for everyone.",
                 links: [],
-                logo: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' fill='white' font-size='90'>🌐</text></svg>",
+                logo: "./images/credits/opensource.png",
                 color: "#d1d5db"
             }
         };
@@ -1281,30 +1262,72 @@
             zoneNameEl.textContent = game.name;
             zoneFrame.src = 'about:blank';
             
-            zoneFrame.setAttribute('allow', 'autoplay; fullscreen; clipboard-write');
+            zoneFrame.setAttribute('allow', 'autoplay; fullscreen; pointer-lock; clipboard-write');
             
             const sandboxRules = 'allow-scripts allow-same-origin allow-forms allow-pointer-lock';
             zoneFrame.setAttribute('sandbox', sandboxRules);
 
+            const isStandardURLGame = (game.category === 'Others' && !isEagler) || game.category === 'StrongdogXP';
+            
             const attemptLoad = async (retriesLeft) => {
                 try {
                     const check = await fetch(game.url, { method: 'HEAD' });
                     if (!check.ok) throw new Error(`HTTP ${check.status}`);
                     
-                    zoneFrame.src = game.url;
-                    zoneFrame.onload = () => {
-                        try {
-                            const doc = zoneFrame.contentDocument;
-                            const title = doc.title;
-                            if (title.includes("CDN files") || title.includes("Index of") || title.includes("Directory listing") || (doc.body && doc.body.textContent.includes("4sp-dv CDN files"))) {
-                                 console.warn("Directory listing detected. Aborting.");
-                                 closeZoneViewer();
-                                 return;
+                    if (isStandardURLGame) {
+                        zoneFrame.src = game.url;
+                        zoneFrame.onload = () => {
+                            try {
+                                const doc = zoneFrame.contentDocument;
+                                const title = doc.title;
+                                if (title.includes("CDN files") || title.includes("Index of") || title.includes("Directory listing") || (doc.body && doc.body.textContent.includes("4sp-dv CDN files"))) {
+                                     console.warn("Directory listing detected. Aborting.");
+                                     closeZoneViewer();
+                                     return;
+                                }
+                                zoneFrame.contentWindow.focus();
+                                zoneFrame.focus();
+                            } catch (e) {}
+                        };
+                    } else {
+                        let response = await fetch(`${game.url}?t=${Date.now()}`);
+                        let html = '';
+                        
+                        if (response.ok) {
+                            html = await response.text();
+                        }
+                        
+                        // gn-math fallback: Check for jsDelivr missing file errors
+                        if (!response.ok || html.trim().startsWith("Couldn't find the requested file")) {
+                            if (game.fallbackUrl) {
+                                response = await fetch(`${game.fallbackUrl}?t=${Date.now()}`);
+                                if (response.ok) {
+                                    html = await response.text();
+                                }
                             }
+                        }
+
+                        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                        
+                        const doc = zoneFrame.contentWindow.document;
+                        doc.open();
+                        doc.write(html);
+                        doc.close();
+                        
+                        let focusAttempts = 0;
+                        const forceFocusInterval = setInterval(() => {
+                            if (zoneFrame.contentWindow) {
+                                zoneFrame.contentWindow.focus();
+                                zoneFrame.focus();
+                            }
+                            focusAttempts++;
+                            if (focusAttempts > 20) clearInterval(forceFocusInterval);
+                        }, 100);
+                        
+                        zoneFrame.contentWindow.addEventListener('click', () => {
                             zoneFrame.contentWindow.focus();
-                            zoneFrame.focus();
-                        } catch (e) {}
-                    };
+                        });
+                    }
 
                     zoneViewer.classList.remove('animate-fade-out');
                     zoneViewer.classList.add('active', 'animate-fade-in');
@@ -1449,7 +1472,8 @@
                 linkEl.dataset.gameId = game.id;
                 let isFavorite = favorites.includes(String(game.id));
 
-                const catLabel = game.category;
+                const catLabel = game.category === 'StrongdogXP' ? 'StrongdogXP' : (game.category === 'GN-Math' ? 'GN-Math' : 'Others');
+
                 const smartTextClass = getSmartTextColor();
                 
                 linkEl.innerHTML = `
@@ -1575,13 +1599,48 @@
             
             const strongdogGames = gamesData.map(g => ({ ...g, category: 'StrongdogXP' }));
             
-            // -------------------------------------------------------------
-            // GN-Math Fetch
-            // -------------------------------------------------------------
-            const popularityData = {};
             try {
-                const response = await fetch("https://data.jsdelivr.com/v1/stats/packages/npm/gn-math.github.io-main/files?period=year");
-                if (response.ok) {
+                // Fetch dynamic HTML commit hash 
+                try {
+                    const htmlCommitsRes = await fetch("https://api.github.com/repos/gn-math/html/commits?t=" + Date.now());
+                    if (htmlCommitsRes.ok) {
+                        const htmlJson = await htmlCommitsRes.json();
+                        if (htmlJson[0] && htmlJson[0].sha) htmlCommitHash = htmlJson[0].sha;
+                    }
+                } catch (e) {
+                    console.warn("Failed to get HTML commit hash, using 'main'", e);
+                }
+
+                let sharesponse;
+                let shajson;
+                let sha;
+                try {
+                    sharesponse = await fetch("https://api.github.com/repos/gn-math/assets/commits?t="+Date.now());
+                } catch (error) {}
+                
+                if (sharesponse && sharesponse.status === 200) {
+                    try {
+                        shajson = await sharesponse.json();
+                        sha = shajson[0]['sha'];
+                        if (sha) {
+                            zonesURL = `${CONFIG.zonesBase}@${sha}/zones.json`;
+                        }
+                    } catch (error) {
+                        try {
+                            let secondarysharesponse = await fetch("https://raw.githubusercontent.com/gn-math/xml/refs/heads/main/sha.txt?t="+Date.now());
+                            if (secondarysharesponse && secondarysharesponse.status === 200) {
+                                sha = (await secondarysharesponse.text()).trim();
+                                if (sha) {
+                                    zonesURL = `${CONFIG.zonesBase}@${sha}/zones.json`;
+                                }
+                            }
+                        } catch(error) {}
+                    }
+                }
+
+                const popularityData = {};
+                try {
+                    const response = await fetch("https://data.jsdelivr.com/v1/stats/packages/gh/gn-math/html@main/files?period=year");
                     const data = await response.json();
                     data.forEach(file => {
                         const idMatch = file.name.match(/\/(\d+)\.html$/);
@@ -1590,89 +1649,31 @@
                             popularityData[id] = file.hits.total;
                         }
                     });
+                } catch (error) {
+                    popularityData[0] = 0;
                 }
-            } catch (error) {}
 
-            const npmBase = `https://cdn.jsdelivr.net/npm/gn-math.github.io-main@latest`;
-            let gnMathRaw = [];
-            try {
-                // Try games.json first as requested
-                const res1 = await fetch(`${npmBase}/games.json?t=${Date.now()}`);
-                if (!res1.ok) throw new Error("games.json failed");
-                gnMathRaw = await res1.json();
-            } catch (e1) {
-                try {
-                    // Fallback to zones.json
-                    const res2 = await fetch(`${npmBase}/assets-main/zones.json?t=${Date.now()}`);
-                    if (!res2.ok) throw new Error("zones.json failed");
-                    gnMathRaw = await res2.json();
-                } catch (e2) {
-                    console.warn("Failed to load GN-Math JSONs:", e2);
-                }
-            }
-
-            const gnMathGames = gnMathRaw.map(g => {
-                let coverPath = g.cover ? g.cover.split('/').pop() : `${g.id}.png`; 
-                let htmlPath = g.url ? g.url.split('/').pop() : `${g.id}.html`; 
+                const response = await fetch(zonesURL+"?t="+Date.now());
+                const gnMathRaw = await response.json();
                 
-                return { 
+                const htmlURL = `${CONFIG.htmlBase}@${htmlCommitHash}`;
+                const fallbackHtmlURL = `${CONFIG.htmlBase}@main`;
+                
+                const gnMathGames = gnMathRaw.map(g => ({ 
                     id: `gn-${g.id}`, 
                     name: g.name, 
-                    imgSrc: `${npmBase}/covers-main/${coverPath}`, 
+                    imgSrc: g.cover.replace("{COVER_URL}", CONFIG.covers).replace("{HTML_URL}", htmlURL), 
                     category: 'GN-Math', 
-                    url: `${npmBase}/html-main/${htmlPath}`,
+                    url: g.url.replace("{COVER_URL}", CONFIG.covers).replace("{HTML_URL}", htmlURL),
+                    fallbackUrl: g.url.replace("{COVER_URL}", CONFIG.covers).replace("{HTML_URL}", fallbackHtmlURL),
                     popularity: popularityData[g.id] || 0
-                };
-            });
-
-            // -------------------------------------------------------------
-            // Elite Gamez Fetch
-            // -------------------------------------------------------------
-            let eliteGames = [];
-            try {
-                const egRes = await fetch("https://cdn.jsdelivr.net/gh/elite-gamez/elite-gamez.github.io@main/games.json?t=" + Date.now());
-                if (egRes.ok) {
-                    const egRaw = await egRes.json();
-                    eliteGames = egRaw.map(g => {
-                        let img = g.image || g.imgSrc || '';
-                        let u = g.url || g.link || '';
-                        return {
-                            id: `eg-${(g.title || g.name || 'unnamed').replace(/[^a-z0-9]/gi, '-').toLowerCase()}`,
-                            name: g.title || g.name,
-                            description: g.description || '',
-                            imgSrc: img.startsWith('http') ? img : `https://cdn.jsdelivr.net/gh/elite-gamez/elite-gamez.github.io@main/${img}`,
-                            category: 'Elite Gamez',
-                            url: u.startsWith('http') ? u : `https://cdn.jsdelivr.net/gh/elite-gamez/elite-gamez.github.io@main/${u}`
-                        };
-                    });
-                }
-            } catch (error) { console.warn("Failed to load Elite Gamez", error); }
-
-            // -------------------------------------------------------------
-            // Diesmos Fetch
-            // -------------------------------------------------------------
-            let diesmosGames = [];
-            try {
-                const dRes = await fetch("https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/games.json?t=" + Date.now());
-                if (dRes.ok) {
-                    const dRaw = await dRes.json();
-                    diesmosGames = dRaw.map(g => {
-                        let img = g.image || g.imgSrc || g.thumb || '';
-                        let u = g.url || g.link || g.file || '';
-                        return {
-                            id: `d-${(g.title || g.name || 'unnamed').replace(/[^a-z0-9]/gi, '-').toLowerCase()}`,
-                            name: g.title || g.name,
-                            description: g.description || '',
-                            imgSrc: img.startsWith('http') ? img : `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/${img}`,
-                            category: 'Diesmos',
-                            url: u.startsWith('http') ? u : `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/${u}`
-                        };
-                    });
-                }
-            } catch (error) { console.warn("Failed to load Diesmos", error); }
-
-            // Assemble the final game array
-            allGames = [...strongdogGames, ...gnMathGames, ...eliteGames, ...diesmosGames, ...filteredOthers];
+                }));
+                
+                allGames = [...strongdogGames, ...gnMathGames, ...filteredOthers];
+            } catch (error) { 
+                console.warn("Failed to load GN-Math, falling back to others.", error);
+                allGames = [...strongdogGames, ...filteredOthers]; 
+            }
 
             try {
                 const blacklistRes = await fetch("https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/blacklisted_games.json");
@@ -1702,7 +1703,7 @@
                 }
             });
 
-            categories = ['StrongdogXP', 'GN-Math', 'Elite Gamez', 'Diesmos', 'Gameboy Games', 'Others'].filter(cat => allGames.some(g => g.category === cat));
+            categories = ['StrongdogXP', 'GN-Math', 'Gameboy Games', 'Others'].filter(cat => allGames.some(g => g.category === cat));
 
             const { category: urlCat } = parseURL();
             if (urlCat) currentCategoryIndex = Math.max(0, categories.findIndex(c => c.replace(/\s+/g, '-').toLowerCase() === urlCat.toLowerCase()));
