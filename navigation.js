@@ -1,5 +1,5 @@
 /**
- * navigation.js (v6.7.1 - Supabase Sync Fix)
+ * navigation.js (v6.7.2 - Supabase Ban Enforcer & Sync Fix)
  */
 
 // Prevent multiple loads
@@ -340,7 +340,9 @@ let auth;
 let db;
 
 (function() {
-    let allPages = {};    let currentUser = null;    let currentUserData = null;
+    let allPages = {};    
+    let currentUser = null;    
+    let currentUserData = null;
     let currentIsPrivileged = false;
     let currentScrollLeft = 0; 
     let hasScrolledToActiveTab = false; 
@@ -348,7 +350,8 @@ let db;
     let authCheckCompleted = false; 
     let isRedirecting = false;
 
-    const loadScript = (src, isModule = false) => {        return new Promise((resolve, reject) => {
+    const loadScript = (src, isModule = false) => {        
+        return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             script.src = src;
             if (isModule) {
@@ -726,7 +729,6 @@ let db;
                             <button class="notification-menu-clear" id="clear-notifications">Clear All</button>
                         </div>
                         <div class="notification-list" id="notification-list-content">
-                            <!-- Notifications will be injected here -->
                             <div class="notification-empty">No notifications yet</div>
                         </div>
                     </div>
@@ -995,7 +997,7 @@ let db;
             if (user) {
                 const logoutButton = document.getElementById('logout-button');
                 if (logoutButton) {
-                    // Remove existing listeners if any (though usually not an issue with innerHTML replacement)
+                    // Remove existing listeners if any
                     const newLogoutButton = logoutButton.cloneNode(true);
                     logoutButton.parentNode.replaceChild(newLogoutButton, logoutButton);
                     
@@ -1008,9 +1010,9 @@ let db;
                                 await window.supabase.auth.signOut();
                                 console.log("Navigation: Supabase signed out.");
                             }
-                            // Using the global firebase auth object if available, otherwise fallback
+                            // Using the global firebase auth object if available
                             const firebaseAuth = typeof firebase !== 'undefined' ? firebase.auth() : auth;
-                            await firebaseAuth.signOut();
+                            if (firebaseAuth) await firebaseAuth.signOut();
                             console.log("Navigation: Firebase signed out.");
                             window.location.href = '/authentication.html';
                         } catch (err) {
@@ -1086,7 +1088,8 @@ let db;
                 more: document.getElementById('more-section')?.classList.contains('expanded')
             };
 
-            let currentTheme;            try {
+            let currentTheme;            
+            try {
                 currentTheme = JSON.parse(localStorage.getItem(THEME_STORAGE_KEY)) || DEFAULT_THEME;
             } catch (e) { currentTheme = DEFAULT_THEME; }
 
@@ -1101,7 +1104,7 @@ let db;
             // Determine the single active page key first
             const activePageKey = getCurrentPageKey();
 
-            // Check leaderboard eligibility: show by default (guests/new), but hide if they explicitly haven't agreed or opted out
+            // Check leaderboard eligibility
             const canSeeLeaderboard = !userData || (userData.leaderboardAccepted && !userData.leaderboardOptOut);
 
             const tabsHtml = Object.entries(pages || {})
@@ -1111,14 +1114,13 @@ let db;
                     if (key === 'leaderboard' && !canSeeLeaderboard) return false;
                     return true;
                 }) 
-                .map(([key, page]) => { // Get key and page from entry
-                    const isActive = (key === activePageKey); // Compare with the single activePageKey
+                .map(([key, page]) => { 
+                    const isActive = (key === activePageKey); 
                     const activeClass = isActive ? 'active' : '';
                     const iconClasses = getIconClass(page.icon);
                     return `<a href="${page.url}" class="nav-tab ${activeClass}"><i class="${iconClasses} mr-2"></i>${page.name}</a>`;
                 }).join('');
 
-            // Only update innerHTML if tabContainer exists (it should with new structure)
             if (tabContainer) {
                 tabContainer.innerHTML = tabsHtml;
             }
@@ -1341,8 +1343,6 @@ let db;
                         localStorage.setItem(PINNED_PAGE_KEY, currentPageKey);
                         updatePinButtonArea(); 
                     }
-                    // Animation logic handled by updatePinButtonArea usually destroys elements,
-                    // but if pinContextMenu persists or if we just want to close it:
                     if (pinContextMenu && pinContextMenu.parentNode) {
                          pinContextMenu.classList.remove('open');
                          pinContextMenu.classList.add('closing');
@@ -1377,20 +1377,19 @@ let db;
                 const scrollAmount = tabContainer.offsetWidth * 0.8; 
                 tabContainer.addEventListener('scroll', updateScrollGilders);
                 
-                // --- MODIFIED: REMOVED applyCounterZoom call on resize ---
                 window.addEventListener('resize', () => {
                     debouncedUpdateGilders();
                 });
                 
                 if (leftButton) {
                     leftButton.addEventListener('click', () => {
-                        tabContainer.scrollLeft = 0; // Scroll to the beginning
+                        tabContainer.scrollLeft = 0; 
                     });
                 }
                 if (rightButton) {
                     rightButton.addEventListener('click', () => {
                         const maxScroll = tabContainer.scrollWidth - tabContainer.offsetWidth;
-                        tabContainer.scrollLeft = maxScroll; // Scroll to the end
+                        tabContainer.scrollLeft = maxScroll; 
                     });
                 }
             }
@@ -1898,7 +1897,6 @@ let db;
                 background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); /* Default background color */
                 border-radius: 16px; /* Updated to 16px */
                 transition: all 0.2s ease; cursor: pointer;
-                /* FIXED: Border color now matches the background color */
                 border: 1px solid var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
                 margin-bottom: 0; 
             }
@@ -2211,7 +2209,7 @@ let db;
                                 path.endsWith('/changelog') ||
                                 path.endsWith('documentation.html') ||
                                 path.endsWith('/documentation') ||
-                                path.includes('/@'); // ALLOW VIEWING PROFILES WITHOUT LOGOUT
+                                path.includes('/@'); 
             
             if (isPublicPage || isRedirecting) return;
 
@@ -2225,7 +2223,7 @@ let db;
             let hasSupabaseSession = false;
             if (window.supabase) {
                 const { data } = await window.supabase.auth.getSession();
-                hasSupabaseSession = !!data.session;
+                hasSupabaseSession = !!data?.session;
             }
 
             if (!firebaseUser && !hasSupabaseSession) {
@@ -2245,6 +2243,28 @@ let db;
             if (user) {
                 const uid = user.uid || user.id;
                 const email = user.email;
+
+                // --- NIOBIUM BAN SYSTEM CHECK ---
+                if (window.supabase) {
+                    try {
+                        const { data: banData } = await window.supabase.from('bans').select('reason').eq('user_id', uid).maybeSingle();
+                        if (banData) {
+                            console.error("User is banned. Initiating forced logout.");
+                            alert(`Your account has been suspended.\nReason: ${banData.reason || 'Violation of Terms of Service'}`);
+                            
+                            // Sign out everywhere
+                            await window.supabase.auth.signOut();
+                            if (typeof firebase !== 'undefined' && auth) await auth.signOut();
+                            
+                            isRedirecting = true;
+                            window.location.href = '/index.html';
+                            return; // Halt navigation render
+                        }
+                    } catch (e) {
+                        console.warn("Ban check failed or unavailable:", e);
+                    }
+                }
+                // --------------------------------
                 
                 // Check if hardcoded privileged email
                 isPrivilegedUser = email === PRIVILEGED_EMAIL;
