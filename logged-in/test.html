@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/injector.js"></script>
 
     <style>
@@ -185,32 +186,6 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-5 gap-0 border-b border-[#1a1a1a]">
-        <div class="p-4 border-r border-[#1a1a1a]">
-            <p class="text-[9px] uppercase tracking-widest text-gray-500">Total Network Time</p>
-            <h4 id="stat-total-time" class="text-xl font-light mono">0h</h4>
-        </div>
-        <div class="p-4 border-r border-[#1a1a1a]">
-            <p class="text-[9px] uppercase tracking-widest text-gray-500">Average Session</p>
-            <h4 id="stat-avg-time" class="text-xl font-light mono">0m</h4>
-        </div>
-        <div class="p-4 border-r border-[#1a1a1a]">
-            <p class="text-[9px] uppercase tracking-widest text-gray-500">Most Followed</p>
-            <h4 id="stat-most-followed" class="text-xl font-light text-indigo-400">---</h4>
-        </div>
-        <div class="p-4 border-r border-[#1a1a1a]">
-            <p class="text-[9px] uppercase tracking-widest text-gray-500">First Citizen</p>
-            <h4 id="stat-first-user" class="text-xl font-light text-gray-300">---</h4>
-        </div>
-        <div class="p-4 relative">
-            <p class="text-[9px] uppercase tracking-widest text-gray-500">Global Roster</p>
-            <h4 id="stat-count" class="text-xl font-light mono">0</h4>
-            <div id="loading-spinner" class="absolute top-4 right-4 text-indigo-500 hidden">
-                <i class="fas fa-spinner fa-spin"></i>
-            </div>
-        </div>
-    </div>
-
     <div class="schema-viz" id="schema-visualization">
         <div class="table-node">
             <div class="node-header text-indigo-400">profiles</div>
@@ -230,44 +205,90 @@
     </div>
 
     <div class="p-6">
-        <div class="flex flex-col xl:flex-row mb-6 gap-4 items-stretch h-12">
+        <div class="flex flex-col xl:flex-row mb-6 gap-4 items-stretch h-12 relative z-50">
             <div class="relative w-full xl:w-2/5 h-full">
                 <div class="search-container h-full shadow-lg">
                     <i class="fas fa-search text-gray-600"></i>
                     <input type="text" id="master-search" class="search-input" placeholder="Search parameters...">
+                    <div id="loading-spinner" class="text-indigo-500 hidden ml-auto">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
                 </div>
-                <div id="search-suggestions" class="absolute top-[110%] left-0 w-full bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl hidden z-50 overflow-hidden shadow-2xl">
+                <div id="search-suggestions" class="absolute top-[110%] left-0 w-full bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl hidden overflow-hidden shadow-2xl">
                     </div>
             </div>
             
             <div class="flex gap-2 flex-1 h-full">
-                <div class="view-tab" onclick="switchMainTab('general')">General Data</div>
-                <div class="view-tab active" onclick="switchMainTab('users')">Users</div>
-                <div class="view-tab" onclick="switchMainTab('tags')">Tags</div>
+                <div class="view-tab active" onclick="switchMainTab('users', this)">Users</div>
+                <div class="view-tab" onclick="switchMainTab('general', this)">General Data</div>
+                <div class="view-tab" onclick="switchMainTab('tags', this)">Tags</div>
             </div>
 
-            <div class="flex gap-2 h-full">
+            <div class="flex gap-2 h-full" id="view-mode-toggles">
                 <button id="btn-grid" onclick="setLayout('grid')" class="btn-niobium"><i class="fas fa-th-large"></i></button>
                 <button id="btn-list" onclick="setLayout('list')" class="btn-niobium active"><i class="fas fa-list"></i></button>
             </div>
         </div>
 
-        <div id="list-view" class="overflow-x-auto border border-[#1a1a1a] rounded-xl bg-[#0a0a0a] shadow-xl">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>User Identity</th>
-                        <th>UID</th>
-                        <th>Total Engagement Time</th>
-                        <th>Status</th>
-                        <th>Joined</th>
-                    </tr>
-                </thead>
-                <tbody id="user-rows"></tbody>
-            </table>
+        <div id="tab-users" class="block">
+            <div id="list-view" class="overflow-x-auto border border-[#1a1a1a] rounded-xl bg-[#0a0a0a] shadow-xl">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User Identity</th>
+                            <th>UID</th>
+                            <th>Total Engagement Time</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-rows"></tbody>
+                </table>
+            </div>
+            <div id="grid-view" class="grid"></div>
         </div>
 
-        <div id="grid-view" class="grid"></div>
+        <div id="tab-general" class="hidden">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex flex-col justify-between">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500">Total Network Time</p>
+                    <h4 id="stat-total-time" class="text-2xl font-light mono mt-2">0h</h4>
+                </div>
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex flex-col justify-between">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500">Average Session</p>
+                    <h4 id="stat-avg-time" class="text-2xl font-light mono mt-2">0m</h4>
+                </div>
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex flex-col justify-between">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500">Global Roster</p>
+                    <h4 id="stat-count" class="text-2xl font-light mono mt-2 text-indigo-400">0</h4>
+                </div>
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex flex-col justify-between">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500">First Citizen</p>
+                    <h4 id="stat-first-user" class="text-lg font-light truncate mt-2">---</h4>
+                </div>
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex flex-col justify-between">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500">Most Followed</p>
+                    <h4 id="stat-most-followed" class="text-lg font-light truncate mt-2 text-green-400">---</h4>
+                </div>
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex flex-col justify-between">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500">Total Tagged</p>
+                    <h4 id="stat-total-tagged" class="text-2xl font-light mono mt-2 text-orange-400">0</h4>
+                </div>
+            </div>
+
+            <div class="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-6 h-[400px]">
+                <h3 class="text-xs uppercase tracking-widest text-gray-500 mb-4 font-bold"><i class="fas fa-chart-line mr-2"></i> User Growth Over Time</h3>
+                <div class="relative h-[320px] w-full">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-tags" class="hidden">
+            <div id="tags-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                </div>
+        </div>
+
     </div>
 
     <div id="inspector-panel">
@@ -337,6 +358,7 @@
         let inspectedUserId = null;
         let currentUserRole = 'user'; 
         let activeBanReqId = null;
+        let currentActiveTab = 'users';
 
         // --- Custom Dialog System ---
         window.customAlert = (title, message) => {
@@ -419,7 +441,6 @@
             }
 
             modal.classList.remove('hidden');
-            // Trigger reflow
             void modal.offsetWidth;
             modal.classList.remove('opacity-0');
             box.classList.remove('scale-95');
@@ -464,7 +485,6 @@
             document.getElementById('loading-spinner').classList.add('hidden');
         }
 
-        // --- Formatting Helpers ---
         function formatDescriptiveTime(totalSeconds) {
             if (!totalSeconds || totalSeconds <= 0) return '0 seconds';
             const h = Math.floor(totalSeconds / 3600);
@@ -499,10 +519,12 @@
         }
 
         async function loadUsers() {
-            // We fetch user_tag inherently via select '*'
             const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
             allUsers = data || [];
             currentFilteredUsers = [...allUsers];
+            
+            document.getElementById('stat-total-tagged').innerText = allUsers.filter(u => u.user_tag && u.user_tag.text).length;
+
             window.render();
         }
 
@@ -511,76 +533,168 @@
             return `https://ui-avatars.com/api/?name=${u.username || 'U'}&background=${(u.pfp_letter_bg || '#333').replace('#','')}&color=fff`;
         }
 
-        window.switchMainTab = (tabName) => {
-            // Placeholder logic to show tabs work visually right beside search bar
+        window.switchMainTab = (tabName, el) => {
+            currentActiveTab = tabName;
             document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+            if(el) el.classList.add('active');
             
-            if(tabName !== 'users') {
-                document.getElementById('list-view').innerHTML = `<div class="p-10 text-center text-gray-600">Viewing ${tabName} configuration module.</div>`;
-                document.getElementById('grid-view').innerHTML = '';
-            } else {
-                // Restore user view logic
-                document.getElementById('list-view').innerHTML = `
-                    <table class="data-table">
-                        <thead><tr><th>User Identity</th><th>UID</th><th>Total Engagement Time</th><th>Status</th><th>Joined</th></tr></thead>
-                        <tbody id="user-rows"></tbody>
-                    </table>`;
-                window.render();
-            }
+            document.getElementById('tab-general').style.display = tabName === 'general' ? 'block' : 'none';
+            document.getElementById('tab-users').style.display = tabName === 'users' ? 'block' : 'none';
+            document.getElementById('tab-tags').style.display = tabName === 'tags' ? 'block' : 'none';
+
+            // Hide/Show layout toggles based on view
+            document.getElementById('view-mode-toggles').style.display = tabName === 'users' ? 'flex' : 'none';
+
+            if(tabName === 'general') renderCharts();
+            if(tabName === 'tags') renderTags();
         };
 
         window.render = function() {
-            if(!document.getElementById('user-rows')) return; // if on a different tab
-
+            // Only update user UI if it exists and tab is users
             if (currentLayout === 'list') {
                 document.getElementById('list-view').style.display = 'block';
                 document.getElementById('grid-view').style.display = 'none';
                 
                 const tbody = document.getElementById('user-rows');
-                tbody.innerHTML = currentFilteredUsers.map(u => `
-                    <tr onclick="inspectUser('${u.id}')">
-                        <td>
-                            <div class="flex items-center gap-3">
-                                <img src="${getAvatar(u)}" class="pfp-micro">
-                                <span class="font-medium">${u.display_name || u.username}</span>
-                                <span class="text-[10px] text-gray-500 mono">@${u.username}</span>
-                            </div>
-                        </td>
-                        <td class="mono text-[10px] text-gray-500">${u.id.substring(0,8)}...</td>
-                        <td class="text-xs text-gray-300">${formatDescriptiveTime(u.total_v6_time)}</td>
-                        <td>
-                            <span class="status-badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">
-                                ${u.is_admin ? 'ADMIN' : 'USER'}
-                            </span>
-                        </td>
-                        <td class="text-gray-500 text-[10px]">${new Date(u.created_at).toLocaleDateString()}</td>
-                    </tr>
-                `).join('');
+                if(tbody) {
+                    tbody.innerHTML = currentFilteredUsers.map(u => `
+                        <tr onclick="inspectUser('${u.id}')">
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <img src="${getAvatar(u)}" class="pfp-micro">
+                                    <span class="font-medium">${u.display_name || u.username}</span>
+                                    <span class="text-[10px] text-gray-500 mono">@${u.username}</span>
+                                </div>
+                            </td>
+                            <td class="mono text-[10px] text-gray-500">${u.id.substring(0,8)}...</td>
+                            <td class="text-xs text-gray-300">${formatDescriptiveTime(u.total_v6_time)}</td>
+                            <td>
+                                <span class="status-badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">
+                                    ${u.is_admin ? 'ADMIN' : 'USER'}
+                                </span>
+                            </td>
+                            <td class="text-gray-500 text-[10px]">${new Date(u.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
+                }
             } else {
                 document.getElementById('list-view').style.display = 'none';
                 document.getElementById('grid-view').style.display = 'grid';
                 
                 const grid = document.getElementById('grid-view');
-                grid.innerHTML = currentFilteredUsers.map(u => `
-                    <div class="grid-card" onclick="inspectUser('${u.id}')">
-                        <div class="flex justify-between items-start">
-                            <img src="${getAvatar(u)}" class="pfp-medium">
-                            <span class="status-badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">
-                                ${u.is_admin ? 'ADMIN' : 'USER'}
-                            </span>
+                if(grid) {
+                    grid.innerHTML = currentFilteredUsers.map(u => `
+                        <div class="grid-card" onclick="inspectUser('${u.id}')">
+                            <div class="flex justify-between items-start">
+                                <img src="${getAvatar(u)}" class="pfp-medium">
+                                <span class="status-badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">
+                                    ${u.is_admin ? 'ADMIN' : 'USER'}
+                                </span>
+                            </div>
+                            <div class="mt-2">
+                                <p class="font-bold truncate">${u.display_name || u.username}</p>
+                                <p class="text-[10px] text-gray-500 mono truncate">@${u.username}</p>
+                            </div>
+                            <div class="mt-auto pt-3 border-t border-[#1a1a1a] flex justify-between text-[10px] text-gray-400">
+                                <span class="truncate">${formatDescriptiveTime(u.total_v6_time)}</span>
+                            </div>
                         </div>
-                        <div class="mt-2">
-                            <p class="font-bold truncate">${u.display_name || u.username}</p>
-                            <p class="text-[10px] text-gray-500 mono truncate">@${u.username}</p>
-                        </div>
-                        <div class="mt-auto pt-3 border-t border-[#1a1a1a] flex justify-between text-[10px] text-gray-400">
-                            <span class="truncate">${formatDescriptiveTime(u.total_v6_time)}</span>
-                        </div>
-                    </div>
-                `).join('');
+                    `).join('');
+                }
+            }
+
+            // If tags tab is active, trigger update there too so search affects it immediately
+            if (currentActiveTab === 'tags') {
+                renderTags();
             }
         };
+
+        window.renderTags = () => {
+            const container = document.getElementById('tags-container');
+            const taggedUsers = currentFilteredUsers.filter(u => u.user_tag && u.user_tag.text);
+            
+            if(taggedUsers.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-600 py-10">No users with tags found matching criteria.</div>';
+                return;
+            }
+
+            container.innerHTML = taggedUsers.map(u => `
+                <div class="bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl p-4 flex flex-col justify-between cursor-pointer hover:border-[#333] transition-colors" onclick="inspectUser('${u.id}')">
+                    <div class="flex items-center gap-3 mb-4 border-b border-[#1a1a1a] pb-3">
+                        <img src="${getAvatar(u)}" class="w-10 h-10 rounded-lg object-cover">
+                        <div class="truncate">
+                            <p class="font-bold text-sm truncate">${u.display_name || u.username}</p>
+                            <p class="text-[10px] text-gray-500 mono truncate">@${u.username}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-center">
+                        <span class="user-tag-badge" style="color: ${u.user_tag.color}; border-color: ${u.user_tag.color}40; background: ${u.user_tag.color}15">
+                            ${u.user_tag.text}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        function renderCharts() {
+            if(window.growthChartInstance) return; 
+            
+            const ctx = document.getElementById('growthChart');
+            if(!ctx) return;
+            
+            // Build Chronological Data
+            const chronological = [...allUsers].reverse();
+            let cumulative = 0;
+            const labels = [];
+            const dataPoints = [];
+            
+            const countsByDate = {};
+            chronological.forEach(u => {
+                const date = new Date(u.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                countsByDate[date] = (countsByDate[date] || 0) + 1;
+            });
+
+            for (const [date, count] of Object.entries(countsByDate)) {
+                cumulative += count;
+                labels.push(date);
+                dataPoints.push(cumulative);
+            }
+
+            window.growthChartInstance = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Citizens',
+                        data: dataPoints,
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#0a0a0a',
+                        pointBorderColor: '#4f46e5'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { 
+                            grid: { color: '#1a1a1a' },
+                            ticks: { color: '#666', font: { family: "'JetBrains Mono', monospace", size: 10 } }
+                        },
+                        x: { 
+                            grid: { color: '#1a1a1a' },
+                            ticks: { color: '#666', font: { family: "'Geist', sans-serif", size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
 
         window.setLayout = (mode) => {
             currentLayout = mode;
@@ -732,15 +846,19 @@
             } else {
                 const uIndex = allUsers.findIndex(u => u.id === inspectedUserId);
                 if(uIndex > -1) allUsers[uIndex].user_tag = tagData;
+                
+                document.getElementById('stat-total-tagged').innerText = allUsers.filter(u => u.user_tag && u.user_tag.text).length;
+
                 closeTagModal();
                 window.inspectUser(inspectedUserId);
+                if(currentActiveTab === 'tags') renderTags();
             }
         });
 
         // --- SUBADMIN ACTIONS ---
         window.requestBan = async (uid) => {
             const reason = await customPrompt("Request Ban", "Enter required reason for ban request:", "Reason for ban...");
-            if (reason === null) return; // Cancelled
+            if (reason === null) return; 
             if (reason.trim() === '') {
                 await customAlert("Error", "A valid reason is required to submit a ban request.");
                 return;
@@ -916,7 +1034,6 @@
                 window.render();
             });
 
-            // Close suggestions when clicking outside
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.relative.w-full')) {
                     suggBox.classList.add('hidden');
@@ -927,12 +1044,12 @@
         window.applySearchSuggestion = (suggestionText) => {
             const input = document.getElementById('master-search');
             let parts = input.value.split(' ');
-            parts.pop(); // Remove the partial trigger
+            parts.pop(); 
             parts.push(suggestionText);
             input.value = parts.join(' ') + ' ';
             document.getElementById('search-suggestions').classList.add('hidden');
             input.focus();
-            input.dispatchEvent(new Event('input')); // Trigger the search logic
+            input.dispatchEvent(new Event('input')); 
         };
 
         init();
