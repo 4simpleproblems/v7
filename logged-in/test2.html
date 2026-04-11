@@ -20,31 +20,33 @@
             background: var(--bg-page); 
             color: #fff; 
             font-size: 13px;
+            overflow-x: hidden;
         }
         .mono { font-family: 'JetBrains Mono', monospace; }
         
         /* Layout Containers */
         #list-view { display: block; }
-        #grid-view { display: none; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+        #grid-view { display: none; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
         
         /* Dense Table Style */
         .data-table { width: 100%; border-collapse: collapse; }
         .data-table th { 
-            text-align: left; padding: 8px; border-bottom: 1px solid var(--border);
+            text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border);
             text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em; color: #444;
         }
-        .data-table td { padding: 6px 8px; border-bottom: 1px solid #0f0f0f; vertical-align: middle; }
-        .data-table tr:hover { background: rgba(255,255,255,0.02); }
+        .data-table td { padding: 8px 12px; border-bottom: 1px solid #0f0f0f; vertical-align: middle; cursor: pointer; }
+        .data-table tr { transition: background 0.1s; }
+        .data-table tr:hover { background: rgba(255,255,255,0.03); }
 
         /* Grid Card Style */
         .grid-card {
             background: #0d0d0d; border: 1px solid var(--border); border-radius: 12px;
-            padding: 12px; display: flex; flex-direction: column; gap: 8px;
-            transition: all 0.2s;
+            padding: 16px; display: flex; flex-direction: column; gap: 8px;
+            transition: all 0.2s; cursor: pointer;
         }
-        .grid-card:hover { border-color: #333; transform: translateY(-2px); }
+        .grid-card:hover { border-color: #333; transform: translateY(-2px); background: #111; }
 
-        /* Visual Table Connections */
+        /* Schema Viz */
         .schema-viz {
             display: flex; gap: 40px; padding: 20px; overflow-x: auto;
             background: radial-gradient(circle at 50% 50%, #111 0%, #050505 100%);
@@ -77,9 +79,35 @@
         .pfp-micro { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); object-fit: cover; }
         .pfp-medium { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); object-fit: cover; }
         
-        .status-badge { padding: 2px 6px; border-radius: 99px; font-size: 8px; font-weight: 800; letter-spacing: 0.05em; }
+        .status-badge { padding: 2px 6px; border-radius: 99px; font-size: 8px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
         .badge-admin { background: rgba(79,70,229,0.2); color: #818cf8; border: 1px solid rgba(79,70,229,0.3); }
         .badge-user { background: rgba(255,255,255,0.05); color: #888; border: 1px solid rgba(255,255,255,0.1); }
+        .badge-banned { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+
+        /* Slide-Out Inspector Panel */
+        #inspector-panel {
+            position: fixed; top: 0; right: -450px; width: 450px; height: 100vh;
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border); z-index: 100;
+            transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; flex-direction: column;
+            box-shadow: -20px 0 50px rgba(0,0,0,0.5);
+        }
+        #inspector-panel.open { right: 0; }
+        
+        .action-btn {
+            width: 100%; padding: 10px; border-radius: 8px; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.2s;
+            border: 1px solid var(--border); background: #000; color: #888; cursor: pointer;
+        }
+        .action-btn:hover { border-color: #444; color: #fff; }
+        .action-btn.danger { border-color: rgba(239,68,68,0.3); color: #ef4444; background: rgba(239,68,68,0.05); }
+        .action-btn.danger:hover { background: #ef4444; color: #fff; }
+        .action-btn.primary { border-color: var(--accent); color: var(--accent); background: rgba(79,70,229,0.05); }
+        .action-btn.primary:hover { background: var(--accent); color: #fff; }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
     </style>
 </head>
 <body class="custom-scroll">
@@ -114,27 +142,23 @@
         <div class="table-node">
             <div class="node-header text-indigo-400">profiles</div>
             <div class="node-field">id <span class="mono">uuid</span></div>
-            <div class="node-field">username <span class="mono">text</span></div>
             <div class="node-field">total_v6_time <span class="mono">int</span></div>
             <div class="connector"></div>
         </div>
         <div class="table-node">
             <div class="node-header text-orange-400">daily_photos</div>
-            <div class="node-field">id <span class="mono">uuid</span></div>
             <div class="node-field">creator_uid <span class="mono">uuid</span></div>
-            <div class="node-field">hearts <span class="mono">uuid[]</span></div>
             <div class="connector" style="width: 20px; right: -20px;"></div>
         </div>
         <div class="table-node">
             <div class="node-header text-green-400">follows</div>
-            <div class="node-field">follower_id <span class="mono">uuid</span></div>
             <div class="node-field">following_id <span class="mono">uuid</span></div>
         </div>
     </div>
 
     <div class="p-6">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <div class="search-container w-full md:w-1/2">
+            <div class="search-container w-full md:w-1/2 shadow-lg">
                 <i class="fas fa-search text-gray-600"></i>
                 <input type="text" id="master-search" class="search-input" placeholder="Search... try 'is:admin', 'is:following', or 'time>1000'">
             </div>
@@ -144,16 +168,15 @@
             </div>
         </div>
 
-        <div id="list-view" class="overflow-x-auto border border-[#1a1a1a] rounded-xl bg-[#0a0a0a]">
+        <div id="list-view" class="overflow-x-auto border border-[#1a1a1a] rounded-xl bg-[#0a0a0a] shadow-xl">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>User</th>
+                        <th>User Identity</th>
                         <th>UID</th>
-                        <th>Time</th>
-                        <th>Role</th>
+                        <th>Total Engagement Time</th>
+                        <th>Status</th>
                         <th>Joined</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="user-rows"></tbody>
@@ -161,6 +184,49 @@
         </div>
 
         <div id="grid-view" class="grid"></div>
+    </div>
+
+    <div id="inspector-panel">
+        <div class="p-6 border-b border-[#1a1a1a] flex justify-between items-center bg-[#050505]">
+            <h3 class="text-sm font-bold uppercase tracking-widest text-indigo-400">User Inspector</h3>
+            <button onclick="closeInspector()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto custom-scroll p-6">
+            <div id="inspector-loading" class="text-center py-20 text-gray-600"><i class="fas fa-spinner fa-spin text-2xl"></i></div>
+            
+            <div id="inspector-content" class="hidden space-y-8">
+                <div class="flex items-center gap-4">
+                    <img id="ins-pfp" src="" class="w-16 h-16 rounded-2xl border-2 border-[#1a1a1a] object-cover">
+                    <div>
+                        <h2 id="ins-display-name" class="text-xl font-light">---</h2>
+                        <p id="ins-username" class="mono text-xs text-gray-500">@---</p>
+                        <div id="ins-badges" class="flex gap-2 mt-2"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl">
+                        <p class="text-[9px] uppercase tracking-widest text-gray-500 mb-1">Followers</p>
+                        <h4 id="ins-followers" class="text-2xl font-light mono">0</h4>
+                    </div>
+                    <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl">
+                        <p class="text-[9px] uppercase tracking-widest text-gray-500 mb-1">Following</p>
+                        <h4 id="ins-following" class="text-2xl font-light mono">0</h4>
+                    </div>
+                    <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl col-span-2">
+                        <p class="text-[9px] uppercase tracking-widest text-gray-500 mb-1">Cumulative Time</p>
+                        <h4 id="ins-time" class="text-sm font-medium text-indigo-300">0 seconds</h4>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500 mb-3 border-b border-[#1a1a1a] pb-2">Administrative Actions</p>
+                    <div class="space-y-3" id="admin-action-container">
+                        </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -173,6 +239,7 @@
         let currentFilteredUsers = [];
         let myFollowing = new Set();
         let currentLayout = 'list';
+        let inspectedUserId = null;
 
         async function init() {
             document.getElementById('loading-spinner').classList.remove('hidden');
@@ -181,13 +248,11 @@
             if (!user) return alert("Must be logged in.");
 
             const { data: profile } = await supabase.from('profiles').select('is_admin, email').eq('id', user.id).single();
-            
             if (profile?.email !== '4simpleproblems@gmail.com' && !profile?.is_admin) {
                 document.body.innerHTML = "<div class='p-20 text-center text-red-500 font-mono text-xl'>UNAUTHORIZED ACCESS: SECURITY EXCEPTION</div>";
                 return;
             }
 
-            // Fetch who the admin follows for the "is:following" search tag
             const { data: follows } = await supabase.from('follows').select('following_id').eq('follower_id', user.id);
             if (follows) follows.forEach(f => myFollowing.add(f.following_id));
 
@@ -195,6 +260,23 @@
             await loadUsers();
             
             document.getElementById('loading-spinner').classList.add('hidden');
+        }
+
+        // FORMAT DESCRIPTIVE TIME
+        function formatDescriptiveTime(totalSeconds) {
+            if (!totalSeconds || totalSeconds <= 0) return '0 seconds';
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            
+            let parts = [];
+            if (h > 0) parts.push(`${h} hour${h !== 1 ? 's' : ''}`);
+            if (m > 0) parts.push(`${m} minute${m !== 1 ? 's' : ''}`);
+            if (s > 0) parts.push(`${s} second${s !== 1 ? 's' : ''}`);
+            
+            if (parts.length === 1) return parts[0];
+            if (parts.length === 2) return parts.join(' and ');
+            return `${parts[0]}, ${parts[1]}, and ${parts[2]}`;
         }
 
         async function loadStats() {
@@ -212,7 +294,7 @@
             const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
             allUsers = data || [];
             currentFilteredUsers = [...allUsers];
-            render();
+            window.render();
         }
 
         function getAvatar(u) {
@@ -220,14 +302,14 @@
             return `https://ui-avatars.com/api/?name=${u.username || 'U'}&background=${(u.pfp_letter_bg || '#333').replace('#','')}&color=fff`;
         }
 
-        function render() {
+        window.render = function() {
             if (currentLayout === 'list') {
                 document.getElementById('list-view').style.display = 'block';
                 document.getElementById('grid-view').style.display = 'none';
                 
                 const tbody = document.getElementById('user-rows');
                 tbody.innerHTML = currentFilteredUsers.map(u => `
-                    <tr>
+                    <tr onclick="inspectUser('${u.id}')">
                         <td>
                             <div class="flex items-center gap-3">
                                 <img src="${getAvatar(u)}" class="pfp-micro">
@@ -236,18 +318,13 @@
                             </div>
                         </td>
                         <td class="mono text-[10px] text-gray-500">${u.id.substring(0,8)}...</td>
-                        <td class="mono">${u.total_v6_time || 0}s</td>
+                        <td class="text-xs text-gray-300">${formatDescriptiveTime(u.total_v6_time)}</td>
                         <td>
                             <span class="status-badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">
                                 ${u.is_admin ? 'ADMIN' : 'USER'}
                             </span>
                         </td>
                         <td class="text-gray-500 text-[10px]">${new Date(u.created_at).toLocaleDateString()}</td>
-                        <td>
-                            <button class="text-gray-600 hover:text-white" onclick="window.open('/logged-in/@${u.username}', '_blank')">
-                                <i class="fas fa-external-link-alt"></i>
-                            </button>
-                        </td>
                     </tr>
                 `).join('');
             } else {
@@ -256,7 +333,7 @@
                 
                 const grid = document.getElementById('grid-view');
                 grid.innerHTML = currentFilteredUsers.map(u => `
-                    <div class="grid-card">
+                    <div class="grid-card" onclick="inspectUser('${u.id}')">
                         <div class="flex justify-between items-start">
                             <img src="${getAvatar(u)}" class="pfp-medium">
                             <span class="status-badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">
@@ -267,48 +344,153 @@
                             <p class="font-bold truncate">${u.display_name || u.username}</p>
                             <p class="text-[10px] text-gray-500 mono truncate">@${u.username}</p>
                         </div>
-                        <div class="mt-auto pt-3 border-t border-[#1a1a1a] flex justify-between text-[10px] mono text-gray-400">
-                            <span><i class="fas fa-clock mr-1"></i>${Math.floor((u.total_v6_time||0)/60)}m</span>
-                            <button onclick="window.open('/logged-in/@${u.username}', '_blank')" class="hover:text-white"><i class="fas fa-arrow-right"></i></button>
+                        <div class="mt-auto pt-3 border-t border-[#1a1a1a] flex justify-between text-[10px] text-gray-400">
+                            <span class="truncate">${formatDescriptiveTime(u.total_v6_time)}</span>
                         </div>
                     </div>
                 `).join('');
             }
-        }
+        };
 
         window.setLayout = (mode) => {
             currentLayout = mode;
             document.getElementById('btn-grid').classList.toggle('active', mode === 'grid');
             document.getElementById('btn-list').classList.toggle('active', mode === 'list');
-            render();
+            window.render();
         };
 
-        // Custom Query Parser
+        // --- INSPECTOR PANEL LOGIC ---
+        window.closeInspector = () => {
+            document.getElementById('inspector-panel').classList.remove('open');
+            inspectedUserId = null;
+        };
+
+        window.inspectUser = async (uid) => {
+            inspectedUserId = uid;
+            const panel = document.getElementById('inspector-panel');
+            const loading = document.getElementById('inspector-loading');
+            const content = document.getElementById('inspector-content');
+            
+            panel.classList.add('open');
+            loading.classList.remove('hidden');
+            content.classList.add('hidden');
+
+            const user = allUsers.find(u => u.id === uid);
+            if (!user) return;
+
+            // Fetch live relationships and roles because of high importance for admins
+            const [{ count: followers }, { count: following }, { data: roleData }, { data: banData }] = await Promise.all([
+                supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', uid),
+                supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', uid),
+                supabase.from('roles').select('role').eq('user_id', uid).maybeSingle(),
+                supabase.from('bans').select('id, reason').eq('user_id', uid).maybeSingle()
+            ]);
+
+            const isBanned = !!banData;
+            const currentRole = roleData ? roleData.role : 'user';
+
+            // Populate Text
+            document.getElementById('ins-pfp').src = getAvatar(user);
+            document.getElementById('ins-display-name').innerText = user.display_name || user.username;
+            document.getElementById('ins-username').innerText = `@${user.username}`;
+            document.getElementById('ins-followers').innerText = followers || 0;
+            document.getElementById('ins-following').innerText = following || 0;
+            document.getElementById('ins-time').innerText = formatDescriptiveTime(user.total_v6_time);
+
+            // Populate Badges
+            let badgesHTML = '';
+            if (isBanned) badgesHTML += `<span class="status-badge badge-banned">Banned</span>`;
+            if (currentRole === 'full_admin') badgesHTML += `<span class="status-badge badge-admin">Full Admin</span>`;
+            else if (currentRole === 'sub_admin') badgesHTML += `<span class="status-badge badge-admin">Sub Admin</span>`;
+            else badgesHTML += `<span class="status-badge badge-user">Standard User</span>`;
+            document.getElementById('ins-badges').innerHTML = badgesHTML;
+
+            // Populate Buttons
+            const btnContainer = document.getElementById('admin-action-container');
+            btnContainer.innerHTML = '';
+
+            // Ban Toggle
+            if (isBanned) {
+                btnContainer.innerHTML += `<button onclick="toggleBan('${uid}', true)" class="action-btn">Unban User</button>`;
+            } else {
+                btnContainer.innerHTML += `<button onclick="toggleBan('${uid}', false)" class="action-btn danger">Ban User</button>`;
+            }
+
+            // Role Management
+            if (currentRole !== 'full_admin') {
+                btnContainer.innerHTML += `<button onclick="setRole('${uid}', 'full_admin')" class="action-btn primary">Grant Full Admin</button>`;
+            }
+            if (currentRole !== 'sub_admin') {
+                btnContainer.innerHTML += `<button onclick="setRole('${uid}', 'sub_admin')" class="action-btn primary">Grant Sub Admin</button>`;
+            }
+            if (currentRole !== 'user') {
+                btnContainer.innerHTML += `<button onclick="setRole('${uid}', 'user')" class="action-btn">Revoke Administrative Roles</button>`;
+            }
+
+            loading.classList.add('hidden');
+            content.classList.remove('hidden');
+        };
+
+        // --- RPC / ACTION FUNCTIONS ---
+        window.toggleBan = async (uid, isCurrentlyBanned) => {
+            if (isCurrentlyBanned) {
+                if(confirm("Remove ban from this user?")) {
+                    await supabase.from('bans').delete().eq('user_id', uid);
+                    window.inspectUser(uid); // Refresh
+                }
+            } else {
+                const reason = prompt("Enter reason for ban:");
+                if(reason !== null) {
+                    await supabase.from('bans').insert({ user_id: uid, reason: reason || 'Violation of TOS' });
+                    window.inspectUser(uid);
+                }
+            }
+        };
+
+        window.setRole = async (uid, newRole) => {
+            if(confirm(`Change role to ${newRole}?`)) {
+                if (newRole === 'user') {
+                    // Revoke everything
+                    await supabase.from('roles').delete().eq('user_id', uid);
+                    await supabase.from('profiles').update({ is_admin: false }).eq('id', uid);
+                } else {
+                    // Upsert role
+                    const { error } = await supabase.from('roles').upsert({ user_id: uid, role: newRole });
+                    if(!error) {
+                        const isMainAdmin = (newRole === 'full_admin');
+                        await supabase.from('profiles').update({ is_admin: isMainAdmin }).eq('id', uid);
+                    }
+                }
+                
+                // Update local memory & re-render background list
+                const uIndex = allUsers.findIndex(u => u.id === uid);
+                if(uIndex > -1) {
+                    allUsers[uIndex].is_admin = (newRole === 'full_admin');
+                    window.render();
+                }
+                window.inspectUser(uid); // Refresh panel
+            }
+        };
+
+        // Search Parser
         document.getElementById('master-search').addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase().trim();
-            
             currentFilteredUsers = allUsers.filter(u => {
                 let match = true;
-                
-                // Parse commands
                 if (term.includes('is:admin') && !u.is_admin) match = false;
                 if (term.includes('is:following') && !myFollowing.has(u.id)) match = false;
                 
-                // Parse time logic (e.g. time>3600)
                 const timeMatch = term.match(/time>(\d+)/);
                 if (timeMatch && (u.total_v6_time || 0) <= parseInt(timeMatch[1])) match = false;
 
-                // Strip commands to check text
                 const textOnly = term.replace(/is:\w+/g, '').replace(/time>\d+/g, '').trim();
-                
                 if (textOnly && match) {
                     const searchStr = `${u.username} ${u.display_name} ${u.id}`.toLowerCase();
                     if (!searchStr.includes(textOnly)) match = false;
                 }
-                
                 return match;
             });
-            render();
+            window.render();
         });
 
         init();
