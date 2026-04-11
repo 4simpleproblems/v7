@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <!-- VERN_SYSTEM Proxy -->
+    <script src="/VALO_PLUS/VERN_SYSTEM/uv/uv.bundle.js"></script>
+    <script>
+        const basePath = "/VALO_PLUS/VERN_SYSTEM/uv/";
+        self.__uv$config = {
+            prefix: basePath + "service/",
+            encodeUrl: Ultraviolet.codec.xor.encode,
+            decodeUrl: Ultraviolet.codec.xor.decode,
+            handler: basePath + "uv.handler.js",
+            client: basePath + "uv.client.js",
+            bundle: basePath + "uv.bundle.js",
+            config: basePath + "uv.config.js",
+            sw: basePath + "uv.sw.js",
+            stockSW: "/VALO_PLUS/VERN_SYSTEM/sw.js",
+        };
+    </script>
+    <script src="/VALO_PLUS/VERN_SYSTEM/baremux/index.js"></script>
+    <script type="module">
+        import * as libcurl from "/VALO_PLUS/VERN_SYSTEM/libcurl/index.mjs";
+
+        window.checkBare = async (retries = 5) => {
+            if (window.__4sp_bare_mux_connecting) return;
+            window.__4sp_bare_mux_connecting = true;
+            const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
+            const transportPath = "/VALO_PLUS/VERN_SYSTEM/libcurl/index.mjs";
+            for (let i = 0; i < retries; i++) {
+                try {
+                    if (libcurl && libcurl.load_wasm) libcurl.load_wasm().catch(() => {});
+                    const transport = await connection.getTransport();
+                    if (!transport || transport.path !== transportPath) {
+                        await connection.setTransport(transportPath, [
+                            { websocket: "wss://wisp.mercurywork.shop/" },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                        ]);
+                    }
+                    const bc = new BroadcastChannel("bare-mux-sync");
+                    const port = connection.getInnerPort();
+                    const msg = { type: 'baremuxready', path: "/VORA/VERN_SYSTEM/baremux/worker.js", hasPort: !!port };
+                    bc.postMessage(msg);
+                    if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage(msg, port ? [port] : []);
+                    window.__4sp_bare_mux_connecting = false;
+                    return; 
+                } catch (e) { await new Promise(r => setTimeout(r, 200)); }
+            }
+            window.__4sp_bare_mux_connecting = false;
+        };
+
+        (async () => {
+            if ("serviceWorker" in navigator) {
+                try { await navigator.serviceWorker.register("/sw.js", { scope: "/" }); } catch (e) {}
+            }
+            await window.checkBare();
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule | Valo Plus</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-blue': '#0D47A1',
+                        'card-dark': '#0a0d14',
+                        'accent-blue': '#2196F3',
+                        'brand-border': '#1a2233',
+                    },
+                    fontFamily: { 
+                        sans: ['Geist', 'sans-serif'],
+                        bebas: ['Bebas Neue', 'cursive']
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-page: #05080f;
+            --bg-card: #0a0d14;
+            --text-main: #ffffff;
+            --text-muted: #8e99af;
+            --accent-color: #2196F3;
+            --accent-glow: rgba(33, 150, 243, 0.4);
+            --border-main: #1a2233;
+        }
+        body { 
+            font-family: 'Geist', sans-serif; 
+            background-color: var(--bg-page); 
+            color: var(--text-main);
+            overflow-x: hidden;
+            padding-bottom: 120px;
+        }
+        ::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .schedule-row {
+            background: var(--bg-card);
+            border: 1px solid var(--border-main);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .schedule-row:hover {
+            border-color: var(--accent-color);
+            transform: translateX(10px);
+            background: rgba(33, 150, 243, 0.05);
+        }
+
+        .category-title { font-family: 'Bebas Neue', cursive; font-size: 2.5rem; letter-spacing: 0.05em; margin-bottom: 1.5rem; padding-left: 4rem; color: var(--accent-color); }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 100px;
+            background: rgba(10, 13, 20, 0.85);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-main);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.5rem 2rem;
+        }
+        .sports-bar {
+            width: 100%;
+            display: flex;
+            overflow-x: auto;
+            gap: 2rem;
+            padding: 0.5rem 0;
+            justify-content: center;
+        }
+        .sports-bar-item {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .sports-bar-item:hover, .sports-bar-item.active {
+            color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="pt-24">
+    <nav class="fixed top-0 left-0 right-0 h-20 flex items-center px-16 z-[100] bg-[#05080f]/90 backdrop-blur-md border-bottom border-white/5">
+        <div class="flex items-center gap-3">
+            <img src="./logo.png" class="w-10 h-10 object-contain">
+            <span class="text-3xl font-black tracking-tighter text-white font-bebas">VALO<span class="text-accent-blue ml-1">PLUS</span></span>
+        </div>
+        <div class="ml-auto flex items-center gap-8">
+            <a href="index.html" class="text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition">Home</a>
+            <a href="live.html" class="text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition">Live</a>
+            <a href="schedule.html" class="text-sm font-bold uppercase tracking-widest text-white border-b-2 border-accent-blue">Schedule</a>
+        </div>
+    </nav>
+
+    <main class="max-w-[1200px] mx-auto pb-20">
+        <h2 class="category-title">Upcoming Matches</h2>
+        <div class="px-16">
+            <div class="schedule-row">
+                <div class="text-accent-blue font-bold text-xl w-32 font-bebas">TODAY 8:00 PM</div>
+                <div class="flex-1 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold text-lg">Lakers</span>
+                        <span class="text-white/40">vs</span>
+                        <span class="font-bold text-lg">Warriors</span>
+                    </div>
+                    <div class="text-sm uppercase tracking-widest text-white/60">NBA Regular Season</div>
+                </div>
+                <i class="fas fa-chevron-right text-white/20"></i>
+            </div>
+            <div class="schedule-row">
+                <div class="text-accent-blue font-bold text-xl w-32 font-bebas">TODAY 9:30 PM</div>
+                <div class="flex-1 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold text-lg">Real Madrid</span>
+                        <span class="text-white/40">vs</span>
+                        <span class="font-bold text-lg">Barcelona</span>
+                    </div>
+                    <div class="text-sm uppercase tracking-widest text-white/60">La Liga</div>
+                </div>
+                <i class="fas fa-chevron-right text-white/20"></i>
+            </div>
+            <div class="schedule-row">
+                <div class="text-accent-blue font-bold text-xl w-32 font-bebas">TOMORROW</div>
+                <div class="flex-1 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold text-lg">Chiefs</span>
+                        <span class="text-white/40">vs</span>
+                        <span class="font-bold text-lg">Bengals</span>
+                    </div>
+                    <div class="text-sm uppercase tracking-widest text-white/60">NFL Week 15</div>
+                </div>
+                <i class="fas fa-chevron-right text-white/20"></i>
+            </div>
+        </div>
+    </main>
+
+    <div class="bottom-nav">
+        <div class="sports-bar" id="bottomSportsBar"></div>
+    </div>
+
+    <script>
+        const sports = [
+            { id: 'nba', name: 'NBA', icon: 'fa-basketball' },
+            { id: 'nfl', name: 'NFL', icon: 'fa-football' },
+            { id: 'mlb', name: 'MLB', icon: 'fa-baseball' },
+            { id: 'soccer', name: 'Soccer', icon: 'fa-futbol' },
+            { id: 'nhl', name: 'NHL', icon: 'fa-hockey-puck' },
+            { id: 'ufc', name: 'UFC', icon: 'fa-hand-fist' },
+            { id: 'tennis', name: 'Tennis', icon: 'fa-table-tennis-paddle-ball' },
+            { id: 'f1', name: 'Formula 1', icon: 'fa-car-side' }
+        ];
+        const bottomSportsBar = document.getElementById('bottomSportsBar');
+        sports.forEach(sport => {
+            const barItem = document.createElement('div');
+            barItem.className = 'sports-bar-item';
+            barItem.innerHTML = `<i class="fas ${sport.icon}"></i> ${sport.name}`;
+            barItem.onclick = () => window.location.href = `./sports/${sport.id === 'soccer' ? 'football' : sport.id}`;
+            bottomSportsBar.appendChild(barItem);
+        });
+    </script>
+    <!-- Made with ❤️ from 4SP -->
+</body>
+</html>

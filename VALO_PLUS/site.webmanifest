@@ -1,0 +1,16 @@
+{
+  "name": "Superstrim",
+  "short_name": "Superstrim",
+  "description": "Pro-grade sports coverage. NBA, NFL, Football, MLB, and more.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0D47A1",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ]
+}
