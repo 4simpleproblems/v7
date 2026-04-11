@@ -87,6 +87,13 @@
         .view-tab.active { background: #1a1a1a; border-color: #333; color: #fff; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
         .view-tab:not(.active) { background: #0d0d0d; color: #666; }
         .view-tab:not(.active):hover { color: #aaa; border-color: #333; }
+        
+        .chart-filter-btn {
+            background: #050505; border: 1px solid var(--border); border-radius: 6px;
+            color: #666; padding: 4px 10px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;
+        }
+        .chart-filter-btn:hover { color: #fff; border-color: #333; }
+        .chart-filter-btn.active { background: #1a1a1a; color: var(--accent); border-color: var(--accent); }
 
         .pfp-micro { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); object-fit: cover; }
         .pfp-medium { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); object-fit: cover; }
@@ -276,9 +283,17 @@
                 </div>
             </div>
 
-            <div class="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-6 h-[400px]">
-                <h3 class="text-xs uppercase tracking-widest text-gray-500 mb-4 font-bold"><i class="fas fa-chart-line mr-2"></i> User Growth Over Time</h3>
-                <div class="relative h-[320px] w-full">
+            <div class="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-6 h-[400px] flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xs uppercase tracking-widest text-gray-500 font-bold"><i class="fas fa-chart-line mr-2"></i> User Growth</h3>
+                    <div class="flex gap-2">
+                        <button class="chart-filter-btn active" onclick="updateChartRange('all', this)">All Time</button>
+                        <button class="chart-filter-btn" onclick="updateChartRange(30, this)">30d</button>
+                        <button class="chart-filter-btn" onclick="updateChartRange(7, this)">7d</button>
+                        <button class="chart-filter-btn" onclick="updateChartRange(3, this)">3d</button>
+                    </div>
+                </div>
+                <div class="relative flex-1 w-full">
                     <canvas id="growthChart"></canvas>
                 </div>
             </div>
@@ -359,6 +374,9 @@
         let currentUserRole = 'user'; 
         let activeBanReqId = null;
         let currentActiveTab = 'users';
+
+        // Set Default Chart Range
+        window.currentChartRange = 'all';
 
         // --- Custom Dialog System ---
         window.customAlert = (title, message) => {
@@ -542,7 +560,6 @@
             document.getElementById('tab-users').style.display = tabName === 'users' ? 'block' : 'none';
             document.getElementById('tab-tags').style.display = tabName === 'tags' ? 'block' : 'none';
 
-            // Hide/Show layout toggles based on view
             document.getElementById('view-mode-toggles').style.display = tabName === 'users' ? 'flex' : 'none';
 
             if(tabName === 'general') renderCharts();
@@ -550,7 +567,6 @@
         };
 
         window.render = function() {
-            // Only update user UI if it exists and tab is users
             if (currentLayout === 'list') {
                 document.getElementById('list-view').style.display = 'block';
                 document.getElementById('grid-view').style.display = 'none';
@@ -603,7 +619,6 @@
                 }
             }
 
-            // If tags tab is active, trigger update there too so search affects it immediately
             if (currentActiveTab === 'tags') {
                 renderTags();
             }
@@ -636,28 +651,74 @@
             `).join('');
         };
 
-        function renderCharts() {
-            if(window.growthChartInstance) return; 
-            
+        window.updateChartRange = (range, btnEl) => {
+            window.currentChartRange = range;
+            document.querySelectorAll('.chart-filter-btn').forEach(b => b.classList.remove('active'));
+            btnEl.classList.add('active');
+            renderCharts(true);
+        };
+
+        function renderCharts(forceRedraw = false) {
             const ctx = document.getElementById('growthChart');
             if(!ctx) return;
+
+            if (window.growthChartInstance) {
+                if (!forceRedraw) return;
+                window.growthChartInstance.destroy();
+            }
             
-            // Build Chronological Data
-            const chronological = [...allUsers].reverse();
-            let cumulative = 0;
-            const labels = [];
-            const dataPoints = [];
-            
-            const countsByDate = {};
-            chronological.forEach(u => {
-                const date = new Date(u.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-                countsByDate[date] = (countsByDate[date] || 0) + 1;
+            // Group and Map all users by exact Date
+            const countsByDate = new Map();
+            [...allUsers].reverse().forEach(u => {
+                const d = new Date(u.created_at);
+                const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                
+                if(!countsByDate.has(dateStr)) {
+                    const justDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                    countsByDate.set(dateStr, { count: 0, dateObj: justDate });
+                }
+                countsByDate.get(dateStr).count += 1;
             });
 
-            for (const [date, count] of Object.entries(countsByDate)) {
-                cumulative += count;
-                labels.push(date);
-                dataPoints.push(cumulative);
+            const sortedDateStrs = Array.from(countsByDate.keys()).sort((a,b) => countsByDate.get(a).dateObj - countsByDate.get(b).dateObj);
+
+            // Calculate Running Cumulative Total for Active Days
+            const dailyTotals = [];
+            let runningTotal = 0;
+            sortedDateStrs.forEach(dateStr => {
+                runningTotal += countsByDate.get(dateStr).count;
+                dailyTotals.push({
+                    dateStr: dateStr,
+                    dateObj: countsByDate.get(dateStr).dateObj,
+                    total: runningTotal
+                });
+            });
+
+            let labels = [];
+            let dataPoints = [];
+
+            if (window.currentChartRange === 'all') {
+                labels = dailyTotals.map(d => d.dateStr);
+                dataPoints = dailyTotals.map(d => d.total);
+            } else {
+                const now = new Date();
+                now.setHours(0,0,0,0);
+                
+                for(let i = window.currentChartRange - 1; i >= 0; i--) {
+                    const targetDate = new Date(now);
+                    targetDate.setDate(targetDate.getDate() - i);
+                    labels.push(targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                    
+                    let lastKnownTotal = 0;
+                    for(let j = 0; j < dailyTotals.length; j++) {
+                        if (dailyTotals[j].dateObj <= targetDate) {
+                            lastKnownTotal = dailyTotals[j].total;
+                        } else {
+                            break; 
+                        }
+                    }
+                    dataPoints.push(lastKnownTotal);
+                }
             }
 
             window.growthChartInstance = new Chart(ctx.getContext('2d'), {
@@ -671,16 +732,37 @@
                         backgroundColor: 'rgba(79, 70, 229, 0.1)',
                         borderWidth: 2,
                         fill: true,
-                        tension: 0.4,
+                        tension: 0.3,
                         pointBackgroundColor: '#0a0a0a',
-                        pointBorderColor: '#4f46e5'
+                        pointBorderColor: '#4f46e5',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(10, 10, 10, 0.9)',
+                            titleColor: '#888',
+                            bodyColor: '#fff',
+                            borderColor: '#333',
+                            borderWidth: 1,
+                            padding: 10,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Users Registered: ${context.parsed.y}`;
+                                }
+                            }
+                        }
                     },
                     scales: {
                         y: { 
