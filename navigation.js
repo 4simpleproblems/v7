@@ -2209,6 +2209,7 @@ let db;
                                 path.endsWith('/changelog') ||
                                 path.endsWith('documentation.html') ||
                                 path.endsWith('/documentation') ||
+                                path.includes('/VALO_PLUS') ||
                                 path.includes('/@'); 
             
             if (isPublicPage || isRedirecting) return;
