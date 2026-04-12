@@ -6,7 +6,7 @@ import requests
 import sys
 
 PORT = 8000
-DIRECTORY = "."
+DIRECTORY = "superstrim_clone"
 
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -25,8 +25,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         # Handle API proxy requests
         parsed_path = urllib.parse.urlparse(self.path)
-        # Handle both /api/proxy and /VALO_PLUS/api/proxy
-        if parsed_path.path in ["/api/proxy", "/VALO_PLUS/api/proxy"]:
+        if parsed_path.path == "/api/proxy":
             query = urllib.parse.parse_qs(parsed_path.query)
             path_param = query.get('path', [None])[0]
             if path_param:
@@ -55,24 +54,21 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
 
         # Handle static files
         path = parsed_path.path
-        
-        # Remove /VALO_PLUS/ prefix for local resolution if it exists
-        if path.startswith("/VALO_PLUS/"):
-            path = "/" + path[len("/VALO_PLUS/"):]
-
         if not os.path.splitext(path)[1]:
             # Try path + /index.html
             local_path = path.lstrip('/')
             potential_file = os.path.join(DIRECTORY, local_path, "index.html")
             if os.path.exists(potential_file):
-                self.path = "/" + local_path + "/index.html"
+                self.path = path.rstrip('/') + "/index.html"
             else:
                 # Try path + .html
                 potential_file = os.path.join(DIRECTORY, local_path + ".html")
                 if os.path.exists(potential_file):
-                    self.path = "/" + local_path + ".html"
+                    self.path = path + ".html"
                 else:
-                    # Fallback mechanism for Next.js-like dynamic routing
+                    # Fallback mechanism for Next.js dynamic routing
+                    # If we are in /sports/something, fallback to /sports/index.html
+                    # If we are in /standings/something, fallback to /standings/index.html
                     if path.startswith("/sports/"):
                          self.path = "/sports/index.html"
                     elif path.startswith("/standings/"):
@@ -92,4 +88,3 @@ with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
-# Made with ❤️ from 4SP
