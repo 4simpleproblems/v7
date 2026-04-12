@@ -33,6 +33,16 @@ const configs = {
         client: '/VORA_PLUS/VERN_SYSTEM/uv/uv.client.js',
         worker: '/logged-in/baremux/worker.js'
     },
+    valo_plus: {
+        prefix: '/VALO_PLUS/VERN_SYSTEM/uv/service/',
+        bare: '/api/bare',
+        bundle: '/VALO_PLUS/VERN_SYSTEM/uv/uv.bundle.js',
+        config: '/VALO_PLUS/VERN_SYSTEM/uv/uv.config.js',
+        sw: '/VALO_PLUS/VERN_SYSTEM/uv/uv.sw.js',
+        handler: '/VALO_PLUS/VERN_SYSTEM/uv/uv.handler.js',
+        client: '/VALO_PLUS/VERN_SYSTEM/uv/uv.client.js',
+        worker: '/VALO_PLUS/VERN_SYSTEM/baremux/worker.js'
+    },
     vern: {
         prefix: '/VERN/uv/service/',
         bare: '/api/bare',

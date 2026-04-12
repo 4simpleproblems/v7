@@ -25,7 +25,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         # Handle API proxy requests
         parsed_path = urllib.parse.urlparse(self.path)
-        if parsed_path.path == "/api/proxy":
+        if parsed_path.path in ["/api/proxy", "/VALO_PLUS/api/proxy"]:
             query = urllib.parse.parse_qs(parsed_path.query)
             path_param = query.get('path', [None])[0]
             if path_param:

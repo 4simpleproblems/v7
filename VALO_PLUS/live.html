@@ -304,20 +304,12 @@
         async function loadAllLive() {
             const grid = document.getElementById('videoGrid');
             try {
-                // Fetch from multiple popular categories
-                const categories = ['nba', 'nfl', 'mlb', 'football'];
-                let allMatches = [];
-                
-                for (const cat of categories) {
-                    const response = await fetch(`/VALO_PLUS/api/proxy?path=${cat}`);
-                    const data = await response.json();
-                    if (data && data.length > 0) {
-                        allMatches = allMatches.concat(data.slice(0, 4)); // Limit to first 4 of each
-                    }
-                }
+                // Fetch all live matches
+                const response = await fetch(`/VALO_PLUS/api/proxy?path=matches/live`);
+                const allMatches = await response.json();
 
                 grid.innerHTML = '';
-                if (allMatches.length > 0) {
+                if (allMatches && allMatches.length > 0) {
                     allMatches.forEach(match => {
                         const card = document.createElement('div');
                         card.className = 'media-card';

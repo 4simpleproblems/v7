@@ -280,7 +280,7 @@
             sportDescElem.innerText = `Live ${currentSport.name} matches streaming now. Select a match to start watching.`;
 
             try {
-                const response = await fetch(`/VALO_PLUS/api/proxy?path=${category}`);
+                const response = await fetch(`/VALO_PLUS/api/proxy?path=matches/${category}`);
                 const data = await response.json();
                 
                 const grid = document.getElementById('videoGrid');
