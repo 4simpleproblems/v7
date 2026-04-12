@@ -117,6 +117,13 @@
         "adminOnly": true,
         "testerOnly": true
     },
+    "valo-plus": {
+        "name": "Valo Plus",
+        "icon": "fa-solid fa-star",
+        "url": "../VALO_PLUS/index.html",
+        "aliases": ["/VALO_PLUS/", "/VALO_PLUS/index.html"],
+        "adminOnly": true
+    },
     "velium-plus": {
         "name": "Velium Plus",
         "icon": "fa-solid fa-music",

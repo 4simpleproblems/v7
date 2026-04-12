@@ -45,7 +45,7 @@ body::after {
 }
 
 /* Hide Original Site Elements */
-nav, header, footer, .navbar, [class*="Navbar"], [class*="Footer"], 
+nav:not(#navbar-container nav), header:not(#navbar-container header), footer:not(#navbar-container footer), .navbar:not(#navbar-container .navbar), [class*="Navbar"]:not(#navbar-container *), [class*="Footer"]:not(#navbar-container *), 
 .noise-overlay, .bg-accent.marquee, [role="marquee"] {
     display: none !important;
 }
