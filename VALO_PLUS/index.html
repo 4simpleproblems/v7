@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-    <!-- VERN_SYSTEM Proxy -->
+    <!-- VALO_PLUS VERN_SYSTEM Proxy -->
     <script src="/VALO_PLUS/VERN_SYSTEM/uv/uv.bundle.js"></script>
-    <script>window.__4sp_nav_none = true;
+    <script>
         const basePath = "/VALO_PLUS/VERN_SYSTEM/uv/";
         self.__uv$config = {
             prefix: basePath + "service/",
@@ -99,7 +99,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <script>window.__4sp_nav_none = true;
+    <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -135,7 +135,7 @@
             background-color: var(--bg-page); 
             color: var(--text-main);
             overflow-x: hidden;
-            padding-bottom: 120px; /* Space for bottom nav */
+            padding-bottom: 120px;
         }
         ::-webkit-scrollbar { display: none; }
         * { -ms-overflow-style: none; scrollbar-width: none; }
@@ -206,7 +206,6 @@
 
         .category-title { font-family: 'Bebas Neue', cursive; font-size: 2.5rem; letter-spacing: 0.05em; margin-bottom: 0.5rem; padding-left: 4rem; color: var(--accent-color); }
 
-        /* Bottom Navigation & Search */
         .bottom-nav {
             position: fixed;
             bottom: 0; left: 0; right: 0;
@@ -220,7 +219,6 @@
             align-items: center;
             padding: 0.5rem 2rem;
         }
-
         .sports-bar {
             width: 100%;
             display: flex;
@@ -267,53 +265,6 @@
             background: rgba(0,0,0,0.6);
             box-shadow: 0 0 15px var(--accent-glow);
         }
-        .search-icon {
-            position: absolute;
-            left: 1.2rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-        }
-        .search-suggestions {
-            position: absolute;
-            bottom: 110%;
-            left: 0; right: 0;
-            background: var(--bg-card);
-            border: 1px solid var(--border-main);
-            border-radius: 12px;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
-        }
-        .suggestion-item {
-            padding: 0.75rem 1.5rem;
-            cursor: pointer;
-            transition: background 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        .suggestion-item:hover {
-            background: rgba(33, 150, 243, 0.1);
-        }
-
-        .live-tag {
-            background: #ff0000;
-            color: white;
-            font-size: 0.6rem;
-            font-weight: 900;
-            padding: 0.1rem 0.4rem;
-            border-radius: 4px;
-            text-transform: uppercase;
-            margin-right: 0.5rem;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
-        }
     </style>
 </head>
 <body>
@@ -321,13 +272,13 @@
 
     <nav class="fixed top-0 left-0 right-0 h-20 flex items-center px-16 z-[100] bg-gradient-to-b from-[#05080f] to-transparent">
         <div class="flex items-center gap-3">
-            <img src="./logo.png" class="w-10 h-10 object-contain">
+            <img src="/VALO_PLUS/logo.png" class="w-10 h-10 object-contain">
             <span class="text-3xl font-black tracking-tighter text-white font-bebas">VALO<span class="text-accent-blue ml-1">PLUS</span></span>
         </div>
         <div class="ml-auto flex items-center gap-8">
-            <a href="#" class="text-sm font-bold uppercase tracking-widest text-white border-b-2 border-accent-blue">Home</a>
-            <a href="/v6/GAMES" class="text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition">Games</a>
-            <a href="/v6/VERN" class="text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition">Proxy</a>
+            <a href="#" class="text-xs font-black uppercase tracking-widest text-white border-b-2 border-accent-blue">Home</a>
+            <a href="/v6/GAMES" class="text-xs font-black uppercase tracking-widest text-white/50 hover:text-white transition">Games</a>
+            <a href="/v6/VERN" class="text-xs font-black uppercase tracking-widest text-white/50 hover:text-white transition">Proxy</a>
         </div>
     </nav>
 
@@ -335,8 +286,7 @@
         <div class="hero-overlay"></div>
         <div class="hero-content">
             <div class="flex items-center gap-2 mb-4">
-                <span class="live-tag">Live Now</span>
-                <span class="text-xs font-bold tracking-widest uppercase opacity-60 text-white">NBA Regular Season</span>
+                <span class="text-xs font-bold tracking-widest uppercase opacity-60 text-white">Featured Live Coverage</span>
             </div>
             <h1 id="hero-title" class="text-8xl font-black mb-4 tracking-tighter leading-none font-bebas text-white">GAME DAY READY</h1>
             <p id="hero-desc" class="text-xl text-gray-300 mb-8 line-clamp-3 max-w-2xl font-medium">Experience every play, every goal, and every touchdown in crystal clear high definition.</p>
@@ -354,47 +304,28 @@
     <main class="relative z-20 pb-20 mt-[-5vh]">
         <div class="mb-16">
             <h2 class="category-title">Popular Sports</h2>
-            <div id="sportsGrid" class="horizontal-scroll px-16">
-                <!-- Sports items will be injected here -->
-            </div>
-        </div>
-
-        <div class="mb-16">
-            <h2 class="category-title">Live Events</h2>
-            <div id="liveGrid" class="horizontal-scroll px-16">
-                <!-- Live items will be injected here -->
-            </div>
-        </div>
-
-        <div class="mb-16">
-            <h2 class="category-title">Recent Replays</h2>
-            <div id="replayGrid" class="horizontal-scroll px-16">
-                <!-- Replay items will be injected here -->
-            </div>
+            <div id="sportsGrid" class="horizontal-scroll px-16"></div>
         </div>
     </main>
 
     <div class="bottom-nav">
-        <div class="sports-bar" id="bottomSportsBar">
-            <!-- Sports categories injected here -->
-        </div>
+        <div class="sports-bar" id="bottomSportsBar"></div>
         <div class="search-container">
-            <i class="fas fa-search search-icon"></i>
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-white/20"></i>
             <input type="text" id="searchInput" placeholder="Search for teams, players, or matches...">
-            <div class="search-suggestions" id="suggestions"></div>
         </div>
     </div>
 
-    <script>window.__4sp_nav_none = true;
+    <script>
         const sports = [
-            { id: 'nba', name: 'NBA', gradient: 'linear-gradient(to bottom, #05080f, #0D47A1, #b91c1c)', icon: 'fa-basketball', img: './images/grid-strength.jpg' },
-            { id: 'nfl', name: 'NFL', gradient: 'linear-gradient(to bottom, #05080f, #1e3a8a, #334155)', icon: 'fa-football', img: './images/grid-endurance.jpg' },
-            { id: 'mlb', name: 'MLB', gradient: 'linear-gradient(to bottom, #05080f, #1d4ed8, #be123c)', icon: 'fa-baseball', img: './images/grid-power.jpg' },
-            { id: 'soccer', name: 'Soccer', gradient: 'linear-gradient(to bottom, #05080f, #065f46, #1e40af)', icon: 'fa-futbol', img: './images/hero.webp' },
-            { id: 'nhl', name: 'NHL', gradient: 'linear-gradient(to bottom, #05080f, #334155, #000000)', icon: 'fa-hockey-puck', img: './images/grid-strength.jpg' },
-            { id: 'ufc', name: 'UFC', gradient: 'linear-gradient(to bottom, #05080f, #450a0a, #78350f)', icon: 'fa-hand-fist', img: './images/grid-power.jpg' },
-            { id: 'tennis', name: 'Tennis', gradient: 'linear-gradient(to bottom, #05080f, #4d7c0f, #1e40af)', icon: 'fa-table-tennis-paddle-ball', img: './images/grit.webp' },
-            { id: 'f1', name: 'Formula 1', gradient: 'linear-gradient(to bottom, #05080f, #991b1b, #171717)', icon: 'fa-car-side', img: './images/grid-endurance.jpg' }
+            { id: 'nba', name: 'NBA', gradient: 'linear-gradient(to bottom, #05080f, #0D47A1, #b91c1c)', icon: 'fa-basketball', img: '/VALO_PLUS/images/grid-strength.jpg' },
+            { id: 'nfl', name: 'NFL', gradient: 'linear-gradient(to bottom, #05080f, #1e3a8a, #334155)', icon: 'fa-football', img: '/VALO_PLUS/images/grid-endurance.jpg' },
+            { id: 'mlb', name: 'MLB', gradient: 'linear-gradient(to bottom, #05080f, #1d4ed8, #be123c)', icon: 'fa-baseball', img: '/VALO_PLUS/images/grid-power.jpg' },
+            { id: 'soccer', name: 'Soccer', gradient: 'linear-gradient(to bottom, #05080f, #065f46, #1e40af)', icon: 'fa-futbol', img: '/VALO_PLUS/images/hero.webp' },
+            { id: 'nhl', name: 'NHL', gradient: 'linear-gradient(to bottom, #05080f, #334155, #000000)', icon: 'fa-hockey-puck', img: '/VALO_PLUS/images/grid-strength.jpg' },
+            { id: 'ufc', name: 'UFC', gradient: 'linear-gradient(to bottom, #05080f, #450a0a, #78350f)', icon: 'fa-hand-fist', img: '/VALO_PLUS/images/grid-power.jpg' },
+            { id: 'tennis', name: 'Tennis', gradient: 'linear-gradient(to bottom, #05080f, #4d7c0f, #1e40af)', icon: 'fa-table-tennis-paddle-ball', img: '/VALO_PLUS/images/grit.webp' },
+            { id: 'f1', name: 'Formula 1', gradient: 'linear-gradient(to bottom, #05080f, #991b1b, #171717)', icon: 'fa-car-side', img: '/VALO_PLUS/images/grid-endurance.jpg' }
         ];
 
         const bottomSportsBar = document.getElementById('bottomSportsBar');
@@ -402,7 +333,6 @@
         const dynamicBg = document.getElementById('dynamic-bg');
 
         sports.forEach(sport => {
-            // Bottom bar items
             const barItem = document.createElement('div');
             barItem.className = 'sports-bar-item';
             barItem.innerHTML = `<i class="fas ${sport.icon}"></i> ${sport.name}`;
@@ -410,15 +340,10 @@
                 dynamicBg.style.background = sport.gradient;
                 dynamicBg.style.opacity = '0.8';
             };
-            barItem.onmouseleave = () => {
-                dynamicBg.style.opacity = '0.6';
-            };
-            barItem.onclick = () => {
-                window.location.href = `./sports/${sport.id === 'soccer' ? 'football' : sport.id}`;
-            };
+            barItem.onmouseleave = () => dynamicBg.style.opacity = '0.6';
+            barItem.onclick = () => window.location.href = `/VALO_PLUS/sports/${sport.id}`;
             bottomSportsBar.appendChild(barItem);
 
-            // Grid items
             const card = document.createElement('div');
             card.className = 'sport-card';
             card.innerHTML = `
@@ -428,53 +353,10 @@
                     <p class="text-xs text-white/60">Live Coverage & More</p>
                 </div>
             `;
-            card.onclick = () => {
-                window.location.href = `./sports/${sport.id === 'soccer' ? 'football' : sport.id}`;
-            };
+            card.onclick = () => window.location.href = `/VALO_PLUS/sports/${sport.id}`;
             sportsGrid.appendChild(card);
         });
 
-        // Search Suggestions
-        const searchInput = document.getElementById('searchInput');
-        const suggestions = document.getElementById('suggestions');
-        const mockSuggestions = [
-            { title: 'Lakers vs Warriors', cat: 'NBA' },
-            { title: 'Super Bowl Highlights', cat: 'NFL' },
-            { title: 'Champions League Final', cat: 'Soccer' },
-            { title: 'Wimbledon 2026', cat: 'Tennis' },
-            { title: 'Yankees Game Live', cat: 'MLB' }
-        ];
-
-        searchInput.oninput = (e) => {
-            const val = e.target.value.toLowerCase();
-            if (val.length < 2) {
-                suggestions.style.display = 'none';
-                return;
-            }
-            const filtered = mockSuggestions.filter(s => s.title.toLowerCase().includes(val));
-            if (filtered.length > 0) {
-                suggestions.innerHTML = filtered.map(s => `
-                    <div class="suggestion-item">
-                        <i class="fas fa-play-circle text-accent-blue"></i>
-                        <div>
-                            <div class="font-bold text-sm text-white">${s.title}</div>
-                            <div class="text-[10px] text-white/40 uppercase tracking-widest">${s.cat}</div>
-                        </div>
-                    </div>
-                `).join('');
-                suggestions.style.display = 'block';
-            } else {
-                suggestions.style.display = 'none';
-            }
-        };
-
-        window.onclick = (e) => {
-            if (!e.target.closest('.search-container')) {
-                suggestions.style.display = 'none';
-            }
-        };
-
-        // Scroll effect
         window.addEventListener('scroll', () => {
             const opacity = Math.min(0.9, 0.6 + window.scrollY / 1000);
             dynamicBg.style.opacity = opacity;
