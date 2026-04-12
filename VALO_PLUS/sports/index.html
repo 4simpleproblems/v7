@@ -100,6 +100,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script>
+        window.__4sp_nav_none = true;
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -265,8 +266,10 @@
         });
 
         async function loadMatches() {
-            const path = window.location.pathname;
-            const category = path.split('/').pop() || 'nfl';
+            // More robust category extraction
+            const pathSegments = window.location.pathname.split('/').filter(s => s.length > 0);
+            const category = pathSegments[pathSegments.length - 1] === 'sports' ? 'nfl' : pathSegments[pathSegments.length - 1];
+            
             const sportNameElem = document.getElementById('sport-name');
             const sportDescElem = document.getElementById('sport-desc');
             
@@ -275,7 +278,6 @@
             sportDescElem.innerText = `Live ${currentSport.name} matches streaming now. Select a match to start watching.`;
 
             try {
-                // Use the Vercel proxy rewrite
                 const response = await fetch(`/VALO_PLUS/api/proxy?path=${category}`);
                 const data = await response.json();
                 
@@ -297,7 +299,6 @@
                             </div>
                         `;
                         card.onclick = () => {
-                            // Link to UV proxy
                             const url = `https://streamed.pk/watch/${match.id}`;
                             window.location.href = __uv$config.prefix + __uv$config.encodeUrl(url);
                         };

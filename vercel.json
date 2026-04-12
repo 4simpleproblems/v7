@@ -66,16 +66,32 @@
       "destination": "/api/sports-proxy"
     },
     {
-      "source": "/VALO_PLUS/sports/:path*",
+      "source": "/VALO_PLUS/sports/(.*)",
       "destination": "/VALO_PLUS/sports/index.html"
     },
     {
-      "source": "/VALO_PLUS/schedule/:path*",
+      "source": "/VALO_PLUS/schedule/(.*)",
       "destination": "/VALO_PLUS/schedule/index.html"
     },
     {
-      "source": "/VALO_PLUS/standings/:path*",
+      "source": "/VALO_PLUS/standings/(.*)",
       "destination": "/VALO_PLUS/standings/index.html"
+    },
+    {
+      "source": "/VALO_PLUS/page-identification.json",
+      "destination": "/page-identification.json"
+    },
+    {
+      "source": "/VALO_PLUS/sports/page-identification.json",
+      "destination": "/page-identification.json"
+    },
+    {
+      "source": "/VALO_PLUS/schedule/page-identification.json",
+      "destination": "/page-identification.json"
+    },
+    {
+      "source": "/VALO_PLUS/standings/page-identification.json",
+      "destination": "/page-identification.json"
     },
     {
       "source": "/@:username",
