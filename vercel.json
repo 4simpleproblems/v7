@@ -6,6 +6,10 @@
       "destination": "/api/sports-proxy"
     },
     {
+      "source": "/api/sports-proxy",
+      "destination": "/api/sports-proxy"
+    },
+    {
       "source": "/music-api/:endpoint",
       "destination": "/api/music-api?endpoint=:endpoint"
     },

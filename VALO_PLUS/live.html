@@ -305,7 +305,7 @@
             const grid = document.getElementById('videoGrid');
             try {
                 // Fetch all live matches
-                const response = await fetch(`/VALO_PLUS/api/proxy?path=matches/live`);
+                const response = await fetch(`/api/sports-proxy?path=matches/live`);
                 const allMatches = await response.json();
 
                 grid.innerHTML = '';
