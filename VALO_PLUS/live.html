@@ -24,33 +24,67 @@
         window.checkBare = async (retries = 5) => {
             if (window.__4sp_bare_mux_connecting) return;
             window.__4sp_bare_mux_connecting = true;
-            const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
+
+            const workerPath = "/VALO_PLUS/VERN_SYSTEM/baremux/worker.js";
+            const connection = new BareMux.BareMuxConnection(workerPath);
+            const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VALO_PLUS/VERN_SYSTEM/libcurl/index.mjs";
+
             for (let i = 0; i < retries; i++) {
                 try {
-                    if (libcurl && libcurl.load_wasm) libcurl.load_wasm().catch(() => {});
+                    if (libcurl && libcurl.load_wasm) {
+                        libcurl.load_wasm().catch(() => {});
+                    }
+
                     const transport = await connection.getTransport();
                     if (!transport || transport.path !== transportPath) {
                         await connection.setTransport(transportPath, [
-                            { websocket: "wss://wisp.mercurywork.shop/" },
-                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                            { websocket: wispUrl },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" },
+                            { websocket: "wss://flow-works.me/wisp/" }
                         ]);
                     }
+                    console.log("Valo Plus: BareMux Transport Active");
+
                     const bc = new BroadcastChannel("bare-mux-sync");
                     const port = connection.getInnerPort();
-                    const msg = { type: 'baremuxready', path: "/VORA/VERN_SYSTEM/baremux/worker.js", hasPort: !!port };
-                    bc.postMessage(msg);
-                    if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage(msg, port ? [port] : []);
+                    
+                    const signalReady = () => {
+                        const msg = { 
+                            type: 'baremuxready', 
+                            path: workerPath,
+                            hasPort: !!port 
+                        };
+                        
+                        bc.postMessage(msg);
+                        
+                        if (navigator.serviceWorker.controller) {
+                            if (port) {
+                                navigator.serviceWorker.controller.postMessage(msg, [port]);
+                            } else {
+                                navigator.serviceWorker.controller.postMessage(msg);
+                            }
+                        }
+                    };
+                    
+                    signalReady();
                     window.__4sp_bare_mux_connecting = false;
                     return; 
-                } catch (e) { await new Promise(r => setTimeout(r, 200)); }
+                } catch (e) {
+                    if (i === retries - 1) console.error("Valo Plus: BareMux connection exhausted", e);
+                    await new Promise(r => setTimeout(r, 200));
+                }
             }
             window.__4sp_bare_mux_connecting = false;
         };
 
         (async () => {
             if ("serviceWorker" in navigator) {
-                try { await navigator.serviceWorker.register("/sw.js", { scope: "/" }); } catch (e) {}
+                try {
+                    await navigator.serviceWorker.register("/sw.js", {
+                        scope: "/"
+                    });
+                } catch (e) { console.error("VERN Proxy Error", e); }
             }
             await window.checkBare();
         })();
@@ -106,8 +140,6 @@
         * { -ms-overflow-style: none; scrollbar-width: none; }
 
         .media-card {
-            flex: 0 0 280px;
-            aspect-ratio: 16/9;
             border-radius: 12px;
             overflow: hidden;
             position: relative;
@@ -115,6 +147,7 @@
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid var(--border-main);
             background: var(--bg-card);
+            aspect-ratio: 16/9;
         }
         .media-card:hover {
             transform: scale(1.05);
@@ -133,7 +166,7 @@
             padding: 1rem;
         }
 
-        .category-title { font-family: 'Bebas Neue', cursive; font-size: 2.5rem; letter-spacing: 0.05em; margin-bottom: 1.5rem; padding-left: 4rem; color: var(--accent-color); }
+        .category-title { font-family: 'Bebas Neue', cursive; font-size: 2.5rem; letter-spacing: 0.05em; margin-bottom: 1.5rem; color: var(--accent-color); text-transform: uppercase; }
 
         .live-indicator {
             position: absolute;
@@ -210,52 +243,21 @@
 <body class="pt-24">
     <nav class="fixed top-0 left-0 right-0 h-20 flex items-center px-16 z-[100] bg-[#05080f]/90 backdrop-blur-md border-bottom border-white/5">
         <div class="flex items-center gap-3">
-            <img src="./logo.png" class="w-10 h-10 object-contain">
+            <img src="/VALO_PLUS/logo.png" class="w-10 h-10 object-contain">
             <span class="text-3xl font-black tracking-tighter text-white font-bebas">VALO<span class="text-accent-blue ml-1">PLUS</span></span>
         </div>
         <div class="ml-auto flex items-center gap-8">
-            <a href="index.html" class="text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition">Home</a>
-            <a href="live.html" class="text-sm font-bold uppercase tracking-widest text-white border-b-2 border-accent-blue">Live</a>
-            <a href="schedule.html" class="text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition">Schedule</a>
+            <a href="/VALO_PLUS/index.html" class="text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition">Home</a>
+            <a href="/VALO_PLUS/live.html" class="text-sm font-bold uppercase tracking-widest text-white border-b-2 border-accent-blue">Live</a>
+            <a href="/VALO_PLUS/schedule.html" class="text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition">Schedule</a>
         </div>
     </nav>
 
-    <main class="max-w-[1600px] mx-auto pb-20">
-        <h2 class="category-title">All Live Events</h2>
-        <div id="videoGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 px-16">
-            <!-- Mock Live Cards -->
-            <div class="media-card" onclick="window.location.href='/v6/VALO_PLUS/sports/basketball'">
-                <img src="./images/grid-strength.jpg">
-                <div class="live-indicator">Live</div>
-                <div class="media-info-overlay">
-                    <h3 class="font-bebas text-2xl">NBA: Lakers vs Celtics</h3>
-                    <p class="text-xs text-white/60 font-medium">Crypto.com Arena - 3rd Quarter</p>
-                </div>
-            </div>
-            <div class="media-card" onclick="window.location.href='/v6/VALO_PLUS/sports/football'">
-                <img src="./images/grid-power.jpg">
-                <div class="live-indicator">Live</div>
-                <div class="media-info-overlay">
-                    <h3 class="font-bebas text-2xl">Champions League: Real Madrid vs Man City</h3>
-                    <p class="text-xs text-white/60 font-medium">Santiago Bernabéu - 72'</p>
-                </div>
-            </div>
-            <div class="media-card" onclick="window.location.href='/v6/VALO_PLUS/sports/baseball'">
-                <img src="./images/grid-strength.jpg">
-                <div class="live-indicator">Live</div>
-                <div class="media-info-overlay">
-                    <h3 class="font-bebas text-2xl">MLB: Yankees vs Red Sox</h3>
-                    <p class="text-xs text-white/60 font-medium">Yankee Stadium - Top 4th</p>
-                </div>
-            </div>
-            <div class="media-card" onclick="window.location.href='/v6/VALO_PLUS/sports/nfl'">
-                <img src="./images/grid-endurance.jpg">
-                <div class="live-indicator">Live</div>
-                <div class="media-info-overlay">
-                    <h3 class="font-bebas text-2xl">NFL: Chiefs vs Eagles</h3>
-                    <p class="text-xs text-white/60 font-medium">Arrowhead Stadium - 2nd Quarter</p>
-                </div>
-            </div>
+    <main class="max-w-[1600px] mx-auto pb-20 px-16">
+        <h1 class="category-title">All Live Events</h1>
+        <div id="videoGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <!-- Matches will be injected here -->
+            <div id="loader" class="col-span-full text-center py-20 text-white/40 font-medium">Scanning for live matches...</div>
         </div>
     </main>
 
@@ -272,20 +274,79 @@
             { id: 'nba', name: 'NBA', icon: 'fa-basketball' },
             { id: 'nfl', name: 'NFL', icon: 'fa-football' },
             { id: 'mlb', name: 'MLB', icon: 'fa-baseball' },
-            { id: 'soccer', name: 'Soccer', icon: 'fa-futbol' },
-            { id: 'nhl', name: 'NHL', icon: 'fa-hockey-puck' },
+            { id: 'football', name: 'Soccer', icon: 'fa-futbol' },
+            { id: 'hockey', name: 'NHL', icon: 'fa-hockey-puck' },
             { id: 'ufc', name: 'UFC', icon: 'fa-hand-fist' },
             { id: 'tennis', name: 'Tennis', icon: 'fa-table-tennis-paddle-ball' },
-            { id: 'f1', name: 'Formula 1', icon: 'fa-car-side' }
+            { id: 'motor-sports', name: 'Formula 1', icon: 'fa-car-side' }
         ];
+
         const bottomSportsBar = document.getElementById('bottomSportsBar');
         sports.forEach(sport => {
             const barItem = document.createElement('div');
             barItem.className = 'sports-bar-item';
             barItem.innerHTML = `<i class="fas ${sport.icon}"></i> ${sport.name}`;
-            barItem.onclick = () => window.location.href = `./sports/${sport.id === 'soccer' ? 'football' : sport.id}`;
+            barItem.onclick = () => window.location.href = `/VALO_PLUS/sports/${sport.id}`;
             bottomSportsBar.appendChild(barItem);
         });
+
+        const sportImages = {
+            'nba': '/VALO_PLUS/images/grid-strength.jpg',
+            'nfl': '/VALO_PLUS/images/grid-endurance.jpg',
+            'mlb': '/VALO_PLUS/images/grid-power.jpg',
+            'football': '/VALO_PLUS/images/hero.webp',
+            'hockey': '/VALO_PLUS/images/grid-strength.jpg',
+            'ufc': '/VALO_PLUS/images/grid-power.jpg',
+            'tennis': '/VALO_PLUS/images/grit.webp',
+            'motor-sports': '/VALO_PLUS/images/grid-endurance.jpg'
+        };
+
+        async function loadAllLive() {
+            const grid = document.getElementById('videoGrid');
+            try {
+                // Fetch from multiple popular categories
+                const categories = ['nba', 'nfl', 'mlb', 'football'];
+                let allMatches = [];
+                
+                for (const cat of categories) {
+                    const response = await fetch(`/VALO_PLUS/api/proxy?path=${cat}`);
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        allMatches = allMatches.concat(data.slice(0, 4)); // Limit to first 4 of each
+                    }
+                }
+
+                grid.innerHTML = '';
+                if (allMatches.length > 0) {
+                    allMatches.forEach(match => {
+                        const card = document.createElement('div');
+                        card.className = 'media-card';
+                        const imgSrc = sportImages[match.category.toLowerCase()] || '/VALO_PLUS/images/grid-strength.jpg';
+                        card.innerHTML = `
+                            <img src="${imgSrc}">
+                            <div class="live-indicator">Live</div>
+                            <div class="media-info-overlay">
+                                <span class="text-[10px] uppercase tracking-widest text-accent-blue font-black">${match.category}</span>
+                                <h3 class="font-bebas text-2xl text-white">${match.title}</h3>
+                                <p class="text-[10px] text-white/40 font-medium">${match.time || 'Live Now'}</p>
+                            </div>
+                        `;
+                        card.onclick = () => {
+                            const url = `https://streamed.pk/watch/${match.id}`;
+                            window.location.href = __uv$config.prefix + __uv$config.encodeUrl(url);
+                        };
+                        grid.appendChild(card);
+                    });
+                } else {
+                    grid.innerHTML = '<div class="col-span-full text-white/40 py-20 text-center font-medium">No live events found at the moment. Check back during game times!</div>';
+                }
+            } catch (error) {
+                console.error("Failed to load live events:", error);
+                grid.innerHTML = '<div class="col-span-full text-red-500 py-20 text-center font-medium">Failed to connect to sports API.</div>';
+            }
+        }
+
+        loadAllLive();
     </script>
     <!-- Made with ❤️ from 4SP -->
 </body>

@@ -24,33 +24,67 @@
         window.checkBare = async (retries = 5) => {
             if (window.__4sp_bare_mux_connecting) return;
             window.__4sp_bare_mux_connecting = true;
-            const connection = new BareMux.BareMuxConnection("/VORA/VERN_SYSTEM/baremux/worker.js");
+
+            const workerPath = "/VALO_PLUS/VERN_SYSTEM/baremux/worker.js";
+            const connection = new BareMux.BareMuxConnection(workerPath);
+            const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VALO_PLUS/VERN_SYSTEM/libcurl/index.mjs";
+
             for (let i = 0; i < retries; i++) {
                 try {
-                    if (libcurl && libcurl.load_wasm) libcurl.load_wasm().catch(() => {});
+                    if (libcurl && libcurl.load_wasm) {
+                        libcurl.load_wasm().catch(() => {});
+                    }
+
                     const transport = await connection.getTransport();
                     if (!transport || transport.path !== transportPath) {
                         await connection.setTransport(transportPath, [
-                            { websocket: "wss://wisp.mercurywork.shop/" },
-                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" }
+                            { websocket: wispUrl },
+                            { websocket: "wss://ruby.rubynetwork.xyz/wisp/" },
+                            { websocket: "wss://flow-works.me/wisp/" }
                         ]);
                     }
+                    console.log("Valo Plus: BareMux Transport Active");
+
                     const bc = new BroadcastChannel("bare-mux-sync");
                     const port = connection.getInnerPort();
-                    const msg = { type: 'baremuxready', path: "/VORA/VERN_SYSTEM/baremux/worker.js", hasPort: !!port };
-                    bc.postMessage(msg);
-                    if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage(msg, port ? [port] : []);
+                    
+                    const signalReady = () => {
+                        const msg = { 
+                            type: 'baremuxready', 
+                            path: workerPath,
+                            hasPort: !!port 
+                        };
+                        
+                        bc.postMessage(msg);
+                        
+                        if (navigator.serviceWorker.controller) {
+                            if (port) {
+                                navigator.serviceWorker.controller.postMessage(msg, [port]);
+                            } else {
+                                navigator.serviceWorker.controller.postMessage(msg);
+                            }
+                        }
+                    };
+                    
+                    signalReady();
                     window.__4sp_bare_mux_connecting = false;
                     return; 
-                } catch (e) { await new Promise(r => setTimeout(r, 200)); }
+                } catch (e) {
+                    if (i === retries - 1) console.error("Valo Plus: BareMux connection exhausted", e);
+                    await new Promise(r => setTimeout(r, 200));
+                }
             }
             window.__4sp_bare_mux_connecting = false;
         };
 
         (async () => {
             if ("serviceWorker" in navigator) {
-                try { await navigator.serviceWorker.register("/sw.js", { scope: "/" }); } catch (e) {}
+                try {
+                    await navigator.serviceWorker.register("/sw.js", {
+                        scope: "/"
+                    });
+                } catch (e) { console.error("VERN Proxy Error", e); }
             }
             await window.checkBare();
         })();
@@ -123,7 +157,7 @@
             background: rgba(33, 150, 243, 0.05);
         }
 
-        .category-title { font-family: 'Bebas Neue', cursive; font-size: 2.5rem; letter-spacing: 0.05em; margin-bottom: 1.5rem; padding-left: 4rem; color: var(--accent-color); }
+        .category-title { font-family: 'Bebas Neue', cursive; font-size: 2.5rem; letter-spacing: 0.05em; margin-bottom: 1.5rem; color: var(--accent-color); text-transform: uppercase; }
 
         .bottom-nav {
             position: fixed;
@@ -166,19 +200,20 @@
 <body class="pt-24">
     <nav class="fixed top-0 left-0 right-0 h-20 flex items-center px-16 z-[100] bg-[#05080f]/90 backdrop-blur-md border-bottom border-white/5">
         <div class="flex items-center gap-3">
-            <img src="./logo.png" class="w-10 h-10 object-contain">
+            <img src="/VALO_PLUS/logo.png" class="w-10 h-10 object-contain">
             <span class="text-3xl font-black tracking-tighter text-white font-bebas">VALO<span class="text-accent-blue ml-1">PLUS</span></span>
         </div>
         <div class="ml-auto flex items-center gap-8">
-            <a href="index.html" class="text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition">Home</a>
-            <a href="live.html" class="text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition">Live</a>
-            <a href="schedule.html" class="text-sm font-bold uppercase tracking-widest text-white border-b-2 border-accent-blue">Schedule</a>
+            <a href="/VALO_PLUS/index.html" class="text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition">Home</a>
+            <a href="/VALO_PLUS/live.html" class="text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition">Live</a>
+            <a href="/VALO_PLUS/schedule.html" class="text-sm font-bold uppercase tracking-widest text-white border-b-2 border-accent-blue">Schedule</a>
         </div>
     </nav>
 
-    <main class="max-w-[1200px] mx-auto pb-20">
-        <h2 class="category-title">Upcoming Matches</h2>
-        <div class="px-16">
+    <main class="max-w-[1200px] mx-auto pb-20 px-16">
+        <h1 class="category-title">Upcoming Matches</h1>
+        <div id="scheduleGrid">
+            <!-- Mock items for now as schedule API is different -->
             <div class="schedule-row">
                 <div class="text-accent-blue font-bold text-xl w-32 font-bebas">TODAY 8:00 PM</div>
                 <div class="flex-1 flex items-center justify-between">
@@ -187,7 +222,7 @@
                         <span class="text-white/40">vs</span>
                         <span class="font-bold text-lg">Warriors</span>
                     </div>
-                    <div class="text-sm uppercase tracking-widest text-white/60">NBA Regular Season</div>
+                    <div class="text-[10px] uppercase tracking-widest text-white/40 font-black">NBA Regular Season</div>
                 </div>
                 <i class="fas fa-chevron-right text-white/20"></i>
             </div>
@@ -199,7 +234,7 @@
                         <span class="text-white/40">vs</span>
                         <span class="font-bold text-lg">Barcelona</span>
                     </div>
-                    <div class="text-sm uppercase tracking-widest text-white/60">La Liga</div>
+                    <div class="text-[10px] uppercase tracking-widest text-white/40 font-black">La Liga</div>
                 </div>
                 <i class="fas fa-chevron-right text-white/20"></i>
             </div>
@@ -211,7 +246,7 @@
                         <span class="text-white/40">vs</span>
                         <span class="font-bold text-lg">Bengals</span>
                     </div>
-                    <div class="text-sm uppercase tracking-widest text-white/60">NFL Week 15</div>
+                    <div class="text-[10px] uppercase tracking-widest text-white/40 font-black">NFL Week 15</div>
                 </div>
                 <i class="fas fa-chevron-right text-white/20"></i>
             </div>
@@ -227,18 +262,18 @@
             { id: 'nba', name: 'NBA', icon: 'fa-basketball' },
             { id: 'nfl', name: 'NFL', icon: 'fa-football' },
             { id: 'mlb', name: 'MLB', icon: 'fa-baseball' },
-            { id: 'soccer', name: 'Soccer', icon: 'fa-futbol' },
-            { id: 'nhl', name: 'NHL', icon: 'fa-hockey-puck' },
+            { id: 'football', name: 'Soccer', icon: 'fa-futbol' },
+            { id: 'hockey', name: 'NHL', icon: 'fa-hockey-puck' },
             { id: 'ufc', name: 'UFC', icon: 'fa-hand-fist' },
             { id: 'tennis', name: 'Tennis', icon: 'fa-table-tennis-paddle-ball' },
-            { id: 'f1', name: 'Formula 1', icon: 'fa-car-side' }
+            { id: 'motor-sports', name: 'Formula 1', icon: 'fa-car-side' }
         ];
         const bottomSportsBar = document.getElementById('bottomSportsBar');
         sports.forEach(sport => {
             const barItem = document.createElement('div');
             barItem.className = 'sports-bar-item';
             barItem.innerHTML = `<i class="fas ${sport.icon}"></i> ${sport.name}`;
-            barItem.onclick = () => window.location.href = `./sports/${sport.id === 'soccer' ? 'football' : sport.id}`;
+            barItem.onclick = () => window.location.href = `/VALO_PLUS/sports/${sport.id}`;
             bottomSportsBar.appendChild(barItem);
         });
     </script>

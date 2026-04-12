@@ -25,7 +25,7 @@
             if (window.__4sp_bare_mux_connecting) return;
             window.__4sp_bare_mux_connecting = true;
 
-            const workerPath = "/VORA/VERN_SYSTEM/baremux/worker.js";
+            const workerPath = "/VALO_PLUS/VERN_SYSTEM/baremux/worker.js";
             const connection = new BareMux.BareMuxConnection(workerPath);
             const wispUrl = "wss://wisp.mercurywork.shop/";
             const transportPath = "/VALO_PLUS/VERN_SYSTEM/libcurl/index.mjs";
@@ -387,14 +387,14 @@
 
     <script>
         const sports = [
-            { id: 'nba', name: 'NBA', gradient: 'linear-gradient(to bottom, #05080f, #0D47A1, #b91c1c)', icon: 'fa-basketball' },
-            { id: 'nfl', name: 'NFL', gradient: 'linear-gradient(to bottom, #05080f, #1e3a8a, #334155)', icon: 'fa-football' },
-            { id: 'mlb', name: 'MLB', gradient: 'linear-gradient(to bottom, #05080f, #1d4ed8, #be123c)', icon: 'fa-baseball' },
-            { id: 'soccer', name: 'Soccer', gradient: 'linear-gradient(to bottom, #05080f, #065f46, #1e40af)', icon: 'fa-futbol' },
-            { id: 'nhl', name: 'NHL', gradient: 'linear-gradient(to bottom, #05080f, #334155, #000000)', icon: 'fa-hockey-puck' },
-            { id: 'ufc', name: 'UFC', gradient: 'linear-gradient(to bottom, #05080f, #450a0a, #78350f)', icon: 'fa-hand-fist' },
-            { id: 'tennis', name: 'Tennis', gradient: 'linear-gradient(to bottom, #05080f, #4d7c0f, #1e40af)', icon: 'fa-table-tennis-paddle-ball' },
-            { id: 'f1', name: 'Formula 1', gradient: 'linear-gradient(to bottom, #05080f, #991b1b, #171717)', icon: 'fa-car-side' }
+            { id: 'nba', name: 'NBA', gradient: 'linear-gradient(to bottom, #05080f, #0D47A1, #b91c1c)', icon: 'fa-basketball', img: './images/grid-strength.jpg' },
+            { id: 'nfl', name: 'NFL', gradient: 'linear-gradient(to bottom, #05080f, #1e3a8a, #334155)', icon: 'fa-football', img: './images/grid-endurance.jpg' },
+            { id: 'mlb', name: 'MLB', gradient: 'linear-gradient(to bottom, #05080f, #1d4ed8, #be123c)', icon: 'fa-baseball', img: './images/grid-power.jpg' },
+            { id: 'soccer', name: 'Soccer', gradient: 'linear-gradient(to bottom, #05080f, #065f46, #1e40af)', icon: 'fa-futbol', img: './images/hero.webp' },
+            { id: 'nhl', name: 'NHL', gradient: 'linear-gradient(to bottom, #05080f, #334155, #000000)', icon: 'fa-hockey-puck', img: './images/grid-strength.jpg' },
+            { id: 'ufc', name: 'UFC', gradient: 'linear-gradient(to bottom, #05080f, #450a0a, #78350f)', icon: 'fa-hand-fist', img: './images/grid-power.jpg' },
+            { id: 'tennis', name: 'Tennis', gradient: 'linear-gradient(to bottom, #05080f, #4d7c0f, #1e40af)', icon: 'fa-table-tennis-paddle-ball', img: './images/grit.webp' },
+            { id: 'f1', name: 'Formula 1', gradient: 'linear-gradient(to bottom, #05080f, #991b1b, #171717)', icon: 'fa-car-side', img: './images/grid-endurance.jpg' }
         ];
 
         const bottomSportsBar = document.getElementById('bottomSportsBar');
@@ -422,7 +422,7 @@
             const card = document.createElement('div');
             card.className = 'sport-card';
             card.innerHTML = `
-                <img src="./images/grid-${sport.id === 'f1' ? 'endurance' : 'strength'}.jpg" alt="${sport.name}">
+                <img src="${sport.img}" alt="${sport.name}">
                 <div class="sport-info-overlay">
                     <h3 class="font-bebas text-2xl">${sport.name}</h3>
                     <p class="text-xs text-white/60">Live Coverage & More</p>
@@ -457,7 +457,7 @@
                     <div class="suggestion-item">
                         <i class="fas fa-play-circle text-accent-blue"></i>
                         <div>
-                            <div class="font-bold text-sm">${s.title}</div>
+                            <div class="font-bold text-sm text-white">${s.title}</div>
                             <div class="text-[10px] text-white/40 uppercase tracking-widest">${s.cat}</div>
                         </div>
                     </div>

@@ -62,6 +62,22 @@
       "destination": "/api/proxy?url=https://glseries.net/:path*"
     },
     {
+      "source": "/VALO_PLUS/api/proxy",
+      "destination": "/api/sports-proxy"
+    },
+    {
+      "source": "/VALO_PLUS/sports/:path*",
+      "destination": "/VALO_PLUS/sports/index.html"
+    },
+    {
+      "source": "/VALO_PLUS/schedule/:path*",
+      "destination": "/VALO_PLUS/schedule/index.html"
+    },
+    {
+      "source": "/VALO_PLUS/standings/:path*",
+      "destination": "/VALO_PLUS/standings/index.html"
+    },
+    {
       "source": "/@:username",
       "destination": "/logged-in/profile.html?username=:username"
     },
