@@ -269,7 +269,7 @@
         });
 
         async function loadMatches() {
-            const pathSegments = window.location.pathname.split('/').filter(s => s.length > 0 && s !== 'index.html');
+            const pathSegments = window.location.pathname.replace(/\/$/, '').split('/').filter(s => s.length > 0 && s !== 'index.html');
             const category = pathSegments[pathSegments.length - 1] === 'sports' ? 'nfl' : pathSegments[pathSegments.length - 1];
             
             const sportNameElem = document.getElementById('sport-name');

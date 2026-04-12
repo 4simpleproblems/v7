@@ -2,6 +2,10 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/VALO_PLUS/api/proxy",
+      "destination": "/api/sports-proxy"
+    },
+    {
       "source": "/music-api/:endpoint",
       "destination": "/api/music-api?endpoint=:endpoint"
     },
@@ -60,10 +64,6 @@
     {
       "source": "/tglsc-proxy/:path*",
       "destination": "/api/proxy?url=https://glseries.net/:path*"
-    },
-    {
-      "source": "/VALO_PLUS/api/proxy",
-      "destination": "/api/sports-proxy"
     },
     {
       "source": "/VALO_PLUS/sports/(.*)",
