@@ -106,3 +106,46 @@ input {
     border-radius: 0.75rem !important;
     color: white !important;
 }
+
+/* Prevent potential overlay ads from blocking interaction */
+iframe {
+    z-index: 1 !important;
+}
+
+#auth-controls-wrapper {
+    z-index: 100 !important;
+}
+
+/* Enhanced Player UI (Vora-style) */
+.fixed.inset-0.z-\[100\].bg-black {
+    background-color: rgba(0, 0, 0, 0.95) !important;
+    backdrop-filter: blur(10px);
+}
+
+.fixed.inset-0.z-\[100\].bg-black h3 {
+    font-family: 'Geist', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.05em !important;
+}
+
+.fixed.inset-0.z-\[100\].bg-black button {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 50% !important;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.fixed.inset-0.z-\[100\].bg-black button:hover {
+    background: rgba(255, 0, 0, 0.6) !important;
+    transform: scale(1.1);
+}
+
+/* Force Geist on all headers */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Geist', sans-serif !important;
+}
