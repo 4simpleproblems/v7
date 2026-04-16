@@ -293,6 +293,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.roles;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.bans;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.hardware_bans;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.ban_requests;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.config;
 
 -- 11. INITIAL ADMIN ROLE
 INSERT INTO public.roles (user_id, role)
