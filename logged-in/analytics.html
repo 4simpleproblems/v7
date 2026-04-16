@@ -283,6 +283,27 @@
                 </div>
             </div>
 
+            <!-- Site Configuration Status -->
+            <div class="mb-6">
+                <h3 class="text-xs uppercase tracking-widest text-gray-500 font-bold mb-4"><i class="fas fa-cog mr-2"></i> Site Configuration</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] uppercase tracking-widest text-gray-500">Explicit Sounds</p>
+                            <h4 id="config-explicit-status" class="text-sm font-medium mt-1">Loading...</h4>
+                        </div>
+                        <div id="config-explicit-indicator" class="w-2 h-2 rounded-full bg-gray-500"></div>
+                    </div>
+                    <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] uppercase tracking-widest text-gray-500">3rd Party Sounds</p>
+                            <h4 id="config-third-party-status" class="text-sm font-medium mt-1">Loading...</h4>
+                        </div>
+                        <div id="config-third-party-indicator" class="w-2 h-2 rounded-full bg-gray-500"></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-6 h-[400px] flex flex-col">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xs uppercase tracking-widest text-gray-500 font-bold"><i class="fas fa-chart-line mr-2"></i> User Growth</h3>
@@ -498,6 +519,7 @@
             setupSearchAutocomplete();
 
             await loadStats();
+            await loadConfig();
             await loadUsers();
             
             document.getElementById('loading-spinner').classList.add('hidden');
@@ -523,6 +545,45 @@
             if (!dateString) return '---';
             const date = new Date(dateString);
             return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        async function loadConfig() {
+            try {
+                const { data } = await supabase.from('config').select('*');
+                if (data) {
+                    const explicit = data.find(c => c.key === 'soundboard_explicit');
+                    const thirdParty = data.find(c => c.key === 'soundboard_third_party');
+
+                    if (explicit) {
+                        const isEnabled = explicit.value === true || explicit.value === 'true';
+                        document.getElementById('config-explicit-status').innerText = isEnabled ? 'Enabled' : 'Disabled';
+                        document.getElementById('config-explicit-indicator').className = `w-2 h-2 rounded-full ${isEnabled ? 'bg-green-500' : 'bg-red-500'}`;
+                    }
+
+                    if (thirdParty) {
+                        const isEnabled = thirdParty.value === true || thirdParty.value === 'true';
+                        document.getElementById('config-third-party-status').innerText = isEnabled ? 'Enabled' : 'Disabled';
+                        document.getElementById('config-third-party-indicator').className = `w-2 h-2 rounded-full ${isEnabled ? 'bg-green-500' : 'bg-red-500'}`;
+                    }
+                }
+
+                // Subscribe to changes for real-time updates
+                supabase.channel('config-updates')
+                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'config' }, payload => {
+                        const { key, value } = payload.new;
+                        const isEnabled = value === true || value === 'true';
+                        if (key === 'soundboard_explicit') {
+                            document.getElementById('config-explicit-status').innerText = isEnabled ? 'Enabled' : 'Disabled';
+                            document.getElementById('config-explicit-indicator').className = `w-2 h-2 rounded-full ${isEnabled ? 'bg-green-500' : 'bg-red-500'}`;
+                        } else if (key === 'soundboard_third_party') {
+                            document.getElementById('config-third-party-status').innerText = isEnabled ? 'Enabled' : 'Disabled';
+                            document.getElementById('config-third-party-indicator').className = `w-2 h-2 rounded-full ${isEnabled ? 'bg-green-500' : 'bg-red-500'}`;
+                        }
+                    })
+                    .subscribe();
+            } catch (e) {
+                console.warn("Failed to load config:", e);
+            }
         }
 
         async function loadStats() {

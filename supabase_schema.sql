@@ -298,3 +298,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.ban_requests;
 INSERT INTO public.roles (user_id, role)
 SELECT id, 'full_admin' FROM auth.users WHERE email = '4simpleproblems@gmail.com'
 ON CONFLICT (user_id) DO NOTHING;
+
+-- 12. DEFAULT CONFIG
+INSERT INTO public.config (key, value)
+VALUES 
+    ('soundboard_explicit', 'true'::jsonb),
+    ('soundboard_third_party', 'true'::jsonb)
+ON CONFLICT (key) DO NOTHING;

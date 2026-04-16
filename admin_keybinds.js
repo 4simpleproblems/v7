@@ -111,57 +111,13 @@
         isAdmin = false;
     }
 
-    // Toggle Config Function
-    async function toggleConfig(field, name) {
-        if (!isAdmin) {
-             console.warn("[Admin Keybinds] Access denied. Not an admin.");
-             return;
-        }
-        
-        console.log(`[Admin Keybinds] Toggling ${name}...`);
-        const configRef = doc(db, 'config', 'soundboard');
-        
-        try {
-            const snap = await getDoc(configRef);
-            let currentVal = true; // Default to true if not set
-            if (snap.exists()) {
-                const data = snap.data();
-                if (data[field] !== undefined) {
-                    currentVal = data[field];
-                }
-            }
-            
-            const newVal = !currentVal;
-            await setDoc(configRef, { [field]: newVal }, { merge: true });
-            
-            const statusColor = newVal ? "green" : "red";
-            const statusText = newVal ? "ENABLED" : "DISABLED";
-            showAdminToast(`${name}: ${statusText}`, statusColor);
-            
-        } catch (err) {
-            console.error(`[Admin Keybinds] Error toggling ${name}:`, err);
-            showAdminToast(`Error: ${err.message}`, "error");
-        }
-    }
-
     // Keybind Listener
     document.addEventListener('keydown', async (e) => {
         // Only run if admin, Shift key, and Ctrl key are pressed
         if (!isAdmin || !e.shiftKey || !e.ctrlKey) return;
 
-        // Shift + Ctrl + E: Explicit Sounds
-        if (e.key.toLowerCase() === 'e') {
-            e.preventDefault();
-            e.stopPropagation(); // Ensure it stops here
-            toggleConfig('explicitEnabled', 'Explicit Sounds');
-        }
-
-        // Shift + Ctrl + F: Third Party Sounds
-        if (e.key.toLowerCase() === 'f') {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleConfig('thirdPartyEnabled', 'Third Party Sounds');
-        }
+        // Custom admin keybinds can be added here
+        // Soundboard toggles (Ctrl+Shift+E/F) are now handled globally in injector.js via Supabase
     }, { capture: true }); // Use capture to intercept before inputs
 
     // Auth & Role Check

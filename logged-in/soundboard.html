@@ -435,35 +435,10 @@
         // Import Third Party Sounds from CDN
         import { sounds as thirdPartySounds } from 'https://cdn.jsdelivr.net/gh/genizy/soundboard@main/sounds.js';
 
-        // --- Firebase Integration ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // Same config as the admin file
-        const firebaseConfig = {
-            apiKey: "AIzaSyAZBKAckVa4IMvJGjcyndZx6Y1XD52lgro",
-            authDomain: "project-zirconium.firebaseapp.com",
-            projectId: "project-zirconium",
-            storageBucket: "project-zirconium.firebasestorage.app",
-            messagingSenderId: "1096564243475",
-            appId: "1:1096564243475:web:6d0956a70125eeea1ad3e6",
-            measurementId: "G-1D4F692C1Q"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
         // --- UI & State References ---
         const pageContent = document.getElementById('page-content');
         const optionsMenuBtn = document.getElementById('options-menu-btn');
         
-        let unsubConfig = () => {};
-        function cleanup() {
-            unsubConfig();
-        }
-        window.addEventListener('pagehide', cleanup);
-
         if (window.showLoader) window.showLoader("Soundboard");
         const optionsDropdown = document.getElementById('options-dropdown');
         const soundSearchInput = document.getElementById('sound-search');
@@ -528,25 +503,50 @@
             fetchConfig();
         }
 
-        // --- OPTIMIZATION: One-time fetch instead of live listener ---
+        // --- Supabase Integration ---
         async function fetchConfig() {
+            if (!window.supabase) {
+                setTimeout(fetchConfig, 100);
+                return;
+            }
             try {
-                const configRef = doc(db, 'config', 'soundboard');
-                const docSnap = await getDoc(configRef);
-                
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const isExplicitEnabled = data.explicitEnabled !== false;
-                    explicitSectionWrapper.style.display = isExplicitEnabled ? 'block' : 'none';
+                const { data } = await window.supabase.from('config').select('*');
+                if (data) {
+                    const explicit = data.find(c => c.key === 'soundboard_explicit');
+                    const thirdParty = data.find(c => c.key === 'soundboard_third_party');
 
-                    const isThirdPartyEnabled = data.thirdPartyEnabled !== false;
-                    thirdPartySectionWrapper.style.display = isThirdPartyEnabled ? 'block' : 'none';
+                    if (explicit) {
+                        const isEnabled = explicit.value === true || explicit.value === 'true';
+                        explicitSectionWrapper.style.display = isEnabled ? 'block' : 'none';
+                    } else {
+                        explicitSectionWrapper.style.display = 'block';
+                    }
+
+                    if (thirdParty) {
+                        const isEnabled = thirdParty.value === true || thirdParty.value === 'true';
+                        thirdPartySectionWrapper.style.display = isEnabled ? 'block' : 'none';
+                    } else {
+                        thirdPartySectionWrapper.style.display = 'block';
+                    }
                 } else {
                     explicitSectionWrapper.style.display = 'block';
                     thirdPartySectionWrapper.style.display = 'block';
                 }
+
+                // Subscribe to changes for real-time updates
+                window.supabase.channel('soundboard-config')
+                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'config' }, payload => {
+                        const { key, value } = payload.new;
+                        const isEnabled = value === true || value === 'true';
+                        if (key === 'soundboard_explicit') {
+                            explicitSectionWrapper.style.display = isEnabled ? 'block' : 'none';
+                        } else if (key === 'soundboard_third_party') {
+                            thirdPartySectionWrapper.style.display = isEnabled ? 'block' : 'none';
+                        }
+                    })
+                    .subscribe();
             } catch (error) {
-                console.warn("Config fetch error:", error);
+                console.warn("Supabase Config fetch error:", error);
                 explicitSectionWrapper.style.display = 'block';
                 thirdPartySectionWrapper.style.display = 'block';
             }

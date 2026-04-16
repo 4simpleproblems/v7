@@ -230,6 +230,57 @@
                     }
                 };
                 setTimeout(checkBanToast, 1000);
+
+                // --- Admin Keybinds for Soundboard Toggles ---
+                document.addEventListener('keydown', async (e) => {
+                    if (e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === 'e' || e.key.toLowerCase() === 'f')) {
+                        if (!window.supabase) return;
+
+                        try {
+                            const { data: { user } } = await window.supabase.auth.getUser();
+                            if (!user) return;
+
+                            const { data: profile } = await window.supabase.from('profiles').select('is_admin, email').eq('id', user.id).single();
+                            const { data: roleData } = await window.supabase.from('roles').select('role').eq('user_id', user.id).maybeSingle();
+                            
+                            const isPrivileged = profile?.email === '4simpleproblems@gmail.com' || profile?.is_admin || roleData?.role === 'full_admin';
+
+                            if (!isPrivileged) return;
+
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            const key = e.key.toLowerCase() === 'e' ? 'soundboard_explicit' : 'soundboard_third_party';
+                            const name = e.key.toLowerCase() === 'e' ? 'Explicit Sounds' : 'Third Party Sounds';
+
+                            // Get current value
+                            const { data: configData } = await window.supabase.from('config').select('value').eq('key', key).maybeSingle();
+                            const currentValue = configData ? (configData.value === true || configData.value === 'true') : true;
+                            const newValue = !currentValue;
+
+                            // Update value
+                            const { error } = await window.supabase.from('config').upsert({ key, value: newValue }, { onConflict: 'key' });
+
+                            if (error) throw error;
+
+                            const statusText = newValue ? 'ENABLED' : 'DISABLED';
+                            const message = `${name}: ${statusText}`;
+
+                            if (window.showNotification) {
+                                const isMini = !!document.getElementById('notification-container');
+                                if (isMini) {
+                                    window.showNotification(message, newValue ? 'fa-solid fa-check' : 'fa-solid fa-xmark', newValue ? 'success' : 'error', 3000);
+                                } else {
+                                    window.showNotification(message, true, 3000);
+                                }
+                            } else {
+                                alert(message);
+                            }
+                        } catch (err) {
+                            console.error("Admin Keybind Error:", err);
+                        }
+                    }
+                }, { capture: true });
             })
             .catch(error => {
                 console.error('Loader encountered errors during script loading:', error);
