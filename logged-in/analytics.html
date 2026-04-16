@@ -3,849 +3,1138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4SP - ANALYTICS V6</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
+    <title>4SP - ANALYTICS V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/injector.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="/injector.js"></script>
 
     <style>
         :root {
-            --bg-page: var(--bg-primary, #040404);
-            --bg-card: var(--bg-secondary, #0d0d0d);
-            --text-main: var(--text-primary, #ffffff);
-            --text-muted: var(--text-secondary, #c0c0c0);
-            --accent-color: var(--accent-primary, #4f46e5);
-            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
-            --border-main: var(--border-primary, #1a1a1a);
-            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
-            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
+            --bg-page: #050505;
+            --bg-card: #0a0a0a;
+            --accent: #4f46e5;
+            --border: #1a1a1a;
         }
-
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: var(--bg-page); 
-            color: var(--text-muted); 
-            font-weight: 300;
+            background: var(--bg-page); 
+            color: #fff; 
+            font-size: 13px;
             overflow-x: hidden;
         }
-
-        .grid-bg {
-            background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
-            background-size: 24px 24px;
-        }
-
-        #dynamic-background {
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%);
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .stat-card { 
-            background: var(--bg-card); 
-            border: 1px solid var(--border-main); 
-            border-radius: 2rem; 
-            padding: 2rem; 
-            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .stat-card:hover:not(.no-hover) {
-            border-color: var(--accent-color);
-            transform: translateY(-4px);
-        }
-
-        .tab-btn { 
-            padding: 1rem 2rem; 
-            color: var(--text-muted); 
-            border-bottom: 2px solid transparent; 
-            transition: all 0.3s; 
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-        .tab-btn.active { 
-            color: white; 
-            border-bottom-color: var(--accent-color); 
-            background: linear-gradient(to top, var(--btn-bg), transparent);
-        }
-
-        /* Outline Buttons (Index Style) */
-        .action-btn { 
-            padding: 0.6rem 1.25rem; 
-            border-radius: 16px; 
-            font-size: 0.85rem; 
-            font-weight: 600;
-            transition: all 0.2s; 
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            border: 1px solid transparent;
-            cursor: pointer;
-        }
-        .btn-red { 
-            border-color: rgba(239, 68, 68, 0.3);
-            color: #ef4444; 
-            background: rgba(239, 68, 68, 0.05); 
-        }
-        .btn-red:hover { 
-            background: rgba(239, 68, 68, 0.15); 
-            border-color: #ef4444;
-            transform: scale(1.02);
-        }
-        .btn-blue { 
-            border-color: var(--accent-color);
-            color: var(--accent-color); 
-            background: var(--btn-bg);
-        }
-        .btn-blue:hover { 
-            background: var(--accent-glow);
-            border-color: var(--accent-color);
-            color: #fff;
-            transform: scale(1.02);
-        }
-        .btn-purple {
-            border-color: #9333ea;
-            color: #a855f7;
-            background: rgba(147, 51, 234, 0.05);
-        }
-        .btn-purple:hover {
-            background: rgba(147, 51, 234, 0.15);
-            border-color: #a855f7;
-            transform: scale(1.02);
-        }
-
-        /* Custom Modal Vibe */
-        .modal-backdrop {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            z-index: 100000;
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.4s ease;
-        }
-        .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
         
-        .modal-container {
-            width: 100%;
-            max-width: 500px;
-            animation: modal-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        /* Layout Containers */
+        #list-view { display: block; }
+        #grid-view { display: none; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+        
+        /* Dense Table Style */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { 
+            text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border);
+            text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em; color: #444;
         }
-        @keyframes modal-in {
-            from { opacity: 0; transform: translateY(30px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+        .data-table td { padding: 8px 12px; border-bottom: 1px solid #0f0f0f; vertical-align: middle; cursor: pointer; }
+        .data-table tr { transition: background 0.1s; }
+        .data-table tr:hover { background: rgba(255,255,255,0.03); }
+
+        /* Grid Card Style */
+        .grid-card {
+            background: #0d0d0d; border: 1px solid var(--border); border-radius: 12px;
+            padding: 16px; display: flex; flex-direction: column; gap: 8px;
+            transition: all 0.2s; cursor: pointer;
+        }
+        .grid-card:hover { border-color: #333; transform: translateY(-2px); background: #111; }
+
+        /* Schema Viz */
+        .schema-viz {
+            display: flex; gap: 40px; padding: 20px; overflow-x: auto;
+            background: radial-gradient(circle at 50% 50%, #111 0%, #050505 100%);
+            border-bottom: 1px solid var(--border);
+        }
+        .table-node {
+            background: #0f0f0f; border: 1px solid #333; border-radius: 8px;
+            width: 180px; flex-shrink: 0; position: relative; z-index: 2;
+        }
+        .node-header { background: #1a1a1a; padding: 6px 10px; font-weight: bold; font-size: 11px; border-radius: 8px 8px 0 0; }
+        .node-field { padding: 4px 10px; font-size: 10px; color: #888; display: flex; justify-content: space-between; }
+        .connector {
+            position: absolute; width: 40px; height: 1px; background: var(--accent);
+            right: -40px; top: 50%; opacity: 0.4; z-index: 1;
         }
 
-        .modal-input {
-            width: 100%;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border-main);
-            border-radius: 1.25rem;
-            padding: 1rem 1.25rem;
-            color: white;
-            outline: none;
-            transition: all 0.2s;
+        /* Search & Controls */
+        .search-container {
+            background: #0d0d0d; border: 1px solid var(--border);
+            border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;
         }
-        .modal-input:focus { border-color: var(--accent-color); background: rgba(255,255,255,0.06); }
+        .search-input { background: transparent; border: none; outline: none; width: 100%; color: #fff; font-size: 14px; }
+        
+        .btn-niobium {
+            background: #0d0d0d; border: 1px solid var(--border); border-radius: 8px;
+            color: #888; padding: 8px 14px; cursor: pointer; transition: all 0.2s; height: 100%;
+        }
+        .btn-niobium:hover, .btn-niobium.active { border-color: var(--accent); color: #fff; }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 10px; }
+        .view-tab {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--border); border-radius: 12px; font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.2s; cursor: pointer;
+        }
+        .view-tab.active { background: #1a1a1a; border-color: #333; color: #fff; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
+        .view-tab:not(.active) { background: #0d0d0d; color: #666; }
+        .view-tab:not(.active):hover { color: #aaa; border-color: #333; }
+        
+        .chart-filter-btn {
+            background: #050505; border: 1px solid var(--border); border-radius: 6px;
+            color: #666; padding: 4px 10px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;
+        }
+        .chart-filter-btn:hover { color: #fff; border-color: #333; }
+        .chart-filter-btn.active { background: #1a1a1a; color: var(--accent); border-color: var(--accent); }
+
+        .pfp-micro { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); object-fit: cover; }
+        .pfp-medium { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); object-fit: cover; }
+        
+        .status-badge { padding: 2px 6px; border-radius: 99px; font-size: 8px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+        .badge-admin { background: rgba(79,70,229,0.2); color: #818cf8; border: 1px solid rgba(79,70,229,0.3); }
+        .badge-user { background: rgba(255,255,255,0.05); color: #888; border: 1px solid rgba(255,255,255,0.1); }
+        .badge-banned { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+        .user-tag-badge { padding: 3px 8px; border-radius: 6px; font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); display: inline-block;}
+
+        /* Slide-Out Inspector Panel */
+        #inspector-panel {
+            position: fixed; top: 0; right: -450px; width: 450px; height: 100vh;
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border); z-index: 100000;
+            transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; flex-direction: column;
+            box-shadow: -20px 0 50px rgba(0,0,0,0.5);
+        }
+        #inspector-panel.open { right: 0; }
+        
+        .action-btn {
+            width: 100%; padding: 10px; border-radius: 8px; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.2s;
+            border: 1px solid var(--border); background: #000; color: #888; cursor: pointer;
+        }
+        .action-btn:hover { border-color: #444; color: #fff; }
+        .action-btn.danger { border-color: rgba(239,68,68,0.3); color: #ef4444; background: rgba(239,68,68,0.05); }
+        .action-btn.danger:hover { background: #ef4444; color: #fff; }
+        .action-btn.primary { border-color: var(--accent); color: var(--accent); background: rgba(79,70,229,0.05); }
+        .action-btn.primary:hover { background: var(--accent); color: #fff; }
+
+        .sugg-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #1a1a1a; display: flex; flex-direction: column; }
+        .sugg-item:hover { background: #111; }
+        .sugg-item:last-child { border-bottom: none; }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
     </style>
 </head>
-<body class="grid-bg min-h-screen pb-20">
-    <div id="dynamic-background"></div>
-    <div id="navbar-container"></div>
+<body class="custom-scroll relative">
+    <div id="navbar-container"></div> 
+    
+    <div id="dialog-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100005] hidden flex items-center justify-center transition-opacity">
+        <div class="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl w-full max-w-sm p-6 shadow-2xl scale-95 transition-transform" id="dialog-box">
+            <h3 class="text-white font-bold mb-2 uppercase tracking-wider text-sm" id="dialog-title">Title</h3>
+            <p class="text-xs text-gray-400 mb-5" id="dialog-msg">Message</p>
+            <input type="text" id="dialog-input" class="w-full bg-[#050505] border border-[#1a1a1a] text-white p-3 rounded-lg text-sm mb-5 hidden" outline="none">
+            <div class="flex justify-end gap-2" id="dialog-buttons">
+                </div>
+        </div>
+    </div>
 
-    <div id="page-content" class="max-w-7xl mx-auto px-8 pt-24">
-        <header class="mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-            <div>
-                <p class="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-2 opacity-80">Central Authority</p>
-                <h1 class="text-6xl font-light text-white tracking-tight">System Analytics</h1>
+    <div id="tag-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100004] hidden flex items-center justify-center">
+        <div class="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl w-full max-w-sm p-6 shadow-2xl">
+            <h3 class="text-indigo-400 font-bold mb-4 uppercase tracking-widest text-xs">Manage User Tag</h3>
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-[10px] uppercase text-gray-500 tracking-widest mb-1">Tag Text (Blank to remove)</label>
+                    <input type="text" id="tag-text-input" placeholder="e.g. VIP, Developer, Artist" class="w-full bg-[#050505] border border-[#1a1a1a] text-white p-3 rounded-lg text-sm focus:border-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase text-gray-500 tracking-widest mb-1">Tag Color (Hex)</label>
+                    <div class="flex gap-2 items-center">
+                        <input type="color" id="tag-color-picker" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
+                        <input type="text" id="tag-color-input" class="flex-1 bg-[#050505] border border-[#1a1a1a] text-white p-3 rounded-lg text-sm mono focus:border-indigo-500 outline-none">
+                    </div>
+                </div>
             </div>
-            <div class="flex gap-2 border-b border-white/5 w-full md:w-auto overflow-x-auto">
-                <button class="tab-btn active" data-tab="overview">Overview</button>
-                <button class="tab-btn" data-tab="users">User Base</button>
-                <button class="tab-btn" data-tab="traffic">Traffic Logs</button>
-                <button class="tab-btn" data-tab="bans">Ban Requests</button>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeTagModal()" class="px-4 py-2 text-gray-500 hover:text-white text-xs">Cancel</button>
+                <button id="save-tag-btn" class="px-4 py-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 rounded-lg text-xs hover:bg-indigo-500 hover:text-white transition-colors">Save Tag</button>
             </div>
-        </header>
+        </div>
+    </div>
 
-        <!-- Overview Tab -->
-        <div id="tab-overview" class="tab-content">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-                <div class="stat-card no-hover">
-                    <span class="text-[10px] text-gray-500 uppercase tracking-widest font-black opacity-40">Total Active Usage</span>
-                    <div id="stat-total-time" class="text-4xl text-white mt-3 font-light tracking-tight">--</div>
-                </div>
-                <div class="stat-card no-hover">
-                    <span class="text-[10px] text-gray-500 uppercase tracking-widest font-black opacity-40">Total Users</span>
-                    <div id="stat-total-users" class="text-4xl text-indigo-400 mt-3 font-light tracking-tight">--</div>
-                </div>
-                <div class="stat-card no-hover">
-                    <span class="text-[10px] text-gray-500 uppercase tracking-widest font-black opacity-40">New Today</span>
-                    <div id="stat-new-today" class="text-4xl text-green-400 mt-3 font-light tracking-tight">--</div>
-                </div>
-                <div class="stat-card no-hover">
-                    <span class="text-[10px] text-gray-500 uppercase tracking-widest font-black opacity-40">Active Sessions</span>
-                    <div id="stat-active-sessions" class="text-4xl text-orange-400 mt-3 font-light tracking-tight">--</div>
-                </div>
+    <div id="ban-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100001] hidden flex items-center justify-center">
+        <div class="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl w-full max-w-md p-6">
+            <h3 class="text-red-400 font-bold mb-4 uppercase tracking-widest text-xs" id="modal-title">Review Ban Request</h3>
+            <p class="text-xs text-gray-500 mb-2" id="modal-desc"></p>
+            <textarea id="modal-reason" class="w-full bg-[#050505] border border-[#1a1a1a] text-white p-3 rounded-lg text-sm mb-4 min-h-[100px]" placeholder="Reason for ban..."></textarea>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeBanModal()" class="px-4 py-2 text-gray-500 hover:text-white text-xs">Cancel</button>
+                <button id="modal-confirm-btn" class="px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/30 rounded-lg text-xs hover:bg-red-500 hover:text-white transition-colors">Confirm Ban</button>
             </div>
-            <div class="stat-card h-[450px] no-hover">
-                <h3 class="text-xl text-white mb-8 font-light tracking-tight">Usage Trajectory</h3>
-                <canvas id="usageChart"></canvas>
+        </div>
+    </div>
+
+    <div id="list-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100001] hidden flex items-center justify-center">
+        <div class="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl w-full max-w-md flex flex-col max-h-[80vh]">
+            <div class="p-4 border-b border-[#1a1a1a] flex justify-between items-center">
+                <h3 class="text-indigo-400 font-bold uppercase tracking-widest text-xs" id="list-modal-title">List</h3>
+                <button onclick="closeListModal()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="list-modal-content" class="p-4 overflow-y-auto custom-scroll flex-1 space-y-3">
+                </div>
+        </div>
+    </div>
+
+    <div class="schema-viz" id="schema-visualization">
+        <div class="table-node">
+            <div class="node-header text-indigo-400">profiles</div>
+            <div class="node-field">id <span class="mono">uuid</span></div>
+            <div class="node-field">total_v6_time <span class="mono">int</span></div>
+            <div class="connector"></div>
+        </div>
+        <div class="table-node">
+            <div class="node-header text-orange-400">daily_photos</div>
+            <div class="node-field">creator_uid <span class="mono">uuid</span></div>
+            <div class="connector" style="width: 20px; right: -20px;"></div>
+        </div>
+        <div class="table-node">
+            <div class="node-header text-green-400">follows</div>
+            <div class="node-field">following_id <span class="mono">uuid</span></div>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <div class="flex flex-col xl:flex-row mb-6 gap-4 items-stretch h-12 relative z-50">
+            <div class="relative w-full xl:w-2/5 h-full">
+                <div class="search-container h-full shadow-lg">
+                    <i class="fas fa-search text-gray-600"></i>
+                    <input type="text" id="master-search" class="search-input" placeholder="Search parameters...">
+                    <div id="loading-spinner" class="text-indigo-500 hidden ml-auto">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                </div>
+                <div id="search-suggestions" class="absolute top-[110%] left-0 w-full bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl hidden overflow-hidden shadow-2xl">
+                    </div>
+            </div>
+            
+            <div class="flex gap-2 flex-1 h-full">
+                <div class="view-tab active" onclick="switchMainTab('users', this)">Users</div>
+                <div class="view-tab" onclick="switchMainTab('general', this)">General Data</div>
+                <div class="view-tab" onclick="switchMainTab('tags', this)">Tags</div>
+            </div>
+
+            <div class="flex gap-2 h-full" id="view-mode-toggles">
+                <button id="btn-grid" onclick="setLayout('grid')" class="btn-niobium"><i class="fas fa-th-large"></i></button>
+                <button id="btn-list" onclick="setLayout('list')" class="btn-niobium active"><i class="fas fa-list"></i></button>
             </div>
         </div>
 
-        <!-- Users Tab -->
-        <div id="tab-users" class="tab-content hidden">
-            <div class="stat-card p-0 overflow-hidden no-hover">
-                <div class="p-6 border-b border-white/5 flex flex-wrap justify-between items-center gap-6 bg-white/[0.02]">
-                    <div class="flex items-center gap-6">
-                        <h3 class="text-xl text-white font-light tracking-tight">User Management</h3>
-                        <div class="relative">
-                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-xs opacity-30"></i>
-                            <input type="text" id="user-search" placeholder="Search identity..." class="bg-black/40 border border-white/10 rounded-2xl px-10 py-2.5 text-sm focus:outline-none focus:border-indigo-500 w-72 transition-all">
+        <div id="tab-users" class="block">
+            <div id="list-view" class="overflow-x-auto border border-[#1a1a1a] rounded-xl bg-[#0a0a0a] shadow-xl">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User Identity</th>
+                            <th>UID</th>
+                            <th>Total Engagement Time</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-rows"></tbody>
+                </table>
+            </div>
+            <div id="grid-view" class="grid"></div>
+        </div>
+
+        <div id="tab-general" class="hidden">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex flex-col justify-between">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500">Total Network Time</p>
+                    <h4 id="stat-total-time" class="text-2xl font-light mono mt-2">0h</h4>
+                </div>
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex flex-col justify-between">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500">Average Session</p>
+                    <h4 id="stat-avg-time" class="text-2xl font-light mono mt-2">0m</h4>
+                </div>
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex flex-col justify-between">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500">Global Roster</p>
+                    <h4 id="stat-count" class="text-2xl font-light mono mt-2 text-indigo-400">0</h4>
+                </div>
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex flex-col justify-between">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500">First Citizen</p>
+                    <h4 id="stat-first-user" class="text-lg font-light truncate mt-2">---</h4>
+                </div>
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex flex-col justify-between">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500">Most Followed</p>
+                    <h4 id="stat-most-followed" class="text-lg font-light truncate mt-2 text-green-400">---</h4>
+                </div>
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl flex flex-col justify-between">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500">Total Tagged</p>
+                    <h4 id="stat-total-tagged" class="text-2xl font-light mono mt-2 text-orange-400">0</h4>
+                </div>
+            </div>
+
+            <div class="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-6 h-[400px] flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xs uppercase tracking-widest text-gray-500 font-bold"><i class="fas fa-chart-line mr-2"></i> User Growth</h3>
+                    <div class="flex gap-2">
+                        <button class="chart-filter-btn active" onclick="updateChartRange('all', this)">All Time</button>
+                        <button class="chart-filter-btn" onclick="updateChartRange(30, this)">30d</button>
+                        <button class="chart-filter-btn" onclick="updateChartRange(7, this)">7d</button>
+                        <button class="chart-filter-btn" onclick="updateChartRange(3, this)">3d</button>
+                    </div>
+                </div>
+                <div class="relative flex-1 w-full">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-tags" class="hidden">
+            <div id="tags-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                </div>
+        </div>
+
+    </div>
+
+    <div id="inspector-panel">
+        <div class="p-6 border-b border-[#1a1a1a] flex justify-between items-center bg-[#050505]">
+            <h3 class="text-sm font-bold uppercase tracking-widest text-indigo-400">User Inspector</h3>
+            <button onclick="closeInspector()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto custom-scroll p-6">
+            <div id="inspector-loading" class="text-center py-20 text-gray-600"><i class="fas fa-spinner fa-spin text-2xl"></i></div>
+            
+            <div id="inspector-content" class="hidden space-y-8">
+                <div class="flex items-center gap-4">
+                    <img id="ins-pfp" src="" class="w-16 h-16 rounded-2xl border-2 border-[#1a1a1a] object-cover">
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h2 id="ins-display-name" class="text-xl font-light">---</h2>
+                                <p id="ins-username" class="mono text-xs text-gray-500">@---</p>
+                            </div>
                         </div>
-                    </div>
-                    <button id="export-btn" class="action-btn btn-blue"><i class="fa-solid fa-file-export"></i> Export CSV</button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black border-b border-white/5 bg-white/[0.01]">
-                                <th class="p-6">Identity</th>
-                                <th class="p-6">Active Usage</th>
-                                <th class="p-6">Registry Date</th>
-                                <th class="p-6">Authorization</th>
-                                <th class="p-6">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="user-table-body" class="text-sm">
-                            <!-- Injected -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Traffic Tab -->
-        <div id="tab-traffic" class="tab-content hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="stat-card no-hover">
-                    <h3 class="text-xl text-white mb-6 font-light tracking-tight">Top Resources</h3>
-                    <div id="top-pages-list" class="space-y-4">
-                        <!-- Injected -->
+                        <div id="ins-badges" class="flex gap-2 mt-2 flex-wrap items-center"></div>
+                        <div id="ins-tag-container" class="mt-2"></div>
                     </div>
                 </div>
-                <div class="stat-card no-hover">
-                    <h3 class="text-xl text-white mb-6 font-light tracking-tight">Live Network Traffic</h3>
-                    <div id="recent-sessions-list" class="space-y-4">
-                        <!-- Injected -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bans Tab -->
-        <div id="tab-bans" class="tab-content hidden">
-            <div class="stat-card p-0 overflow-hidden no-hover">
-                <div class="p-6 border-b border-white/5 bg-white/[0.02]">
-                    <h3 class="text-xl text-white font-light tracking-tight">Pending Ban Requests</h3>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black border-b border-white/5 bg-white/[0.01]">
-                                <th class="p-6">Target User</th>
-                                <th class="p-6">Violation Reason</th>
-                                <th class="p-6">Reporter</th>
-                                <th class="p-6">Submitted</th>
-                                <th class="p-6">Decision</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ban-requests-body" class="text-sm">
-                            <!-- Injected -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modals -->
-    <div id="admin-modal" class="modal-backdrop">
-        <div class="modal-container">
-            <div class="stat-card no-hover">
-                <h3 class="text-2xl text-white mb-8 font-light tracking-tight text-center">Authorization Level</h3>
-                <div id="admin-target-info" class="mb-8 p-6 bg-white/[0.03] rounded-3xl border border-white/5 text-center"></div>
-                <div class="flex flex-col gap-3">
-                    <button id="make-admin-btn" class="action-btn btn-blue w-full py-4 uppercase tracking-widest text-[10px] font-black">Elevate to Full Admin</button>
-                    <button id="make-subadmin-btn" class="action-btn btn-purple w-full py-4 uppercase tracking-widest text-[10px] font-black">Appoint Sub-Admin</button>
-                    <button id="manage-tag-btn" class="action-btn btn-blue w-full py-4 uppercase tracking-widest text-[10px] font-black" style="border-color: #a855f7; color: #a855f7; background: rgba(168,85,247,0.05);">Manage Creator Tag</button>
-                    <button id="remove-admin-btn" class="action-btn btn-red w-full py-4 uppercase tracking-widest text-[10px] font-black">Clear Registry Role</button>
-                </div>
-                <button onclick="closeModal()" class="w-full mt-6 text-gray-500 text-xs hover:text-white transition-colors uppercase tracking-widest font-black">Dismiss</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Ban Modal -->
-    <div id="ban-modal" class="modal-backdrop">
-        <div class="modal-container">
-            <div class="stat-card no-hover">
-                <h3 id="ban-modal-title" class="text-2xl text-white mb-8 font-light tracking-tight text-center">Security Enforcement</h3>
-                <div id="ban-target-info" class="mb-8 p-6 bg-white/[0.03] rounded-3xl border border-white/5 text-center"></div>
                 
-                <div class="space-y-4 mb-8">
-                    <div>
-                        <label class="text-[10px] uppercase tracking-widest font-black opacity-40 ml-2 mb-2 block">Violation Reason</label>
-                        <input type="text" id="ban-reason" placeholder="e.g. Terms of Service violation" class="modal-input">
+                <div class="text-xs text-gray-400 bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-lg flex flex-col gap-1">
+                    <p>Joined: <span id="ins-joined" class="text-white font-mono"></span></p>
+                    <p>Provider: <span id="ins-provider" class="text-white uppercase font-mono tracking-wider"></span></p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl cursor-pointer hover:bg-[#111] transition-colors" onclick="showFollows('followers')">
+                        <p class="text-[9px] uppercase tracking-widest text-gray-500 mb-1">Followers</p>
+                        <h4 id="ins-followers" class="text-2xl font-light mono">0</h4>
+                    </div>
+                    <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl cursor-pointer hover:bg-[#111] transition-colors" onclick="showFollows('following')">
+                        <p class="text-[9px] uppercase tracking-widest text-gray-500 mb-1">Following</p>
+                        <h4 id="ins-following" class="text-2xl font-light mono">0</h4>
+                    </div>
+                    <div class="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-xl col-span-2">
+                        <p class="text-[9px] uppercase tracking-widest text-gray-500 mb-1">Cumulative Time</p>
+                        <h4 id="ins-time" class="text-sm font-medium text-indigo-300">0 seconds</h4>
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-3">
-                    <button id="confirm-ban-btn" class="action-btn btn-red w-full py-4 uppercase tracking-widest text-[10px] font-black">Execute Enforcement</button>
+                <div>
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500 mb-3 border-b border-[#1a1a1a] pb-2">Administrative Actions</p>
+                    <div class="space-y-3" id="admin-action-container">
+                        </div>
                 </div>
-                <button onclick="closeBanModal()" class="w-full mt-6 text-gray-500 text-xs hover:text-white transition-colors uppercase tracking-widest font-black">Cancel</button>
             </div>
         </div>
     </div>
 
     <script type="module">
-        let currentUser = null;
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+        import { supabaseConfig } from '/supabase-config.js';
+
+        const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        window.supabase = supabase;
+        
         let allUsers = [];
-        let chart = null;
-        let myRole = 'user'; // 'admin' or 'subadmin'
+        let currentFilteredUsers = [];
+        let myFollowing = new Set();
+        let currentLayout = 'list';
+        let inspectedUserId = null;
+        let currentUserRole = 'user'; 
+        let activeBanReqId = null;
+        let currentActiveTab = 'users';
 
-        const PRIVILEGED_EMAIL = '4simpleproblems@gmail.com';
+        // Set Default Chart Range
+        window.currentChartRange = 'all';
 
-        async function checkAuth() {
-            if (!window.supabase) {
-                console.warn("Analytics: Supabase not ready, retrying...");
-                setTimeout(checkAuth, 100);
-                return;
-            }
-            const supabase = window.supabase;
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                window.location.href = '../authentication.html';
-                return;
-            }
-            currentUser = session.user;
-            
-            const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', currentUser.id).single();
-            const { data: roles } = await supabase.from('roles').select('role').eq('user_id', currentUser.id);
-            
-            const isAdmin = roles?.some(r => r.role === 'full_admin') || profile?.is_admin || currentUser.email === PRIVILEGED_EMAIL;
-            const isSubAdmin = roles?.some(r => r.role === 'sub_admin');
-
-            if (!isAdmin && !isSubAdmin) {
-                alert("Access Denied: Administrative privileges required.");
-                window.location.href = '../logged-in/dashboard.html';
-                return;
-            }
-
-            myRole = isAdmin ? 'admin' : 'subadmin';
-            initDashboard();
-        }
-
-        async function initDashboard() {
-            loadStats();
-            loadUsers();
-            loadTraffic();
-            if (myRole === 'admin') loadBanRequests();
-            setupTabs();
-            setupSearch();
-        }
-
-        function setupSearch() {
-            const searchInput = document.getElementById('user-search');
-            searchInput.oninput = () => {
-                const query = searchInput.value.toLowerCase();
-                const filtered = allUsers.filter(u => 
-                    (u.username || '').toLowerCase().includes(query) || 
-                    (u.email || '').toLowerCase().includes(query) || 
-                    u.id.toLowerCase().includes(query)
-                );
-                renderUserTable(filtered);
-            };
-        }
-
-        async function loadBanRequests() {
-            const supabase = window.supabase;
-            if (!supabase) return;
-            const { data: requests } = await supabase.from('ban_requests').select('*').eq('status', 'pending');
-            const tbody = document.getElementById('ban-requests-body');
-            
-            if (!requests || requests.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-gray-500 italic opacity-40">No pending ban requests found.</td></tr>';
-                return;
-            }
-
-            const uids = [...new Set([...requests.map(r => r.target_user_id), ...requests.map(r => r.requester_id)])];
-            const { data: profiles } = await supabase.from('profiles').select('id, username, email').in('id', uids);
-            const profileMap = Object.fromEntries(profiles?.map(p => [p.id, p]) || []);
-
-            tbody.innerHTML = requests.map(req => {
-                const target = profileMap[req.target_user_id] || { username: 'Unknown', email: req.target_user_id };
-                const requester = profileMap[req.requester_id] || { username: 'Unknown', email: req.requester_id };
-                
-                return `
-                    <tr class="border-b border-white/5 hover:bg-white/[0.02] transition">
-                        <td class="p-6">
-                            <div class="flex flex-col">
-                                <span class="text-white font-medium">${target.username}</span>
-                                <span class="text-[10px] text-gray-500 font-mono">${target.email}</span>
-                            </div>
-                        </td>
-                        <td class="p-6 text-gray-400">${req.reason}</td>
-                        <td class="p-6 text-gray-500 text-xs">${requester.username}</td>
-                        <td class="p-6 text-gray-500 text-[10px] font-mono">${new Date(req.requested_at).toLocaleDateString()}</td>
-                        <td class="p-6">
-                            <div class="flex gap-2">
-                                <button class="action-btn btn-blue" onclick="approveBanRequest('${req.id}', '${req.target_user_id}', '${req.reason}')">Approve</button>
-                                <button class="action-btn btn-red" onclick="rejectBanRequest('${req.id}')">Reject</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        window.approveBanRequest = async (id, targetId, reason) => {
-            const supabase = window.supabase;
-            if (!supabase) return;
-            if (!confirm("Approve this ban request?")) return;
-            await supabase.from('bans').insert({ user_id: targetId, reason: reason, banned_by: currentUser.id });
-            await supabase.from('ban_requests').update({ status: 'approved', processed_at: new Date().toISOString(), processed_by: currentUser.id }).eq('id', id);
-            loadBanRequests();
-        };
-
-        window.rejectBanRequest = async (id) => {
-            const supabase = window.supabase;
-            if (!supabase) return;
-            if (!confirm("Reject this ban request?")) return;
-            await supabase.from('ban_requests').update({ status: 'rejected', processed_at: new Date().toISOString(), processed_by: currentUser.id }).eq('id', id);
-            loadBanRequests();
-        };
-
-        function setupTabs() {
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.onclick = () => {
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-                    btn.classList.add('active');
-                    document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
-                };
+        // --- Custom Dialog System ---
+        window.customAlert = (title, message) => {
+            return new Promise((resolve) => {
+                showDialog(title, message, 'alert', resolve);
             });
+        };
+
+        window.customConfirm = (title, message) => {
+            return new Promise((resolve) => {
+                showDialog(title, message, 'confirm', resolve);
+            });
+        };
+
+        window.customPrompt = (title, message, placeholder = '') => {
+            return new Promise((resolve) => {
+                showDialog(title, message, 'prompt', resolve, placeholder);
+            });
+        };
+
+        function showDialog(title, message, type, resolver, placeholder = '') {
+            const modal = document.getElementById('dialog-modal');
+            const box = document.getElementById('dialog-box');
+            const titleEl = document.getElementById('dialog-title');
+            const msgEl = document.getElementById('dialog-msg');
+            const inputEl = document.getElementById('dialog-input');
+            const btnContainer = document.getElementById('dialog-buttons');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+            btnContainer.innerHTML = '';
+            
+            if (type === 'prompt') {
+                inputEl.classList.remove('hidden');
+                inputEl.value = '';
+                inputEl.placeholder = placeholder;
+            } else {
+                inputEl.classList.add('hidden');
+            }
+
+            const closeAndResolve = (val) => {
+                modal.classList.add('opacity-0');
+                box.classList.remove('scale-100');
+                box.classList.add('scale-95');
+                setTimeout(() => { modal.classList.add('hidden'); resolver(val); }, 200);
+            };
+
+            if (type === 'alert') {
+                const btn = document.createElement('button');
+                btn.className = "px-4 py-2 bg-[#1a1a1a] text-white border border-[#333] rounded-lg text-xs hover:bg-[#333] transition-colors";
+                btn.innerText = "Okay";
+                btn.onclick = () => closeAndResolve(true);
+                btnContainer.appendChild(btn);
+            } else if (type === 'confirm') {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = "px-4 py-2 text-gray-500 hover:text-white text-xs";
+                cancelBtn.innerText = "Cancel";
+                cancelBtn.onclick = () => closeAndResolve(false);
+                
+                const okBtn = document.createElement('button');
+                okBtn.className = "px-4 py-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 rounded-lg text-xs hover:bg-indigo-500 hover:text-white transition-colors";
+                okBtn.innerText = "Confirm";
+                okBtn.onclick = () => closeAndResolve(true);
+                
+                btnContainer.appendChild(cancelBtn);
+                btnContainer.appendChild(okBtn);
+            } else if (type === 'prompt') {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = "px-4 py-2 text-gray-500 hover:text-white text-xs";
+                cancelBtn.innerText = "Cancel";
+                cancelBtn.onclick = () => closeAndResolve(null);
+                
+                const okBtn = document.createElement('button');
+                okBtn.className = "px-4 py-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 rounded-lg text-xs hover:bg-indigo-500 hover:text-white transition-colors";
+                okBtn.innerText = "Submit";
+                okBtn.onclick = () => closeAndResolve(inputEl.value);
+                
+                btnContainer.appendChild(cancelBtn);
+                btnContainer.appendChild(okBtn);
+            }
+
+            modal.classList.remove('hidden');
+            void modal.offsetWidth;
+            modal.classList.remove('opacity-0');
+            box.classList.remove('scale-95');
+            box.classList.add('scale-100');
+            
+            if(type === 'prompt') inputEl.focus();
+        }
+
+        // --- Core Init ---
+        async function init() {
+            document.getElementById('loading-spinner').classList.remove('hidden');
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                await customAlert("Access Denied", "Must be logged in.");
+                return;
+            }
+
+            const { data: profile } = await supabase.from('profiles').select('is_admin, email').eq('id', user.id).single();
+            const { data: roleData } = await supabase.from('roles').select('role').eq('user_id', user.id).maybeSingle();
+            
+            const isSuperAdmin = profile?.email === '4simpleproblems@gmail.com' || profile?.is_admin;
+            currentUserRole = isSuperAdmin ? 'full_admin' : (roleData ? roleData.role : 'user');
+
+            if (currentUserRole !== 'full_admin' && currentUserRole !== 'sub_admin') {
+                document.body.innerHTML = "<div class='p-20 text-center text-red-500 font-mono text-xl pt-32'>UNAUTHORIZED ACCESS: SECURITY EXCEPTION</div>";
+                return;
+            }
+
+            if (currentUserRole === 'sub_admin') {
+                document.getElementById('schema-visualization').style.display = 'none';
+            }
+
+            const { data: follows } = await supabase.from('follows').select('following_id').eq('follower_id', user.id);
+            if (follows) follows.forEach(f => myFollowing.add(f.following_id));
+
+            setupSearchAutocomplete();
+
+            await loadStats();
+            await loadUsers();
+            
+            document.getElementById('loading-spinner').classList.add('hidden');
+        }
+
+        function formatDescriptiveTime(totalSeconds) {
+            if (!totalSeconds || totalSeconds <= 0) return '0 seconds';
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            
+            let parts = [];
+            if (h > 0) parts.push(`${h} hour${h !== 1 ? 's' : ''}`);
+            if (m > 0) parts.push(`${m} minute${m !== 1 ? 's' : ''}`);
+            if (s > 0) parts.push(`${s} second${s !== 1 ? 's' : ''}`);
+            
+            if (parts.length === 1) return parts[0];
+            if (parts.length === 2) return parts.join(' and ');
+            return `${parts[0]}, ${parts[1]}, and ${parts[2]}`;
+        }
+
+        function formatDateTime(dateString) {
+            if (!dateString) return '---';
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
 
         async function loadStats() {
-            const supabase = window.supabase;
-            if (!supabase) return;
+            const { data } = await supabase.from('analytics_v2_summary').select('*').single();
+            if (data) {
+                document.getElementById('stat-total-time').innerText = Math.floor((data.global_total_time || 0) / 3600) + 'h';
+                document.getElementById('stat-avg-time').innerText = Math.floor((data.global_avg_time || 0) / 60) + 'm';
+                document.getElementById('stat-most-followed').innerText = data.most_followed_user ? '@' + data.most_followed_user : '---';
+                document.getElementById('stat-first-user').innerText = data.first_user ? '@' + data.first_user : '---';
+                document.getElementById('stat-count').innerText = data.total_user_count || 0;
+            }
+        }
+
+        async function loadUsers() {
+            const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+            allUsers = data || [];
+            currentFilteredUsers = [...allUsers];
             
-            try {
-                // Fetch stats concurrently
-                const [profilesRes, sessionsRes] = await Promise.all([
-                    supabase.from('profiles').select('*'),
-                    supabase.from('traffic_logs').select('*', { count: 'exact', head: true })
-                ]);
+            document.getElementById('stat-total-tagged').innerText = allUsers.filter(u => u.user_tag && u.user_tag.text).length;
 
-                if (profilesRes.error) throw profilesRes.error;
-                const profiles = profilesRes.data || [];
-                const sessionCount = sessionsRes.count || 0;
+            window.render();
+        }
 
-                const totalSecs = profiles.reduce((sum, p) => sum + (p.total_v6_time || 0), 0);
-                const today = new Date().toISOString().split('T')[0];
-                const newToday = profiles.filter(p => p.created_at && p.created_at.startsWith(today)).length;
+        function getAvatar(u) {
+            if (u.avatar_url) return u.avatar_url;
+            return `https://ui-avatars.com/api/?name=${u.username || 'U'}&background=${(u.pfp_letter_bg || '#333').replace('#','')}&color=fff`;
+        }
 
-                document.getElementById('stat-total-time').textContent = formatDuration(totalSecs);
-                document.getElementById('stat-total-users').textContent = profiles.length;
-                document.getElementById('stat-new-today').textContent = newToday;
-                document.getElementById('stat-active-sessions').textContent = sessionCount;
+        window.switchMainTab = (tabName, el) => {
+            currentActiveTab = tabName;
+            document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+            if(el) el.classList.add('active');
+            
+            document.getElementById('tab-general').style.display = tabName === 'general' ? 'block' : 'none';
+            document.getElementById('tab-users').style.display = tabName === 'users' ? 'block' : 'none';
+            document.getElementById('tab-tags').style.display = tabName === 'tags' ? 'block' : 'none';
+
+            document.getElementById('view-mode-toggles').style.display = tabName === 'users' ? 'flex' : 'none';
+
+            if(tabName === 'general') renderCharts();
+            if(tabName === 'tags') renderTags();
+        };
+
+        window.render = function() {
+            if (currentLayout === 'list') {
+                document.getElementById('list-view').style.display = 'block';
+                document.getElementById('grid-view').style.display = 'none';
                 
-                renderChart(profiles);
-            } catch (error) {
-                console.error("Error loading stats:", error);
-                document.getElementById('stat-total-time').textContent = "Error";
-            }
-        }
-
-        function formatDuration(seconds) {
-            if (!seconds) return "0s";
-            const levels = [
-                [Math.floor(seconds / 31536000), 'y'],
-                [Math.floor((seconds % 31536000) / 2592000), 'mo'],
-                [Math.floor((seconds % 2592000) / 86400), 'd'],
-                [Math.floor((seconds % 86400) / 3600), 'h'],
-                [Math.floor((seconds % 3600) / 60), 'm'],
-                [seconds % 60, 's'],
-            ];
-            let res = '';
-            for (let i = 0; i < levels.length; i++) {
-                if (levels[i][0] > 0) res += ' ' + levels[i][0] + levels[i][1];
-            }
-            return res.trim() || "0s";
-        }
-
-        async function loadTraffic() {
-            const supabase = window.supabase;
-            if (!supabase) return;
-
-            try {
-                // Fetch recent sessions
-                const { data: recent, error: rError } = await supabase
-                    .from('traffic_logs')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(10);
-
-                if (rError) throw rError;
-
-                const recentList = document.getElementById('recent-sessions-list');
-                if (recent && recent.length > 0) {
-                    recentList.innerHTML = recent.map(log => `
-                        <div class="flex justify-between items-center p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
-                            <div class="flex flex-col min-w-0">
-                                <span class="text-white text-xs truncate font-mono">${log.user_id || 'Anonymous'}</span>
-                                <span class="text-[10px] text-gray-500 truncate">${log.session_id || 'No Session ID'}</span>
+                const tbody = document.getElementById('user-rows');
+                if(tbody) {
+                    tbody.innerHTML = currentFilteredUsers.map(u => `
+                        <tr onclick="inspectUser('${u.id}')">
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <img src="${getAvatar(u)}" class="pfp-micro">
+                                    <span class="font-medium">${u.display_name || u.username}</span>
+                                    <span class="text-[10px] text-gray-500 mono">@${u.username}</span>
+                                </div>
+                            </td>
+                            <td class="mono text-[10px] text-gray-500">${u.id.substring(0,8)}...</td>
+                            <td class="text-xs text-gray-300">${formatDescriptiveTime(u.total_v6_time)}</td>
+                            <td>
+                                <span class="status-badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">
+                                    ${u.is_admin ? 'ADMIN' : 'USER'}
+                                </span>
+                            </td>
+                            <td class="text-gray-500 text-[10px]">${new Date(u.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
+                }
+            } else {
+                document.getElementById('list-view').style.display = 'none';
+                document.getElementById('grid-view').style.display = 'grid';
+                
+                const grid = document.getElementById('grid-view');
+                if(grid) {
+                    grid.innerHTML = currentFilteredUsers.map(u => `
+                        <div class="grid-card" onclick="inspectUser('${u.id}')">
+                            <div class="flex justify-between items-start">
+                                <img src="${getAvatar(u)}" class="pfp-medium">
+                                <span class="status-badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">
+                                    ${u.is_admin ? 'ADMIN' : 'USER'}
+                                </span>
                             </div>
-                            <span class="text-[10px] text-gray-600 font-mono whitespace-nowrap ml-4">
-                                ${new Date(log.created_at || Date.now()).toLocaleTimeString()}
-                            </span>
+                            <div class="mt-2">
+                                <p class="font-bold truncate">${u.display_name || u.username}</p>
+                                <p class="text-[10px] text-gray-500 mono truncate">@${u.username}</p>
+                            </div>
+                            <div class="mt-auto pt-3 border-t border-[#1a1a1a] flex justify-between text-[10px] text-gray-400">
+                                <span class="truncate">${formatDescriptiveTime(u.total_v6_time)}</span>
+                            </div>
                         </div>
                     `).join('');
-                } else {
-                    recentList.innerHTML = '<p class="text-gray-500 italic text-center py-4 opacity-40">No recent traffic logged.</p>';
                 }
-
-                // Fetch top pages (Aggregating from page_views JSONB)
-                // Selecting * to avoid 400 error on specific JSONB column if the schema is strict
-                const { data: allLogs, error: aError } = await supabase
-                    .from('traffic_logs')
-                    .select('*')
-                    .limit(100);
-
-                if (aError) throw aError;
-
-                const topList = document.getElementById('top-pages-list');
-                if (allLogs && allLogs.length > 0) {
-                    const counts = {};
-                    allLogs.forEach(log => {
-                        const views = log.page_views || [];
-                        views.forEach(v => {
-                            const name = v.title || v.path || 'Unknown';
-                            counts[name] = (counts[name] || 0) + 1;
-                        });
-                    });
-                    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                    
-                    topList.innerHTML = sorted.map(([name, count]) => `
-                        <div class="flex justify-between items-center p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
-                            <span class="text-white text-xs truncate mr-4">${name}</span>
-                            <span class="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-1 rounded-full border border-indigo-500/20 font-black">
-                                ${count} hits
-                            </span>
-                        </div>
-                    `).join('');
-                } else {
-                    topList.innerHTML = '<p class="text-gray-500 italic text-center py-4 opacity-40">No page view data available.</p>';
-                }
-            } catch (err) {
-                console.error("Traffic load error:", err);
             }
-        }
 
-        function renderChart(profiles) {
-            const ctx = document.getElementById('usageChart').getContext('2d');
+            if (currentActiveTab === 'tags') {
+                renderTags();
+            }
+        };
+
+        window.renderTags = () => {
+            const container = document.getElementById('tags-container');
+            const taggedUsers = currentFilteredUsers.filter(u => u.user_tag && u.user_tag.text);
             
-            // Usage Trajectory: Group users by creation date
-            const dateCounts = {};
-            profiles.forEach(p => {
-                if (p.created_at) {
-                    const date = p.created_at.split('T')[0];
-                    dateCounts[date] = (dateCounts[date] || 0) + 1;
+            if(taggedUsers.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-600 py-10">No users with tags found matching criteria.</div>';
+                return;
+            }
+
+            container.innerHTML = taggedUsers.map(u => `
+                <div class="bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl p-4 flex flex-col justify-between cursor-pointer hover:border-[#333] transition-colors" onclick="inspectUser('${u.id}')">
+                    <div class="flex items-center gap-3 mb-4 border-b border-[#1a1a1a] pb-3">
+                        <img src="${getAvatar(u)}" class="w-10 h-10 rounded-lg object-cover">
+                        <div class="truncate">
+                            <p class="font-bold text-sm truncate">${u.display_name || u.username}</p>
+                            <p class="text-[10px] text-gray-500 mono truncate">@${u.username}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-center">
+                        <span class="user-tag-badge" style="color: ${u.user_tag.color}; border-color: ${u.user_tag.color}40; background: ${u.user_tag.color}15">
+                            ${u.user_tag.text}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        window.updateChartRange = (range, btnEl) => {
+            window.currentChartRange = range;
+            document.querySelectorAll('.chart-filter-btn').forEach(b => b.classList.remove('active'));
+            btnEl.classList.add('active');
+            renderCharts(true);
+        };
+
+        function renderCharts(forceRedraw = false) {
+            const ctx = document.getElementById('growthChart');
+            if(!ctx) return;
+
+            if (window.growthChartInstance) {
+                if (!forceRedraw) return;
+                window.growthChartInstance.destroy();
+            }
+            
+            // Group and Map all users by exact Date
+            const countsByDate = new Map();
+            [...allUsers].reverse().forEach(u => {
+                const d = new Date(u.created_at);
+                const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                
+                if(!countsByDate.has(dateStr)) {
+                    const justDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                    countsByDate.set(dateStr, { count: 0, dateObj: justDate });
                 }
+                countsByDate.get(dateStr).count += 1;
             });
 
-            const sortedDates = Object.keys(dateCounts).sort();
-            const cumulativeData = [];
-            let sum = 0;
-            sortedDates.forEach(date => {
-                sum += dateCounts[date];
-                cumulativeData.push(sum);
+            const sortedDateStrs = Array.from(countsByDate.keys()).sort((a,b) => countsByDate.get(a).dateObj - countsByDate.get(b).dateObj);
+
+            // Calculate Running Cumulative Total for Active Days
+            const dailyTotals = [];
+            let runningTotal = 0;
+            sortedDateStrs.forEach(dateStr => {
+                runningTotal += countsByDate.get(dateStr).count;
+                dailyTotals.push({
+                    dateStr: dateStr,
+                    dateObj: countsByDate.get(dateStr).dateObj,
+                    total: runningTotal
+                });
             });
 
-            if (chart) chart.destroy();
-            
-            chart = new Chart(ctx, {
+            let labels = [];
+            let dataPoints = [];
+
+            if (window.currentChartRange === 'all') {
+                labels = dailyTotals.map(d => d.dateStr);
+                dataPoints = dailyTotals.map(d => d.total);
+            } else {
+                const now = new Date();
+                now.setHours(0,0,0,0);
+                
+                for(let i = window.currentChartRange - 1; i >= 0; i--) {
+                    const targetDate = new Date(now);
+                    targetDate.setDate(targetDate.getDate() - i);
+                    labels.push(targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                    
+                    let lastKnownTotal = 0;
+                    for(let j = 0; j < dailyTotals.length; j++) {
+                        if (dailyTotals[j].dateObj <= targetDate) {
+                            lastKnownTotal = dailyTotals[j].total;
+                        } else {
+                            break; 
+                        }
+                    }
+                    dataPoints.push(lastKnownTotal);
+                }
+            }
+
+            window.growthChartInstance = new Chart(ctx.getContext('2d'), {
                 type: 'line',
                 data: {
-                    labels: sortedDates,
+                    labels: labels,
                     datasets: [{
-                        label: 'Total Users over Time',
-                        data: cumulativeData,
+                        label: 'Total Citizens',
+                        data: dataPoints,
                         borderColor: '#4f46e5',
                         backgroundColor: 'rgba(79, 70, 229, 0.1)',
                         borderWidth: 2,
                         fill: true,
-                        tension: 0.4,
-                        pointRadius: 0
+                        tension: 0.3,
+                        pointBackgroundColor: '#0a0a0a',
+                        pointBorderColor: '#4f46e5',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(10, 10, 10, 0.9)',
+                            titleColor: '#888',
+                            bodyColor: '#fff',
+                            borderColor: '#333',
+                            borderWidth: 1,
+                            padding: 10,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Users Registered: ${context.parsed.y}`;
+                                }
+                            }
+                        }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#6b7280', font: { size: 10 } }
+                        y: { 
+                            grid: { color: '#1a1a1a' },
+                            ticks: { color: '#666', font: { family: "'JetBrains Mono', monospace", size: 10 } }
                         },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#6b7280', font: { size: 10 } }
+                        x: { 
+                            grid: { color: '#1a1a1a' },
+                            ticks: { color: '#666', font: { family: "'Geist', sans-serif", size: 10 } }
                         }
                     }
                 }
             });
         }
 
-        async function loadUsers() {
-            const supabase = window.supabase;
-            if (!supabase) return;
+        window.setLayout = (mode) => {
+            currentLayout = mode;
+            document.getElementById('btn-grid').classList.toggle('active', mode === 'grid');
+            document.getElementById('btn-list').classList.toggle('active', mode === 'list');
+            window.render();
+        };
+
+        window.closeInspector = () => {
+            document.getElementById('inspector-panel').classList.remove('open');
+            inspectedUserId = null;
+        };
+
+        window.inspectUser = async (uid) => {
+            inspectedUserId = uid;
+            const panel = document.getElementById('inspector-panel');
+            const loading = document.getElementById('inspector-loading');
+            const content = document.getElementById('inspector-content');
             
-            try {
-                // Fetch everything we need for the table
-                const [pRes, bRes, rRes] = await Promise.all([
-                    supabase.from('profiles').select('*').order('total_v6_time', { ascending: false }),
-                    supabase.from('bans').select('user_id'),
-                    supabase.from('roles').select('*')
-                ]);
+            panel.classList.add('open');
+            loading.classList.remove('hidden');
+            content.classList.add('hidden');
 
-                if (pRes.error) throw pRes.error;
+            const user = allUsers.find(u => u.id === uid);
+            if (!user) return;
 
-                // Map data for easy lookup
-                const banSet = new Set(bRes.data?.map(b => b.user_id) || []);
-                const roleMap = Object.fromEntries(rRes.data?.map(r => [r.user_id, r.role]) || []);
+            const [{ count: followers }, { count: following }, { data: roleData }, { data: banData }] = await Promise.all([
+                supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', uid),
+                supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', uid),
+                supabase.from('roles').select('role').eq('user_id', uid).maybeSingle(),
+                supabase.from('bans').select('id, reason').eq('user_id', uid).maybeSingle()
+            ]);
 
-                allUsers = pRes.data.map(u => ({
-                    ...u,
-                    isBanned: banSet.has(u.id),
-                    currentRole: roleMap[u.id] || (u.is_admin ? 'full_admin' : null)
-                }));
+            const isBanned = !!banData;
+            const targetRole = roleData ? roleData.role : 'user';
 
-                renderUserTable(allUsers);
-            } catch (err) {
-                console.error("Error loading users:", err);
-            }
-        }
+            document.getElementById('ins-pfp').src = getAvatar(user);
+            document.getElementById('ins-display-name').innerText = user.display_name || user.username;
+            document.getElementById('ins-username').innerText = `@${user.username}`;
+            document.getElementById('ins-joined').innerText = formatDateTime(user.created_at);
+            document.getElementById('ins-provider').innerText = user.auth_method || 'Email';
+            document.getElementById('ins-followers').innerText = followers || 0;
+            document.getElementById('ins-following').innerText = following || 0;
+            document.getElementById('ins-time').innerText = formatDescriptiveTime(user.total_v6_time);
 
-        function renderUserTable(users) {
-            const tbody = document.getElementById('user-table-body');
-            tbody.innerHTML = users.map(u => {
-                let roleBadge = '<span class="text-[9px] text-gray-600 uppercase font-black tracking-widest opacity-40">Standard</span>';
-                if (u.currentRole === 'full_admin') {
-                    roleBadge = '<span class="text-[9px] bg-indigo-500/10 text-indigo-400 px-3 py-1.5 rounded-full border border-indigo-500/20 font-black uppercase tracking-widest">Admin</span>';
-                } else if (u.currentRole === 'sub_admin') {
-                    roleBadge = '<span class="text-[9px] bg-teal-500/10 text-teal-400 px-3 py-1.5 rounded-full border border-teal-500/20 font-black uppercase tracking-widest">Sub-Admin</span>';
-                }
+            let badgesHTML = '';
+            if (isBanned) badgesHTML += `<span class="status-badge badge-banned">Banned</span>`;
+            if (targetRole === 'full_admin') badgesHTML += `<span class="status-badge badge-admin">Full Admin</span>`;
+            else if (targetRole === 'sub_admin') badgesHTML += `<span class="status-badge badge-admin">Sub Admin</span>`;
+            else badgesHTML += `<span class="status-badge badge-user">Standard User</span>`;
+            document.getElementById('ins-badges').innerHTML = badgesHTML;
 
-                if (u.isBanned) {
-                    roleBadge = '<span class="text-[9px] bg-red-500/10 text-red-400 px-3 py-1.5 rounded-full border border-red-500/20 font-black uppercase tracking-widest">Suspended</span>';
-                }
-
-                return `
-                    <tr class="border-b border-white/5 hover:bg-white/[0.02] transition">
-                        <td class="p-6">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/20 flex items-center justify-center text-xs font-black text-indigo-400">
-                                    ${(u.username || u.email || '?').charAt(0).toUpperCase()}
-                                </div>
-                                <div class="flex flex-col min-w-0">
-                                    <span class="text-white font-medium truncate">${u.username || 'Anonymous'}</span>
-                                    <span class="text-[10px] text-gray-500 font-mono truncate opacity-50">${u.email || u.id}</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="p-6 text-gray-400 font-mono text-xs">${formatDuration(u.total_v6_time)}</td>
-                        <td class="p-6 text-gray-500 text-[10px] font-mono">${u.created_at ? new Date(u.created_at).toLocaleDateString() : 'LEGACY'}</td>
-                        <td class="p-6">
-                            ${roleBadge}
-                        </td>
-                        <td class="p-6 text-right">
-                            <div class="flex justify-end gap-2">
-                                <button class="action-btn btn-blue" onclick="managePermissions('${u.id}')" title="Manage Permissions"><i class="fa-solid fa-shield-halved"></i></button>
-                                
-                                ${u.isBanned ? `
-                                    <button class="action-btn btn-blue" style="border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.05);" onclick="unbanUser('${u.id}')" title="Lift Suspension">
-                                        <i class="fa-solid fa-unlock"></i> Unban
-                                    </button>
-                                ` : `
-                                    <button class="action-btn btn-red" onclick="openBanModal('${u.id}')" title="Enforce Suspension">
-                                        <i class="fa-solid fa-ban"></i> ${myRole === 'admin' ? 'Ban' : 'Request Ban'}
-                                    </button>
-                                `}
-
-                                ${myRole === 'admin' ? `<button class="action-btn btn-red" onclick="deleteUser('${u.id}')" title="Expunge Account"><i class="fa-solid fa-trash-can"></i></button>` : ''}
-                            </div>
-                        </td>
-                    </tr>
+            // Render Tag System
+            const tagContainer = document.getElementById('ins-tag-container');
+            if (user.user_tag && user.user_tag.text) {
+                tagContainer.innerHTML = `
+                    <div class="user-tag-badge" style="color: ${user.user_tag.color}; border-color: ${user.user_tag.color}40; background: ${user.user_tag.color}15">
+                        ${user.user_tag.text}
+                    </div>
+                    <button onclick="openTagModal()" class="ml-2 text-[10px] text-gray-500 hover:text-white underline"><i class="fas fa-edit"></i> Edit</button>
                 `;
-            }).join('');
-        }
-
-        window.unbanUser = async (id) => {
-            const supabase = window.supabase;
-            if (!supabase) return;
-            if (!confirm("Are you sure you want to lift this suspension?")) return;
-            
-            const { error } = await supabase.from('bans').delete().eq('user_id', id);
-            if (error) {
-                if (window.showNotification) window.showNotification("Error: " + error.message, true);
-                else alert("Error: " + error.message);
             } else {
-                if (window.showNotification) window.showNotification("Suspension lifted successfully.", false);
-                else alert("Suspension lifted successfully.");
-                setTimeout(loadUsers, 500); // Re-fetch after short delay
+                tagContainer.innerHTML = `<button onclick="openTagModal()" class="text-[10px] text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 px-2 py-1 rounded bg-indigo-500/10"><i class="fas fa-plus"></i> Add User Tag</button>`;
+            }
+
+            const btnContainer = document.getElementById('admin-action-container');
+            btnContainer.innerHTML = '';
+
+            if (currentUserRole === 'sub_admin') {
+                if (isBanned) {
+                    btnContainer.innerHTML += `<div class="text-xs text-red-500 font-bold border border-red-500/30 p-2 rounded text-center">User is currently banned.</div>`;
+                } else if (targetRole === 'full_admin' || targetRole === 'sub_admin') {
+                    btnContainer.innerHTML += `<div class="text-xs text-gray-500 text-center">Cannot manage other admins.</div>`;
+                } else {
+                    btnContainer.innerHTML += `<button onclick="requestBan('${uid}')" class="action-btn danger">Request Ban</button>`;
+                }
+            } else if (currentUserRole === 'full_admin') {
+                const { data: reqs } = await supabase.from('ban_requests').select('*, requester:requester_id(username)').eq('target_user_id', uid).eq('status', 'pending');
+                
+                if (reqs && reqs.length > 0) {
+                    btnContainer.innerHTML += `<div class="p-3 border border-yellow-500/30 bg-yellow-500/10 rounded-lg mb-4 space-y-3">
+                        <p class="text-[10px] text-yellow-500 font-bold uppercase tracking-widest">Pending Ban Requests</p>
+                        ${reqs.map(r => `
+                            <div class="bg-[#050505] p-3 rounded border border-yellow-500/20">
+                                <p class="text-xs text-gray-300 mb-2">From @${r.requester?.username || 'unknown'}: <span class="text-white italic">"${r.reason}"</span></p>
+                                <div class="flex gap-2">
+                                    <button onclick="openBanModal('${r.id}', '${r.requester?.username || 'unknown'}', '${r.reason.replace(/'/g,"\\'")}')" class="flex-1 py-1 bg-green-500/10 text-green-500 border border-green-500/30 rounded text-xs hover:bg-green-500 hover:text-white transition-colors">Approve & Edit</button>
+                                    <button onclick="rejectBanReq('${r.id}')" class="px-3 py-1 bg-red-500/10 text-red-500 border border-red-500/30 rounded text-xs hover:bg-red-500 hover:text-white transition-colors">Reject</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>`;
+                }
+
+                if (isBanned) {
+                    btnContainer.innerHTML += `<button onclick="toggleBan('${uid}', true)" class="action-btn">Unban User</button>`;
+                } else {
+                    btnContainer.innerHTML += `<button onclick="toggleBan('${uid}', false)" class="action-btn danger">Ban User</button>`;
+                }
+
+                if (targetRole !== 'full_admin') {
+                    btnContainer.innerHTML += `<button onclick="setRole('${uid}', 'full_admin')" class="action-btn primary">Grant Full Admin</button>`;
+                }
+                if (targetRole !== 'sub_admin') {
+                    btnContainer.innerHTML += `<button onclick="setRole('${uid}', 'sub_admin')" class="action-btn primary">Grant Sub Admin</button>`;
+                }
+                if (targetRole !== 'user') {
+                    btnContainer.innerHTML += `<button onclick="setRole('${uid}', 'user')" class="action-btn">Revoke Administrative Roles</button>`;
+                }
+            }
+
+            loading.classList.add('hidden');
+            content.classList.remove('hidden');
+        };
+
+        // --- TAG SYSTEM ---
+        window.openTagModal = () => {
+            const user = allUsers.find(u => u.id === inspectedUserId);
+            if(!user) return;
+            
+            document.getElementById('tag-text-input').value = user.user_tag?.text || '';
+            const color = user.user_tag?.color || '#4f46e5';
+            document.getElementById('tag-color-input').value = color;
+            document.getElementById('tag-color-picker').value = color;
+            
+            document.getElementById('tag-modal').classList.remove('hidden');
+        };
+
+        window.closeTagModal = () => document.getElementById('tag-modal').classList.add('hidden');
+        
+        document.getElementById('tag-color-picker').addEventListener('input', (e) => document.getElementById('tag-color-input').value = e.target.value);
+        document.getElementById('tag-color-input').addEventListener('input', (e) => document.getElementById('tag-color-picker').value = e.target.value);
+
+        document.getElementById('save-tag-btn').addEventListener('click', async () => {
+            if(!inspectedUserId) return;
+            const text = document.getElementById('tag-text-input').value.trim();
+            const color = document.getElementById('tag-color-input').value;
+            
+            const tagData = text ? { text, color } : null;
+
+            const { error } = await supabase.rpc('set_user_tag', { 
+                target_user_id: inspectedUserId, 
+                tag_text: text || null, 
+                tag_color: text ? color : null 
+            });
+
+            if (error) {
+                await customAlert("Error", "Failed to update tag: " + error.message);
+            } else {
+                const uIndex = allUsers.findIndex(u => u.id === inspectedUserId);
+                if(uIndex > -1) allUsers[uIndex].user_tag = tagData;
+                
+                document.getElementById('stat-total-tagged').innerText = allUsers.filter(u => u.user_tag && u.user_tag.text).length;
+
+                closeTagModal();
+                window.inspectUser(inspectedUserId);
+                if(currentActiveTab === 'tags') renderTags();
+            }
+        });
+
+        // --- SUBADMIN ACTIONS ---
+        window.requestBan = async (uid) => {
+            const reason = await customPrompt("Request Ban", "Enter required reason for ban request:", "Reason for ban...");
+            if (reason === null) return; 
+            if (reason.trim() === '') {
+                await customAlert("Error", "A valid reason is required to submit a ban request.");
+                return;
+            }
+            
+            const { data: { user } } = await supabase.auth.getUser();
+            const { error } = await supabase.from('ban_requests').insert({
+                requester_id: user.id,
+                target_user_id: uid,
+                reason: reason
+            });
+            if (error) await customAlert("Error", "Error submitting request: " + error.message);
+            else { 
+                await customAlert("Success", "Ban request submitted to full admins."); 
+                window.inspectUser(uid); 
             }
         };
 
-        window.managePermissions = async (id) => {
-            const supabase = window.supabase;
-            if (!supabase) return;
-            if (myRole !== 'admin') { alert("Unauthorized: Only Full Admins can modify permissions."); return; }
-            
-            const user = allUsers.find(u => u.id === id);
-            const role = user.currentRole;
-
-            document.getElementById('admin-target-info').innerHTML = `
-                <div class="text-white font-bold text-lg">${user.username || 'Anonymous'}</div>
-                <div class="text-[10px] text-gray-500 font-mono opacity-40 mt-1">${user.id}</div>
-            `;
-            
-            const adminBtn = document.getElementById('make-admin-btn');
-            const subAdminBtn = document.getElementById('make-subadmin-btn');
-
-            adminBtn.textContent = role === 'full_admin' ? 'Remove Full Admin' : 'Elevate to Full Admin';
-            adminBtn.className = `action-btn ${role === 'full_admin' ? 'btn-red' : 'btn-blue'} w-full py-4 uppercase tracking-widest text-[10px] font-black`;
-            
-            subAdminBtn.textContent = role === 'sub_admin' ? 'Remove Sub-Admin' : 'Appoint Sub-Admin';
-            subAdminBtn.className = `action-btn ${role === 'sub_admin' ? 'btn-red' : 'btn-purple'} w-full py-4 uppercase tracking-widest text-[10px] font-black`;
-
-            document.getElementById('admin-modal').classList.add('open');
-            
-            adminBtn.onclick = async () => {
-                if (role === 'full_admin') {
-                    await supabase.from('roles').delete().eq('user_id', id).eq('role', 'full_admin');
-                    await supabase.from('profiles').update({ is_admin: false }).eq('id', id);
-                } else {
-                    await supabase.from('roles').upsert({ user_id: id, role: 'full_admin' });
-                    await supabase.from('profiles').update({ is_admin: true }).eq('id', id);
-                }
-                closeModal(); loadUsers();
-            };
-
-            subAdminBtn.onclick = async () => {
-                if (role === 'sub_admin') {
-                    await supabase.from('roles').delete().eq('user_id', id).eq('role', 'sub_admin');
-                } else {
-                    await supabase.from('roles').upsert({ user_id: id, role: 'sub_admin' });
-                    await supabase.from('profiles').update({ is_admin: false }).eq('id', id);
-                }
-                closeModal(); loadUsers();
-            };
-
-            document.getElementById('manage-tag-btn').onclick = async () => {
-                const tagText = prompt("Tag Text (e.g. Creator):", user.user_tag?.text || "");
-                let tagColor = user.user_tag?.color || "#4f46e5";
-                if (tagText) tagColor = prompt("Tag Color (Hex):", tagColor) || tagColor;
-                const { error } = await supabase.rpc('set_user_tag', { target_user_id: id, tag_text: tagText, tag_color: tagColor });
-                if (error) alert(error.message); else alert("Identity Flair Updated.");
-                closeModal(); loadUsers();
-            };
-
-            document.getElementById('remove-admin-btn').onclick = async () => {
-                await supabase.from('roles').delete().eq('user_id', id);
-                await supabase.from('profiles').update({ is_admin: false }).eq('id', id);
-                closeModal(); loadUsers();
-            };
-        };
-
-        window.closeModal = () => document.getElementById('admin-modal').classList.remove('open');
-
-        window.deleteUser = async (id) => {
-            const supabase = window.supabase;
-            if (!supabase) return;
-            if (myRole !== 'admin') return;
-            if (confirm("Expunge this identity from the database?")) {
-                await supabase.from('profiles').delete().eq('id', id);
-                loadUsers();
-            }
-        };
-
-        // --- Banning System ---
-        let currentBanTargetId = null;
-        window.openBanModal = (id) => {
-            currentBanTargetId = id;
-            const user = allUsers.find(u => u.id === id);
-            document.getElementById('ban-target-info').innerHTML = `
-                <div class="text-white font-bold text-lg">${user.username || 'Anonymous'}</div>
-                <div class="text-[10px] text-gray-500 font-mono opacity-40 mt-1">${user.id}</div>
-            `;
-            document.getElementById('ban-modal-title').textContent = myRole === 'admin' ? 'Security Enforcement' : 'Submit Violation Report';
-            document.getElementById('confirm-ban-btn').textContent = myRole === 'admin' ? 'Execute Enforcement' : 'Submit Ban Request';
-            document.getElementById('ban-modal').classList.add('open');
+        // --- FULL ADMIN ACTIONS ---
+        window.openBanModal = (reqId, username, reason) => {
+            activeBanReqId = reqId;
+            document.getElementById('ban-modal').classList.remove('hidden');
+            document.getElementById('modal-desc').innerText = `Requested by @${username}`;
+            document.getElementById('modal-reason').value = reason;
         };
 
         window.closeBanModal = () => {
-            document.getElementById('ban-modal').classList.remove('open');
-            document.getElementById('ban-reason').value = '';
-            currentBanTargetId = null;
+            document.getElementById('ban-modal').classList.add('hidden');
+            activeBanReqId = null;
         };
 
-        document.getElementById('confirm-ban-btn').onclick = async () => {
-            const supabase = window.supabase;
-            if (!supabase) return;
-            const reason = document.getElementById('ban-reason').value.trim();
-            if (!reason) { alert("Please specify a reason."); return; }
+        document.getElementById('modal-confirm-btn').addEventListener('click', async () => {
+            if (!activeBanReqId) return;
+            const finalReason = document.getElementById('modal-reason').value;
+            const { error } = await supabase.rpc('approve_ban_request', { req_id: activeBanReqId, final_reason: finalReason });
+            if (error) await customAlert("Error processing ban", error.message);
+            else {
+                closeBanModal();
+                window.inspectUser(inspectedUserId); 
+            }
+        });
 
-            if (myRole === 'admin') {
-                const { error } = await supabase.from('bans').insert({ user_id: currentBanTargetId, reason: reason, banned_by: currentUser.id });
-                if (error) {
-                    if (window.showNotification) window.showNotification("Error: " + error.message, false);
-                    else alert("Error: " + error.message);
-                } else {
-                    if (window.showNotification) window.showNotification("Enforcement Successful.", false);
-                    else alert("Enforcement Successful.");
+        window.rejectBanReq = async (reqId) => {
+            const { error } = await supabase.rpc('reject_ban_request', { req_id: reqId });
+            if (error) await customAlert("Error", error.message);
+            else window.inspectUser(inspectedUserId);
+        };
+
+        window.toggleBan = async (uid, isCurrentlyBanned) => {
+            if (isCurrentlyBanned) {
+                if(await customConfirm("Unban User", "Remove ban from this user?")) {
+                    await supabase.from('bans').delete().eq('user_id', uid);
+                    window.inspectUser(uid);
                 }
             } else {
-                const { error } = await supabase.from('ban_requests').insert({ target_user_id: currentBanTargetId, requester_id: currentUser.id, reason: reason });
-                if (error) {
-                    if (window.showNotification) window.showNotification("Error: " + error.message, false);
-                    else alert("Error: " + error.message);
-                } else {
-                    if (window.showNotification) window.showNotification("Violation report submitted for review.", false);
-                    else alert("Violation report submitted for review.");
+                const reason = await customPrompt("Ban User", "Enter reason for ban:", "Violation of TOS");
+                if(reason !== null) {
+                    await supabase.from('bans').insert({ user_id: uid, reason: reason || 'Violation of TOS', banned_by: (await supabase.auth.getUser()).data.user.id });
+                    window.inspectUser(uid);
                 }
             }
-            closeBanModal();
-            setTimeout(loadUsers, 500);
         };
 
-        checkAuth();
+        window.setRole = async (uid, newRole) => {
+            if(await customConfirm("Change Role", `Are you sure you want to change this user's role to ${newRole.replace('_',' ')}?`)) {
+                if (newRole === 'user') {
+                    await supabase.from('roles').delete().eq('user_id', uid);
+                    await supabase.from('profiles').update({ is_admin: false }).eq('id', uid);
+                } else {
+                    const { error } = await supabase.from('roles').upsert({ user_id: uid, role: newRole });
+                    if(!error) {
+                        const isMainAdmin = (newRole === 'full_admin');
+                        await supabase.from('profiles').update({ is_admin: isMainAdmin }).eq('id', uid);
+                    }
+                }
+                
+                const uIndex = allUsers.findIndex(u => u.id === uid);
+                if(uIndex > -1) {
+                    allUsers[uIndex].is_admin = (newRole === 'full_admin');
+                    window.render();
+                }
+                window.inspectUser(uid); 
+            }
+        };
+
+        // --- FOLLOW SYSTEM UI ---
+        window.showFollows = async (type) => {
+            if (!inspectedUserId) return;
+            const title = type === 'followers' ? 'Followers' : 'Following';
+            document.getElementById('list-modal-title').innerText = title;
+            document.getElementById('list-modal').classList.remove('hidden');
+            document.getElementById('list-modal-content').innerHTML = '<div class="text-center text-gray-500 py-10"><i class="fas fa-spinner fa-spin"></i></div>';
+
+            let data = [];
+            if (type === 'followers') {
+                const { data: res } = await supabase.from('follows').select('follower_id').eq('following_id', inspectedUserId);
+                if (res) data = allUsers.filter(u => res.map(r => r.follower_id).includes(u.id));
+            } else {
+                const { data: res } = await supabase.from('follows').select('following_id').eq('follower_id', inspectedUserId);
+                if (res) data = allUsers.filter(u => res.map(r => r.following_id).includes(u.id));
+            }
+
+            if (data.length > 0) {
+                document.getElementById('list-modal-content').innerHTML = data.map(u => `
+                    <div class="flex items-center gap-3 p-3 hover:bg-[#111] rounded-lg border border-transparent hover:border-[#333] cursor-pointer transition-all" onclick="closeListModal(); inspectUser('${u.id}')">
+                        <img src="${getAvatar(u)}" class="w-10 h-10 rounded-lg object-cover border border-[#1a1a1a]">
+                        <div>
+                            <p class="text-sm font-medium">${u.display_name || u.username}</p>
+                            <p class="text-[10px] text-gray-500 mono">@${u.username}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('list-modal-content').innerHTML = `<div class="text-center text-gray-600 text-xs py-5">No ${type} found.</div>`;
+            }
+        };
+
+        window.closeListModal = () => document.getElementById('list-modal').classList.add('hidden');
+
+        // Search Parser & Autocomplete
+        function setupSearchAutocomplete() {
+            const input = document.getElementById('master-search');
+            const suggBox = document.getElementById('search-suggestions');
+            
+            const commonQueries = [
+                { trigger: 'is:', text: 'is:admin', desc: 'Find system administrators' },
+                { trigger: 'is:', text: 'is:following', desc: 'Find users you currently follow' },
+                { trigger: 'time>', text: 'time>3600', desc: 'Users with over 1 hour of time' },
+                { trigger: 'time>', text: 'time>86400', desc: 'Users with over 24 hours of time' }
+            ];
+
+            input.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const parts = term.split(' ');
+                const lastWord = parts[parts.length - 1];
+
+                let html = '';
+                if (lastWord.length > 0) {
+                    const matches = commonQueries.filter(q => q.trigger.startsWith(lastWord) || q.text.startsWith(lastWord));
+                    if (matches.length > 0) {
+                        html = matches.map(m => `
+                            <div class="sugg-item" onclick="applySearchSuggestion('${m.text}')">
+                                <span class="text-indigo-400 font-mono text-xs font-bold">${m.text}</span>
+                                <span class="text-[10px] text-gray-500">${m.desc}</span>
+                            </div>
+                        `).join('');
+                    }
+                }
+
+                if (html) {
+                    suggBox.innerHTML = html;
+                    suggBox.classList.remove('hidden');
+                } else {
+                    suggBox.classList.add('hidden');
+                }
+
+                // Execute Search filter
+                currentFilteredUsers = allUsers.filter(u => {
+                    let match = true;
+                    if (term.includes('is:admin') && !u.is_admin) match = false;
+                    if (term.includes('is:following') && !myFollowing.has(u.id)) match = false;
+                    
+                    const timeMatch = term.match(/time>(\d+)/);
+                    if (timeMatch && (u.total_v6_time || 0) <= parseInt(timeMatch[1])) match = false;
+
+                    const textOnly = term.replace(/is:\w+/g, '').replace(/time>\d+/g, '').trim();
+                    if (textOnly && match) {
+                        const searchStr = `${u.username} ${u.display_name} ${u.id}`.toLowerCase();
+                        if (!searchStr.includes(textOnly)) match = false;
+                    }
+                    return match;
+                });
+                window.render();
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.relative.w-full')) {
+                    suggBox.classList.add('hidden');
+                }
+            });
+        }
+
+        window.applySearchSuggestion = (suggestionText) => {
+            const input = document.getElementById('master-search');
+            let parts = input.value.split(' ');
+            parts.pop(); 
+            parts.push(suggestionText);
+            input.value = parts.join(' ') + ' ';
+            document.getElementById('search-suggestions').classList.add('hidden');
+            input.focus();
+            input.dispatchEvent(new Event('input')); 
+        };
+
+        init();
     </script>
 </body>
 </html>
-<!-- Made with ❤️ from 4SP -->
