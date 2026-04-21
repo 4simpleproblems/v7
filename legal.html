@@ -88,7 +88,6 @@
             font-weight: bold;
         }
         
-        /* Sidebar Styles */
         .sidebar-link {
             display: block;
             padding: 0.5rem 1rem;
@@ -108,7 +107,6 @@
             border-color: rgba(79, 70, 229, 0.3);
         }
 
-        /* Highlight target section briefly when navigated to via hash */
         :target {
             animation: highlight-target 2s ease-out;
         }
@@ -117,20 +115,11 @@
             20% { box-shadow: 0 0 20px 0 rgba(79, 70, 229, 0.5); border-color: var(--accent-color); }
             100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); border-color: var(--border-main); }
         }
-
     </style>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-1D4F692C1Q');
-    </script>
 </head>
 <body class="min-h-screen flex flex-col">
     <div id="page-content" class="flex-grow flex flex-col">
         
-        <!-- Header -->
         <section class="text-center border-b border-white/5 py-10 bg-gradient-to-b from-indigo-500/5 to-transparent relative z-10">
             <div class="mx-auto max-w-4xl px-4">
                 <h1 class="text-5xl md:text-6xl font-light tracking-tighter mb-4 leading-tight">
@@ -142,14 +131,9 @@
             </div>
         </section>
 
-        <!-- Main Content Area with Sidebar -->
         <div class="flex-grow flex flex-col md:flex-row max-w-7xl w-full mx-auto px-4 py-12 gap-8 relative">
-            
-            <!-- Left Sidebar Navigation -->
             <aside class="w-full md:w-64 flex-shrink-0">
                 <div class="sticky top-[88px] space-y-8 legal-sidebar">
-                    
-                    <!-- Terms of Service Links -->
                     <div class="bg-[#0a0a0a] rounded-2xl p-4 border border-[#1a1a1a]">
                         <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-4 px-2">Terms of Service</h3>
                         <nav class="space-y-1" id="tos-nav">
@@ -158,12 +142,11 @@
                             <a href="#content-responsibility" class="sidebar-link">Content Responsibility</a>
                             <a href="#leaderboard-terms" class="sidebar-link text-indigo-300">Leaderboard Terms</a>
                             <a href="#messenger-social" class="sidebar-link">Messenger & Social</a>
-                            <a href="#subsystems-proxies" class="sidebar-link">Subsystems & Proxies</a>
+                            <a href="#subsystems-delivery" class="sidebar-link">Resource Delivery</a>
                             <a href="#administration" class="sidebar-link">Administration</a>
                         </nav>
                     </div>
 
-                    <!-- Privacy Policy Links -->
                     <div class="bg-[#0a0a0a] rounded-2xl p-4 border border-[#1a1a1a]">
                         <h3 class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4 px-2">Privacy Policy</h3>
                         <nav class="space-y-1" id="privacy-nav">
@@ -174,60 +157,52 @@
                             <a href="#data-deletion" class="sidebar-link">Account Deletion</a>
                         </nav>
                     </div>
-                    
                 </div>
             </aside>
 
-            <!-- Right Content Sections -->
             <main class="flex-1 min-w-0 space-y-16 pb-24" id="legal-content">
-
-                <!-- ================= TERMS OF SERVICE ================= -->
                 <div class="space-y-10">
                     <div class="border-b border-[#1a1a1a] pb-4 mb-8">
                         <h2 class="text-3xl text-white">Terms of Service</h2>
                         <p class="text-sm mt-2 text-gray-500">Last Updated: March 2026</p>
                     </div>
 
-                    <!-- Section: Network Agreement -->
                     <section id="network-agreement" class="scroll-mt-28 legal-card">
                         <div class="section-tag">1;0</div>
                         <h3 class="text-xl text-white mb-4">1. Network Agreement</h3>
                         <p class="leading-relaxed mb-4">
-                            By accessing, registering for, or using the 4simpleproblems (4SP) V6 network and its associated sub-systems (including but not limited to the Main Hub, VELIUM, VORA, and VANA), you agree to be bound by these Terms of Service.
+                            By accessing, registering for, or using the 4simpleproblems (4SP) V6 network and its associated sub-systems, you agree to be bound by these Terms of Service.
                         </p>
                         <p class="leading-relaxed">
-                            4SP operates as an independent, decentralized network infrastructure primarily serving student communities. Your access to this network is a privilege granted by the platform administration and is contingent upon your adherence to these rules.
+                            4SP operates as an independent, optimized network infrastructure primarily serving student communities. Your access to this network is a privilege granted by the platform administration and is contingent upon your adherence to these rules.
                         </p>
                     </section>
 
-                    <!-- Section: User Conduct -->
                     <section id="user-conduct" class="scroll-mt-28 legal-card">
                         <div class="section-tag">2;0</div>
                         <h3 class="text-xl text-white mb-4">2. User Responsibility & Conduct</h3>
                         <p class="leading-relaxed mb-4">
-                            You are solely responsible for your conduct and any data, text, photos, audio, or other materials ("Content") that you transmit, submit, or display on the 4SP service.
+                            You are solely responsible for your conduct and any data, text, photos, audio, or other materials ("Content") that you transmit or display on the 4SP service.
                         </p>
                         <ul class="space-y-2">
-                            <li class="legal-list-item"><strong>2;1 No Malicious Activity:</strong> You may not distribute viruses, destructive code, or attempt to compromise the integrity of the Firebase infrastructure, Cloud Functions, or Bare/Wisp servers.</li>
-                            <li class="legal-list-item"><strong>2;2 Infrastructure Protection:</strong> The intentional compromisation of 4SP access URLs, including the distribution of restricted links to unauthorized third parties, educational authorities, or network administrators, is strictly prohibited. Violation of this clause may result in immediate account termination. Appeals may be submitted to <span class="text-indigo-400">4simpleproblems@gmail.com</span>.</li>
+                            <li class="legal-list-item"><strong>2;1 No Malicious Activity:</strong> You may not distribute viruses, destructive code, or attempt to compromise the integrity of the cloud infrastructure.</li>
+                            <li class="legal-list-item"><strong>2;2 Link Integrity:</strong> The unauthorized distribution of internal access links to third parties for the purpose of disrupting service is prohibited. Violation may result in account review.</li>
                             <li class="legal-list-item"><strong>2;3 Identity Integrity:</strong> You may not spoof administrative accounts or falsely claim affiliation with the 4SP development team.</li>
                             <li class="legal-list-item"><strong>2;4 Respectful Interaction:</strong> Harassment, hate speech, threats, and explicit content are strictly prohibited across all social features.</li>
                         </ul>
                     </section>
 
-                    <!-- Section: Content Responsibility -->
                     <section id="content-responsibility" class="scroll-mt-28 legal-card">
                         <div class="section-tag">3;0</div>
                         <h3 class="text-xl text-white mb-4">3. Content Responsibility (Dailyphoto & Posts)</h3>
                         <p class="leading-relaxed mb-4">
-                            Features like Dailyphoto and user feeds operate on a hyper-local, community-driven basis (e.g., filtered by school or district). 
+                            Features like Dailyphoto and user feeds operate on a community-driven basis.
                         </p>
                         <p class="leading-relaxed mb-4">
-                            <span class="text-red-400 font-medium">3;1 Liability Disclaimer: 4simpleproblems is NOT liable for user-uploaded imagery or text.</span> We provide the conduit, but you retain ownership and responsibility for what you post. We reserve the right to remove any content reported by the community or deemed inappropriate by administrators without prior notice.
+                            <span class="text-red-400 font-medium">3;1 Liability Disclaimer: 4simpleproblems is NOT liable for user-uploaded imagery or text.</span> You retain ownership and responsibility for what you post. We reserve the right to remove any content deemed inappropriate by administrators.
                         </p>
                     </section>
 
-                    <!-- Section: Leaderboard Terms -->
                     <section id="leaderboard-terms" class="scroll-mt-28 legal-card ring-1 ring-indigo-500/20 bg-indigo-900/5">
                         <div class="section-tag">4;0</div>
                         <div class="flex items-center gap-3 mb-4">
@@ -235,76 +210,70 @@
                             <h3 class="text-xl text-white m-0">4. Global Leaderboard Terms</h3>
                         </div>
                         <p class="leading-relaxed mb-4">
-                            The 4SP Global Leaderboard is an opt-in, competitive ranking system that displays user activity and engagement metrics across the network.
+                            The 4SP Global Leaderboard is an opt-in ranking system that displays user engagement metrics across the network.
                         </p>
                         <ul class="space-y-3 mb-6">
-                            <li class="legal-list-item"><strong>4;1 Opt-In Consent:</strong> By explicitly opting into the leaderboard, you consent to the public display of your Display Name, Username, Profile Picture (PFP, Custom, or Mibi Avatar), School Affiliation, and your calculated Activity Score.</li>
-                            <li class="legal-list-item"><strong>4;2 Score Calculation:</strong> Scores are generated via proprietary algorithms evaluating session duration, feature engagement, and social interactions. Exploiting bugs or using automated scripts (bots) to artificially inflate your score is prohibited and will result in a permanent ban.</li>
-                            <li class="legal-list-item"><strong>4;3 Right to Opt-Out:</strong> You may revoke your consent at any time via the Settings panel. Opting out will immediately remove your profile from the public leaderboard rankings.</li>
+                            <li class="legal-list-item"><strong>4;1 Opt-In Consent:</strong> By opting into the leaderboard, you consent to the public display of your profile information and activity score.</li>
+                            <li class="legal-list-item"><strong>4;2 Score Calculation:</strong> Scores are generated via algorithms evaluating session duration and feature engagement.</li>
+                            <li class="legal-list-item"><strong>4;3 Right to Opt-Out:</strong> You may revoke your consent at any time via the Settings panel.</li>
                         </ul>
                     </section>
 
-                    <!-- Section: Messenger & Social -->
                     <section id="messenger-social" class="scroll-mt-28 legal-card">
                         <div class="section-tag">5;0</div>
                         <h3 class="text-xl text-white mb-4">5. Messenger & Social Graph</h3>
                         <p class="leading-relaxed mb-4">
-                            Our social features (Messenger, Follower/Following mechanics, Mutuals) facilitate peer-to-peer communication.
+                            Our social features facilitate peer-to-peer communication.
                         </p>
                         <ul class="space-y-2">
-                            <li class="legal-list-item"><strong>5;1 Privacy Advisory:</strong> Currently, messages in 4SP Messenger are stored securely in Firestore but are <em>not</em> end-to-end encrypted. Do not share highly sensitive personal information.</li>
-                            <li class="legal-list-item"><strong>5;2 User Controls:</strong> 4SP does not proactively monitor private messages. You are empowered and expected to use the Block, Unfriend, and Report tools to manage your own social boundaries.</li>
+                            <li class="legal-list-item"><strong>5;1 Privacy Advisory:</strong> Messages are stored securely but are not end-to-end encrypted. Do not share highly sensitive personal information.</li>
+                            <li class="legal-list-item"><strong>5;2 User Controls:</strong> Use the Block and Report tools to manage your own social boundaries.</li>
                         </ul>
                     </section>
 
-                    <!-- Section: Subsystems & Proxies -->
-                    <section id="subsystems-proxies" class="scroll-mt-28 legal-card">
+                    <section id="subsystems-delivery" class="scroll-mt-28 legal-card">
                         <div class="section-tag">6;0</div>
-                        <h3 class="text-xl text-white mb-4">6. Subsystems & Proxy Services (VELIUM, VERN, etc.)</h3>
+                        <h3 class="text-xl text-white mb-4">6. Resource Delivery & Content Availability</h3>
                         <p class="leading-relaxed mb-4">
-                            4SP integrates advanced web-proxy technologies (Bare, Wisp, UV) and media hubs (Soundboard, Games Hub, VANA) to bypass local network restrictions.
+                            4SP integrates advanced delivery protocols to ensure consistent availability of media hubs, study tools, and academic resources.
                         </p>
                         <ul class="space-y-2">
-                            <li class="legal-list-item"><strong>6;1 Liability Disclaimer:</strong> 4SP is not liable for disciplinary actions (e.g., detentions, loss of device privileges) taken by educational institutions or network administrators resulting from your use of these circumvention tools.</li>
-                            <li class="legal-list-item"><strong>6;2 Third-Party Nodes:</strong> Connection speeds and availability rely on external nodes. We do not guarantee 100% uptime for proxy services.</li>
+                            <li class="legal-list-item"><strong>6;1 Usage:</strong> 4SP is not liable for disciplinary actions taken by institutions resulting from the use of platform utilities during instructional time.</li>
+                            <li class="legal-list-item"><strong>6;2 Availability:</strong> We utilize distributed nodes to ensure reliable access to all student services.</li>
                         </ul>
                     </section>
 
-                    <!-- Section: Administration -->
                     <section id="administration" class="scroll-mt-28 legal-card">
                         <div class="section-tag">7;0</div>
                         <h3 class="text-xl text-white mb-4">7. Administration & Governance</h3>
                         <p class="leading-relaxed mb-4">
-                            The primary Creator (<span class="text-indigo-400">4simpleproblems@gmail.com</span>) and appointed Administrators maintain absolute authority over the platform infrastructure.
+                            The primary Creator and appointed Administrators maintain authority over the platform infrastructure to ensure safety and stability.
                         </p>
                         <p class="leading-relaxed">
-                            <strong>7;1 Enforcement decision:</strong> Administrators possess the tools to globally ban users, instantly disintegrate accounts, and manage network traffic. Attempts to bypass an administrative ban via alternate accounts, clearing local storage, or IP-spoofing may result in severe, permanent hardware-level blocks. Administrative decisions are final.
+                            <strong>7;1 Enforcement:</strong> Administrators possess tools to manage accounts and ensure network stability. Attempts to bypass an administrative ban may result in permanent hardware-level blocks.
                         </p>
                     </section>
                 </div>
 
-
-                <!-- ================= PRIVACY POLICY ================= -->
                 <div class="space-y-10 pt-16">
                     <div class="border-b border-[#1a1a1a] pb-4 mb-8">
                         <h2 class="text-3xl text-white">Privacy Policy</h2>
                         <p class="text-sm mt-2 text-gray-500">Committed to minimal data retention.</p>
                     </div>
 
-                    <!-- Section: Data Collection -->
                     <section id="data-collection" class="scroll-mt-28 legal-card">
                         <div class="section-tag">P;1.0</div>
                         <h3 class="text-xl text-white mb-4">1. Information We Store (Cloud Data)</h3>
                         <p class="leading-relaxed mb-6">
-                            To facilitate social networking, cross-device syncing, and authentication, we securely store the following data within our Google Firebase infrastructure:
+                            To facilitate social networking and cross-device syncing, we store the following data:
                         </p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <h4 class="text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide">Identity & Profile</h4>
                                 <ul class="space-y-2 text-sm">
-                                    <li class="legal-list-item">P;1.1 Email Address & Authentication Provider (Google, MS, GitHub)</li>
+                                    <li class="legal-list-item">P;1.1 Email Address & Auth Provider</li>
                                     <li class="legal-list-item">P;1.2 Display Name & @Username</li>
-                                    <li class="legal-list-item">P;1.3 Profile Visuals (URL, Custom Base64, or Mibi Config)</li>
+                                    <li class="legal-list-item">P;1.3 Profile Visuals</li>
                                     <li class="legal-list-item">P;1.4 School/District Affiliation</li>
                                 </ul>
                             </div>
@@ -314,18 +283,16 @@
                                     <li class="legal-list-item">P;1.5 Followers / Following Maps</li>
                                     <li class="legal-list-item">P;1.6 Sent & Received Messages</li>
                                     <li class="legal-list-item">P;1.7 Posts, Comments, and Dailyphotos</li>
-                                    <li class="legal-list-item">P;1.8 Notifications and Friend Requests</li>
                                 </ul>
                             </div>
                         </div>
                     </section>
 
-                    <!-- Section: Local Data -->
                     <section id="local-data" class="scroll-mt-28 legal-card">
                         <div class="section-tag">P;2.0</div>
                         <h3 class="text-xl text-white mb-4">2. Local-Only Data (On-Device)</h3>
                         <p class="leading-relaxed mb-4">
-                            V6 respects your privacy by processing highly personal utility data entirely locally. The following information is stored in your browser's LocalStorage or IndexedDB and is <strong>never</strong> transmitted to our servers:
+                            The following information is stored locally and is <strong>never</strong> transmitted to our servers:
                         </p>
                         <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <li class="bg-[#111] p-3 rounded-xl border border-[#222]">
@@ -334,62 +301,47 @@
                             </li>
                             <li class="bg-[#111] p-3 rounded-xl border border-[#222]">
                                 <span class="block text-white font-medium mb-1"><i class="fa-solid fa-calendar text-purple-400 mr-2"></i>P;2.2 Schedules</span>
-                                <span class="text-sm text-gray-400">Your personalized class and bell schedules.</span>
+                                <span class="text-sm text-gray-400">Your personalized class schedules.</span>
                             </li>
                             <li class="bg-[#111] p-3 rounded-xl border border-[#222]">
                                 <span class="block text-white font-medium mb-1"><i class="fa-solid fa-user-secret text-purple-400 mr-2"></i>P;2.3 Privacy Settings</span>
-                                <span class="text-sm text-gray-400">Panic Key bindings and Tab Disguise configurations.</span>
+                                <span class="text-sm text-gray-400">Panic Key and Tab configurations.</span>
                             </li>
                             <li class="bg-[#111] p-3 rounded-xl border border-[#222]">
                                 <span class="block text-white font-medium mb-1"><i class="fa-solid fa-palette text-purple-400 mr-2"></i>P;2.4 Local Themes</span>
-                                <span class="text-sm text-gray-400">Un-synced theme preferences and navbar layouts.</span>
+                                <span class="text-sm text-gray-400">Interface layout preferences.</span>
                             </li>
                         </ul>
                     </section>
 
-                    <!-- Section: Analytics & Cookies -->
                     <section id="analytics-cookies" class="scroll-mt-28 legal-card">
                         <div class="section-tag">P;3.0</div>
                         <h3 class="text-xl text-white mb-4">3. Analytics & Cookies</h3>
                         <p class="leading-relaxed mb-4">
-                            We utilize <strong>Google Analytics (GA4)</strong> to monitor broad traffic trends, feature usage, and network health. This helps us understand which utilities are most critical to our users.
-                        </p>
-                        <p class="leading-relaxed">
-                            <strong>P;3.1 Cookies & Storage:</strong> 4SP uses LocalStorage and SessionStorage extensively to maintain application state, handle client-side routing, and store authentication tokens provided by Firebase. We do not sell your data to advertising networks.
+                            We utilize <strong>Google Analytics</strong> to monitor broad traffic trends. We do not sell your data to advertising networks.
                         </p>
                     </section>
 
-                    <!-- Section: Third-Party Services -->
                     <section id="third-party-services" class="scroll-mt-28 legal-card">
                         <div class="section-tag">P;4.0</div>
                         <h3 class="text-xl text-white mb-4">4. Third-Party Services Integration</h3>
-                        <p class="leading-relaxed mb-4">
-                            Our platform relies on several trusted third-party providers. By using 4SP, you also acknowledge the privacy practices of these entities:
-                        </p>
                         <ul class="space-y-2">
-                            <li class="legal-list-item"><strong>P;4.1 Google Firebase:</strong> Hosts our database (Firestore), authentication (Auth), and file storage (Cloud Storage).</li>
-                            <li class="legal-list-item"><strong>P;4.2 Cloudflare / Vercel:</strong> Manages our DNS, CDN, and edge routing to ensure the network remains unblockable.</li>
-                            <li class="legal-list-item"><strong>P;4.3 Stripe:</strong> (If applicable) Processes secure donations or premium tier subscriptions. 4SP does not store raw credit card details; all financial data is handled entirely by Stripe.</li>
+                            <li class="legal-list-item"><strong>P;4.1 Firebase:</strong> Hosts database and authentication.</li>
+                            <li class="legal-list-item"><strong>P;4.2 Cloudflare/Vercel:</strong> Manages DNS and infrastructure resiliency.</li>
                         </ul>
                     </section>
 
-                    <!-- Section: Data Deletion -->
                     <section id="data-deletion" class="scroll-mt-28 legal-card border-red-900/30 bg-red-900/5">
                         <div class="section-tag">P;5.0</div>
                         <div class="flex items-center gap-3 mb-4">
                             <i class="fa-solid fa-trash-can text-red-400 text-xl"></i>
                             <h3 class="text-xl text-white m-0">5. The Right to Disappear (Account Deletion)</h3>
                         </div>
-                        <p class="leading-relaxed mb-4">
-                            You possess complete autonomy over your digital footprint on the network. 
-                        </p>
                         <p class="leading-relaxed">
-                            <strong>P;5.1 Termination:</strong> Through the <a href="/logged-in/settings.html" class="text-indigo-400 hover:underline">Settings</a> page, you can execute a full account deletion. Initiating this process triggers a Cloud Function that irreversibly purges your Firestore profile, releases your reserved username, deletes your posts/messages, and destroys your Firebase Authentication record. Local on-device data is also cleared simultaneously.
+                            <strong>P;5.1 Termination:</strong> Through the <a href="/logged-in/settings.html" class="text-indigo-400 hover:underline">Settings</a> page, you can execute a full account deletion, which irreversibly purges your profile and associated data.
                         </p>
                     </section>
-
                 </div>
-
             </main>
         </div>
     </div>
@@ -398,68 +350,7 @@
         <div class="mx-auto max-w-7xl px-4 text-center text-gray-500 text-sm font-light flex flex-col items-center">
             <img src="/images/logo.png" class="h-6 w-auto mb-4 opacity-50 grayscale" alt="4SP Logo">
             <p>&copy; 2026 4simpleproblems (4SP). The V6 Social Network.</p>
-            <div class="mt-4 flex justify-center gap-6">
-                <a href="mailto:4simpleproblems@gmail.com" class="hover:text-white transition">Contact Support</a>
-                <a href="/documentation.html" class="hover:text-white transition">Documentation</a>
-            </div>
         </div>
     </footer>
-
-    <!-- Active Link Script for Sidebar -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const sections = document.querySelectorAll('main section');
-            const navLinks = document.querySelectorAll('.sidebar-link');
-
-            const observerOptions = {
-                root: null,
-                rootMargin: '-100px 0px -60% 0px',
-                threshold: 0
-            };
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        // Remove active class from all
-                        navLinks.forEach(link => link.classList.remove('active'));
-                        // Add active class to intersecting link
-                        const activeId = entry.target.id;
-                        const activeLink = document.querySelector(`.sidebar-link[href="#${activeId}"]`);
-                        if (activeLink) {
-                            activeLink.classList.add('active');
-                        }
-                    }
-                });
-            }, observerOptions);
-
-            sections.forEach(section => {
-                observer.observe(section);
-            });
-
-            // Smooth scrolling for sidebar links
-            navLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    const targetId = this.getAttribute('href');
-                    if(targetId.startsWith('#')) {
-                        const targetSection = document.querySelector(targetId);
-                        if(targetSection) {
-                            // Update URL hash without jumping (prevent default if wanted, but standard smooth scroll is okay via CSS)
-                            // We rely on CSS scroll-behavior: smooth
-                        }
-                    }
-                });
-            });
-
-            // Initial active link based on hash
-            if (window.location.hash) {
-                const activeLink = document.querySelector(`.sidebar-link[href="${window.location.hash}"]`);
-                if (activeLink) {
-                    navLinks.forEach(link => link.classList.remove('active'));
-                    activeLink.classList.add('active');
-                }
-            }
-        });
-    </script>
 </body>
 </html>
-<!-- Made with ❤️ from 4SP -->
