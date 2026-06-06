@@ -410,4 +410,56 @@
       border-top: none;
       padding-top: 0;
     }
+
+    #navbar-container {
+      background-color: #1a1a1a !important;
+      border-bottom: 1px solid #444444 !important;
+      font-family: 'Roboto Mono', monospace !important;
+    }
+    .nav-tab {
+      color: #cccccc !important;
+      font-family: 'Roboto Mono', monospace !important;
+      border: 1px solid transparent !important;
+    }
+    .nav-tab:hover {
+      color: #ffffff !important;
+      background-color: rgba(255, 255, 255, 0.05) !important;
+      border-color: #ffffff !important;
+    }
+    .nav-tab.active {
+      color: #ffffff !important;
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      border-color: #ffffff !important;
+    }
+    #auth-toggle, #pin-button, .logged-out-auth-toggle {
+      background-color: #333333 !important;
+      border: 1px solid #444444 !important;
+    }
+    #auth-toggle:hover, #pin-button:hover, .logged-out-auth-toggle:hover {
+      background-color: #444444 !important;
+    }
+    #pin-button-icon, .logged-out-auth-toggle i {
+      color: #ffffff !important;
+    }
+    .scroll-glide-button {
+      color: #ffffff !important;
+      background-color: #1a1a1a !important;
+    }
+    #glide-left, #glide-right {
+      background-color: #1a1a1a !important;
+    }
+    .auth-menu-container {
+      background-color: #1a1a1a !important;
+      border: 1px solid #444444 !important;
+      color: #ffffff !important;
+    }
+    .auth-menu-link, .auth-menu-button {
+      color: #ffffff !important;
+      background-color: #333333 !important;
+      border-color: #444444 !important;
+    }
+    .auth-menu-link:hover, .auth-menu-button:hover {
+      background-color: #444444 !important;
+      color: #ffffff !important;
+    }
   

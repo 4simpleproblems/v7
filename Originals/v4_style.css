@@ -697,3 +697,64 @@ footer {
 .main-nav .dropdown .dropbtn {
     cursor: default;
 }
+
+#navbar-container {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #eeeeee !important;
+    font-family: 'PrimaryFont', sans-serif !important;
+}
+.nav-tab {
+    color: #555555 !important;
+    font-family: 'SecondaryFont', sans-serif !important;
+    border: 1px solid transparent !important;
+}
+.nav-tab:hover {
+    color: #6720bd !important;
+    background-color: rgba(103, 32, 189, 0.05) !important;
+    border-color: #6720bd !important;
+}
+.nav-tab.active {
+    color: #6720bd !important;
+    background-color: rgba(103, 32, 189, 0.1) !important;
+    border-color: #6720bd !important;
+}
+#auth-toggle, #pin-button, .logged-out-auth-toggle {
+    background-color: #ffffff !important;
+    border: 1px solid #6720bd !important;
+}
+#auth-toggle:hover, #pin-button:hover, .logged-out-auth-toggle:hover {
+    background-color: #eeeeee !important;
+}
+#pin-button-icon, .logged-out-auth-toggle i {
+    color: #6720bd !important;
+}
+.scroll-glide-button {
+    color: #6720bd !important;
+    background-color: #ffffff !important;
+}
+#glide-left, #glide-right {
+    background-color: #ffffff !important;
+}
+.auth-menu-container {
+    background-color: #ffffff !important;
+    border: 1px solid #cccccc !important;
+    color: #333333 !important;
+    font-family: 'SecondaryFont', sans-serif !important;
+}
+.auth-menu-link, .auth-menu-button {
+    color: #333333 !important;
+    background-color: #ffffff !important;
+    border-color: #cccccc !important;
+    font-family: 'PrimaryFont', sans-serif !important;
+}
+.auth-menu-link:hover, .auth-menu-button:hover {
+    background-color: #eeeeee !important;
+    color: #6720bd !important;
+    border-color: #6720bd !important;
+}
+.auth-menu-username-handle, .auth-menu-email {
+    color: #666666 !important;
+}
+.auth-menu-username {
+    color: #333333 !important;
+}

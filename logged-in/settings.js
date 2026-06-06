@@ -1387,9 +1387,6 @@
                                     <option value="originals" style="background:#15131C;color:#fff;">Originals Collection</option>
                                 </select>
                             </div>
-                            <button id="download-collection-btn" class="btn-toolbar-style px-4 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2" style="border-radius: 12px;">
-                                <i class="fa-solid fa-download"></i> Download Collection
-                            </button>
                         </div>
                         
                         <div id="theme-picker-container">
@@ -4264,9 +4261,7 @@
 
             if (!themePickerContainer) return;
             
-            const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink', 'Birthday'];
             const collectionSelector = document.getElementById('collection-selector');
-            const downloadBtn = document.getElementById('download-collection-btn');
 
             let currentCollection = localStorage.getItem('user-theme-collection') || 'base';
 
@@ -4277,32 +4272,6 @@
                     localStorage.setItem('user-theme-collection', currentCollection);
                     await renderCollection(currentCollection);
                 });
-            }
-
-            if (downloadBtn) {
-                downloadBtn.onclick = () => {
-                    const activeCollection = collectionSelector ? collectionSelector.value : 'base';
-                    let downloadUrl = '../themes.json';
-                    if (activeCollection === 'foods') downloadUrl = '../themes_foods.json';
-                    else if (activeCollection === 'nature') downloadUrl = '../themes_nature.json';
-                    else if (activeCollection === 'originals') downloadUrl = '../themes_originals.json';
-                    
-                    fetch(downloadUrl)
-                        .then(res => res.json())
-                        .then(data => {
-                            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 4));
-                            const downloadAnchor = document.createElement('a');
-                            downloadAnchor.setAttribute("href", dataStr);
-                            downloadAnchor.setAttribute("download", `4sp_collection_${activeCollection}.json`);
-                            document.body.appendChild(downloadAnchor);
-                            downloadAnchor.click();
-                            downloadAnchor.remove();
-                        })
-                        .catch(err => {
-                            console.error('Error downloading collection:', err);
-                            showMessage(themeMessage, 'Failed to download collection.', 'error');
-                        });
-                };
             }
 
             async function renderCollection(collectionName) {
