@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="/injector.js"></script>
     
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
@@ -104,8 +105,8 @@
             z-index: -1;
         }
         
-        h1, h2, h3, .font-medium, .font-semibold, strong {
-            font-weight: 300 !important;
+        h1, h2, h3, strong {
+            font-weight: 700 !important;
         }
 
         /* --- Toolbar Button Style (Global) --- */
@@ -603,9 +604,15 @@
         <section class="flex-1 min-w-0 p-8 md:p-16 pt-12 pb-32">
             <div class="max-w-[1400px] mx-auto relative">
                 
-                <button id="creditsBtn" class="absolute top-0 right-0 z-20 btn-toolbar-style border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10">
-                    <i class="fa-solid fa-users mr-2"></i>Credits
-                </button>
+                <div class="absolute top-0 right-0 z-20 flex gap-3">
+                    <button id="uploadApkBtn" class="btn-toolbar-style border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10">
+                        <i class="fa-solid fa-file-import mr-2"></i>Upload APK
+                    </button>
+                    <button id="creditsBtn" class="btn-toolbar-style border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10">
+                        <i class="fa-solid fa-users mr-2"></i>Credits
+                    </button>
+                </div>
+                <input type="file" id="apkFileInput" accept=".apk" class="hidden">
 
                 <div id="favoritesSection" class="mb-16 mt-4" style="display: none;">            
                     <div id="favoritesHeader" style="display: none;">
@@ -1829,6 +1836,156 @@
 
             creditsNextBtn.addEventListener('click', () => {
                 creditsScrollContainer.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+            });
+        }
+
+        async function runApkHtml5(file) {
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.style.cssText = `
+                position: fixed; inset: 0; z-index: 1000000;
+                background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                gap: 1.5rem; color: #fff; font-family: 'Manrope', sans-serif;
+            `;
+            loadingOverlay.innerHTML = `
+                <i class="fa-solid fa-circle-notch fa-spin fa-3x text-[var(--accent-color)]"></i>
+                <div class="text-xl font-bold uppercase tracking-wider">Loading APK Game...</div>
+                <div class="text-xs text-gray-400 font-light" id="apk-load-status">Reading APK archive...</div>
+            `;
+            document.body.appendChild(loadingOverlay);
+
+            const updateStatus = (text) => {
+                const statusEl = document.getElementById('apk-load-status');
+                if (statusEl) statusEl.textContent = text;
+            };
+
+            try {
+                updateStatus("Parsing APK structure...");
+                const zip = await JSZip.loadAsync(file);
+                const filesMap = {};
+                const htmlFiles = [];
+
+                updateStatus("Extracting game resources...");
+                const fileEntries = Object.entries(zip.files).filter(([_, entry]) => !entry.dir);
+                let loadedCount = 0;
+
+                for (const [relativePath, zipEntry] of fileEntries) {
+                    let mimeType = 'application/octet-stream';
+                    if (relativePath.endsWith('.html')) mimeType = 'text/html';
+                    else if (relativePath.endsWith('.js')) mimeType = 'application/javascript';
+                    else if (relativePath.endsWith('.css')) mimeType = 'text/css';
+                    else if (relativePath.endsWith('.png')) mimeType = 'image/png';
+                    else if (relativePath.endsWith('.jpg') || relativePath.endsWith('.jpeg')) mimeType = 'image/jpeg';
+                    else if (relativePath.endsWith('.gif')) mimeType = 'image/gif';
+                    else if (relativePath.endsWith('.svg')) mimeType = 'image/svg+xml';
+                    else if (relativePath.endsWith('.json')) mimeType = 'application/json';
+                    else if (relativePath.endsWith('.mp3')) mimeType = 'audio/mpeg';
+                    else if (relativePath.endsWith('.wav')) mimeType = 'audio/wav';
+                    else if (relativePath.endsWith('.ogg')) mimeType = 'audio/ogg';
+
+                    const blob = await zipEntry.async('blob');
+                    const url = URL.createObjectURL(new Blob([blob], { type: mimeType }));
+                    
+                    filesMap[relativePath] = url;
+
+                    const cleanPath = relativePath.replace(/^assets\/(www|public)\//, '');
+                    filesMap[cleanPath] = url;
+
+                    if (relativePath.endsWith('.html')) {
+                        htmlFiles.push(relativePath);
+                    }
+
+                    loadedCount++;
+                    if (loadedCount % 10 === 0 || loadedCount === fileEntries.length) {
+                        updateStatus(`Extracted ${loadedCount} of ${fileEntries.length} resources...`);
+                    }
+                }
+
+                updateStatus("Locating launcher...");
+                let mainHtmlPath = htmlFiles.find(p => p.endsWith('index.html'));
+                if (!mainHtmlPath && htmlFiles.length > 0) {
+                    mainHtmlPath = htmlFiles.find(p => p.includes('www/') || p.includes('public/')) || htmlFiles[0];
+                }
+
+                if (!mainHtmlPath) {
+                    loadingOverlay.remove();
+                    alert("Could not locate any index.html or launchable file inside the APK.");
+                    return;
+                }
+
+                updateStatus("Compiling assets...");
+                const mainHtmlEntry = zip.file(mainHtmlPath);
+                let htmlContent = await mainHtmlEntry.async('string');
+
+                const mainDir = mainHtmlPath.substring(0, mainHtmlPath.lastIndexOf('/') + 1);
+
+                htmlContent = htmlContent.replace(/(src|href)=["']([^"']+)["']/gi, (match, attr, path) => {
+                    if (path.startsWith('http') || path.startsWith('data:') || path.startsWith('//')) {
+                        return match;
+                    }
+
+                    let resolvedPath = path;
+                    if (path.startsWith('./')) {
+                        resolvedPath = path.substring(2);
+                    }
+
+                    const absolutePath = mainDir + resolvedPath;
+                    const blobUrl = filesMap[absolutePath] || filesMap[resolvedPath] || filesMap[path];
+                    if (blobUrl) {
+                        return `${attr}="${blobUrl}"`;
+                    }
+                    return match;
+                });
+
+                updateStatus("Preparing viewer...");
+                const zoneViewer = document.getElementById('zoneViewer');
+                const zoneFrame = document.getElementById('zoneFrame');
+                const zoneNameEl = document.getElementById('zoneNameEl');
+                const downloadBtn = document.getElementById('downloadBtnZone');
+                const controls = zoneViewer.querySelector('.zone-controls');
+
+                downloadBtn.classList.add('hidden');
+                
+                const existingFav = controls.querySelector('.player-fav-btn');
+                if (existingFav) existingFav.remove();
+
+                zoneNameEl.textContent = file.name.replace('.apk', '') + ' (APK Loaded)';
+                zoneFrame.src = 'about:blank';
+
+                setTimeout(() => {
+                    loadingOverlay.remove();
+
+                    const doc = zoneFrame.contentWindow.document;
+                    doc.open();
+                    doc.write(htmlContent);
+                    doc.close();
+
+                    zoneViewer.style.display = "flex";
+                    zoneViewer.classList.remove('animate-fade-out');
+                    zoneViewer.classList.add('active', 'animate-fade-in');
+                    zoneViewer.style.opacity = '1';
+                }, 400);
+
+            } catch (err) {
+                console.error(err);
+                loadingOverlay.remove();
+                alert("Failed to load game from APK: " + err.message);
+            }
+        }
+
+        const uploadApkBtn = document.getElementById('uploadApkBtn');
+        const apkFileInput = document.getElementById('apkFileInput');
+
+        if (uploadApkBtn && apkFileInput) {
+            uploadApkBtn.addEventListener('click', () => {
+                apkFileInput.click();
+            });
+
+            apkFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    runApkHtml5(file);
+                }
             });
         }
 
