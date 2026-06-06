@@ -1,6 +1,6 @@
 
     /* Universal rule to enforce Roboto Mono font for all elements */
-    * {
+    *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not([class*="fa-"]) {
       font-family: 'Roboto Mono', monospace !important;
     }
     

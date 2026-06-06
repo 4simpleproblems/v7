@@ -18,8 +18,11 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Roboto Mono', monospace !important;
   font-weight: 400;
+}
+
+*:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not([class*="fa-"]) {
+  font-family: 'Roboto Mono', monospace !important;
 }
 
 body {
