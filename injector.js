@@ -146,6 +146,19 @@
             }
         }
 
+        root.style.setProperty('--bg-page', 'var(--bg-primary)');
+        root.style.setProperty('--bg-card', 'var(--bg-secondary)');
+        root.style.setProperty('--bg-container', 'var(--bg-secondary)');
+        root.style.setProperty('--text-main', 'var(--text-primary)');
+        root.style.setProperty('--text-muted', 'var(--text-secondary)');
+        root.style.setProperty('--accent-color', 'var(--accent-primary)');
+        root.style.setProperty('--accent-glow', 'var(--accent-secondary)');
+        root.style.setProperty('--border-main', 'var(--border-primary)');
+        root.style.setProperty('--border-color', 'var(--border-primary)');
+        root.style.setProperty('--border-faint', 'var(--border-secondary)');
+        root.style.setProperty('--btn-bg', 'var(--button-bg)');
+        root.style.setProperty('--btn-text', 'var(--button-text)');
+
         const existingLink = document.getElementById('originals-stylesheet');
         if (themeToApply['original-css']) {
             const resolvedCSS = resolveRelativePath(themeToApply['original-css']);
@@ -193,7 +206,144 @@
         } else if (styleEl) {
             styleEl.remove();
         }
+
+        const globalStyleId = '4sp-global-redesign-styles';
+        let globalStyleEl = document.getElementById(globalStyleId);
+        if (!globalStyleEl) {
+            globalStyleEl = document.createElement('style');
+            globalStyleEl.id = globalStyleId;
+            document.head.appendChild(globalStyleEl);
+        }
+        globalStyleEl.textContent = `
+            body {
+                font-family: 'Manrope', sans-serif !important;
+                background-color: var(--bg-page) !important;
+                color: var(--text-main) !important;
+            }
+            .grid-bg {
+                background-image: radial-gradient(var(--border-faint) 1px, transparent 0) !important;
+                background-size: 24px 24px !important;
+            }
+            #dynamic-background {
+                position: fixed !important;
+                inset: 0 !important;
+                background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%) !important;
+                pointer-events: none !important;
+                z-index: -1 !important;
+                opacity: 0.5 !important; 
+            }
+            .gradient-text {
+                background-image: linear-gradient(90deg, var(--accent-color, #9D7BFF), var(--text-muted, #C4B0FF), var(--accent-color, #9D7BFF)) !important;
+                -webkit-background-clip: text !important;
+                -webkit-text-fill-color: transparent !important;
+                background-clip: text !important;
+                background-size: 300% auto !important;
+                animation: shine 8s linear infinite !important;
+            }
+            @keyframes shine {
+                to { background-position: 300% center; }
+            }
+            .feature-card {
+                border-radius: 2rem !important;
+                border: 1px solid var(--border-main) !important;
+                background: var(--bg-card) !important;
+                box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5) !important;
+                transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+                position: relative !important;
+                overflow: hidden !important;
+            }
+            .feature-card:hover {
+                border-color: var(--accent-color) !important;
+                transform: scale(1.02) translateY(-4px) !important;
+                box-shadow: 0 20px 40px -10px var(--accent-glow) !important;
+            }
+            .feature-card:active {
+                transform: scale(0.97) !important;
+            }
+            .btn-primary-override {
+                background-color: var(--btn-bg) !important;
+                border: 1px solid var(--accent-color) !important;
+                color: var(--accent-color) !important;
+                outline: 1px solid var(--accent-glow) !important;
+                border-radius: 1.5rem !important;
+                transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+            }
+            .btn-primary-override:hover {
+                background-color: var(--accent-color) !important;
+                color: #fff !important;
+                transform: scale(1.02) translateY(-4px) !important;
+                outline: 1px solid rgba(255,255,255,0.2) !important;
+                box-shadow: 0 10px 30px -10px var(--accent-glow) !important;
+            }
+            .btn-primary-override:active {
+                transform: scale(0.97) !important;
+            }
+            html.custom-scroll::-webkit-scrollbar, body.custom-scroll::-webkit-scrollbar {
+                width: 6px !important;
+            }
+            html.custom-scroll::-webkit-scrollbar-track, body.custom-scroll::-webkit-scrollbar-track {
+                background: transparent !important;
+            }
+            html.custom-scroll::-webkit-scrollbar-thumb, body.custom-scroll::-webkit-scrollbar-thumb {
+                background: var(--border-main) !important;
+                border-radius: 10px !important;
+            }
+            html.custom-scroll::-webkit-scrollbar-thumb:hover, body.custom-scroll::-webkit-scrollbar-thumb:hover {
+                background: #333 !important;
+            }
+        `;
     };
+
+    const ensureManropeFont = () => {
+        if (!document.querySelector('link[href*="fonts.googleapis.com/css2?family=Manrope"]')) {
+            const preconnect1 = document.createElement('link');
+            preconnect1.rel = 'preconnect';
+            preconnect1.href = 'https://fonts.googleapis.com';
+            document.head.appendChild(preconnect1);
+
+            const preconnect2 = document.createElement('link');
+            preconnect2.rel = 'preconnect';
+            preconnect2.href = 'https://fonts.gstatic.com';
+            preconnect2.crossOrigin = 'anonymous';
+            document.head.appendChild(preconnect2);
+
+            const fontLink = document.createElement('link');
+            fontLink.rel = 'stylesheet';
+            fontLink.href = 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap';
+            document.head.appendChild(fontLink);
+        }
+    };
+    ensureManropeFont();
+
+    const initPageLayout = () => {
+        const body = document.body;
+        if (!body) return;
+
+        if (!body.classList.contains('grid-bg')) {
+            body.classList.add('grid-bg');
+        }
+        if (!body.classList.contains('custom-scroll')) {
+            body.classList.add('custom-scroll');
+        }
+        if (!document.documentElement.classList.contains('custom-scroll')) {
+            document.documentElement.classList.add('custom-scroll');
+        }
+
+        body.style.setProperty('background-color', 'var(--bg-page)', 'important');
+        body.style.setProperty('color', 'var(--text-main)', 'important');
+
+        if (!document.getElementById('dynamic-background')) {
+            const dynBg = document.createElement('div');
+            dynBg.id = 'dynamic-background';
+            body.insertBefore(dynBg, body.firstChild);
+        }
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPageLayout);
+    } else {
+        initPageLayout();
+    }
 
     let savedTheme;
     try {
