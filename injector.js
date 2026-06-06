@@ -96,12 +96,12 @@
         scriptsToLoad.push({ url: '/navigation.js' });
     }
 
-    // --- V6.5 Announcement Modal ---
-    const showV65Announcement = () => {
-        if (localStorage.getItem('v65_seen')) return;
+    // --- V7.0 Announcement Modal ---
+    const showV70Announcement = () => {
+        if (localStorage.getItem('v70_seen')) return;
 
         const modalOverlay = document.createElement('div');
-        modalOverlay.id = 'v65-announcement-modal';
+        modalOverlay.id = 'v70-announcement-modal';
         modalOverlay.style.cssText = `
             position: fixed; inset: 0; z-index: 999999;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
@@ -111,11 +111,11 @@
 
         const modalContent = document.createElement('div');
         modalContent.style.cssText = `
-            background: #080808; border: 1px solid rgba(255,255,255,0.05);
+            background: #0B0A10; border: 1px solid #2D273D;
             border-radius: 40px; width: 100%; max-width: 900px;
             padding: 4rem; position: relative; overflow: hidden;
             box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
-            color: #fff; font-family: 'Geist', sans-serif;
+            color: #fff; font-family: 'Manrope', sans-serif;
         `;
 
         modalContent.innerHTML = `
@@ -124,36 +124,36 @@
                     <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
                         <img src="/images/logo.png" style="width: 48px; height: 48px; object-fit: contain;">
                         <div>
-                            <h2 style="font-size: 2.5rem; font-weight: 200; letter-spacing: -0.05em; margin: 0; line-height: 1;">4SP V6.5 Release Notes</h2>
-                            <p style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; color: #4f46e5; margin-top: 0.5rem;">Evolutionary Efficiency</p>
+                            <h2 style="font-size: 2.5rem; font-weight: 200; letter-spacing: -0.05em; margin: 0; line-height: 1;">4SP V7.0 Release Notes</h2>
+                            <p style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; color: #9D7BFF; margin-top: 0.5rem;">Overhauled Design & Freedom</p>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
                         <div>
-                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">🚀 Supabase Migration</h3>
-                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">We’ve transitioned nearly all infrastructure to Supabase for enhanced speed and reliability. This migration resets the global leaderboard to provide a fresh and optimized experience for everyone.</p>
+                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: #C4B0FF;">✨ Design System Injection</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">Experience standard UI component enhancements powered by Manrope typography, vibrant dark palettes, and modular Bento grids.</p>
                         </div>
                         <div>
-                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">👾 Discord Login</h3>
-                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">Sign in seamlessly with your Discord account! Effortlessly connect and share with friends across the 4SP network.</p>
+                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: #C4B0FF;">⚡ Spring Interaction Physics</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">Tactile visual feedback: hover scales up smoothly with custom cubic-bezier spring physics, and clicking compresses the component.</p>
                         </div>
                         <div>
-                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">📸 Redesigned Dailyphoto</h3>
-                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">Dailyphoto is now rebuilt from the ground up with a sleek, modern UI that puts your content front and center. Enjoy a smoother, more engaging sharing experience.</p>
+                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: #C4B0FF;">🔑 Stateless Customization</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">Enjoy games, soundboard, Velium, and customize themes with local storage. Zero logins required for non-social utilities.</p>
                         </div>
                         <div>
-                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: rgba(255,255,255,0.9);">🛡️ Beta Status</h3>
-                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">4SP remains in beta as we continue to launch frequent updates and improvements. Some bugs may persist as we ramp up toward V7.</p>
+                            <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: #C4B0FF;">🛡️ High Score Tracking</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.5); font-weight: 300;">Auth users unlock global cloud backup, saving game scores and favorites seamlessly to their Profiles.</p>
                         </div>
                     </div>
 
                     <div style="padding: 1.5rem; background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 3rem;">
-                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin: 0; line-height: 1.5;">Found a bug? Help us improve by emailing <a href="mailto:4simpleproblems+feedback@gmail.com" style="color: #4f46e5; text-decoration: none; font-weight: 600;">4simpleproblems+feedback@gmail.com</a></p>
+                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin: 0; line-height: 1.5;">Found a bug? Help us improve by emailing <a href="mailto:4simpleproblems+feedback@gmail.com" style="color: #9D7BFF; text-decoration: none; font-weight: 600;">4simpleproblems+feedback@gmail.com</a></p>
                     </div>
 
-                    <button id="close-v65-btn" style="width: 100%; padding: 1rem 2rem; background: rgba(79, 70, 229, 0.1); border: 1px solid #4f46e5; border-radius: 24px; color: #4f46e5; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                        Enter V6.5 <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
+                    <button id="close-v70-btn" style="width: 100%; padding: 1rem 2rem; background: rgba(157, 123, 255, 0.1); border: 1px solid #9D7BFF; border-radius: 24px; color: #C4B0FF; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        Enter V7.0 <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
                     </button>
                 </div>
             </div>
@@ -162,11 +162,11 @@
         document.body.appendChild(modalOverlay);
         modalOverlay.appendChild(modalContent);
 
-        document.getElementById('close-v65-btn').onclick = () => {
+        document.getElementById('close-v70-btn').onclick = () => {
             modalOverlay.style.opacity = '0';
             setTimeout(() => {
                 modalOverlay.remove();
-                localStorage.setItem('v65_seen', 'true');
+                localStorage.setItem('v70_seen', 'true');
             }, 400);
         };
     };
@@ -197,9 +197,9 @@
         
         // Show announcement after Supabase is ready but before scripts (or parallel)
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', showV65Announcement);
+            document.addEventListener('DOMContentLoaded', showV70Announcement);
         } else {
-            showV65Announcement();
+            showV70Announcement();
         }
 
         const loadingPromises = scriptsToLoad.map(loadScript);

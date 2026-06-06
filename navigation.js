@@ -33,52 +33,52 @@ const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink', 'Birt
 const DEFAULT_THEME = {
     'name': 'Dark',
     'logo-src': '/images/logo.png', 
-    'navbar-bg': '#000000',
-    'navbar-border': 'rgb(31 41 55)',
-    'avatar-gradient': 'linear-gradient(135deg, #374151 0%, #111827 100%)',
-    'avatar-border': '#4b5563',
-    'menu-bg': '#000000',
-    'menu-border': 'rgb(55 65 81)',
-    'menu-divider': '#374151',
-    'menu-text': '#d1d5db',
+    'navbar-bg': '#0B0A10',
+    'navbar-border': '#2D273D',
+    'avatar-gradient': 'linear-gradient(135deg, #2D273D 0%, #0B0A10 100%)',
+    'avatar-border': '#2D273D',
+    'menu-bg': '#15131C',
+    'menu-border': '#2D273D',
+    'menu-divider': '#2D273D',
+    'menu-text': '#C4B0FF',
     'menu-username-text': '#ffffff', 
-    'menu-email-text': '#9ca3af', 
-    'menu-item-hover-bg': 'rgb(55 65 81)', 
+    'menu-email-text': '#C4B0FF', 
+    'menu-item-hover-bg': '#211D2D', 
     'menu-item-hover-text': '#ffffff',
-    'glass-menu-bg': 'rgba(10, 10, 10, 0.8)',
-    'glass-menu-border': 'rgba(55, 65, 81, 0.8)',
-    'logged-out-icon-bg': '#010101',
-    'logged-out-icon-border': '#374151',
-    'logged-out-icon-color': '#DADADA',
+    'glass-menu-bg': 'rgba(21, 19, 28, 0.8)',
+    'glass-menu-border': 'rgba(45, 39, 61, 0.8)',
+    'logged-out-icon-bg': '#15131C',
+    'logged-out-icon-border': '#2D273D',
+    'logged-out-icon-color': '#C4B0FF',
     'glide-icon-color': '#ffffff',
-    'glide-gradient-left': 'linear-gradient(to right, #000000, transparent)',
-    'glide-gradient-right': 'linear-gradient(to left, #000000, transparent)',
-    'tab-text': '#9ca3af',
+    'glide-gradient-left': 'linear-gradient(to right, #0B0A10, transparent)',
+    'glide-gradient-right': 'linear-gradient(to left, #0B0A10, transparent)',
+    'tab-text': '#C4B0FF',
     'tab-hover-text': '#ffffff',
-    'tab-hover-border': '#d1d5db',
-    'tab-hover-bg': 'rgba(79, 70, 229, 0.05)',
-    'tab-active-text': '#4f46e5',
-    'tab-active-border': '#4f46e5',
-    'tab-active-bg': 'rgba(79, 70, 229, 0.1)',
-    'tab-active-hover-text': '#6366f1',
-    'tab-active-hover-border': '#6366f1',
-    'tab-active-hover-bg': 'rgba(79, 70, 229, 0.15)',
-    'pin-btn-border': '#4b5563',
-    'pin-btn-hover-bg': '#374151',
-    'pin-btn-icon-color': '#d1d5db',
-    'hint-bg': '#010101',
-    'hint-border': '#374151',
+    'tab-hover-border': '#9D7BFF',
+    'tab-hover-bg': 'rgba(157, 123, 255, 0.05)',
+    'tab-active-text': '#9D7BFF',
+    'tab-active-border': '#9D7BFF',
+    'tab-active-bg': 'rgba(157, 123, 255, 0.1)',
+    'tab-active-hover-text': '#C4B0FF',
+    'tab-active-hover-border': '#C4B0FF',
+    'tab-active-hover-bg': 'rgba(157, 123, 255, 0.15)',
+    'pin-btn-border': '#2D273D',
+    'pin-btn-hover-bg': '#211D2D',
+    'pin-btn-icon-color': '#C4B0FF',
+    'hint-bg': '#15131C',
+    'hint-border': '#2D273D',
     'hint-text': '#ffffff',
-    'bg-primary': '#040404',
-    'bg-secondary': '#080808',
+    'bg-primary': '#0B0A10',
+    'bg-secondary': '#15131C',
     'text-primary': '#ffffff',
-    'text-secondary': '#c0c0c0',
-    'accent-primary': '#4f46e5',
-    'accent-secondary': 'rgba(79, 70, 229, 0.4)',
-    'border-primary': '#1a1a1a',
+    'text-secondary': '#C4B0FF',
+    'accent-primary': '#9D7BFF',
+    'accent-secondary': 'rgba(157, 123, 255, 0.4)',
+    'border-primary': '#2D273D',
     'border-secondary': 'rgba(255,255,255,0.05)',
-    'button-bg': 'rgba(79, 70, 229, 0.1)',
-    'button-text': '#4f46e5'
+    'button-bg': 'rgba(157, 123, 255, 0.1)',
+    'button-text': '#9D7BFF'
 };
 
 let fireworksInstance = null; // Store fireworks instance globally
@@ -209,6 +209,55 @@ window.applyTheme = (theme) => {
         }
         .viro-notif {
             box-shadow: 0 10px 25px -5px var(--accent-secondary) !important;
+        }
+
+        /* Custom Spring Physics and Hover/Active States */
+        button, 
+        a.btn-primary-override, 
+        a.btn-toolbar-style, 
+        a.hero-btn-base, 
+        a.settings-tab, 
+        .btn-primary-override,
+        .btn-toolbar-style,
+        .hero-btn-base,
+        .carousel-button,
+        .settings-tab,
+        .theme-button,
+        .feature-card,
+        .settings-box {
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+        button:hover, 
+        a.btn-primary-override:hover, 
+        a.btn-toolbar-style:hover, 
+        a.hero-btn-base:hover, 
+        a.settings-tab:hover, 
+        .btn-primary-override:hover,
+        .btn-toolbar-style:hover,
+        .hero-btn-base:hover,
+        .carousel-button:hover,
+        .settings-tab:hover,
+        .theme-button:hover,
+        .feature-card:hover,
+        .settings-box:hover {
+            transform: scale(1.02) translateY(-4px) !important;
+            border-color: #9D7BFF !important;
+            box-shadow: 0 10px 20px rgba(157, 123, 255, 0.35) !important;
+        }
+        button:active, 
+        a.btn-primary-override:active, 
+        a.btn-toolbar-style:active, 
+        a.hero-btn-base:active, 
+        a.settings-tab:active, 
+        .btn-primary-override:active,
+        .btn-toolbar-style:active,
+        .hero-btn-base:active,
+        .carousel-button:active,
+        .settings-tab:active,
+        .theme-button:active,
+        .feature-card:active,
+        .settings-box:active {
+            transform: scale(0.97) !important;
         }
     `;
 
@@ -2210,7 +2259,17 @@ let db;
                                 path.endsWith('documentation.html') ||
                                 path.endsWith('/documentation') ||
                                 path.includes('/VALO_PLUS') ||
-                                path.includes('/@'); 
+                                path.includes('/@') ||
+                                path.endsWith('games.html') || path.includes('/games') ||
+                                path.endsWith('pxgames.html') || path.includes('/pxgames') ||
+                                path.endsWith('soundboard.html') || path.includes('/soundboard') ||
+                                path.endsWith('third-party-soundboard.html') || path.includes('/third-party-soundboard') ||
+                                path.endsWith('dictionary.html') || path.includes('/dictionary') ||
+                                path.endsWith('weather.html') || path.includes('/weather') ||
+                                path.endsWith('countdowns.html') || path.includes('/countdowns') ||
+                                path.endsWith('settings.html') || path.includes('/settings') ||
+                                path.endsWith('velium.html') || path.includes('/velium') ||
+                                path.includes('/VELIUM');
             
             if (isPublicPage || isRedirecting) return;
 

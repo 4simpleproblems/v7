@@ -4498,7 +4498,13 @@
                     currentSource = source;
                     const uid = user.id;
                     
-                    // Check admin status
+                    const generalTab = document.getElementById('tab-general');
+                    const socialTab = document.getElementById('tab-social');
+                    const privacyTab = document.getElementById('tab-privacy');
+                    if (generalTab) generalTab.style.display = '';
+                    if (socialTab) socialTab.style.display = '';
+                    if (privacyTab) privacyTab.style.display = '';
+
                     try {
                         isUserAdmin = await checkAdminStatus(uid);
                     } catch (e) {
@@ -4511,16 +4517,29 @@
                         if (adminTab) adminTab.classList.remove('hidden');
                     }
 
-                    // Set initial state to 'General' (or the first tab)
                     if (mainView && mainView.children.length === 0) {
                         switchTab('general');
                     }
                 } else {
-                    window.location.replace('../authentication.html');
+                    currentUser = null;
+                    currentSource = 'local';
+
+                    const generalTab = document.getElementById('tab-general');
+                    const socialTab = document.getElementById('tab-social');
+                    if (generalTab) generalTab.style.display = 'none';
+                    if (socialTab) socialTab.style.display = 'none';
+
+                    const tabs = document.querySelectorAll('.settings-tab');
+                    tabs.forEach(t => t.classList.remove('active'));
+                    const personalizationTab = document.getElementById('tab-personalization');
+                    if (personalizationTab) personalizationTab.classList.add('active');
+
+                    if (mainView && mainView.children.length === 0) {
+                        switchTab('personalization');
+                    }
                 }
             };
 
-            // Supabase Listener
             if (window.supabase) {
                 window.supabase.auth.onAuthStateChange(async (event, session) => {
                     if (session) {
@@ -4530,15 +4549,15 @@
                     }
                 });
 
-                // Initial check
                 const { data: { session } } = await window.supabase.auth.getSession();
                 if (session) {
                     handleUser(session.user);
                 } else {
-                    window.location.replace('../authentication.html');
+                    handleUser(null);
                 }
             } else {
                 console.error("Supabase client not found.");
+                handleUser(null);
             }
         }
         

@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4SP V6 - HOME</title>
-    <meta name="description" content="4SP V6 — A comprehensive academic platform for students. Featuring collaborative tools, focus audio, and a personalized learning environment.">
+    <title>4SP V7 - HOME</title>
+    <meta name="description" content="4SP V7 — A comprehensive academic platform for students. Featuring collaborative tools, focus audio, and a personalized learning environment.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6659160370587814" crossorigin="anonymous"></script>
@@ -20,25 +20,25 @@
 
     <style>
         :root {
-            --bg-page: var(--bg-primary, #000000);
-            --bg-card: var(--bg-secondary, #0d0d0d);
+            --bg-page: var(--bg-primary, #0B0A10);
+            --bg-card: var(--bg-secondary, #15131C);
             --text-main: var(--text-primary, #ffffff);
-            --text-muted: var(--text-secondary, #c0c0c0);
-            --accent-color: var(--accent-primary, #4f46e5);
-            --accent-glow: var(--accent-secondary, rgba(79, 70, 229, 0.4));
-            --border-main: var(--border-primary, #1a1a1a);
+            --text-muted: var(--text-secondary, #C4B0FF);
+            --accent-color: var(--accent-primary, #9D7BFF);
+            --accent-glow: var(--accent-secondary, rgba(157, 123, 255, 0.4));
+            --border-main: var(--border-primary, #2D273D);
             --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
-            --btn-bg: var(--button-bg, rgba(79, 70, 229, 0.1));
-            --btn-text: var(--button-text, #4f46e5);
+            --btn-bg: var(--button-bg, rgba(157, 123, 255, 0.1));
+            --btn-text: var(--button-text, #9D7BFF);
         }
 
         * { box-sizing: border-box; }
 
         body { 
-            font-family: 'Geist', sans-serif; 
+            font-family: 'Manrope', sans-serif; 
             color: var(--text-main);
             background-color: var(--bg-page);
-            font-weight: 300;
+            font-weight: 400;
             overflow-x: hidden;
             min-height: 100vh;
         }
@@ -55,12 +55,12 @@
             background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%);
             pointer-events: none;
             z-index: -1;
-            opacity: 0.5; /* Always visible slightly instead of fade-in on scroll */
+            opacity: 0.5; 
         }
 
         /* Gradient Text Animation */
         .gradient-text {
-            background-image: linear-gradient(90deg, #FF7327, #8b5cf6, #FF7327);
+            background-image: linear-gradient(90deg, #9D7BFF, #C4B0FF, #9D7BFF);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -77,14 +77,17 @@
             border: 1px solid var(--border-main);
             background: var(--bg-card);
             box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             position: relative;
             overflow: hidden;
         }
         .feature-card:hover {
             border-color: var(--accent-color);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
+            transform: scale(1.02) translateY(-4px);
+            box-shadow: 0 20px 40px -10px rgba(157, 123, 255, 0.35);
+        }
+        .feature-card:active {
+            transform: scale(0.97);
         }
 
         /* Hero Button */
@@ -94,14 +97,17 @@
             color: var(--accent-color) !important;
             outline: 1px solid var(--accent-glow);
             border-radius: 1.5rem;
-            transition: all 0.2s ease;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         .btn-primary-override:hover {
-            background-color: rgba(79, 70, 229, 0.25) !important;
+            background-color: rgba(157, 123, 255, 0.25) !important;
             color: #fff !important;
-            transform: scale(1.02);
+            transform: scale(1.02) translateY(-4px);
             outline: 1px solid rgba(255,255,255,0.2);
             box-shadow: 0 10px 30px -10px var(--accent-glow);
+        }
+        .btn-primary-override:active {
+            transform: scale(0.97);
         }
 
         /* Social Link Buttons */
@@ -117,11 +123,18 @@
             text-decoration: none;
             background: rgba(255,255,255,0.03);
             border: 1px solid var(--border-main);
-            transition: all 0.2s ease;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .hero-btn-base:hover {
+            transform: scale(1.02) translateY(-4px);
+            border-color: var(--accent-color);
+            box-shadow: 0 10px 20px rgba(157, 123, 255, 0.2);
+        }
+        .hero-btn-base:active {
+            transform: scale(0.97);
         }
         .btn-style-purple:hover {
-            background-color: rgba(147, 51, 234, 0.1);
-            border-color: rgba(192, 132, 252, 0.5);
+            background-color: rgba(157, 123, 255, 0.1);
             color: #fff;
         }
         .btn-style-orange:hover {
@@ -142,13 +155,17 @@
             cursor: pointer;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            transition: all 0.2s ease;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             background: rgba(0,0,0,0.5);
         }
         .carousel-button:hover {
             background: var(--accent-color);
             border-color: var(--accent-color);
             color: #fff;
+            transform: scale(1.02) translateY(-4px);
+        }
+        .carousel-button:active {
+            transform: scale(0.97);
         }
 
         /* Overlays */
@@ -186,122 +203,104 @@
 
     <main class="flex-1 min-w-0 pt-24 overflow-y-auto custom-scroll relative z-10">
         
-        <section class="text-center px-6 lg:px-8 pb-20 max-w-6xl mx-auto">
-            <h1 class="text-xs md:text-sm font-black text-indigo-400 uppercase tracking-widest mb-6 opacity-80">
+        <header class="text-center px-6 lg:px-8 pt-12 pb-8 max-w-4xl mx-auto">
+            <h1 class="text-xs md:text-sm font-black text-[var(--accent-color)] uppercase tracking-widest mb-4 opacity-80">
                 Trusted by over 700 students across 13+ schools.
             </h1>
-            <h2 class="text-6xl md:text-8xl font-light tracking-tight mb-8 leading-tight">
-                <span class="gradient-text font-bold">Academic Collaboration, Reimagined.</span>
+            <h2 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
+                <span class="gradient-text">Academic Collaboration, Reimagined.</span>
             </h2>
-            <p class="text-lg md:text-2xl text-gray-400 max-w-3xl mx-auto mb-12 font-light leading-relaxed">
-                You're using <strong>4SP V6</strong> — a student-built platform featuring peer collaboration tools, focus audio, encrypted notes, and a personalized academic dashboard.
+            <p class="text-base md:text-xl text-gray-400 max-w-2xl mx-auto font-light leading-relaxed">
+                Welcome to <strong>4SP V7</strong> — a stateless, student-built hub featuring peer network capabilities, study audio tools, and customized dashboard controls.
             </p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto px-6 lg:px-8 pb-12">
             
-            <div id="auth-button-container" class="mb-12">
-                <a id="auth-button" href="/authentication.html" class="btn-primary-override inline-flex items-center justify-center px-10 py-5 text-lg md:text-xl font-bold uppercase tracking-widest shadow-2xl">
-                    Get Started Instantly <i class="fas fa-arrow-right ml-3"></i>
-                </a>
+            <!-- MAIN HERO ACTION CARD (col-span-2) -->
+            <div class="feature-card col-span-1 md:col-span-2 p-8 flex flex-col justify-between min-h-[350px]">
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="text-[10px] font-black text-[var(--accent-color)] uppercase tracking-[0.2em] bg-[var(--btn-bg)] border border-[var(--accent-color)]/20 px-3 py-1 rounded-lg">Get Started</span>
+                    </div>
+                    <h3 class="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-4">Explore 4SP Instantly</h3>
+                    <p class="text-sm md:text-base text-gray-400 leading-relaxed mb-6">
+                        Access games, audio engines, local settings, and dictionary tools with zero login required. Sign in optionally to synchronize streaks and social network status.
+                    </p>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                    <a id="auth-button" href="/authentication.html" class="btn-primary-override inline-flex items-center justify-center px-8 py-4 text-sm font-bold uppercase tracking-widest shadow-lg">
+                        Sign In / Up <i class="fas fa-sign-in-alt ml-3"></i>
+                    </a>
+                    <a id="offline-button" href="/logged-in/games.html" class="btn-primary-override inline-flex items-center justify-center px-8 py-4 text-sm font-bold uppercase tracking-widest shadow-lg" style="border-color: rgba(255,255,255,0.1) !important; color: rgba(255,255,255,0.7) !important;">
+                        Continue Offline <i class="fas fa-arrow-right ml-3"></i>
+                    </a>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <a href="https://linktr.ee/4simpleproblems" target="_blank" class="hero-btn-base btn-style-purple">
+                            <i class="fas fa-link mr-2"></i> Linktree
+                        </a>
+                        <a href="https://discord.gg/zcADhddGQz" target="_blank" class="hero-btn-base btn-style-purple">
+                            <i class="fa-brands fa-discord mr-2"></i> Discord
+                        </a>
+                    </div>
+                </div>
             </div>
 
-            <div class="flex flex-wrap items-center justify-center gap-4">
-                <a href="https://linktr.ee/4simpleproblems" target="_blank" class="hero-btn-base btn-style-purple">
-                    <i class="fas fa-link mr-2"></i> Linktree
-                </a>
-                <a href="https://discord.gg/zcADhddGQz" target="_blank" class="hero-btn-base btn-style-purple">
-                    <i class="fa-brands fa-discord mr-2"></i> Discord
-                </a>
-                <a href="https://4sp-organization.github.io" class="hero-btn-base btn-style-orange">
-                    <i class="fas fa-sitemap mr-2"></i> Organization
-                </a>
-            </div>
-            
-            <p class="text-xs text-gray-500 mt-12 italic font-mono opacity-60">
-                Independently developed and maintained by students, for students.
-            </p>
-        </section>
-
-        <section id="features" class="max-w-7xl mx-auto px-6 lg:px-8 py-20 space-y-32">
-            
-            <div class="text-center mb-16">
-                <h2 class="text-5xl font-light tracking-tight text-white"><span class="opacity-40">V6 Exclusive:</span> What's New</h2>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-                <div class="order-2 lg:order-1">
+            <!-- COLLABORATION CARD (col-span-1) -->
+            <div class="feature-card p-8 flex flex-col justify-between min-h-[350px]">
+                <div>
                     <div class="flex items-center gap-3 mb-4">
                         <span class="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-lg">Peer Network</span>
                     </div>
-                    <h3 class="text-4xl md:text-5xl font-light tracking-tight mb-6 text-white">Collaboration.</h3>
-                    <p class="text-xl text-gray-400 mb-8 font-light leading-relaxed">
-                        Connect with classmates through our <strong>peer learning network</strong>. Follow fellow students to stay updated on shared study activity and academic progress in real-time.
+                    <h3 class="text-2xl font-semibold tracking-tight text-white mb-3">Collaboration</h3>
+                    <p class="text-xs md:text-sm text-gray-400 leading-relaxed">
+                        Connect with classmates through our peer learning network. Follow fellow students to stay updated on shared study activity and academic progress in real-time.
                     </p>
-                    <a href="/logged-in/profile.html" class="inline-flex items-center text-sm font-bold uppercase tracking-widest text-orange-400 hover:text-orange-300 transition group">
+                </div>
+                <div class="mt-4">
+                    <a href="/logged-in/profile.html" class="inline-flex items-center text-xs font-bold uppercase tracking-widest text-orange-400 hover:text-orange-300 transition group">
                         View Your Profile <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                     </a>
                 </div>
-
-                <div class="feature-card aspect-video w-full flex items-center justify-center order-1 lg:order-2 p-1">
-                    <div class="relative w-full h-full rounded-[1.75rem] overflow-hidden">
-                        <img src="doc-images/fireworks.png" alt="Social" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-500">
-                    </div>
-                </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-                <div class="feature-card aspect-video w-full flex items-center justify-center p-1">
-                    <div class="relative w-full h-full rounded-[1.75rem] overflow-hidden">
-                        <img src="doc-images/velium.png" alt="Velium" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-500">
-                    </div>
-                </div>
-
+            <!-- FOCUS AUDIO CARD (col-span-1) -->
+            <div class="feature-card p-8 flex flex-col justify-between min-h-[320px]">
                 <div>
                     <div class="flex items-center gap-3 mb-4">
                         <span class="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-lg">Focus Audio</span>
                     </div>
-                    <h3 class="text-4xl md:text-5xl font-light tracking-tight mb-6 text-white">Velium Study Audio.</h3>
-                    <p class="text-xl text-gray-400 mb-8 font-light leading-relaxed">
-                        Our focus audio engine has been rebuilt for <strong>higher accuracy</strong>. Search through a curated library of study music, lo-fi, and concentration audio with smarter, more relevant results.
+                    <h3 class="text-2xl font-semibold tracking-tight text-white mb-3">Velium Study Audio</h3>
+                    <p class="text-xs md:text-sm text-gray-400 leading-relaxed mb-4">
+                        Search through a curated library of study music, lo-fi, and concentration audio. Fully optimized metadata caching ensures instant playback.
                     </p>
-                    <ul class="space-y-4 text-base text-gray-300">
-                        <li class="flex items-start">
-                            <i class="fas fa-check-circle mt-1 mr-4 text-blue-500"></i>
-                            <div><span class="font-bold text-white block">Better Search</span><span class="opacity-60 text-sm">Enhanced algorithms for finding exactly what you need.</span></div>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-bolt mt-1 mr-4 text-blue-500"></i>
-                            <div><span class="font-bold text-white block">Faster Loading</span><span class="opacity-60 text-sm">Optimized metadata caching for instant playback.</span></div>
-                        </li>
-                    </ul>
+                </div>
+                <div>
+                    <a href="/VELIUM/index.html" class="inline-flex items-center text-xs font-bold uppercase tracking-widest text-blue-400 hover:text-blue-300 transition group">
+                        Open Velium <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                    </a>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-                <div class="order-2 lg:order-1">
-                    <div class="flex items-center gap-3 mb-4">
-                        <span class="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] bg-purple-500/10 border border-purple-500/20 px-3 py-1 rounded-lg">Student Essentials</span>
+            <!-- PRIVACY CAROUSEL CARD (col-span-2) -->
+            <div class="feature-card col-span-1 md:col-span-2 p-8 flex flex-col md:flex-row gap-6 min-h-[320px]">
+                <div class="flex-1 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] bg-purple-500/10 border border-purple-500/20 px-3 py-1 rounded-lg">Student Essentials</span>
+                        </div>
+                        <h3 class="text-2xl font-semibold tracking-tight text-white mb-3">Academic Toolkit</h3>
+                        <p class="text-xs md:text-sm text-gray-400 leading-relaxed mb-4">
+                            Featuring encrypted note storage, custom-key panic redirects, visual theme picker, and integrated tab-disguising tools to safeguard your environment.
+                        </p>
                     </div>
-                    <h3 class="text-4xl md:text-5xl font-light tracking-tight mb-6 text-white">Academic Toolkit.</h3>
-                    <p class="text-xl text-gray-400 mb-8 font-light leading-relaxed">
-                        A centralized suite of tools designed to support your daily schoolwork — from encrypted note-taking to interface customization that makes studying less exhausting.
-                    </p>
-                    <ul class="space-y-4 text-base text-gray-300">
-                        <li class="flex items-start">
-                            <div class="w-6 h-6 rounded-md bg-white/5 border border-white/10 flex items-center justify-center mr-4 shrink-0 mt-0.5"><i class="fas fa-sticky-note text-xs text-purple-400"></i></div>
-                            <span class="font-light">Secure, password-encrypted storage for notes.</span>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="w-6 h-6 rounded-md bg-white/5 border border-white/10 flex items-center justify-center mr-4 shrink-0 mt-0.5"><i class="fas fa-palette text-xs text-purple-400"></i></div>
-                            <span class="font-light">Dynamic visual themes to suit your environment.</span>
-                        </li>
-                          <li class="flex items-start">
-                            <div class="w-6 h-6 rounded-md bg-white/5 border border-white/10 flex items-center justify-center mr-4 shrink-0 mt-0.5"><i class="fas fa-shield-halved text-xs text-purple-400"></i></div>
-                            <span class="font-light">Integrated privacy tools to manage your digital footprint.</span>
-                        </li>
-                    </ul>
+                    <div class="text-xs text-gray-500 font-mono">
+                        Stateless Customization Active.
+                    </div>
                 </div>
-
-                <div class="feature-card aspect-video w-full flex items-center justify-center order-1 lg:order-2 p-1">
-                    <div class="image-carousel-container relative w-full h-full rounded-[1.75rem] overflow-hidden">
+                <div class="w-full md:w-1/2 aspect-video rounded-2xl overflow-hidden relative border border-[var(--border-main)] flex items-center justify-center p-1 bg-black/40">
+                    <div class="image-carousel-container relative w-full h-full rounded-xl overflow-hidden">
                         <img src="doc-images/pin_button.png" alt="Privacy" class="carousel-image absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out opacity-100">
                         <img src="doc-images/panic_key.png" alt="Tools" class="carousel-image absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out opacity-0">
                         <img src="doc-images/tab_disguise.png" alt="Tools" class="carousel-image absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out opacity-0">
@@ -315,12 +314,13 @@
                     </div>
                 </div>
             </div>
-        </section>
+
+        </div>
 
         <section class="max-w-4xl mx-auto px-6 py-16 text-center border-t border-white/10 mt-20">
             <h2 class="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4">Powered by Firebase</h2>
             <p class="text-gray-400 text-lg font-light leading-relaxed">
-                4SP V6 uses a modern cloud backend. 
+                4SP V7 uses a modern cloud backend. 
                 <strong class="text-white font-normal">Data integrity and student privacy are our priority</strong> as we continue to refine the platform.
             </p>
             
@@ -361,7 +361,7 @@
             </div>
             <h2 class="text-3xl font-light text-white tracking-tight mb-4">Desktop Recommended</h2>
             <p class="text-gray-400 text-sm font-light leading-relaxed mb-8">
-                4SP V6 features tools like Velium and the dashboard that are best experienced on a larger screen. Please use a desktop for the full experience.
+                4SP V7 features tools like Velium and the dashboard that are best experienced on a larger screen. Please use a desktop for the full experience.
             </p>
             <button id="dismiss-mobile-warning" class="btn-toolbar-style w-full py-4 text-[10px] font-black uppercase tracking-widest">
                 Dismiss Warning
@@ -373,7 +373,7 @@
         (function() {
             const mobileOverlay = document.getElementById('mobile-warning-overlay');
             const dismissBtn = document.getElementById('dismiss-mobile-warning');
-            const STORAGE_KEY = '4sp-v6-mobile-dismissed';
+            const STORAGE_KEY = '4sp-v7-mobile-dismissed';
             
             function checkAspectRatio() {
                 if (localStorage.getItem(STORAGE_KEY) === 'true') return;
@@ -401,7 +401,7 @@
     <script type="module" src="/firebase-config.js"></script>
 
     <script type="module">
-        const COOKIE_KEY = '4sp-v6-cookie-consent';
+        const COOKIE_KEY = '4sp-v7-cookie-consent';
         const cookieOverlay = document.getElementById('cookie-overlay');
         const acceptCookiesButton = document.getElementById('accept-cookies-button');
         
@@ -426,15 +426,18 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const authButton = document.getElementById('auth-button');
-
+        const offlineButton = document.getElementById('offline-button');
+ 
         const updateButtonState = (isLoggedIn) => {
             if (!authButton) return;
             if (isLoggedIn) {
                 authButton.href = '/logged-in/dashboard.html';
                 authButton.innerHTML = 'Go to Dashboard <i class="fas fa-arrow-right ml-3"></i>';
+                if (offlineButton) offlineButton.style.display = 'none';
             } else {
                 authButton.href = '/authentication.html';
-                authButton.innerHTML = 'Get Started Instantly <i class="fas fa-arrow-right ml-3"></i>';
+                authButton.innerHTML = 'Sign In / Up <i class="fas fa-sign-in-alt ml-3"></i>';
+                if (offlineButton) offlineButton.style.display = 'inline-flex';
             }
         };
 
@@ -490,3 +493,4 @@
     </script>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->

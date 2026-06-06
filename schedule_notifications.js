@@ -18,7 +18,7 @@
             align-items: center;
             padding: 0.5rem 0.5rem 0.5rem 1.25rem;
             color: #e5e7eb;
-            font-family: 'Geist', sans-serif;
+            font-family: 'Manrope', sans-serif;
             gap: 1rem;
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
             transform: translateY(150%) scale(0.95);

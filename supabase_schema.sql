@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     show_offline BOOLEAN DEFAULT FALSE,
     navbar_theme JSONB,
     points INTEGER DEFAULT 0,
-    total_v6_time INTEGER DEFAULT 0,
+    total_v7_time INTEGER DEFAULT 0,
     last_active TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     leaderboard_accepted BOOLEAN DEFAULT FALSE,
     leaderboard_opt_out BOOLEAN DEFAULT FALSE,
@@ -236,10 +236,10 @@ CREATE POLICY "Sub-admins can create ban requests." ON public.ban_requests FOR I
 -- 9. RPC FUNCTIONS
 
 -- Time tracking
-CREATE OR REPLACE FUNCTION public.increment_v6_time(uid UUID, added_time INTEGER)
+CREATE OR REPLACE FUNCTION public.increment_v7_time(uid UUID, added_time INTEGER)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-    UPDATE public.profiles SET total_v6_time = total_v6_time + added_time, last_active = NOW() WHERE id = uid;
+    UPDATE public.profiles SET total_v7_time = total_v7_time + added_time, last_active = NOW() WHERE id = uid;
 END;
 $$;
 
@@ -306,3 +306,28 @@ VALUES
     ('soundboard_explicit', 'true'::jsonb),
     ('soundboard_third_party', 'true'::jsonb)
 ON CONFLICT (key) DO NOTHING;
+
+-- 13. USER GAME FAVORITES & HIGH SCORES (Added in V7 for QOL)
+CREATE TABLE IF NOT EXISTS public.user_game_favorites (
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    favorite_games TEXT[] DEFAULT '{}',
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    PRIMARY KEY (user_id)
+);
+ALTER TABLE public.user_game_favorites ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage their own game favorites." ON public.user_game_favorites;
+CREATE POLICY "Users can manage their own game favorites." ON public.user_game_favorites FOR ALL USING (auth.uid() = user_id);
+
+CREATE TABLE IF NOT EXISTS public.user_game_scores (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    game_id TEXT NOT NULL,
+    score INTEGER NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE public.user_game_scores ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage their own game scores." ON public.user_game_scores;
+CREATE POLICY "Users can manage their own game scores." ON public.user_game_scores FOR ALL USING (auth.uid() = user_id);
+
+ALTER PUBLICATION supabase_realtime ADD TABLE public.user_game_favorites;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.user_game_scores;

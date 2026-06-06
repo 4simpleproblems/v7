@@ -6,7 +6,7 @@
     <title>4SP - ANALYTICS V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/injector.js"></script>
@@ -19,7 +19,7 @@
             --border: #1a1a1a;
         }
         body { 
-            font-family: 'Geist', sans-serif; 
+            font-family: 'Manrope', sans-serif; 
             background: var(--bg-page); 
             color: #fff; 
             font-size: 13px;
@@ -197,7 +197,7 @@
         <div class="table-node">
             <div class="node-header text-indigo-400">profiles</div>
             <div class="node-field">id <span class="mono">uuid</span></div>
-            <div class="node-field">total_v6_time <span class="mono">int</span></div>
+            <div class="node-field">total_v7_time <span class="mono">int</span></div>
             <div class="connector"></div>
         </div>
         <div class="table-node">
@@ -644,7 +644,7 @@
                                 </div>
                             </td>
                             <td class="mono text-[10px] text-gray-500">${u.id.substring(0,8)}...</td>
-                            <td class="text-xs text-gray-300">${formatDescriptiveTime(u.total_v6_time)}</td>
+                            <td class="text-xs text-gray-300">${formatDescriptiveTime(u.total_v7_time)}</td>
                             <td>
                                 <span class="status-badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">
                                     ${u.is_admin ? 'ADMIN' : 'USER'}
@@ -673,7 +673,7 @@
                                 <p class="text-[10px] text-gray-500 mono truncate">@${u.username}</p>
                             </div>
                             <div class="mt-auto pt-3 border-t border-[#1a1a1a] flex justify-between text-[10px] text-gray-400">
-                                <span class="truncate">${formatDescriptiveTime(u.total_v6_time)}</span>
+                                <span class="truncate">${formatDescriptiveTime(u.total_v7_time)}</span>
                             </div>
                         </div>
                     `).join('');
@@ -832,7 +832,7 @@
                         },
                         x: { 
                             grid: { color: '#1a1a1a' },
-                            ticks: { color: '#666', font: { family: "'Geist', sans-serif", size: 10 } }
+                            ticks: { color: '#666', font: { family: "'Manrope', sans-serif", size: 10 } }
                         }
                     }
                 }
@@ -881,7 +881,7 @@
             document.getElementById('ins-provider').innerText = user.auth_method || 'Email';
             document.getElementById('ins-followers').innerText = followers || 0;
             document.getElementById('ins-following').innerText = following || 0;
-            document.getElementById('ins-time').innerText = formatDescriptiveTime(user.total_v6_time);
+            document.getElementById('ins-time').innerText = formatDescriptiveTime(user.total_v7_time);
 
             let badgesHTML = '';
             if (isBanned) badgesHTML += `<span class="status-badge badge-banned">Banned</span>`;
@@ -1165,7 +1165,7 @@
                     if (term.includes('is:following') && !myFollowing.has(u.id)) match = false;
                     
                     const timeMatch = term.match(/time>(\d+)/);
-                    if (timeMatch && (u.total_v6_time || 0) <= parseInt(timeMatch[1])) match = false;
+                    if (timeMatch && (u.total_v7_time || 0) <= parseInt(timeMatch[1])) match = false;
 
                     const textOnly = term.replace(/is:\w+/g, '').replace(/time>\d+/g, '').trim();
                     if (textOnly && match) {
@@ -1199,3 +1199,4 @@
     </script>
 </body>
 </html>
+<!-- Made with ❤️ from 4SP -->

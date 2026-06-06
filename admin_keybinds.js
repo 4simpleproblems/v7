@@ -62,7 +62,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease, transform 0.3s ease;
-            font-family: 'Geist', sans-serif;
+            font-family: 'Manrope', sans-serif;
             display: flex;
             align-items: center;
             gap: 10px;

@@ -73,7 +73,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                     self.path = "/VALO_PLUS/standings/index.html"
                 elif path.startswith("/VALO_PLUS/schedule/"):
                     self.path = "/VALO_PLUS/schedule/index.html"
-                # V6 pathing
+                # V7 pathing
                 elif path.startswith("/sports/"):
                     self.path = "/sports/index.html"
                 elif path.startswith("/standings/"):
@@ -85,7 +85,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
 
 with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
     httpd.allow_reuse_address = True
-    print(f"Serving v6 at http://localhost:{PORT}")
+    print(f"Serving v7 at http://localhost:{PORT}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

@@ -8,7 +8,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/injector.js"></script>
@@ -30,7 +30,7 @@
         * { box-sizing: border-box; }
 
         body { 
-            font-family: 'Geist', sans-serif; 
+            font-family: 'Manrope', sans-serif; 
             color: var(--text-main);
             background-color: var(--bg-page);
             font-weight: 300;
@@ -384,7 +384,7 @@
                     const res = await supabase
                         .from('profiles')
                         .select('*')
-                        .order('total_v6_time', { ascending: false })
+                        .order('total_v7_time', { ascending: false })
                         .limit(50);
                     rankedItems = res.data;
                     error = res.error;
@@ -422,8 +422,8 @@
                         if (uid === currentUid) myRank = i;
                         if (i === 1) updateChampion(data);
 
-                        const hours = Math.floor((data.total_v6_time || 0) / 3600);
-                        const minutes = Math.floor(((data.total_v6_time || 0) % 3600) / 60);
+                        const hours = Math.floor((data.total_v7_time || 0) / 3600);
+                        const minutes = Math.floor(((data.total_v7_time || 0) % 3600) / 60);
                         const isFollowing = following.has(uid);
 
                         item.innerHTML = `
@@ -590,8 +590,8 @@
             champAvatarContainer.style.boxShadow = '';
             
             document.getElementById('champion-name').textContent = data.display_name || data.username || "Anonymous";
-            const hours = Math.floor((data.total_v6_time || 0) / 3600);
-            const minutes = Math.floor(((data.total_v6_time || 0) % 3600) / 60);
+            const hours = Math.floor((data.total_v7_time || 0) / 3600);
+            const minutes = Math.floor(((data.total_v7_time || 0) % 3600) / 60);
             document.getElementById('champion-time').textContent = `${hours}h ${minutes}m total activity`;
             
             champAvatarContainer.innerHTML = getAvatarHTML({ ...data, displayName: data.display_name, pfpType: data.pfp_type, customPfp: data.avatar_url }, "w-full h-full", false, null, "rounded-[36px]");

@@ -466,7 +466,7 @@
         
         // Y-Axis Grid
         const yTicks = 5;
-        ctx.fillStyle = '#aaa'; ctx.textAlign = 'right'; ctx.font = '11px Geist, sans-serif';
+        ctx.fillStyle = '#aaa'; ctx.textAlign = 'right'; ctx.font = '11px Manrope, sans-serif';
         for (let i = 0; i <= yTicks; i++) {
             const val = displayMin + (i / yTicks) * displayRange;
             const y = mapY(val);
@@ -2288,7 +2288,7 @@ Response Structure: <THOUGHT_PROCESS>...</THOUGHT_PROCESS> [Your Answer]
         if (!document.getElementById('ai-google-fonts')) {
             const googleFonts = document.createElement('link');
             googleFonts.id = 'ai-google-fonts';
-            googleFonts.href = 'https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap';
+            googleFonts.href = 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap';
             googleFonts.rel = 'stylesheet';
             document.head.appendChild(googleFonts);
         }
@@ -2306,7 +2306,7 @@ Response Structure: <THOUGHT_PROCESS>...</THOUGHT_PROCESS> [Your Answer]
                 background-color: #070707;
                 backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
                 z-index: 2147483647; opacity: 0; transition: opacity 0.5s, background 0.5s;
-                font-family: 'Geist', sans-serif; font-weight: 300;
+                font-family: 'Manrope', sans-serif; font-weight: 300;
                 display: flex; flex-direction: column;
                 justify-content: flex-end; padding: 0; box-sizing: border-box; overflow: hidden;
                 color: #c0c0c0;
@@ -2318,7 +2318,7 @@ Response Structure: <THOUGHT_PROCESS>...</THOUGHT_PROCESS> [Your Answer]
             #ai-container.deactivating, #ai-container.deactivating > * { transition: opacity 0.4s, transform 0.4s; }
             #ai-container.deactivating { opacity: 0 !important; background-color: rgba(0,0,0,0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); }
             #ai-persistent-title, #ai-brand-title {
-                position: absolute; top: 28px; left: 30px; font-family: 'Geist', sans-serif;
+                position: absolute; top: 28px; left: 30px; font-family: 'Manrope', sans-serif;
                 font-size: 18px; font-weight: bold; color: #FFFFFF;
                 opacity: 0; transition: opacity 0.5s 0.2s, color 0.5s;
             }
@@ -2327,7 +2327,7 @@ Response Structure: <THOUGHT_PROCESS>...</THOUGHT_PROCESS> [Your Answer]
             #ai-brand-title span { animation: brand-title-pulse 4s linear infinite; }
             #ai-welcome-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; color: rgba(255,255,255,.5); opacity: 1; transition: opacity .5s, transform .5s; width: 100%; }
             #ai-container.chat-active #ai-welcome-message { opacity: 0; pointer-events: none; transform: translate(-50%,-50%) scale(0.95); }
-            #ai-welcome-message h2 { font-family: 'Geist', sans-serif; font-weight: 400; font-size: 2.2em; margin: 0; color: #fff; }
+            #ai-welcome-message h2 { font-family: 'Manrope', sans-serif; font-weight: 400; font-size: 2.2em; margin: 0; color: #fff; }
             #ai-welcome-message p { font-size: .9em; margin-top: 10px; max-width: 400px; line-height: 1.5; margin-left: auto; margin-right: auto; }
             .shortcut-tip { font-size: 0.8em; color: rgba(255,255,255,.7); margin-top: 20px; }
             #ai-close-button { position: absolute; top: 20px; right: 30px; color: rgba(255,255,255,.7); font-size: 40px; cursor: pointer; transition: color .2s ease,transform .3s ease, opacity 0.4s; }
@@ -2357,7 +2357,7 @@ Response Structure: <THOUGHT_PROCESS>...</THOUGHT_PROCESS> [Your Answer]
                 font-size: 0.75em;
                 padding: 4px 12px;
                 border-radius: 12px;
-                font-family: 'Geist', sans-serif;
+                font-family: 'Manrope', sans-serif;
                 text-transform: uppercase;
                 letter-spacing: 1px;
             }
@@ -2385,7 +2385,7 @@ Response Structure: <THOUGHT_PROCESS>...</THOUGHT_PROCESS> [Your Answer]
 
             /* CSS FIX: Reduced margin-top and padding-top */
             .ai-sources-list { border-top: 1px solid #1a1a1a; padding-top: 8px; margin-top: 8px; }
-            .ai-sources-list h4 { color: #ccc; margin: 0 0 10px 0; font-family: 'Geist', sans-serif; font-weight: 400; font-size: 1em; }
+            .ai-sources-list h4 { color: #ccc; margin: 0 0 10px 0; font-family: 'Manrope', sans-serif; font-weight: 400; font-size: 1em; }
             .ai-sources-list ul { list-style: none; padding: 0; margin: 0; }
             .ai-sources-list li { display: flex; align-items: center; margin-bottom: 5px; }
             .ai-sources-list li a { color: #4285f4; text-decoration: none; font-size: 0.9em; transition: color 0.2s; }
@@ -2428,7 +2428,7 @@ Response Structure: <THOUGHT_PROCESS>...</THOUGHT_PROCESS> [Your Answer]
 
             .monologue-title {
                 margin: 0;
-                font-family: 'Geist', sans-serif; font-weight: 400;
+                font-family: 'Manrope', sans-serif; font-weight: 400;
                 font-size: 1em;
                 transition: color 0.3s ease;
                 color: #4285f4; /* OPEN state color */
@@ -2900,7 +2900,7 @@ Response Structure: <THOUGHT_PROCESS>...</THOUGHT_PROCESS> [Your Answer]
                 width: 12px; height: 12px; border-radius: 2px;
             }
             .legend-text {
-                font-size: 0.85em; color: #ccc; font-family: 'Geist', sans-serif;
+                font-size: 0.85em; color: #ccc; font-family: 'Manrope', sans-serif;
             }
             .code-block-header, .chart-block-header, .table-block-header { display: flex; justify-content: flex-end; align-items: center; padding: 6px 12px; background-color: rgba(0,0,0,0.2); }
             .code-metadata, .chart-metadata, .table-metadata { font-size: 0.8em; color: #aaa; margin-right: auto; font-family: monospace; }

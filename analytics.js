@@ -169,7 +169,7 @@ async function init4SPAnalytics() {
                 .upsert(sessionPayload)
 
             if (currentUser !== 'anonymous' && timeToReport > 0) {
-                await window.supabase.rpc('increment_v6_time', {
+                await window.supabase.rpc('increment_v7_time', {
                     uid: currentUser,
                     added_time: timeToReport
                 })
