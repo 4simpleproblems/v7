@@ -59,6 +59,150 @@
         const loader = document.getElementById('universal-loader');
         if (loader) loader.remove();
     };
+
+    const THEME_STORAGE_KEY = 'user-navbar-theme';
+    const lightThemeNames = ['Light', 'Potato', 'Mint', 'Lavender', 'Rose Gold', 'V3 Original'];
+    const DEFAULT_THEME = {
+        "name": "Dark",
+        "logo-src": "/images/logo.png",
+        "navbar-bg": "#0B0A10",
+        "navbar-border": "#2D273D",
+        "avatar-gradient": "linear-gradient(135deg, #2D273D 0%, #0B0A10 100%)",
+        "avatar-border": "#9D7BFF",
+        "menu-bg": "#0B0A10",
+        "menu-border": "#2D273D",
+        "menu-divider": "rgba(255,255,255,0.05)",
+        "menu-text": "#ffffff",
+        "menu-item-hover-bg": "rgba(157, 123, 255, 0.1)",
+        "menu-item-hover-text": "#9D7BFF",
+        "glass-menu-bg": "rgba(11, 10, 16, 0.8)",
+        "glass-menu-border": "rgba(45, 39, 61, 0.8)",
+        "logged-out-icon-bg": "rgba(157, 123, 255, 0.1)",
+        "logged-out-icon-border": "#2D273D",
+        "logged-out-icon-color": "#9D7BFF",
+        "glide-btn-color": "#9D7BFF",
+        "glide-gradient-left": "linear-gradient(to right, #0B0A10, transparent)",
+        "glide-gradient-right": "linear-gradient(to left, #0B0A10, transparent)",
+        "tab-text": "#C4B0FF",
+        "tab-hover-text": "#ffffff",
+        "tab-hover-border": "#9D7BFF",
+        "tab-hover-bg": "rgba(157, 123, 255, 0.05)",
+        "tab-active-text": "#ffffff",
+        "tab-active-border": "#9D7BFF",
+        "tab-active-bg": "rgba(157, 123, 255, 0.1)",
+        "tab-active-hover-text": "#C4B0FF",
+        "tab-active-hover-border": "#9D7BFF",
+        "tab-active-hover-bg": "rgba(157, 123, 255, 0.15)",
+        "pin-btn-border": "#2D273D",
+        "pin-btn-hover-bg": "rgba(157, 123, 255, 0.1)",
+        "pin-btn-icon-color": "#9D7BFF",
+        "hint-bg": "#15131C",
+        "hint-border": "#2D273D",
+        "hint-text": "#C4B0FF",
+        "bg-primary": "#0B0A10",
+        "bg-secondary": "#15131C",
+        "text-primary": "#ffffff",
+        "text-secondary": "#C4B0FF",
+        "accent-primary": "#9D7BFF",
+        "accent-secondary": "rgba(157, 123, 255, 0.4)",
+        "border-primary": "#2D273D",
+        "border-secondary": "rgba(255,255,255,0.05)",
+        "button-bg": "rgba(157, 123, 255, 0.1)",
+        "button-text": "#9D7BFF"
+    };
+
+    window.applyTheme = (theme) => {
+        const root = document.documentElement;
+        if (!root) return;
+        const themeToApply = theme && typeof theme === 'object' ? theme : DEFAULT_THEME;
+        const isLightTheme = lightThemeNames.includes(themeToApply.name);
+
+        const resolveRelativePath = (absolutePath) => {
+            if (!absolutePath || !absolutePath.startsWith('/')) return absolutePath;
+            let depth = 0;
+            const path = window.location.pathname.toLowerCase();
+            if (path.includes('/logged-in/')) {
+                depth = 1;
+            } else if (path.includes('/valo_plus/') || path.includes('/ytmusic/') || path.includes('/games/') || path.includes('/vora/') || path.includes('/vora_plus/') || path.includes('/vira/')) {
+                const match = path.match(/\/(valo_plus|ytmusic|games|vora|vora_plus|vira)\/(.+)/);
+                if (match) {
+                    const rest = match[2];
+                    const slashCount = (rest.match(/\//g) || []).length;
+                    depth = 1 + slashCount;
+                } else {
+                    depth = 1;
+                }
+            }
+            if (depth === 0) {
+                return '.' + absolutePath;
+            } else {
+                return '../'.repeat(depth) + absolutePath.substring(1);
+            }
+        };
+
+        for (const [key, value] of Object.entries(themeToApply)) {
+            if (key !== 'logo-src' && key !== 'name' && key !== 'original-css' && key !== 'effect') {
+                root.style.setProperty(`--${key}`, value);
+            }
+        }
+
+        const existingLink = document.getElementById('originals-stylesheet');
+        if (themeToApply['original-css']) {
+            const resolvedCSS = resolveRelativePath(themeToApply['original-css']);
+            if (existingLink) {
+                existingLink.href = resolvedCSS;
+            } else {
+                const link = document.createElement('link');
+                link.id = 'originals-stylesheet';
+                link.rel = 'stylesheet';
+                link.href = resolvedCSS;
+                document.head.appendChild(link);
+            }
+        } else {
+            if (existingLink) {
+                existingLink.remove();
+            }
+        }
+
+        const fixId = '4sp-theme-contrast-fix';
+        let styleEl = document.getElementById(fixId);
+        if (isLightTheme) {
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = fixId;
+                document.head.appendChild(styleEl);
+            }
+            styleEl.textContent = `
+                .text-white:not(.keep-white), 
+                .text-gray-100, .text-gray-200, .text-gray-300 { 
+                    color: var(--text-primary) !important; 
+                }
+                .text-white\\/80, .text-white\\/60, .text-gray-400, .text-gray-500 { 
+                    color: var(--text-secondary) !important; 
+                }
+                h1, h2, h3, h4, h5, h6 { color: var(--text-primary) !important; }
+                .bg-indigo-600 .text-white, 
+                .bg-red-600 .text-white,
+                .bg-blue-600 .text-white,
+                button[class*="bg-indigo-"] .text-white,
+                .primary-cta { color: #ffffff !important; }
+                #deletionSection p, #deletionSection label, #deletionSection .text-red-300 { color: #fee2e2 !important; }
+                div#deletionSection { background-color: rgba(153, 27, 27, 0.9) !important; border-color: #ef4444 !important; }
+                .fa-x-twitter, .fa-github { color: #000000 !important; }
+            `;
+        } else if (styleEl) {
+            styleEl.remove();
+        }
+    };
+
+    let savedTheme;
+    try {
+        savedTheme = JSON.parse(localStorage.getItem(THEME_STORAGE_KEY));
+    } catch (e) {
+        savedTheme = null;
+    }
+    window.applyTheme(savedTheme || DEFAULT_THEME);
+
     window.showLoader = () => {};
 
     // --- Supabase Global Initialization ---

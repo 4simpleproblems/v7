@@ -87,6 +87,29 @@ window.applyTheme = (theme) => {
     
     const isLightTheme = lightThemeNames.includes(themeToApply.name);
 
+    const resolveRelativePath = (absolutePath) => {
+        if (!absolutePath || !absolutePath.startsWith('/')) return absolutePath;
+        let depth = 0;
+        const path = window.location.pathname.toLowerCase();
+        if (path.includes('/logged-in/')) {
+            depth = 1;
+        } else if (path.includes('/valo_plus/') || path.includes('/ytmusic/') || path.includes('/games/') || path.includes('/vora/') || path.includes('/vora_plus/') || path.includes('/vira/')) {
+            const match = path.match(/\/(valo_plus|ytmusic|games|vora|vora_plus|vira)\/(.+)/);
+            if (match) {
+                const rest = match[2];
+                const slashCount = (rest.match(/\//g) || []).length;
+                depth = 1 + slashCount;
+            } else {
+                depth = 1;
+            }
+        }
+        if (depth === 0) {
+            return '.' + absolutePath;
+        } else {
+            return '../'.repeat(depth) + absolutePath.substring(1);
+        }
+    };
+
     for (const [key, value] of Object.entries(themeToApply)) {
         if (key !== 'logo-src' && key !== 'name' && key !== 'original-css' && key !== 'effect') {
             root.style.setProperty(`--${key}`, value);
@@ -95,13 +118,14 @@ window.applyTheme = (theme) => {
 
     const existingLink = document.getElementById('originals-stylesheet');
     if (themeToApply['original-css']) {
+        const resolvedCSS = resolveRelativePath(themeToApply['original-css']);
         if (existingLink) {
-            existingLink.href = themeToApply['original-css'];
+            existingLink.href = resolvedCSS;
         } else {
             const link = document.createElement('link');
             link.id = 'originals-stylesheet';
             link.rel = 'stylesheet';
-            link.href = themeToApply['original-css'];
+            link.href = resolvedCSS;
             document.head.appendChild(link);
         }
     } else {
@@ -157,9 +181,11 @@ window.applyTheme = (theme) => {
         } else {
             newLogoSrc = themeToApply['logo-src'] || DEFAULT_THEME['logo-src'];
         }
-        const currentSrc = logoImg.src;
-        const expectedSrc = new URL(newLogoSrc, window.location.origin).href;
-        if (currentSrc !== expectedSrc) {
+        
+        newLogoSrc = resolveRelativePath(newLogoSrc);
+        
+        const expectedSrc = new URL(newLogoSrc, window.location.href).href;
+        if (logoImg.src !== expectedSrc) {
             logoImg.src = newLogoSrc;
         }
 

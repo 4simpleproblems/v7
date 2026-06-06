@@ -1,16 +1,23 @@
 /* Font Imports */
 @font-face {
     font-family: 'PrimaryFont'; /* Name your primary font */
-    src: url('./primary.woff') format('woff');
+    src: url('../fonts/primary.woff') format('woff');
     font-weight: normal;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'SecondaryFont'; /* Name your secondary font */
-    src: url('./secondary.woff') format('woff');
+    src: url('../fonts/secondary.woff') format('woff');
     font-weight: normal;
     font-style: normal;
+}
+
+*, body, button, input, select, textarea {
+    font-family: 'SecondaryFont', sans-serif !important;
+}
+h1, h2, h3, h4, h5, h6, .logo, .logo *, .dropdown-header, .top-bar-link, .btn, button.btn, input[type="submit"] {
+    font-family: 'PrimaryFont', sans-serif !important;
 }
 
 /* Basic Resets & Global Styles */
@@ -21,7 +28,6 @@
 }
 
 body {
-    font-family: 'SecondaryFont', sans-serif; /* Use your secondary font as default */
     line-height: 1.6;
     color: #333; /* Default text color for light sections */
     background-color: #f0f2f5; /* Global background for pages */
