@@ -5,3 +5,13 @@ functions/
 service-account-key.json
 export_users.py
 users_migration_export.json
+
+# Local Python files & directories
+YTMUSIC/
+requirements.txt
+serve_v7.py
+VALO_PLUS/serve_locally.py
+VELIUM/debug_api.py
+VELIUM_REDESIGNED/debug_api.py
+VELIUM_copy/debug_api.py
+testVELIUM/debug_api.py
