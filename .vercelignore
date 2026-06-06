@@ -1,2 +1,8 @@
 requirements.txt
 serve_v7.py
+YTMUSIC/
+**/*.py
+**/requirements.txt
+**/pyproject.toml
+**/setup.py
+**/setup.cfg
