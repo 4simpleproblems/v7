@@ -181,7 +181,7 @@
                         <p class="text-xl md:text-2xl mt-4" style="color: var(--text-muted); opacity: 0.7;">Good day, <span id="user-name-display" class="font-medium text-white opacity-100">User</span>.</p>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row gap-4 w-full xl:w-auto shrink-0 mb-2">
+                    <div id="stats-container" class="flex flex-col sm:flex-row gap-4 w-full xl:w-auto shrink-0 mb-2">
                         <div class="stat-pill flex-1 xl:w-56 px-6 py-5">
                             <div>
                                 <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-2">Highest Streak</p>
@@ -200,9 +200,9 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-8">
+                <div id="dashboard-widgets-container" class="flex flex-col gap-8">
                     
-                    <div class="relative w-full">
+                    <div id="leaderboard-container-wrapper" class="relative w-full">
                         <div id="leaderboard-widget" class="feature-card px-10 py-6 flex flex-col md:flex-row items-center justify-between gap-6 greyed-out">
                             
                             <div class="flex flex-col justify-center border-b md:border-b-0 md:border-r border-white/10 pb-4 md:pb-0 md:pr-8 text-center md:text-left shrink-0">
@@ -251,7 +251,7 @@
                         </div>
                     </div>
 
-                    <div class="feature-card p-10 no-hover">
+                    <div id="recent-pages-card" class="feature-card p-10 no-hover">
                         <div class="flex justify-between items-end mb-8 border-b border-white/5 pb-6">
                             <div>
                                 <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2">Recently Accessed</p>
@@ -453,11 +453,7 @@
                         location.reload();
                     }
                 } else if (!window._LOCAL_MODE && source === 'firebase') {
-                    // Only redirect if both fail. We check Supabase first.
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (!session) {
-                        window.location.replace('/index.html');
-                    }
+                    setupGuestView();
                 }
             };
 
@@ -465,17 +461,52 @@
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
                 handleUser(session.user, 'supabase');
+            } else {
+                // Firebase fallback/sync
+                onAuthStateChanged(auth, async (user) => {
+                    const { data: { session: currentSession } } = await supabase.auth.getSession();
+                    if (!currentSession) {
+                        if (user) {
+                            handleUser(user, 'firebase');
+                        } else {
+                            setupGuestView();
+                        }
+                    }
+                });
             }
 
-            // Firebase fallback/sync
-            onAuthStateChanged(auth, async (user) => {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
-                    handleUser(user, 'firebase');
-                }
-            });
-
             startClock();
+        }
+
+        function setupGuestView() {
+            document.getElementById('user-name-display').textContent = 'Guest';
+
+            const statsContainer = document.getElementById('stats-container');
+            const leaderboardContainer = document.getElementById('leaderboard-container-wrapper');
+            const recentPagesCard = document.getElementById('recent-pages-card');
+
+            if (statsContainer) statsContainer.style.display = 'none';
+            if (leaderboardContainer) leaderboardContainer.style.display = 'none';
+            if (recentPagesCard) recentPagesCard.style.display = 'none';
+
+            const widgetsContainer = document.getElementById('dashboard-widgets-container');
+            if (widgetsContainer && !document.getElementById('guest-prompt-card')) {
+                const promptCard = document.createElement('div');
+                promptCard.id = 'guest-prompt-card';
+                promptCard.className = 'feature-card p-10 flex flex-col items-center justify-center text-center';
+                promptCard.style.cssText = 'border-color: #2D273D; background: #15131C; border-radius: 24px; margin-top: 2rem;';
+                promptCard.innerHTML = `
+                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-indigo-400 text-3xl mb-4" style="background: rgba(157, 123, 255, 0.1); border: 1px solid rgba(157, 123, 255, 0.2);">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2" style="font-family: 'Manrope', sans-serif;">Authenticated View Locked</h3>
+                    <p class="text-sm text-gray-400 max-w-sm mb-6" style="font-family: 'Manrope', sans-serif;">You need to log in to use or see these dashboard widgets.</p>
+                    <a href="/authentication.html" class="btn-primary-override inline-flex items-center justify-center px-8 py-4 text-xs font-bold uppercase tracking-widest shadow-2xl">
+                        Sign In / Up <i class="fas fa-sign-in-alt ml-2"></i>
+                    </a>
+                `;
+                widgetsContainer.appendChild(promptCard);
+            }
         }
 
         async function fetchUserStats(uid) {

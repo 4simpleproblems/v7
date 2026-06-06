@@ -82,14 +82,57 @@ let fireworksInstance = null; // Store fireworks instance globally
 window.applyTheme = (theme) => {
     const root = document.documentElement;
     if (!root) return;
-    const themeToApply = DEFAULT_THEME; // Force Default (Dark) Theme
+    const themeToApply = theme && typeof theme === 'object' ? theme : DEFAULT_THEME;
     
-    // Determine if it's a light theme
     const isLightTheme = lightThemeNames.includes(themeToApply.name);
 
     for (const [key, value] of Object.entries(themeToApply)) {
-        if (key !== 'logo-src' && key !== 'name') {
+        if (key !== 'logo-src' && key !== 'name' && key !== 'original-css' && key !== 'effect') {
             root.style.setProperty(`--${key}`, value);
+        }
+    }
+
+    const existingLink = document.getElementById('originals-stylesheet');
+    if (themeToApply['original-css']) {
+        if (existingLink) {
+            existingLink.href = themeToApply['original-css'];
+        } else {
+            const link = document.createElement('link');
+            link.id = 'originals-stylesheet';
+            link.rel = 'stylesheet';
+            link.href = themeToApply['original-css'];
+            document.head.appendChild(link);
+        }
+    } else {
+        if (existingLink) {
+            existingLink.remove();
+        }
+    }
+
+    const specialEffectsId = 'special-theme-effects';
+    let effectStyleEl = document.getElementById(specialEffectsId);
+    if (effectStyleEl) effectStyleEl.remove();
+
+    const existingBefore = document.getElementById('matrix-before-style');
+    if (existingBefore) existingBefore.remove();
+
+    if (themeToApply.effect) {
+        effectStyleEl = document.createElement('style');
+        effectStyleEl.id = specialEffectsId;
+        document.head.appendChild(effectStyleEl);
+
+        if (themeToApply.effect === 'aurora') {
+            effectStyleEl.textContent = 'body { background: linear-gradient(125deg, #020617, #0b1528, #071329, #020617) !important; background-size: 400% 400% !important; animation: aurora-bg-anim 15s ease infinite !important; } @keyframes aurora-bg-anim { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } .feature-card, .settings-box, .stat-pill, .theme-button { border-color: rgba(45, 212, 191, 0.4) !important; box-shadow: 0 0 15px rgba(45, 212, 191, 0.15), inset 0 0 10px rgba(45, 212, 191, 0.05) !important; }';
+        } else if (themeToApply.effect === 'cyberpunk') {
+            effectStyleEl.textContent = '.feature-card, .settings-box, .stat-pill, .theme-button { border-color: #ff007f !important; box-shadow: 0 0 8px #ff007f, inset 0 0 8px rgba(255, 0, 127, 0.2), 0 0 15px #00ffff, inset 0 0 15px rgba(0, 255, 255, 0.2) !important; animation: cyberpunk-pulse-anim 3s infinite alternate !important; } @keyframes cyberpunk-pulse-anim { 0% { border-color: #ff007f; box-shadow: 0 0 8px #ff007f, 0 0 15px #00ffff; } 100% { border-color: #00ffff; box-shadow: 0 0 15px #ff007f, 0 0 8px #00ffff; } }';
+        } else if (themeToApply.effect === 'matrix') {
+            const beforeStyle = document.createElement('style');
+            beforeStyle.id = 'matrix-before-style';
+            beforeStyle.textContent = 'body::before { content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(57, 255, 20, 0.06), rgba(0, 255, 0, 0.02), rgba(57, 255, 20, 0.06)); z-index: 9999; background-size: 100% 3px, 6px 100%; pointer-events: none; }';
+            document.head.appendChild(beforeStyle);
+            effectStyleEl.textContent = '.feature-card, .settings-box, .stat-pill, .theme-button { font-family: "Courier New", Courier, monospace !important; border-color: #39FF14 !important; box-shadow: 0 0 10px rgba(57, 255, 20, 0.3) !important; text-shadow: 0 0 5px #39FF14 !important; }';
+        } else if (themeToApply.effect === 'rgb') {
+            effectStyleEl.textContent = '.feature-card, .settings-box, .stat-pill, .theme-button { animation: rgb-border-anim 6s linear infinite !important; border-width: 2px !important; } @keyframes rgb-border-anim { 0% { border-color: #ff0000; box-shadow: 0 0 10px rgba(255,0,0,0.2); } 17% { border-color: #ffff00; box-shadow: 0 0 10px rgba(255,255,0,0.2); } 33% { border-color: #00ff00; box-shadow: 0 0 10px rgba(0,255,0,0.2); } 50% { border-color: #00ffff; box-shadow: 0 0 10px rgba(0,255,255,0.2); } 67% { border-color: #0000ff; box-shadow: 0 0 10px rgba(0,0,255,0.2); } 83% { border-color: #ff00ff; box-shadow: 0 0 10px rgba(255,0,255,0.2); } 100% { border-color: #ff0000; box-shadow: 0 0 10px rgba(255,0,0,0.2); } }';
         }
     }
 
@@ -1544,6 +1587,7 @@ let db;
                                 path.endsWith('/documentation') ||
                                 path.includes('/VALO_PLUS') ||
                                 path.includes('/@') ||
+                                path.endsWith('dashboard.html') || path.includes('/dashboard') ||
                                 path.endsWith('games.html') || path.includes('/games') ||
                                 path.endsWith('pxgames.html') || path.includes('/pxgames') ||
                                 path.endsWith('soundboard.html') || path.includes('/soundboard') ||
@@ -1569,10 +1613,38 @@ let db;
             }
 
             if (!firebaseUser && !hasSupabaseSession) {
-                const targetUrl = '../index.html'; 
-                console.log(`User logged out. Restricting access and redirecting to ${targetUrl}`);
-                isRedirecting = true;
-                window.location.href = targetUrl;
+                console.log("User logged out. Displaying V7 login wall.");
+                
+                const renderBlocker = () => {
+                    document.body.innerHTML = `
+                        <div style="min-height: 100vh; background-color: #0B0A10; color: #fff; display: flex; align-items: center; justify-content: center; font-family: 'Manrope', sans-serif; padding: 2rem; box-sizing: border-box; position: relative; overflow: hidden; margin: 0;">
+                            <div style="position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(157, 123, 255, 0.05) 0%, rgba(0,0,0,0) 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 0;"></div>
+                            
+                            <div style="background: #15131C; border: 1px solid #2D273D; border-radius: 24px; padding: 3rem 2rem; width: 100%; max-width: 480px; text-align: center; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); position: relative; z-index: 1; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                                <div style="width: 4.5rem; height: 4.5rem; border-radius: 20px; background: rgba(157, 123, 255, 0.1); border: 1px solid rgba(157, 123, 255, 0.2); display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem; color: #9D7BFF; font-size: 2rem;">
+                                    <i class="fas fa-lock"></i>
+                                </div>
+                                <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 0.75rem; color: #fff; tracking-tight: -0.025em;">Authentication Required</h2>
+                                <p style="font-size: 0.875rem; color: #9ca3af; line-height: 1.6; margin-bottom: 2.25rem;">You need to log in to use/see this page.</p>
+                                
+                                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                    <a href="/authentication.html" style="background: #0B0A10; border: 1px solid #9D7BFF; color: #C4B0FF; padding: 1rem 2rem; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; border-radius: 20px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); cursor: pointer;" onmouseover="this.style.background='rgba(157, 123, 255, 0.2)'; this.style.color='#fff'; this.style.transform='scale(1.02) translateY(-2px)';" onmouseout="this.style.background='#0B0A10'; this.style.color='#C4B0FF'; this.style.transform='none';">
+                                        Sign In / Up <i class="fas fa-sign-in-alt"></i>
+                                    </a>
+                                    <a href="/index.html" style="color: rgba(255, 255, 255, 0.5); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; text-decoration: none; margin-top: 1rem; display: inline-block; transition: color 0.2s;" onmouseover="this.style.color='#fff';" onmouseout="this.style.color='rgba(255, 255, 255, 0.5)';">
+                                        Back to Home
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                };
+ 
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', renderBlocker);
+                } else {
+                    renderBlocker();
+                }
             }
         };
 

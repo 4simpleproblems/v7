@@ -85,12 +85,55 @@ window.applyTheme = (theme) => {
     if (!root) return;
     const themeToApply = theme && typeof theme === 'object' ? theme : DEFAULT_THEME;
     
-    // Determine if it's a light theme
     const isLightTheme = lightThemeNames.includes(themeToApply.name);
 
     for (const [key, value] of Object.entries(themeToApply)) {
-        if (key !== 'logo-src' && key !== 'name') {
+        if (key !== 'logo-src' && key !== 'name' && key !== 'original-css' && key !== 'effect') {
             root.style.setProperty(`--${key}`, value);
+        }
+    }
+
+    const existingLink = document.getElementById('originals-stylesheet');
+    if (themeToApply['original-css']) {
+        if (existingLink) {
+            existingLink.href = themeToApply['original-css'];
+        } else {
+            const link = document.createElement('link');
+            link.id = 'originals-stylesheet';
+            link.rel = 'stylesheet';
+            link.href = themeToApply['original-css'];
+            document.head.appendChild(link);
+        }
+    } else {
+        if (existingLink) {
+            existingLink.remove();
+        }
+    }
+
+    const specialEffectsId = 'special-theme-effects';
+    let effectStyleEl = document.getElementById(specialEffectsId);
+    if (effectStyleEl) effectStyleEl.remove();
+
+    const existingBefore = document.getElementById('matrix-before-style');
+    if (existingBefore) existingBefore.remove();
+
+    if (themeToApply.effect) {
+        effectStyleEl = document.createElement('style');
+        effectStyleEl.id = specialEffectsId;
+        document.head.appendChild(effectStyleEl);
+
+        if (themeToApply.effect === 'aurora') {
+            effectStyleEl.textContent = 'body { background: linear-gradient(125deg, #020617, #0b1528, #071329, #020617) !important; background-size: 400% 400% !important; animation: aurora-bg-anim 15s ease infinite !important; } @keyframes aurora-bg-anim { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } .feature-card, .settings-box, .stat-pill, .theme-button { border-color: rgba(45, 212, 191, 0.4) !important; box-shadow: 0 0 15px rgba(45, 212, 191, 0.15), inset 0 0 10px rgba(45, 212, 191, 0.05) !important; }';
+        } else if (themeToApply.effect === 'cyberpunk') {
+            effectStyleEl.textContent = '.feature-card, .settings-box, .stat-pill, .theme-button { border-color: #ff007f !important; box-shadow: 0 0 8px #ff007f, inset 0 0 8px rgba(255, 0, 127, 0.2), 0 0 15px #00ffff, inset 0 0 15px rgba(0, 255, 255, 0.2) !important; animation: cyberpunk-pulse-anim 3s infinite alternate !important; } @keyframes cyberpunk-pulse-anim { 0% { border-color: #ff007f; box-shadow: 0 0 8px #ff007f, 0 0 15px #00ffff; } 100% { border-color: #00ffff; box-shadow: 0 0 15px #ff007f, 0 0 8px #00ffff; } }';
+        } else if (themeToApply.effect === 'matrix') {
+            const beforeStyle = document.createElement('style');
+            beforeStyle.id = 'matrix-before-style';
+            beforeStyle.textContent = 'body::before { content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(57, 255, 20, 0.06), rgba(0, 255, 0, 0.02), rgba(57, 255, 20, 0.06)); z-index: 9999; background-size: 100% 3px, 6px 100%; pointer-events: none; }';
+            document.head.appendChild(beforeStyle);
+            effectStyleEl.textContent = '.feature-card, .settings-box, .stat-pill, .theme-button { font-family: "Courier New", Courier, monospace !important; border-color: #39FF14 !important; box-shadow: 0 0 10px rgba(57, 255, 20, 0.3) !important; text-shadow: 0 0 5px #39FF14 !important; }';
+        } else if (themeToApply.effect === 'rgb') {
+            effectStyleEl.textContent = '.feature-card, .settings-box, .stat-pill, .theme-button { animation: rgb-border-anim 6s linear infinite !important; border-width: 2px !important; } @keyframes rgb-border-anim { 0% { border-color: #ff0000; box-shadow: 0 0 10px rgba(255,0,0,0.2); } 17% { border-color: #ffff00; box-shadow: 0 0 10px rgba(255,255,0,0.2); } 33% { border-color: #00ff00; box-shadow: 0 0 10px rgba(0,255,0,0.2); } 50% { border-color: #00ffff; box-shadow: 0 0 10px rgba(0,255,255,0.2); } 67% { border-color: #0000ff; box-shadow: 0 0 10px rgba(0,0,255,0.2); } 83% { border-color: #ff00ff; box-shadow: 0 0 10px rgba(255,0,255,0.2); } 100% { border-color: #ff0000; box-shadow: 0 0 10px rgba(255,0,0,0.2); } }';
         }
     }
 

@@ -1377,6 +1377,21 @@
                             Select a theme for your navigation bar. This setting is saved locally and will apply a live preview.
                         </p>
                         
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-[var(--border-main)] pb-4">
+                            <div class="flex items-center gap-3">
+                                <label class="text-sm font-bold text-[var(--text-main)]">Collection:</label>
+                                <select id="collection-selector" class="bg-white/5 border border-[var(--border-main)] rounded-xl p-2 text-sm outline-none text-white focus:border-[var(--accent-color)] transition-all">
+                                    <option value="base" style="background:#15131C;color:#fff;">Base Collection</option>
+                                    <option value="foods" style="background:#15131C;color:#fff;">Foods Collection</option>
+                                    <option value="nature" style="background:#15131C;color:#fff;">Nature Collection</option>
+                                    <option value="originals" style="background:#15131C;color:#fff;">Originals Collection</option>
+                                </select>
+                            </div>
+                            <button id="download-collection-btn" class="btn-toolbar-style px-4 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2" style="border-radius: 12px;">
+                                <i class="fa-solid fa-download"></i> Download Collection
+                            </button>
+                        </div>
+                        
                         <div id="theme-picker-container">
                             <div class="flex items-center justify-center p-8">
                                 <i class="fa-solid fa-spinner fa-spin fa-2x text-[var(--text-muted)] opacity-40"></i>
@@ -4247,158 +4262,183 @@
                 });
             }
 
-            // --- 2. THEME LOGIC (Existing) ---
-            
             if (!themePickerContainer) return;
             
-            // From navigation.js
             const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink', 'Birthday'];
+            const collectionSelector = document.getElementById('collection-selector');
+            const downloadBtn = document.getElementById('download-collection-btn');
 
-            try {
-                // 1. Fetch themes
-                const response = await fetch('../themes.json');
-                if (!response.ok) throw new Error('Failed to fetch themes.json');
-                let themes = await response.json(); // Use 'let' to reassign
-                
-                if (!themes || themes.length === 0) {
-                     throw new Error('themes.json is empty or invalid');
-                }
+            let currentCollection = localStorage.getItem('user-theme-collection') || 'base';
 
-                // --- NEW: Sorting Logic ---
-                const orderedThemeNames = ['Dark', 'Light', 'Christmas', 'The New Year', 'Potato'];
-                const sortedThemes = [];
-                let remainingThemes = [];
-
-                // 1. Extract explicit order
-                orderedThemeNames.forEach(name => {
-                    const theme = themes.find(t => t.name === name);
-                    if (theme) sortedThemes.push(theme);
+            if (collectionSelector) {
+                collectionSelector.value = currentCollection;
+                collectionSelector.addEventListener('change', async (e) => {
+                    currentCollection = e.target.value;
+                    localStorage.setItem('user-theme-collection', currentCollection);
+                    await renderCollection(currentCollection);
                 });
-
-                // 2. Separate remaining
-                remainingThemes = themes.filter(t => !orderedThemeNames.includes(t.name));
-                
-                const darkThemes = remainingThemes.filter(t => !lightThemeNames.includes(t.name));
-                const lightThemes = remainingThemes.filter(t => lightThemeNames.includes(t.name));
-
-                // 3. Sort subgroups (Rainbow/Alphabetical)
-                const colorMap = {
-                    'Crimson': 1, 'Fire': 1, 'Orange': 2, 'Sunset': 2, 'Potato': 2, 'Ember': 2, 'Copper': 2, 'Gold': 3,
-                    'Green': 4, 'Forest': 4, 'Matrix': 4, 'Mint': 5, 'Ocean': 6, 'Deep Blue': 6,
-                    'Purple': 7, 'Royal': 7, 'Haze': 7, 'Lavender': 7, 'Pink': 8, 'Coral': 8, 'Rose Gold': 8,
-                    'Clanker': 9, 'Monochrome': 9, 'Silver': 9, 'Slate': 9
-                };
-                const sortFn = (a, b) => (colorMap[a.name] || 100) - (colorMap[b.name] || 100) || a.name.localeCompare(b.name);
-                
-                darkThemes.sort(sortFn);
-                lightThemes.sort(sortFn);
-
-                // 4. Combine
-                themes = [...sortedThemes, ...darkThemes, ...lightThemes];
-                // --- END NEW: Sorting Logic ---
-                
-                // 2. Get currently saved theme to set the active state
-                let savedTheme = null;
-                try {
-                    savedTheme = JSON.parse(localStorage.getItem(THEME_STORAGE_KEY));
-                } catch (e) {
-                    console.warn('Could not parse saved theme.');
-                }
-                
-                // 3. Process and render themes
-                const modifiedThemes = []; // Store themes with correct logo paths
-                let themeButtonsHtml = '';
-                
-                for (const theme of themes) {
-                    // --- This is the logic requested by the user ---
-                    // It modifies the theme object *in memory* before saving/applying
-                    // We use root-relative paths as defined in navigation.js
-                    if (lightThemeNames.includes(theme.name)) {
-                        theme['logo-src'] = '/images/logo-dark.png'; 
-                    } else {
-                        theme['logo-src'] = '/images/logo.png';
-                    }
-                    // --- End of user logic ---
-                    
-                    modifiedThemes.push(theme);
-                    
-                    const isActive = savedTheme && savedTheme.name === theme.name;
-                    
-                    // Use the theme's own background/accent for the button preview
-                    const activeText = theme['text-primary'] || theme['tab-active-text'] || '#ffffff';
-                    const activeBorder = theme['accent-primary'] || theme['tab-active-border'] || '#4f46e5';
-                    const activeBg = theme['avatar-gradient'] || theme['bg-primary'] || theme['navbar-bg'] || '#000000'; 
-                    
-                    // Hover states (using accents)
-                    const hoverText = theme['text-primary'] || '#ffffff';
-                    const hoverBorder = theme['accent-primary'] || '#4f46e5';
-                    const hoverBg = theme['accent-secondary'] || 'rgba(79, 70, 229, 0.2)';
-
-                    themeButtonsHtml += `
-                        <button 
-                            class="theme-button ${isActive ? 'active' : ''}" 
-                            data-theme-name="${theme.name}" 
-                            style="
-                                color: ${activeText}; 
-                                border-color: ${activeBorder}; 
-                                background: ${activeBg};
-                                --hover-color: ${hoverText};
-                                --hover-border: ${hoverBorder};
-                                --hover-bg: ${hoverBg};
-                            "
-                        >
-                            ${theme.name}
-                        </button>
-                    `;
-                }
-                
-                // Inject buttons into the DOM
-                themePickerContainer.innerHTML = themeButtonsHtml;
-                
-                // 4. Add event listeners
-                const themeButtons = themePickerContainer.querySelectorAll('.theme-button');
-                themeButtons.forEach(button => {
-                    button.addEventListener('click', async () => {
-                        const themeName = button.dataset.themeName;
-                        const themeToApply = modifiedThemes.find(t => t.name === themeName);
-                        
-                        if (themeToApply) {
-                            // 1. Save to localStorage (Backup/Fast Load)
-                            localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(themeToApply));
-                            
-                            // 2. Apply theme for live preview
-                            if (window.applyTheme) {
-                                window.applyTheme(themeToApply);
-                            } else {
-                                console.error('window.applyTheme is not defined. Is navigation.js loaded?');
-                                showMessage(themeMessage, 'Error applying theme preview.', 'error');
-                                return;
-                            }
-
-                            // 3. Save to Firestore & Supabase (Persistence)
-                            if (currentUser) {
-                                try {
-                                    await saveUserData(uid, { navbarTheme: themeToApply });
-                                } catch (error) {
-                                    console.error("Error saving theme:", error);
-                                    // Don't block UI feedback for this
-                                }
-                            }
-                            
-                            // 4. Update active class
-                            themeButtons.forEach(btn => btn.classList.remove('active'));
-                            button.classList.add('active');
-                            
-                            // 5. Show success message
-                            showMessage(themeMessage, `${themeToApply.name} theme applied!`, 'success');
-                        }
-                    });
-                });
-
-            } catch (error) {
-                console.error('Error loading themes:', error);
-                themePickerContainer.innerHTML = `<p class="text-red-400">Error: Could not load themes. (${error.message})</p>`;
             }
+
+            if (downloadBtn) {
+                downloadBtn.onclick = () => {
+                    const activeCollection = collectionSelector ? collectionSelector.value : 'base';
+                    let downloadUrl = '../themes.json';
+                    if (activeCollection === 'foods') downloadUrl = '../themes_foods.json';
+                    else if (activeCollection === 'nature') downloadUrl = '../themes_nature.json';
+                    else if (activeCollection === 'originals') downloadUrl = '../themes_originals.json';
+                    
+                    fetch(downloadUrl)
+                        .then(res => res.json())
+                        .then(data => {
+                            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 4));
+                            const downloadAnchor = document.createElement('a');
+                            downloadAnchor.setAttribute("href", dataStr);
+                            downloadAnchor.setAttribute("download", `4sp_collection_${activeCollection}.json`);
+                            document.body.appendChild(downloadAnchor);
+                            downloadAnchor.click();
+                            downloadAnchor.remove();
+                        })
+                        .catch(err => {
+                            console.error('Error downloading collection:', err);
+                            showMessage(themeMessage, 'Failed to download collection.', 'error');
+                        });
+                };
+            }
+
+            async function renderCollection(collectionName) {
+                try {
+                    let fetchUrl = '../themes.json';
+                    if (collectionName === 'foods') fetchUrl = '../themes_foods.json';
+                    else if (collectionName === 'nature') fetchUrl = '../themes_nature.json';
+                    else if (collectionName === 'originals') fetchUrl = '../themes_originals.json';
+
+                    const response = await fetch(fetchUrl);
+                    if (!response.ok) throw new Error('Failed to fetch themes');
+                    let themes = await response.json();
+                    
+                    if (!themes || themes.length === 0) {
+                         throw new Error('Collection is empty');
+                    }
+
+                    if (collectionName !== 'originals') {
+                        const orderedThemeNames = ['Dark', 'Light', 'Christmas', 'The New Year', 'Potato'];
+                        const sortedThemes = [];
+                        let remainingThemes = [];
+
+                        orderedThemeNames.forEach(name => {
+                            const theme = themes.find(t => t.name === name);
+                            if (theme) sortedThemes.push(theme);
+                        });
+
+                        remainingThemes = themes.filter(t => !orderedThemeNames.includes(t.name));
+                        
+                        const darkThemes = remainingThemes.filter(t => !lightThemeNames.includes(t.name));
+                        const lightThemes = remainingThemes.filter(t => lightThemeNames.includes(t.name));
+
+                        const colorMap = {
+                            'Crimson': 1, 'Fire': 1, 'Orange': 2, 'Sunset': 2, 'Potato': 2, 'Ember': 2, 'Copper': 2, 'Gold': 3,
+                            'Green': 4, 'Forest': 4, 'Matrix': 4, 'Mint': 5, 'Ocean': 6, 'Deep Blue': 6,
+                            'Purple': 7, 'Royal': 7, 'Haze': 7, 'Lavender': 7, 'Pink': 8, 'Coral': 8, 'Rose Gold': 8,
+                            'Clanker': 9, 'Monochrome': 9, 'Silver': 9, 'Slate': 9
+                        };
+                        const sortFn = (a, b) => (colorMap[a.name] || 100) - (colorMap[b.name] || 100) || a.name.localeCompare(b.name);
+                        
+                        darkThemes.sort(sortFn);
+                        lightThemes.sort(sortFn);
+
+                        themes = [...sortedThemes, ...darkThemes, ...lightThemes];
+                    }
+
+                    let savedTheme = null;
+                    try {
+                        savedTheme = JSON.parse(localStorage.getItem(THEME_STORAGE_KEY));
+                    } catch (e) {
+                        console.warn('Could not parse saved theme.');
+                    }
+
+                    const modifiedThemes = [];
+                    let themeButtonsHtml = '';
+                    
+                    for (const theme of themes) {
+                        if (lightThemeNames.includes(theme.name)) {
+                            theme['logo-src'] = '/images/logo-dark.png'; 
+                        } else {
+                            theme['logo-src'] = '/images/logo.png';
+                        }
+                        
+                        modifiedThemes.push(theme);
+                        
+                        const isActive = savedTheme && savedTheme.name === theme.name;
+                        
+                        const activeText = theme['text-primary'] || theme['tab-active-text'] || '#ffffff';
+                        const activeBorder = theme['accent-primary'] || theme['tab-active-border'] || '#4f46e5';
+                        const activeBg = theme['avatar-gradient'] || theme['bg-primary'] || theme['navbar-bg'] || '#000000'; 
+                        
+                        const hoverText = theme['text-primary'] || '#ffffff';
+                        const hoverBorder = theme['accent-primary'] || '#4f46e5';
+                        const hoverBg = theme['accent-secondary'] || 'rgba(79, 70, 229, 0.2)';
+
+                        themeButtonsHtml += `
+                            <button 
+                                class="theme-button ${isActive ? 'active' : ''}" 
+                                data-theme-name="${theme.name}" 
+                                style="
+                                    color: ${activeText}; 
+                                    border-color: ${activeBorder}; 
+                                    background: ${activeBg};
+                                    --hover-color: ${hoverText};
+                                    --hover-border: ${hoverBorder};
+                                    --hover-bg: ${hoverBg};
+                                "
+                            >
+                                ${theme.name}
+                            </button>
+                        `;
+                    }
+                    
+                    themePickerContainer.innerHTML = themeButtonsHtml;
+                    
+                    const themeButtons = themePickerContainer.querySelectorAll('.theme-button');
+                    themeButtons.forEach(button => {
+                        button.addEventListener('click', async () => {
+                            const themeName = button.dataset.themeName;
+                            const themeToApply = modifiedThemes.find(t => t.name === themeName);
+                            
+                            if (themeToApply) {
+                                localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(themeToApply));
+                                
+                                if (window.applyTheme) {
+                                    window.applyTheme(themeToApply);
+                                } else {
+                                    console.error('window.applyTheme is not defined.');
+                                    showMessage(themeMessage, 'Error applying theme preview.', 'error');
+                                    return;
+                                }
+
+                                if (currentUser) {
+                                    try {
+                                        const uid = currentUser.uid || currentUser.id;
+                                        await saveUserData(uid, { navbarTheme: themeToApply });
+                                    } catch (error) {
+                                        console.error("Error saving theme:", error);
+                                    }
+                                }
+                                
+                                themeButtons.forEach(btn => btn.classList.remove('active'));
+                                button.classList.add('active');
+                                
+                                showMessage(themeMessage, `${themeToApply.name} theme applied!`, 'success');
+                            }
+                        });
+                    });
+
+                } catch (error) {
+                    console.error('Error rendering collection:', error);
+                    themePickerContainer.innerHTML = `<p class="text-red-400">Error: Could not load themes. (${error.message})</p>`;
+                }
+            }
+
+            await renderCollection(currentCollection);
         }
         
         // --- NEW: Loads data and adds event listeners for the Data tab ---
