@@ -148,7 +148,10 @@
         "border-primary": "#cccccc",
         "border-secondary": "#e0e0e0",
         "button-bg": "#333333",
-        "button-text": "#ffffff"
+        "button-text": "#ffffff",
+        "font-primary": "'Outfit', sans-serif",
+        "font-secondary": "'Outfit', sans-serif",
+        "button-radius": "5px"
     },
     {
         "name": "V4 Original",
