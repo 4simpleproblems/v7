@@ -28,7 +28,7 @@ if (!window.FIREBASE_CONFIG) {
 window.PAGE_CONFIG_URL = window.PAGE_CONFIG_URL || '../page-identification.json';
 const PRIVILEGED_EMAIL = '4simpleproblems@gmail.com'; 
 const THEME_STORAGE_KEY = 'user-navbar-theme';
-const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink', 'Birthday']; // Define light theme names
+const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink', 'Birthday', 'Potato', 'V3 Original', 'V4 Original']; // Define light theme names
 
 const DEFAULT_THEME = {
     'name': 'Dark',
@@ -398,7 +398,6 @@ window.applyTheme = (theme) => {
     const cardHoverBg = accentGlow.replace(/0\.[0-9]+\)/, '0.45)').replace(/0\.[0-9]+$/, '0.45');
 
     const logoContainers = document.querySelectorAll('.navbar-logo-container');
-    const isLightTheme = ['Light', 'Potato', 'Mint', 'Lavender', 'Rose Gold', 'V3 Original', 'V4 Original', 'V1 Original'].includes(themeToApply.name);
 
     logoContainers.forEach(container => {
         if (themeToApply.name === 'V2 Original') {
