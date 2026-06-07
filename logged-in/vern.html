@@ -72,23 +72,7 @@
                 return;
             }
 
-            const { data: { session } } = await window.supabase.auth.getSession();
-            
-            if (session) {
-                pageContent.style.display = 'flex';
-            } else {
-                // Wait for a brief moment to see if it's a blip
-                console.log("Vern: No session found, checking again in 1s...");
-                setTimeout(async () => {
-                    const { data: { session: secondCheck } } = await window.supabase.auth.getSession();
-                    if (!secondCheck) {
-                        console.log("Vern: Session definitely gone, redirecting...");
-                        window.location.href = '../authentication.html';
-                    } else {
-                        pageContent.style.display = 'flex';
-                    }
-                }, 1000);
-            }
+            pageContent.style.display = 'flex';
         }
 
         // Listen for auth changes
