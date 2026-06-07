@@ -2017,8 +2017,10 @@
                     doc.close();
                     
                     window.launchCloudEmulator = () => {
-                        zoneFrame.src = 'https://www.apk.online/run-android-online/run-android-online.html?android=9.0';
-                        zoneNameEl.textContent = file.name.replace('.apk', '') + ' (Cloud Emulator)';
+                        // Using Appetize.io as a modern replacement for the defunct ApkOnline
+                        // This uses a generic Nexus 5 demo instance as a placeholder
+                        zoneFrame.src = 'https://appetize.io/embed/8bnv6hyie98pathut676bd8r80?device=nexus5&osVersion=8.1&scale=75';
+                        zoneNameEl.textContent = file.name.replace('.apk', '') + ' (Appetize Emulator)';
                     };
 
                     zoneViewer.style.display = "flex";
