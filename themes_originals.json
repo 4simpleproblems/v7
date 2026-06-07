@@ -46,7 +46,8 @@
         "border-primary": "#444444",
         "border-secondary": "#333333",
         "button-bg": "#333333",
-        "button-text": "#ffffff"
+        "button-text": "#ffffff",
+        "button-radius": "50px"
     },
     {
         "name": "V2 Original",

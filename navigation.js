@@ -398,6 +398,8 @@ window.applyTheme = (theme) => {
     const cardHoverBg = accentGlow.replace(/0\.[0-9]+\)/, '0.45)').replace(/0\.[0-9]+$/, '0.45');
 
     const logoContainers = document.querySelectorAll('.navbar-logo-container');
+    const isLightTheme = ['Light', 'Potato', 'Mint', 'Lavender', 'Rose Gold', 'V3 Original', 'V4 Original', 'V1 Original'].includes(themeToApply.name);
+
     logoContainers.forEach(container => {
         if (themeToApply.name === 'V2 Original') {
             container.innerHTML = '<div class="logo" style="font-size: 1.8rem; font-weight: 700; letter-spacing: -1.5px; color: #ffffff !important; font-family: var(--font-primary);">4SP</div>';
@@ -414,7 +416,9 @@ window.applyTheme = (theme) => {
                 } else if (themeToApply.name === 'Potato') {
                     newLogoSrc = '/images/potato.png';
                 } else {
-                    newLogoSrc = themeToApply['logo-src'] || DEFAULT_THEME['logo-src'];
+                    // Use dark logo for light themes (themes with white topbars)
+                    const useDarkLogo = isLightTheme && themeToApply.name !== 'V1 Original'; // V1 has a dark bar even in light mode sometimes, but let's be safe
+                    newLogoSrc = useDarkLogo ? '/images/logo-dark.png' : (themeToApply['logo-src'] || DEFAULT_THEME['logo-src']);
                 }
                 
                 newLogoSrc = resolveRelativePath(newLogoSrc);
