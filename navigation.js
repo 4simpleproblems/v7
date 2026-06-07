@@ -78,7 +78,9 @@ const DEFAULT_THEME = {
     'border-primary': '#2D273D',
     'border-secondary': 'rgba(255,255,255,0.05)',
     'button-bg': 'rgba(157, 123, 255, 0.1)',
-    'button-text': '#9D7BFF'
+    'button-text': '#9D7BFF',
+    'font-primary': "'Manrope', sans-serif",
+    'font-secondary': "'Manrope', sans-serif"
 };
 
 let fireworksInstance = null; // Store fireworks instance globally
@@ -395,45 +397,56 @@ window.applyTheme = (theme) => {
     const accentGlow = themeToApply['accent-secondary'] || 'rgba(79, 70, 229, 0.4)';
     const cardHoverBg = accentGlow.replace(/0\.[0-9]+\)/, '0.45)').replace(/0\.[0-9]+$/, '0.45');
 
-    logos.forEach(logoImg => {
-        let newLogoSrc;
-        if (themeToApply.name === 'Christmas') {
-            newLogoSrc = '/images/logo-christmas.png';
-        } else if (themeToApply.name === 'Potato') {
-            newLogoSrc = '/images/potato.png';
+    const logoContainers = document.querySelectorAll('.navbar-logo-container');
+    logoContainers.forEach(container => {
+        if (themeToApply.name === 'V2 Original') {
+            container.innerHTML = '<div class="logo" style="font-size: 1.8rem; font-weight: 700; letter-spacing: -1.5px; color: var(--text-primary); font-family: var(--font-primary);">4SP</div>';
         } else {
-            newLogoSrc = themeToApply['logo-src'] || DEFAULT_THEME['logo-src'];
-        }
-        
-        newLogoSrc = resolveRelativePath(newLogoSrc);
-        
-        const expectedSrc = new URL(newLogoSrc, window.location.href).href;
-        if (logoImg.src !== expectedSrc) {
-            logoImg.src = newLogoSrc;
-        }
+            // Restore image if it was text
+            if (container.querySelector('.logo')) {
+                 container.innerHTML = `<img src="/images/logo.png" alt="4SP Logo" class="navbar-logo" id="navbar-logo">`;
+            }
+            const logoImg = container.querySelector('img');
+            if (logoImg) {
+                let newLogoSrc;
+                if (themeToApply.name === 'Christmas') {
+                    newLogoSrc = '/images/logo-christmas.png';
+                } else if (themeToApply.name === 'Potato') {
+                    newLogoSrc = '/images/potato.png';
+                } else {
+                    newLogoSrc = themeToApply['logo-src'] || DEFAULT_THEME['logo-src'];
+                }
+                
+                newLogoSrc = resolveRelativePath(newLogoSrc);
+                
+                const expectedSrc = new URL(newLogoSrc, window.location.href).href;
+                if (logoImg.src !== expectedSrc) {
+                    logoImg.src = newLogoSrc;
+                }
 
-        const noFilterThemes = ['Dark', 'Light', 'Christmas', 'Potato'];
-        const isNoFilter = noFilterThemes.includes(themeToApply.name);
-        
-        // Check if mode is changing (Tinted <-> Standard)
-        const wasNoFilter = logoImg.style.transform === '' || logoImg.style.transform === 'none';
-        const modeChanged = isNoFilter !== wasNoFilter;
+                const noFilterThemes = ['Dark', 'Light', 'Christmas', 'Potato', 'V1 Original', 'V2 Original', 'V3 Original', 'V4 Original'];
+                const isNoFilter = noFilterThemes.includes(themeToApply.name);
+                
+                const wasNoFilter = logoImg.style.transform === '' || logoImg.style.transform === 'none';
+                const modeChanged = isNoFilter !== wasNoFilter;
 
-        if (modeChanged) {
-            logoImg.style.transition = 'none';
-        }
+                if (modeChanged) {
+                    logoImg.style.transition = 'none';
+                }
 
-        if (isNoFilter) {
-            logoImg.style.filter = ''; 
-            logoImg.style.transform = '';
-        } else {
-            logoImg.style.filter = `drop-shadow(100px 0 0 ${tintColor})`;
-            logoImg.style.transform = 'translateX(-100px)';
-        }
+                if (isNoFilter) {
+                    logoImg.style.filter = ''; 
+                    logoImg.style.transform = '';
+                } else {
+                    logoImg.style.filter = `drop-shadow(100px 0 0 ${tintColor})`;
+                    logoImg.style.transform = 'translateX(-100px)';
+                }
 
-        if (modeChanged) {
-            void logoImg.offsetWidth; 
-            logoImg.style.transition = 'filter 0.3s ease'; 
+                if (modeChanged) {
+                    void logoImg.offsetWidth; 
+                    logoImg.style.transition = 'filter 0.3s ease'; 
+                }
+            }
         }
     });
 
@@ -1687,7 +1700,7 @@ let db;
         container.innerHTML = `
             <div id="fireworks-container"></div>
             
-            <a href="/" class="flex items-center space-x-2 flex-shrink-0 overflow-hidden relative" style="z-index: 20;">
+            <a href="/" class="navbar-logo-container flex items-center space-x-2 flex-shrink-0 overflow-hidden relative" style="z-index: 20;">
                 <img src="${logoPath}" alt="4SP Logo" class="navbar-logo" id="navbar-logo">
             </a>
 
@@ -1780,6 +1793,7 @@ let db;
                 box-sizing: border-box !important;
                 transition: background-color 0.3s ease, border-color 0.3s ease !important;
                 overflow: visible !important;
+                font-family: var(--font-primary, 'Manrope'), sans-serif !important;
             }
 
             /* Fireworks Container Style */
@@ -1874,11 +1888,12 @@ let db;
                 padding: 0.5rem 1rem; 
                 color: var(--tab-text, #9ca3af); 
                 font-size: 0.875rem; font-weight: 400; 
-                border-radius: 16px; /* Reset to 16px */
+                border-radius: var(--button-radius, 16px); 
                 text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
                 border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
                 flex-shrink: 0; 
                 position: relative;
+                font-family: var(--font-secondary, 'Manrope'), sans-serif !important;
             }
             .nav-tab:hover { 
                 color: var(--tab-hover-text, #ffffff); 
@@ -1920,12 +1935,13 @@ let db;
                 position: absolute; right: 0; top: 55px; width: 16rem;
                 background: var(--menu-bg, #000);
                 border: 1px solid var(--menu-border, #333);
-                border-radius: 26px; 
+                border-radius: var(--button-radius, 26px); 
                 padding: 0.75rem; /* Equal spacing on edges */
                 display: flex; flex-direction: column; gap: 0.5rem; /* Flex gap for equal internal spacing */
                 box-shadow: 0 10px 30px rgba(0,0,0,0.6);
                 transition: transform 0.2s ease-out, opacity 0.2s ease-out, background-color 0.3s ease, border-color 0.3s ease;
                 transform-origin: top right; z-index: 10000;
+                font-family: var(--font-secondary, 'Manrope'), sans-serif !important;
             }
             .auth-menu-container .border-b { border-color: var(--menu-divider, #333) !important; padding-bottom: 0.5rem; } /* Added padding and visible border */
             .auth-menu-displayname {
@@ -2013,10 +2029,11 @@ let db;
                 display: flex; align-items: center; gap: 0.75rem; width: 100%; text-align: left; 
                 padding: 0.75rem 1rem; font-size: 0.9rem; color: var(--menu-text, #d1d5db); 
                 background: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); /* Default background color */
-                border-radius: 16px; /* Updated to 16px */
+                border-radius: var(--button-radius, 16px); 
                 transition: all 0.2s ease; cursor: pointer;
                 border: 1px solid var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
                 margin-bottom: 0; 
+                font-family: var(--font-primary, 'Manrope'), sans-serif !important;
             }
             .auth-menu-link:hover, .auth-menu-button:hover { 
                 background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05)); 

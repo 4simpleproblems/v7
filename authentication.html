@@ -21,17 +21,30 @@
             --text-main: #ffffff;
             --text-muted: #9ca3af;
             --accent-color: #4f46e5;
-            --accent-glow: rgba(79, 70, 229, 0.15);
+            --accent-glow: rgba(79, 229, 229, 0.15); /* Replaced with a more generic glow if needed */
             --border-main: #1a1a1a;
             --border-hover: #333333;
         }
 
+        /* Light mode overrides for modern theme */
+        html.light {
+            --bg-page: #f9fafb;
+            --bg-card: #ffffff;
+            --text-main: #111827;
+            --text-muted: #4b5563;
+            --accent-color: #4f46e5;
+            --accent-glow: rgba(79, 70, 229, 0.1);
+            --border-main: #e5e7eb;
+            --border-hover: #d1d5db;
+        }
+
         body { 
-            font-family: 'Manrope', sans-serif; 
+            font-family: var(--font-primary, 'Manrope'), sans-serif; 
             background-color: var(--bg-page); 
             color: var(--text-muted); 
             font-weight: 300;
             overflow-x: hidden;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-tighter {
@@ -39,6 +52,71 @@
             color: var(--text-main);
         }
 
+        /* V1 Design Styles */
+        .v1-mode #modern-auth-wrapper { display: none; }
+        .v1-mode #v1-auth-wrapper { display: flex; }
+        #v1-auth-wrapper { display: none; flex-direction: column; min-height: 100vh; font-family: 'Roboto Mono', monospace; font-weight: bold; }
+        
+        #v1-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            background: rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+        .v1-control-button {
+            padding: 8px 24px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid var(--border-main);
+            border-radius: 50px;
+            background: var(--bg-card);
+            color: var(--text-main);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .v1-control-button:hover {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .v1-container {
+            max-width: 440px;
+            margin: 4rem auto;
+            padding: 3rem;
+            background: var(--bg-card);
+            border-radius: 32px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            border: 1px solid var(--border-main);
+            text-align: center;
+        }
+        .v1-container h1 { font-size: 2.5rem; margin-bottom: 2rem; letter-spacing: -2px; }
+        .v1-form-group { text-align: left; margin-bottom: 1.5rem; }
+        .v1-form-group label { display: block; margin-bottom: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .v1-input {
+            width: 100%; padding: 14px 20px; border-radius: 50px; border: 1px solid var(--border-main);
+            background: var(--bg-page); color: var(--text-main); font-family: 'Roboto Mono', monospace; font-weight: bold;
+            box-sizing: border-box; outline: none; transition: border-color 0.2s;
+        }
+        .v1-input:focus { border-color: var(--accent-color); }
+        .v1-submit-btn {
+            width: 100%; padding: 16px; border-radius: 50px; border: none; background: var(--text-main); color: var(--bg-page);
+            font-family: 'Roboto Mono', monospace; font-weight: 800; font-size: 16px; cursor: pointer; transition: transform 0.2s, opacity 0.2s;
+            margin-top: 1rem;
+        }
+        .v1-submit-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+        .v1-divider { display: flex; align-items: center; margin: 2rem 0; color: var(--text-muted); font-size: 12px; }
+        .v1-divider::before, .v1-divider::after { content: ""; flex: 1; height: 1px; background: var(--border-main); margin: 0 1rem; }
+        .v1-social-btn {
+            width: 100%; padding: 14px; border-radius: 50px; border: 1px solid var(--border-main); background: var(--bg-card);
+            color: var(--text-main); font-family: 'Roboto Mono', monospace; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.2s;
+        }
+        .v1-social-btn:hover { background: var(--bg-page); border-color: var(--accent-color); }
+
+        /* Modern Theme adjustments */
         .auth-container {
             background-color: var(--bg-card);
             border: 1px solid var(--border-main);
@@ -53,7 +131,7 @@
             width: 100%; 
             padding: 0.875rem 1rem; 
             border: 1px solid var(--border-main); 
-            background-color: #050505; 
+            background-color: var(--bg-page); 
             border-radius: 16px; 
             color: var(--text-main); 
             font-size: 0.9375rem;
@@ -63,7 +141,6 @@
             border-color: var(--accent-color); 
             outline: none;
             box-shadow: 0 0 0 4px var(--accent-glow);
-            background-color: #080808;
         }
 
         .btn {
@@ -83,21 +160,19 @@
             background-color: rgba(79, 70, 229, 0.05);
             border: 1px solid var(--accent-color);
             color: var(--accent-color);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
         .btn-primary:hover {
-            background-color: rgba(79, 70, 229, 0.1);
-            border-color: #6366f1;
-            color: #6366f1;
+            background-color: var(--accent-color);
+            color: white;
             transform: translateY(-1px);
         }
         .btn-secondary {
-            background-color: #050505;
+            background-color: var(--bg-page);
             color: var(--text-muted);
             border: 1px solid var(--border-main);
         }
         .btn-secondary:hover {
-            background-color: #0a0a0a;
+            background-color: var(--bg-card);
             border-color: var(--border-hover);
             color: var(--text-main);
             transform: translateY(-1px);
@@ -135,7 +210,7 @@
         @media (max-width: 767px) {
             .right-col { 
                 border-top: 1px solid var(--border-main);
-                background-color: #080808;
+                background-color: var(--bg-page);
             }
         }
         @media (min-width: 768px) {
@@ -152,10 +227,12 @@
             width: 100%;
             height: 100%;
             background: 
-                radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 80% 80%, rgba(79, 70, 229, 0.05) 0%, transparent 40%);
+                radial-gradient(circle at 20% 20%, var(--accent-glow) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, var(--accent-glow) 0%, transparent 40%);
             z-index: -1;
         }
+
+        .hidden { display: none !important; }
     </style>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
     <script>
@@ -169,154 +246,199 @@
     <div class="brand-bg"></div>
     <div id="navbar-container"></div>
 
-    <main class="flex-grow flex items-center justify-center p-6 sm:p-12">
-        <div class="w-full max-w-5xl grid md:grid-cols-2 auth-container animate-slide-up">
-            
-            <!-- Left: Traditional Auth -->
-            <div class="left-col p-8 sm:p-12 flex flex-col justify-center">
-
-                <!-- Login View -->
-                <div id="loginContainer" class="w-full auth-view">
-                    <div class="mb-10 text-center md:text-left">
-                        <h2 class="text-4xl font-bold text-white mb-3 tracking-tighter">Welcome back</h2>
-                        <p class="text-sm text-gray-400 font-light">Access your 4SP dashboard and tools.</p>
-                    </div>
-                    <form id="loginForm" novalidate class="space-y-5"> 
-                        <div>
-                            <label for="loginEmail" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Email Address</label>
-                            <input type="email" id="loginEmail" placeholder="name@example.com" required class="input-style">
-                        </div>
-                        <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <label for="loginPassword" class="text-gray-400 text-xs font-bold uppercase tracking-widest">Password</label>
-                                <a id="forgotPasswordLink" class="text-indigo-400 hover:text-indigo-300 text-xs font-medium cursor-pointer transition-colors">Forgot?</a>
-                            </div>
-                            <input type="password" id="loginPassword" placeholder="••••••••" required class="input-style">
-                        </div>
-                        <button type="submit" class="btn btn-primary mt-4">Sign In</button>
-                    </form>
-                    <div id="loginMessage" class="message-area mt-6 text-center text-sm"></div>
-                    
-                    <p class="text-sm text-gray-500 mt-10 text-center font-light">
-                        New to 4SP? 
-                        <a id="showSignupLink" href="#" class="text-white hover:text-indigo-400 font-medium transition-colors">Create an account</a>
-                    </p>
-                </div>
-
-                <!-- Reset View -->
-                <div id="resetPasswordContainer" class="w-full auth-view" style="display: none;">
-                    <div class="mb-10">
-                        <h2 class="text-4xl font-bold text-white mb-3 tracking-tighter">Recover account</h2>
-                        <p class="text-sm text-gray-400 font-light leading-relaxed">Enter your email and we'll send a recovery link.</p>
-                    </div>
-                    <form id="resetPasswordForm" novalidate class="space-y-5">
-                        <div>
-                            <label for="resetEmail" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Email Address</label>
-                            <input type="email" id="resetEmail" placeholder="name@example.com" required class="input-style">
-                        </div>
-                        <button type="submit" class="btn btn-primary mt-4">Send Reset Link</button>
-                    </form>
-                    <div id="resetMessage" class="message-area mt-6 text-center text-sm"></div>
-                    <div class="mt-8 text-center"> 
-                        <a id="backToLoginLink" class="text-gray-400 hover:text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-arrow-left text-xs"></i> Back to Login
-                        </a> 
-                    </div>
-                </div>
-
-                <!-- Username Step View -->
-                <div id="usernameContainer" class="w-full auth-view" style="display: none;">
-                    <div class="mb-10 text-center md:text-left">
-                        <h2 class="text-4xl font-bold text-white mb-3 tracking-tighter">Identity</h2>
-                        <p class="text-sm text-gray-400 font-light">Choose a unique username for the 4SP network.</p>
-                    </div>
-                    <form id="usernameForm" novalidate class="space-y-5"> 
-                        <div>
-                            <label for="signupUsername" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Username</label>
-                            <input type="text" id="signupUsername" placeholder="your_name" required class="input-style">
-                            <p class="text-[10px] text-gray-500 mt-3 font-medium uppercase tracking-tighter">6-24 chars • Letters, numbers, and .,-+\_!?$</p>
-                        </div>
-                        <button type="submit" class="btn btn-primary mt-4">Continue <i class="fa-solid fa-arrow-right ml-2 text-xs"></i></button>
-                    </form>
-                    <div id="usernameMessage" class="message-area mt-6 text-center text-sm"></div>
-                    <p class="text-sm text-gray-500 mt-10 text-center font-light">
-                        Already have an account? 
-                        <a id="showLoginLink" href="#" class="text-white hover:text-indigo-400 font-medium transition-colors">Login here</a>
-                    </p>
-                </div>
+    <!-- Modern Auth Design -->
+    <div id="modern-auth-wrapper" class="flex-grow flex flex-col">
+        <main class="flex-grow flex items-center justify-center p-6 sm:p-12">
+            <div class="w-full max-w-5xl grid md:grid-cols-2 auth-container animate-slide-up">
                 
-                <!-- Final Signup View -->
-                <div id="signupContainer" class="w-full auth-view" style="display: none;">
-                    <div class="mb-10">
-                        <h2 class="text-4xl font-bold text-white mb-3 tracking-tighter">Security</h2>
-                        <p class="text-sm text-gray-400 font-light">Set your login credentials.</p>
-                    </div>
-                    <form id="signupForm" novalidate class="space-y-5"> 
-                        <div>
-                            <label for="signupEmail" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Email Address</label>
-                            <input type="email" id="signupEmail" placeholder="name@example.com" required class="input-style">
+                <!-- Left: Traditional Auth -->
+                <div class="left-col p-8 sm:p-12 flex flex-col justify-center">
+
+                    <!-- Login View -->
+                    <div id="loginContainer" class="w-full auth-view">
+                        <div class="mb-10 text-center md:text-left">
+                            <h2 class="text-4xl font-bold text-white mb-3 tracking-tighter">Welcome back</h2>
+                            <p class="text-sm text-gray-400 font-light">Access your 4SP dashboard and tools.</p>
                         </div>
-                        <div>
-                            <label for="signupPassword" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">New Password</label>
-                            <input type="password" id="signupPassword" placeholder="••••••••" required class="input-style">
-                            <p class="text-[10px] text-gray-500 mt-3 font-medium uppercase tracking-tighter">8+ chars • Uppercase • Lowercase • Number</p>
-                        </div>
-                        <button type="submit" class="btn btn-primary mt-4">Create Account</button>
-                    </form>
-                    <div id="signupMessage" class="message-area mt-6 text-center text-sm"></div>
-                    <div class="mt-8 text-center"> 
-                        <a id="backToUsernameLink" class="text-gray-400 hover:text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-arrow-left text-xs"></i> Back to Username
-                        </a> 
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Right: Social Auth -->
-            <div class="right-col p-8 sm:p-12 flex flex-col justify-center bg-[#0a0a0a]/50">
-                <div class="w-full">
-                    <div class="mb-10 text-center">
-                        <h2 class="text-2xl font-normal text-white mb-2 tracking-tighter">Continue instantly</h2>
-                        <p class="text-sm text-gray-400 font-light">Use a trusted provider to sign in.</p>
-                    </div>
-                    
-                    <div class="space-y-3">
-                        <button id="googleAuthBtn" class="btn btn-secondary">
-                            <img src="images/google-icon.png" alt="Google" class="w-5 h-5 mr-3">
-                            Google
-                        </button>
-                        <button id="discordAuthBtn" class="btn btn-secondary">
-                            <i class="fa-brands fa-discord text-xl mr-3" style="color: #5865F2;"></i>
-                            Discord
-                        </button>
-                        <button id="githubAuthBtn" class="btn btn-secondary">
-                            <img src="images/github-mark-white.png" alt="GitHub" class="w-5 h-5 mr-3">
-                            GitHub
-                        </button>
-                        <button id="twitterAuthBtn" class="btn btn-secondary">
-                            <img src="../images/x-white.png" alt="X" class="w-5 h-5 mr-3">
-                            X (Twitter)
-                        </button>
-                    </div>
-
-                    <div class="mt-10">
-                        <p class="text-[10px] text-gray-500 text-center leading-relaxed font-medium uppercase tracking-wider">
-                            By continuing, you agree to our 
-                            <a href="legal.html#terms-of-service" target="_blank" class="text-gray-300 hover:text-white transition-colors">Terms</a> & 
-                            <a href="legal.html#privacy-policy" target="_blank" class="text-gray-300 hover:text-white transition-colors">Privacy</a>
+                        <form id="loginForm" novalidate class="space-y-5"> 
+                            <div>
+                                <label for="loginEmail" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Email Address</label>
+                                <input type="email" id="loginEmail" placeholder="name@example.com" required class="input-style">
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <label for="loginPassword" class="text-gray-400 text-xs font-bold uppercase tracking-widest">Password</label>
+                                    <a id="forgotPasswordLink" class="text-indigo-400 hover:text-indigo-300 text-xs font-medium cursor-pointer transition-colors">Forgot?</a>
+                                </div>
+                                <input type="password" id="loginPassword" placeholder="••••••••" required class="input-style">
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-4">Sign In</button>
+                        </form>
+                        <div id="loginMessage" class="message-area mt-6 text-center text-sm"></div>
+                        
+                        <p class="text-sm text-gray-500 mt-10 text-center font-light">
+                            New to 4SP? 
+                            <a id="showSignupLink" href="#" class="text-white hover:text-indigo-400 font-medium transition-colors">Create an account</a>
                         </p>
                     </div>
+
+                    <!-- Reset View -->
+                    <div id="resetPasswordContainer" class="w-full auth-view" style="display: none;">
+                        <div class="mb-10">
+                            <h2 class="text-4xl font-bold text-white mb-3 tracking-tighter">Recover account</h2>
+                            <p class="text-sm text-gray-400 font-light leading-relaxed">Enter your email and we'll send a recovery link.</p>
+                        </div>
+                        <form id="resetPasswordForm" novalidate class="space-y-5">
+                            <div>
+                                <label for="resetEmail" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Email Address</label>
+                                <input type="email" id="resetEmail" placeholder="name@example.com" required class="input-style">
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-4">Send Reset Link</button>
+                        </form>
+                        <div id="resetMessage" class="message-area mt-6 text-center text-sm"></div>
+                        <div class="mt-8 text-center"> 
+                            <a id="backToLoginLink" class="text-gray-400 hover:text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-arrow-left text-xs"></i> Back to Login
+                            </a> 
+                        </div>
+                    </div>
+
+                    <!-- Username Step View -->
+                    <div id="usernameContainer" class="w-full auth-view" style="display: none;">
+                        <div class="mb-10 text-center md:text-left">
+                            <h2 class="text-4xl font-bold text-white mb-3 tracking-tighter">Identity</h2>
+                            <p class="text-sm text-gray-400 font-light">Choose a unique username for the 4SP network.</p>
+                        </div>
+                        <form id="usernameForm" novalidate class="space-y-5"> 
+                            <div>
+                                <label for="signupUsername" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Username</label>
+                                <input type="text" id="signupUsername" placeholder="your_name" required class="input-style">
+                                <p class="text-[10px] text-gray-500 mt-3 font-medium uppercase tracking-tighter">6-24 chars • Letters, numbers, and .,-+\_!?$</p>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-4">Continue <i class="fa-solid fa-arrow-right ml-2 text-xs"></i></button>
+                        </form>
+                        <div id="usernameMessage" class="message-area mt-6 text-center text-sm"></div>
+                        <p class="text-sm text-gray-500 mt-10 text-center font-light">
+                            Already have an account? 
+                            <a id="showLoginLink" href="#" class="text-white hover:text-indigo-400 font-medium transition-colors">Login here</a>
+                        </p>
+                    </div>
+                    
+                    <!-- Final Signup View -->
+                    <div id="signupContainer" class="w-full auth-view" style="display: none;">
+                        <div class="mb-10">
+                            <h2 class="text-4xl font-bold text-white mb-3 tracking-tighter">Security</h2>
+                            <p class="text-sm text-gray-400 font-light">Set your login credentials.</p>
+                        </div>
+                        <form id="signupForm" novalidate class="space-y-5"> 
+                            <div>
+                                <label for="signupEmail" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Email Address</label>
+                                <input type="email" id="signupEmail" placeholder="name@example.com" required class="input-style">
+                            </div>
+                            <div>
+                                <label for="signupPassword" class="block mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest">New Password</label>
+                                <input type="password" id="signupPassword" placeholder="••••••••" required class="input-style">
+                                <p class="text-[10px] text-gray-500 mt-3 font-medium uppercase tracking-tighter">8+ chars • Uppercase • Lowercase • Number</p>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-4">Create Account</button>
+                        </form>
+                        <div id="signupMessage" class="message-area mt-6 text-center text-sm"></div>
+                        <div class="mt-8 text-center"> 
+                            <a id="backToUsernameLink" class="text-gray-400 hover:text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-arrow-left text-xs"></i> Back to Username
+                            </a> 
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Right: Social Auth -->
+                <div class="right-col p-8 sm:p-12 flex flex-col justify-center bg-[#0a0a0a]/50">
+                    <div class="w-full">
+                        <div class="mb-10 text-center">
+                            <h2 class="text-2xl font-normal text-white mb-2 tracking-tighter">Continue instantly</h2>
+                            <p class="text-sm text-gray-400 font-light">Use a trusted provider to sign in.</p>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <button id="googleAuthBtn" class="btn btn-secondary social-auth-btn" data-provider="google">
+                                <img src="images/google-icon.png" alt="Google" class="w-5 h-5 mr-3">
+                                Google
+                            </button>
+                            <button id="discordAuthBtn" class="btn btn-secondary social-auth-btn" data-provider="discord">
+                                <i class="fa-brands fa-discord text-xl mr-3" style="color: #5865F2;"></i>
+                                Discord
+                            </button>
+                            <button id="githubAuthBtn" class="btn btn-secondary social-auth-btn" data-provider="github">
+                                <img src="images/github-mark-white.png" alt="GitHub" class="w-5 h-5 mr-3">
+                                GitHub
+                            </button>
+                            <button id="twitterAuthBtn" class="btn btn-secondary social-auth-btn" data-provider="twitter">
+                                <img src="../images/x-white.png" alt="X" class="w-5 h-5 mr-3">
+                                X (Twitter)
+                            </button>
+                        </div>
+
+                        <div class="mt-10">
+                            <p class="text-[10px] text-gray-500 text-center leading-relaxed font-medium uppercase tracking-wider">
+                                By continuing, you agree to our 
+                                <a href="legal.html#terms-of-service" target="_blank" class="text-gray-300 hover:text-white transition-colors">Terms</a> & 
+                                <a href="legal.html#privacy-policy" target="_blank" class="text-gray-300 hover:text-white transition-colors">Privacy</a>
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
 
-    <footer class="py-8">
-        <div class="mx-auto max-w-7xl px-4 text-center text-gray-600 text-[10px] font-bold uppercase tracking-widest">
-            &copy; 2026 4simpleproblems (4SP). Built for students.
+        <footer class="py-8">
+            <div class="mx-auto max-w-7xl px-4 text-center text-gray-600 text-[10px] font-bold uppercase tracking-widest">
+                &copy; 2026 4simpleproblems (4SP). Built for students.
+            </div>
+        </footer>
+    </div>
+
+    <!-- V1 Auth Design -->
+    <div id="v1-auth-wrapper">
+        <div id="v1-top-bar">
+            <div class="v1-left-controls">
+                <a href="index.html" class="v1-control-button">Back to Sounds</a>
+            </div>
+            <div class="v1-right-controls">
+                <a href="#" class="v1-control-button" id="v1-toggle-auth-mode">Sign Up</a>
+                <button class="v1-control-button" id="v1-theme-toggle">🌙</button>
+            </div>
         </div>
-    </footer>
+
+        <div class="v1-container">
+            <h1 id="v1-title">Login</h1>
+            
+            <form id="v1-login-form">
+                <div class="v1-form-group" id="v1-username-group" style="display: none;">
+                    <label>Username</label>
+                    <input type="text" id="v1-username" class="v1-input" placeholder="your_name">
+                </div>
+                <div class="v1-form-group">
+                    <label>Email</label>
+                    <input type="email" id="v1-email" class="v1-input" placeholder="Your email">
+                </div>
+                <div class="v1-form-group">
+                    <label>Password</label>
+                    <input type="password" id="v1-password" class="v1-input" placeholder="Your password">
+                </div>
+                <button type="submit" class="v1-submit-btn" id="v1-submit-btn">Log In</button>
+            </form>
+
+            <div class="v1-divider">OR</div>
+
+            <button class="v1-social-btn v1-social-auth-btn" data-provider="google">
+                <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+                Login with Google
+            </button>
+
+            <div id="v1-message" class="mt-4 text-xs font-bold uppercase tracking-wider"></div>
+        </div>
+    </div>
 
 <script type="module">
         // --- Supabase & Firebase Imports ---
@@ -656,10 +778,83 @@
 
         // --- Event Listener Setup ---
         document.addEventListener('DOMContentLoaded', () => {
+            // Apply theme-based layout
+            const savedTheme = JSON.parse(localStorage.getItem('user-navbar-theme')) || { name: 'Dark' };
+            const isV1OrV2 = savedTheme.name === 'V1 Original' || savedTheme.name === 'V2 Original';
+            const isLightTheme = ['Light', 'Potato', 'Mint', 'Lavender', 'Rose Gold', 'V3 Original', 'Birthday'].includes(savedTheme.name);
+
+            if (isV1OrV2) {
+                document.body.classList.add('v1-mode');
+            }
+            if (isLightTheme) {
+                document.documentElement.classList.add('light');
+                document.documentElement.classList.remove('dark');
+            }
+
+            // Sync theme toggle icons/text
+            const updateThemeUI = () => {
+                const isLight = document.documentElement.classList.contains('light');
+                const v1ThemeToggle = document.getElementById('v1-theme-toggle');
+                if (v1ThemeToggle) v1ThemeToggle.textContent = isLight ? '☀️' : '🌙';
+            };
+            updateThemeUI();
+
             // Initial view
             showView('login');
 
-            // --- View Navigation ---
+            // --- V1 Event Handlers ---
+            const v1ToggleBtn = document.getElementById('v1-toggle-auth-mode');
+            const v1LoginForm = document.getElementById('v1-login-form');
+            const v1Title = document.getElementById('v1-title');
+            const v1SubmitBtn = document.getElementById('v1-submit-btn');
+            const v1UsernameGroup = document.getElementById('v1-username-group');
+
+            v1ToggleBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isSignup = v1ToggleBtn.textContent === 'Sign Up';
+                v1ToggleBtn.textContent = isSignup ? 'Log In' : 'Sign Up';
+                v1Title.textContent = isSignup ? 'Sign Up' : 'Login';
+                v1SubmitBtn.textContent = isSignup ? 'Create Account' : 'Log In';
+                v1UsernameGroup.style.display = isSignup ? 'block' : 'none';
+            });
+
+            document.getElementById('v1-theme-toggle')?.addEventListener('click', () => {
+                document.documentElement.classList.toggle('light');
+                updateThemeUI();
+            });
+
+            v1LoginForm?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('v1-email').value.trim();
+                const password = document.getElementById('v1-password').value;
+                const username = document.getElementById('v1-username').value.trim();
+                const isSignup = v1ToggleBtn.textContent === 'Log In'; // If button says Log In, we are in Sign Up mode
+
+                const messageEl = document.getElementById('v1-message');
+                messageEl.textContent = 'Processing...';
+
+                try {
+                    if (isSignup) {
+                         const { data, error } = await supabase.auth.signUp({
+                            email, password, options: { data: { username, display_name: username } }
+                        });
+                        if (error) throw error;
+                        messageEl.textContent = 'Success! Check your email.';
+                    } else {
+                        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                        if (error) throw error;
+                        if (data.user) await handleSuccessfulLogin(data.user);
+                    }
+                } catch (err) {
+                    messageEl.textContent = err.message;
+                }
+            });
+
+            document.querySelectorAll('.v1-social-auth-btn').forEach(btn => {
+                btn.addEventListener('click', () => handleSocialAuth(btn.dataset.provider));
+            });
+
+            // --- Modern View Navigation ---
             document.getElementById('showSignupLink').addEventListener('click', (e) => { e.preventDefault(); showView('username'); });
             document.getElementById('showLoginLink').addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
             document.getElementById('forgotPasswordLink').addEventListener('click', () => showView('reset'));
@@ -805,18 +1000,13 @@
                         provider: providerName,
                         options: {
                             redirectTo: redirectUrl,
-                            skipBrowserRedirect: true // Manual redirect to handle checks
+                            skipBrowserRedirect: false // Allow automatic redirect
                         }
                     });
 
                     if (error) throw error;
 
                     if (data.url) {
-                        // For Supabase OAuth, the redirect happens to their URL.
-                        // To enforce provider choice, we really need to check AFTER they return
-                        // but Supabase doesn't easily allow "pre-check" by email for OAuth.
-                        // However, we can use the 'skipBrowserRedirect: false' default and 
-                        // check in the onAuthStateChange listener.
                         window.location.href = data.url;
                     }
                 } catch (error) {
@@ -826,10 +1016,9 @@
                 }
             };
 
-            document.getElementById('googleAuthBtn').addEventListener('click', () => handleSocialAuth('google'));
-            document.getElementById('discordAuthBtn').addEventListener('click', () => handleSocialAuth('discord'));
-            document.getElementById('githubAuthBtn').addEventListener('click', () => handleSocialAuth('github'));
-            document.getElementById('twitterAuthBtn').addEventListener('click', () => handleSocialAuth('twitter'));
+            document.querySelectorAll('.social-auth-btn').forEach(btn => {
+                btn.addEventListener('click', () => handleSocialAuth(btn.dataset.provider));
+            });
             
         });
     </script>

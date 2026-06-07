@@ -95,7 +95,10 @@
         "border-primary": "#cccccc",
         "border-secondary": "rgba(0, 0, 0, 0.05)",
         "button-bg": "#1a1a1a",
-        "button-text": "#f0f0f0"
+        "button-text": "#f0f0f0",
+        "font-primary": "'Roboto Mono', monospace",
+        "font-secondary": "'Roboto Mono', monospace",
+        "button-radius": "50px"
     },
     {
         "name": "V3 Original",
@@ -193,6 +196,8 @@
         "border-primary": "#eeeeee",
         "border-secondary": "#cccccc",
         "button-bg": "#6720bd",
-        "button-text": "#ffffff"
+        "button-text": "#ffffff",
+        "font-primary": "'PrimaryFont', sans-serif",
+        "font-secondary": "'SecondaryFont', sans-serif"
     }
 ]

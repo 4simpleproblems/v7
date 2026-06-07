@@ -108,7 +108,9 @@
         "border-primary": "#2D273D",
         "border-secondary": "rgba(255,255,255,0.05)",
         "button-bg": "rgba(157, 123, 255, 0.1)",
-        "button-text": "#9D7BFF"
+        "button-text": "#9D7BFF",
+        "font-primary": "'Manrope', sans-serif",
+        "font-secondary": "'Manrope', sans-serif"
     };
 
     window.applyTheme = (theme) => {
@@ -158,6 +160,9 @@
         root.style.setProperty('--border-faint', 'var(--border-secondary)');
         root.style.setProperty('--btn-bg', 'var(--button-bg)');
         root.style.setProperty('--btn-text', 'var(--button-text)');
+        root.style.setProperty('--button-radius', themeToApply['button-radius'] || DEFAULT_THEME['button-radius'] || '16px');
+        root.style.setProperty('--font-primary', themeToApply['font-primary'] || DEFAULT_THEME['font-primary']);
+        root.style.setProperty('--font-secondary', themeToApply['font-secondary'] || DEFAULT_THEME['font-secondary']);
 
         const existingLink = document.getElementById('originals-stylesheet');
         if (themeToApply['original-css']) {
@@ -216,7 +221,7 @@
         }
         globalStyleEl.textContent = `
             body {
-                font-family: 'Manrope', sans-serif !important;
+                font-family: var(--font-primary, 'Manrope'), sans-serif !important;
                 background-color: var(--bg-page) !important;
                 color: var(--text-main) !important;
             }
@@ -251,6 +256,10 @@
                 transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
                 position: relative !important;
                 overflow: hidden !important;
+                font-family: var(--font-secondary, 'Manrope'), sans-serif !important;
+            }
+            .feature-card h1, .feature-card h2, .feature-card h3 {
+                font-family: var(--font-primary, 'Manrope'), sans-serif !important;
             }
             .feature-card:hover {
                 border-color: var(--accent-color) !important;
@@ -267,6 +276,7 @@
                 outline: 1px solid var(--accent-glow) !important;
                 border-radius: 1.5rem !important;
                 transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+                font-family: var(--font-primary, 'Manrope'), sans-serif !important;
             }
             .btn-primary-override:hover {
                 background-color: var(--accent-color) !important;

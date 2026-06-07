@@ -1870,6 +1870,10 @@
                 const filesMap = {};
                 const htmlFiles = [];
                 let isUnity = false;
+                let isGodot = false;
+                let isUnreal = false;
+                let isRenPy = false;
+                let isGameMaker = false;
                 let appIcon = null;
 
                 updateStatus("Scanning resources...");
@@ -1877,10 +1881,16 @@
                 let loadedCount = 0;
 
                 for (const [relativePath, zipEntry] of fileEntries) {
-                    if (relativePath.includes('libunity.so') || relativePath.includes('assets/bin/Data')) isUnity = true;
+                    const pathLower = relativePath.toLowerCase();
+                    if (pathLower.includes('libunity.so') || pathLower.includes('assets/bin/data')) isUnity = true;
+                    if (pathLower.includes('libgodot_android.so') || pathLower.includes('project.godot') || pathLower.includes('project.binary')) isGodot = true;
+                    if (pathLower.includes('libue4.so') || pathLower.includes('ue4game.so') || pathLower.includes('libunreal.so')) isUnreal = true;
+                    if (pathLower.includes('renpy/') || pathLower.endsWith('.rpyc')) isRenPy = true;
+                    if (pathLower.includes('libyoyo.so')) isGameMaker = true;
+
                     if (relativePath.endsWith('.html')) htmlFiles.push(relativePath);
                     
-                    if (!appIcon && (relativePath.toLowerCase().endsWith('icon.png') || relativePath.toLowerCase().endsWith('app_icon.png'))) {
+                    if (!appIcon && (pathLower.endsWith('icon.png') || pathLower.endsWith('app_icon.png'))) {
                          const blob = await zipEntry.async('blob');
                          appIcon = URL.createObjectURL(blob);
                     }
@@ -1946,6 +1956,14 @@
                     loadingOverlay.remove();
                     zoneNameEl.textContent = file.name.replace('.apk', '');
                     
+                    let engineName = 'Native Android';
+                    let engineIcon = 'fa-brands fa-android';
+                    if (isUnity) { engineName = 'Unity Engine'; engineIcon = 'fa-solid fa-cube'; }
+                    else if (isGodot) { engineName = 'Godot Engine'; engineIcon = 'fa-solid fa-robot'; }
+                    else if (isUnreal) { engineName = 'Unreal Engine'; engineIcon = 'fa-solid fa-u'; }
+                    else if (isRenPy) { engineName = 'Ren\'Py Engine'; engineIcon = 'fa-solid fa-book'; }
+                    else if (isGameMaker) { engineName = 'GameMaker'; engineIcon = 'fa-solid fa-hammer'; }
+
                     const doc = zoneFrame.contentWindow.document;
                     doc.open();
                     doc.write(`
@@ -1974,7 +1992,7 @@
                         </head>
                         <body>
                             <div class="card">
-                                <div class="engine-tag"><i class="fa-solid fa-microchip"></i> ${isUnity ? 'Unity Engine' : 'Native Android'}</div>
+                                <div class="engine-tag"><i class="${engineIcon}"></i> ${engineName}</div>
                                 <div class="icon-container">
                                     ${appIcon ? `<img src="${appIcon}" class="icon">` : `<div class="icon-placeholder"><i class="fa-brands fa-android"></i></div>`}
                                 </div>

@@ -14,10 +14,10 @@
 }
 
 *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not([class*="fa-"]), body, button, input, select, textarea {
-    font-family: 'SecondaryFont', sans-serif !important;
+    font-family: var(--font-secondary, 'SecondaryFont'), sans-serif !important;
 }
 h1, h2, h3, h4, h5, h6, .logo, .logo *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not([class*="fa-"]), .dropdown-header, .top-bar-link, .btn, button.btn, input[type="submit"] {
-    font-family: 'PrimaryFont', sans-serif !important;
+    font-family: var(--font-primary, 'PrimaryFont'), sans-serif !important;
 }
 
 /* Basic Resets & Global Styles */
