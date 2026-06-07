@@ -1373,7 +1373,10 @@
                 downloadBtn.href = '#';
                 downloadBtn.removeAttribute('download');
                 downloadBtn.removeAttribute('target');
-            }, 300);
+
+                const apkFileInput = document.getElementById('apkFileInput');
+                if (apkFileInput) apkFileInput.value = '';
+                }, 500);
         }
 
         // --- Render Lists ---
@@ -1997,16 +2000,16 @@
                                     ${appIcon ? `<img src="${appIcon}" class="icon">` : `<div class="icon-placeholder"><i class="fa-brands fa-android"></i></div>`}
                                 </div>
                                 <h1>${file.name.replace('.apk', '')}</h1>
-                                <p>This package contains native binaries. Launch via cloud emulator for the best experience.</p>
+                                <p>This package contains native binaries. Native APKs cannot be played directly in the browser.</p>
                                 <div class="btn-group">
-                                    <button class="btn btn-primary" onclick="window.parent.launchCloudEmulator()">
-                                        <i class="fa-solid fa-cloud-play"></i> Launch in Cloud
-                                    </button>
-                                    <a href="${URL.createObjectURL(file)}" download="${file.name}" class="btn btn-secondary">
-                                        <i class="fa-solid fa-download"></i> Save to Device
+                                    <a href="${URL.createObjectURL(file)}" download="${file.name}" class="btn btn-primary">
+                                        <i class="fa-solid fa-download"></i> Download & Play Locally
                                     </a>
+                                    <button class="btn btn-secondary" onclick="window.parent.launchCloudEmulator()">
+                                        <i class="fa-solid fa-cloud-play"></i> Try Cloud Emulator (Unstable)
+                                    </button>
                                 </div>
-                                <div class="footer-note">Cloud instances are provided by ApkOnline.</div>
+                                <div class="footer-note">Note: Cloud instances are third-party and may be unreliable.</div>
                             </div>
                         </body>
                         </html>

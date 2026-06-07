@@ -1,14 +1,14 @@
 /* Font Imports */
 @font-face {
     font-family: 'PrimaryFont'; /* Name your primary font */
-    src: url('../fonts/primary.woff') format('woff');
+    src: url('/fonts/primary.woff') format('woff');
     font-weight: normal;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'SecondaryFont'; /* Name your secondary font */
-    src: url('../fonts/secondary.woff') format('woff');
+    src: url('/fonts/secondary.woff') format('woff');
     font-weight: normal;
     font-style: normal;
 }

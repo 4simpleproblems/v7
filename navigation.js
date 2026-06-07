@@ -400,7 +400,7 @@ window.applyTheme = (theme) => {
     const logoContainers = document.querySelectorAll('.navbar-logo-container');
     logoContainers.forEach(container => {
         if (themeToApply.name === 'V2 Original') {
-            container.innerHTML = '<div class="logo" style="font-size: 1.8rem; font-weight: 700; letter-spacing: -1.5px; color: var(--text-primary); font-family: var(--font-primary);">4SP</div>';
+            container.innerHTML = '<div class="logo" style="font-size: 1.8rem; font-weight: 700; letter-spacing: -1.5px; color: #ffffff !important; font-family: var(--font-primary);">4SP</div>';
         } else {
             // Restore image if it was text
             if (container.querySelector('.logo')) {
