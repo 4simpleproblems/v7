@@ -6,7 +6,7 @@ function getDownloadUrl(item) {
     let url = '';
     if (item.downloadUrl) {
         if (Array.isArray(item.downloadUrl) && item.downloadUrl.length > 0) {
-            const b = item.downloadUrl.find(d => d.quality === '96kbps') || item.downloadUrl.find(d => d.quality === '160kbps') || item.downloadUrl.find(d => d.quality === '320kbps') || item.downloadUrl[item.downloadUrl.length - 1];
+            const b = item.downloadUrl.find(d => d.quality === '320kbps') || item.downloadUrl.find(d => d.quality === '160kbps') || item.downloadUrl[item.downloadUrl.length - 1];
             url = b.link || b.url;
         } else if (typeof item.downloadUrl === 'string') {
             url = item.downloadUrl;
@@ -18,7 +18,7 @@ function getDownloadUrl(item) {
             if (typeof p === 'string' && (p.includes('saavncdn.com') || p.match(/\.(mp3|mp4|m4a)$/i))) {
                 url = p;
             } else if (Array.isArray(p)) {
-                const b = p.find(d => d.quality === '96kbps') || p.find(d => d.quality === '160kbps') || p.find(d => d.quality === '320kbps') || p[p.length - 1];
+                const b = p.find(d => d.quality === '320kbps') || p[p.length - 1];
                 url = b.link || b.url;
             } else {
                 url = `https://argon.global.ssl.fastly.net/api/download?track_url=${encodeURIComponent(p)}`;
@@ -145,7 +145,6 @@ window.updateLibraryLimit = function(limit) {
 let preloadedNextTrack = null;
 let preloadedPrevTrack = null;
 let currentSearchResults = [];
-const searchCache = new Map();
 const pendingSearches = new Map();
 
 async function getYoutubeId(track) {
@@ -200,7 +199,6 @@ const imageObserver = new IntersectionObserver((entries, observer) => {
 function observeImages(container) {
     if (!container) return;
     const images = container.querySelectorAll('img[data-src]');
-    if (images.length === 0) return;
     images.forEach(img => imageObserver.observe(img));
 }
 function showToast(message, type = 'info') {
@@ -223,9 +221,7 @@ function showToast(message, type = 'info') {
         borderColor = 'border-red-500/30';
     }
 
-    toast.className = `velium-toast flex items-center gap-3 px-5 py-3 rounded-xl backdrop-blur-xl border ${borderColor} shadow-2xl animate-in slide-in-from-right-10 duration-500 pointer-events-auto cursor-pointer`;
-    toast.style.backgroundColor = 'var(--toast-bg)';
-    toast.style.color = 'var(--toast-text)';
+    toast.className = `velium-toast flex items-center gap-3 px-5 py-3 rounded-xl bg-black/80 backdrop-blur-xl border ${borderColor} text-white shadow-2xl animate-in slide-in-from-right-10 duration-500 pointer-events-auto cursor-pointer`;
     
     toast.innerHTML = `
         <i class="fa-solid ${iconClass} text-lg"></i>
@@ -446,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initApp() {
     if (isInitialized) return;
     isInitialized = true;
-    
+
     // Pre-initialize YouTube API for faster first-track loading
     if (!window.YT) {
         const tag = document.createElement('script');
@@ -454,7 +450,7 @@ async function initApp() {
         const firstScriptTag = document.getElementsByTagName('script')[0];
         if (firstScriptTag) firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
     }
-    
+
     await loadLibraryData();
     applySettings();
     setGreeting();
@@ -600,8 +596,8 @@ function setupEventListeners() {
     document.addEventListener('fullscreenchange', () => {
         if (!document.fullscreenElement) {
             const fs = document.getElementById('fsPlayer');
-            if (fs && fs.classList.contains('active')) {
-                fs.classList.remove('active');
+            if (fs && fs.style.display === 'flex') {
+                fs.style.display = 'none';
                 document.body.style.overflow = '';
             }
         }
@@ -634,26 +630,25 @@ function setupEventListeners() {
 window.toggleFullscreenPlayer = function() {
     const fs = document.getElementById('fsPlayer');
     if (!fs) return;
-    
-    if (!fs.classList.contains('active')) {
+    if (fs.style.display !== 'flex') {
         if (!currentTrack) {
             showToast('No track playing', 'info');
             return;
         }
-        fs.classList.add('active');
+        fs.style.display = 'flex';
         document.body.style.overflow = 'hidden';
         if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
         updateFullscreenUI();
         setTimeout(adjustLyricsFontSize, 600); // Wait for transition
     } else {
-        fs.classList.remove('active');
+        fs.style.display = 'none';
         document.body.style.overflow = '';
         if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
     }
 };
 function closeFullscreenIfNoTrack() {
     const fs = document.getElementById('fsPlayer');
-    if (fs && fs.classList.contains('active')) {
+    if (fs && fs.style.display === 'flex') {
         window.toggleFullscreenPlayer();
     }
 }
@@ -710,7 +705,7 @@ function updateFullscreenTint(imageUrl) {
         const maxComponent = Math.max(r, g, b);
         
         // Trigger bright-bg if brightness is high OR if color is very vibrant
-        if (brightness > 140 || (maxComponent > 200 && brightness > 80)) {
+        if (brightness > 175 || (maxComponent > 220 && brightness > 100)) {
             fs.classList.add('bright-bg');
         } else {
             fs.classList.remove('bright-bg');
@@ -736,7 +731,6 @@ function updateFullscreenTint(imageUrl) {
 function switchView(viewName) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.remove('active'));
     
     const targetView = document.getElementById(viewName + 'View') || document.getElementById(viewName);
     if (targetView) {
@@ -747,9 +741,6 @@ function switchView(viewName) {
     
     const navItem = document.querySelector(`.nav-item[data-view="${viewName}"]`);
     if (navItem) navItem.classList.add('active');
-
-    const mobileNavItem = document.querySelector(`.mobile-nav-item[data-view="${viewName}"]`);
-    if (mobileNavItem) mobileNavItem.classList.add('active');
     
     if (viewName === 'favorites') renderFavorites();
     if (viewName === 'library') renderLibrary();
@@ -870,142 +861,20 @@ function setGreeting() {
 async function loadPopularTracks() {
     const grid = document.getElementById('popularTracks');
     if (!grid) return null;
-    
-    // Hardcoded 2025 Popular Tracks for instant loading
-    const popularTracks = [
-      {
-        "id": "saavn-PWZYkmDe",
-        "title": "4X4",
-        "artist_name": "Travis Scott",
-        "artwork_url": "https://c.saavncdn.com/868/4X4-English-2025-20250124053125-500x500.jpg",
-        "duration": 191000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/868/bbf6113c828ef52e3f815c96a66c497c_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-LMkbme5d",
-        "title": "Open Arms",
-        "artist_name": "SZA",
-        "artwork_url": "https://c.saavncdn.com/276/SOS-Deluxe-LANA-English-2025-20250207233714-500x500.jpg",
-        "duration": 239000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/276/5d818354df03af738ccb50f7fc4a4f0c_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-4tzoklD-",
-        "title": "Reflections Laughing",
-        "artist_name": "The Weeknd",
-        "artwork_url": "https://c.saavncdn.com/627/Hurry-Up-Tomorrow-English-2025-20260430023429-500x500.jpg",
-        "duration": 291000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/627/88af2418a7f2b2779992f3bb03f6e450_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-p-jZh6lV",
-        "title": "Stuff",
-        "artist_name": "LiL Baby",
-        "artwork_url": "https://c.saavncdn.com/152/WHAM-Extended-Version-English-2025-20250110063452-500x500.jpg",
-        "duration": 181000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/152/68dad7e620ab66ea53a2edbfe6e4a9b1_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-koH29qMF",
-        "title": "CRUSH",
-        "artist_name": "Playboi Carti",
-        "artwork_url": "https://c.saavncdn.com/836/MUSIC-English-2025-20251015040652-500x500.jpg",
-        "duration": 173000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/836/935333ad65b84b877da2805e4948c53b_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-z2w9ouKj",
-        "title": "Tsunami",
-        "artist_name": "DJ Snake",
-        "artwork_url": "https://c.saavncdn.com/538/Nomad-English-2025-20251107063609-500x500.jpg",
-        "duration": 201000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/538/1c34662e0c40e171a160a820325dc8eb_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-WxEuUmCj",
-        "title": "WAKE UP F1LTHY",
-        "artist_name": "Playboi Carti",
-        "artwork_url": "https://c.saavncdn.com/836/MUSIC-English-2025-20251015040652-500x500.jpg",
-        "duration": 169000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/836/2d3c0931a62d891d0a52b321874a0246_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-9Q44XEEC",
-        "title": "TaTaTa (feat. Travis Scott)",
-        "artist_name": "Burna Boy",
-        "artwork_url": "https://c.saavncdn.com/560/No-Sign-of-Weakness-English-2025-20250723220732-500x500.jpg",
-        "duration": 150000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/560/127abe602dcc059cf28aeb9daf11507f_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-8GOygsMb",
-        "title": "BACKR00MS",
-        "artist_name": "Playboi Carti",
-        "artwork_url": "https://c.saavncdn.com/368/MUSIC-SORRY-4-DA-WAIT-English-2025-20251015040652-500x500.jpg",
-        "duration": 160000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/368/6f512143bcfaab53a9d0a526f75e4d36_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-Grazfs_k",
-        "title": "SAY MY GRACE",
-        "artist_name": "Offset",
-        "artwork_url": "https://c.saavncdn.com/474/pre-match-hype-up-English-2025-20260128005108-500x500.jpg",
-        "duration": 173000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/474/c7ee9c12a26a681331b22293943b86eb_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-koH29qMF",
-        "title": "CRUSH",
-        "artist_name": "Playboi Carti",
-        "artwork_url": "https://c.saavncdn.com/836/MUSIC-English-2025-20251015040652-500x500.jpg",
-        "duration": 173000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/836/935333ad65b84b877da2805e4948c53b_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-z2w9ouKj",
-        "title": "Tsunami",
-        "artist_name": "DJ Snake",
-        "artwork_url": "https://c.saavncdn.com/538/Nomad-English-2025-20251107063609-500x500.jpg",
-        "duration": 201000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/538/1c34662e0c40e171a160a820325dc8eb_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-WxEuUmCj",
-        "title": "WAKE UP F1LTHY",
-        "artist_name": "Playboi Carti",
-        "artwork_url": "https://c.saavncdn.com/836/MUSIC-English-2025-20251015040652-500x500.jpg",
-        "duration": 169000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/836/2d3c0931a62d891d0a52b321874a0246_320.mp4"}],
-        "source": "Saavn"
-      },
-      {
-        "id": "saavn-9Q44XEEC",
-        "title": "TaTaTa (feat. Travis Scott)",
-        "artist_name": "Burna Boy",
-        "artwork_url": "https://c.saavncdn.com/560/No-Sign-of-Weakness-English-2025-20250723220732-500x500.jpg",
-        "duration": 150000,
-        "downloadUrl": [{"quality": "320kbps", "link": "https://aac.saavncdn.com/560/127abe602dcc059cf28aeb9daf11507f_320.mp4"}],
-        "source": "Saavn"
-      }
-    ];
-
-    renderTrackGrid(popularTracks, grid);
-    observeImages(grid);
-    return popularTracks;
+    try {
+        const query = "Travis Scott 2025";
+        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&limit=12`);
+        const data = await response.json();
+        if (data.tracks) {
+            const filteredTracks = data.tracks.filter(t => (t.artist_name || t.artist || '').trim() !== 'YT Music Artist').slice(0, 12);
+            renderTrackGrid(filteredTracks, grid);
+            observeImages(grid);
+            return filteredTracks;
+        }
+    } catch (e) { console.error('Failed to load popular tracks', e); }
+    return null;
 }
-let searchState = { query: '', tracksOffset: 0, loading: false, hasMoreTracks: true, limit: 25 };
+let searchState = { query: '', tracksOffset: 0, loading: false, hasMoreTracks: true, limit: 24 };
 let searchMode = 'songs';
 
 window.setSearchMode = function(mode) {
@@ -1085,7 +954,7 @@ async function handleSearch(query, append = false, forcedOffset = null) {
             } else if (!append) {
                 tracksGrid.innerHTML = '<div class="col-span-full py-20 text-center text-gray-500">No artists found for this query.</div>';
             }
-            searchState.hasMoreTracks = false; // Artist pagination not implemented
+            searchState.hasMoreTracks = false;
         } else {
             const newTracks = (data.tracks || []).filter(t => (t.artist_name || t.artist || '').trim() !== 'YT Music Artist');
             currentSearchResults.push(...newTracks);
@@ -1150,6 +1019,30 @@ function renderArtistGrid(artists, container) {
     });
     observeImages(container);
 }
+
+function formatArtistLinks(artistString) {
+    if (!artistString) return '';
+    if (typeof artistString !== 'string') return escapeHtml(String(artistString));
+    const parts = artistString.split(/[,&]|\sfeat\.|\sft\./i);
+    const result = [];
+    let currentIdx = 0;
+    parts.forEach((part, i) => {
+        const trimmed = part.trim();
+        if (!trimmed) return;
+        const partIdx = artistString.indexOf(trimmed, currentIdx);
+        if (partIdx > currentIdx) result.push(document.createTextNode(artistString.substring(currentIdx, partIdx)));
+        const link = document.createElement('span');
+        link.className = 'artist-link hover:underline cursor-pointer';
+        link.textContent = trimmed;
+        link.onclick = (e) => { e.stopPropagation(); loadArtistView(trimmed); };
+        result.push(link);
+        currentIdx = partIdx + trimmed.length;
+    });
+    if (currentIdx < artistString.length) result.push(document.createTextNode(artistString.substring(currentIdx)));
+    const wrapper = document.createElement('div');
+    result.forEach(node => wrapper.appendChild(node));
+    return wrapper.innerHTML;
+}
 async function searchNextPage() {
     if (searchState.loading || !searchState.hasMoreTracks) return;
     handleSearch(searchState.query, false, searchState.tracksOffset);
@@ -1161,46 +1054,6 @@ async function searchPrevPage() {
     handleSearch(searchState.query, false, Math.max(0, target));
     document.querySelector('.main-view')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
-function formatArtistLinks(artistString) {
-    if (!artistString) return '';
-    if (typeof artistString !== 'string') return escapeHtml(String(artistString));
-    
-    // Split by common separators: comma, &, feat., ft.
-    const parts = artistString.split(/[,&]|\sfeat\.|\sft\./i);
-    const result = [];
-    
-    let currentIdx = 0;
-    parts.forEach((part, i) => {
-        const trimmed = part.trim();
-        if (!trimmed) return;
-        
-        // Find where this part starts in the original string to preserve separators
-        const partIdx = artistString.indexOf(trimmed, currentIdx);
-        if (partIdx > currentIdx) {
-            result.push(document.createTextNode(artistString.substring(currentIdx, partIdx)));
-        }
-        
-        const link = document.createElement('span');
-        link.className = 'artist-link hover:underline cursor-pointer';
-        link.textContent = trimmed;
-        link.onclick = (e) => {
-            e.stopPropagation();
-            loadArtistView(trimmed);
-        };
-        result.push(link);
-        currentIdx = partIdx + trimmed.length;
-    });
-    
-    // Append remaining part of string if any
-    if (currentIdx < artistString.length) {
-        result.push(document.createTextNode(artistString.substring(currentIdx)));
-    }
-    
-    const wrapper = document.createElement('div');
-    result.forEach(node => wrapper.appendChild(node));
-    return wrapper.innerHTML;
-}
-
 function renderTrackGrid(tracks, container, parentList = null) {
     if (!container) return;
     const isSearchView = container.id === 'searchGrid';
@@ -1216,15 +1069,9 @@ function renderTrackGrid(tracks, container, parentList = null) {
         card.className = 'track-card';
         card.dataset.uid = trackUid;
         const artworkUrl = track.local_artwork || getProxyUrl(track.artwork_url);
-        
-        // Instant load for home view, lazy for others
-        const imgHtml = isHomeView 
-            ? `<img src="${artworkUrl}" class="card-thumb" style="margin-bottom: 0;">`
-            : `<img data-src="${artworkUrl}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="card-thumb" loading="lazy" style="margin-bottom: 0;">`;
-
         card.innerHTML = `
             <div style="position: relative; overflow: hidden; margin-bottom: 16px;">
-                ${imgHtml}
+                <img data-src="${artworkUrl}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="card-thumb" loading="lazy" style="margin-bottom: 0;">
                 ${(isSearchView || isHomeView) ? '' : `
                 <button class="card-plus-btn" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); border: none; border-radius: 50% !important; width: 30px; height: 30px; color: #fff; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; cursor: pointer;" title="Add to Playlist">
                     <i class="fa-solid fa-plus" style="font-size: 14px;"></i>
@@ -1478,7 +1325,6 @@ function setPlaybackLoading(isLoading) {
 async function playTrack(index) {
     currentIndex = index;
     currentTrack = playlist[currentIndex];
-    vocalDetectedTime = null; // Reset audio analysis state
     
     // Clear current lyrics UI and state immediately
     parsedLyrics = [];
@@ -1518,7 +1364,7 @@ async function playTrack(index) {
     document.getElementById('artworkPlaceholder').classList.add('hidden');
     
     updateLikeButtonStatus();
-    if (document.getElementById('fsPlayer').classList.contains('active')) updateFullscreenUI();
+    if (document.getElementById('fsPlayer').style.display === 'flex') updateFullscreenUI();
     
     // Background fetch lyrics
     fetchLyrics();
@@ -1545,18 +1391,17 @@ async function playTrack(index) {
         preloadTracks();
         return;
     }
+    if (currentTrack.youtube_id || currentTrack.videoId) {
+        loadYouTubePlayer(currentTrack.youtube_id || currentTrack.videoId);
+        preloadTracks();
+        return;
+    }
     const directUrl = getDownloadUrl(currentTrack);
     if (directUrl) {
         loadAudioPlayer(directUrl);
         preloadTracks();
         return;
     }
-    if (currentTrack.youtube_id || currentTrack.videoId) {
-        loadYouTubePlayer(currentTrack.youtube_id || currentTrack.videoId);
-        preloadTracks();
-        return;
-    }
-    
     const videoId = await getYoutubeId(currentTrack);
     if (videoId) {
         loadYouTubePlayer(videoId);
@@ -1565,118 +1410,19 @@ async function playTrack(index) {
         setPlaybackLoading(false);
     }
 }
-let audioAnalysisContext = null;
-let analyserNode = null;
-let audioSourceNode = null;
-let vocalDetectedTime = null;
-let analysisCalibration = {
-    noiseFloor: 0,
-    peakVocal: 0,
-    samples: 0,
-    isCalibrated: false
-};
-
-function initAudioAnalysis(audioElement) {
-    if (!audioElement) return;
-    try {
-        if (!audioAnalysisContext) {
-            audioAnalysisContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyserNode = audioAnalysisContext.createAnalyser();
-            analyserNode.fftSize = 1024; // Better resolution
-            analyserNode.smoothingTimeConstant = 0.5; // Faster response
-        }
-        
-        if (audioSourceNode) {
-            try { audioSourceNode.disconnect(); } catch(e) {}
-        }
-        
-        audioSourceNode = audioAnalysisContext.createMediaElementSource(audioElement);
-        audioSourceNode.connect(analyserNode);
-        analyserNode.connect(audioAnalysisContext.destination);
-        console.log("VELIUM: Audio analysis system re-initialized");
-    } catch (e) {
-        console.warn("Audio analysis init failed:", e);
-    }
-}
-
-function startVocalDetection() {
-    vocalDetectedTime = null;
-    analysisCalibration = { noiseFloor: 0, peakVocal: 0, samples: 0, isCalibrated: false };
-    
-    if (!analyserNode || activeSource !== 'audio') return;
-    
-    const bufferLength = analyserNode.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    let detectCount = 0;
-    
-    const check = () => {
-        if (vocalDetectedTime || activeSource !== 'audio' || !isPlaying) return;
-        
-        analyserNode.getByteFrequencyData(dataArray);
-        
-        // Vocal focus: 400Hz - 2500Hz
-        // FFT 1024, Sample 44100 -> bin ~43Hz
-        // Vocal bins: ~9 to ~58
-        let currentEnergy = 0;
-        for (let i = 9; i < 58; i++) {
-            currentEnergy += dataArray[i];
-        }
-        currentEnergy /= 49;
-        
-        const audio = document.getElementById('nativeAudio');
-        const currentTime = audio ? audio.currentTime : 0;
-
-        // Stage 1: Calibration (first 1.5s of audio usually noise/instrumental floor)
-        if (!analysisCalibration.isCalibrated && currentTime < 1.5) {
-            analysisCalibration.noiseFloor = (analysisCalibration.noiseFloor * analysisCalibration.samples + currentEnergy) / (analysisCalibration.samples + 1);
-            analysisCalibration.samples++;
-            if (currentTime > 1.2) analysisCalibration.isCalibrated = true;
-            requestAnimationFrame(check);
-            return;
-        }
-
-        // Stage 2: Detection
-        // Look for energy at least 40% higher than noise floor AND above absolute threshold
-        const threshold = Math.max(70, analysisCalibration.noiseFloor * 1.4);
-        
-        if (currentEnergy > threshold) {
-            detectCount++;
-            if (detectCount >= 8) { // ~130ms of sustained energy
-                vocalDetectedTime = currentTime - 0.15; // Offset for detection delay
-                console.log(`VELIUM: Vocal onset detected at ${vocalDetectedTime.toFixed(2)}s (Floor: ${analysisCalibration.noiseFloor.toFixed(1)}, Energy: ${currentEnergy.toFixed(1)})`);
-            }
-        } else {
-            detectCount = Math.max(0, detectCount - 1);
-        }
-        
-        if (!vocalDetectedTime) requestAnimationFrame(check);
-    };
-    
-    requestAnimationFrame(check);
-}
-
 function loadAudioPlayer(url) {
     activeSource = 'audio';
     if (player && typeof player.pauseVideo === 'function') player.pauseVideo();
     let audio = document.getElementById('nativeAudio');
     if (!audio) {
         audio = document.createElement('audio'); audio.id = 'nativeAudio';
-        audio.preload = 'auto';
-        audio.crossOrigin = "anonymous"; // Required for Web Audio API analysis
         document.getElementById('audioElement').appendChild(audio);
-        
-        initAudioAnalysis(audio);
         
         audio.addEventListener('playing', () => { 
             isPlaying = true; 
             updatePlayPauseUI(); 
             startProgressUpdate(); 
             setPlaybackLoading(false);
-            
-            if (audioAnalysisContext && audioAnalysisContext.state === 'suspended') {
-                audioAnalysisContext.resume();
-            }
-            startVocalDetection();
         });
         audio.addEventListener('pause', () => { 
             isPlaying = false; 
@@ -1707,7 +1453,7 @@ function loadAudioPlayer(url) {
             
             if (currentTrack) {
                 showToast("Direct audio failed, falling back to YouTube...", "info");
-                const query = `${currentTrack.title} ${currentTrack.artist_name}`;
+                const query = `${currentTrack.title} ${currentTrack.artist_name} official audio`;
                 try {
                     const response = await fetch(`${API_BASE_URL}/youtube-search?q=${encodeURIComponent(query)}`);
                     const data = await response.json();
@@ -1817,8 +1563,6 @@ function togglePlayPause() {
 function updatePlayPauseUI() {
     const btn = document.getElementById('playPauseButton');
     if (btn) btn.innerHTML = isPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play" style="margin-left:2px;"></i>';
-    const mobileBtn = document.getElementById('mobilePlayPause');
-    if (mobileBtn) mobileBtn.innerHTML = isPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play" style="margin-left:2px;"></i>';
     const fsBtn = document.getElementById('fsPlayPause');
     if (fsBtn) fsBtn.innerHTML = isPlaying ? '<i class="fas fa-pause text-4xl lg:text-6xl text-black"></i>' : '<i class="fas fa-play text-4xl lg:text-6xl ml-1 text-black"></i>';
     
@@ -1897,7 +1641,6 @@ async function loadLibraryData() {
 }
 async function saveLibraryData() {
     try {
-        enforceLibraryLimit();
         if (window.VeliumDB) await window.VeliumDB.saveLibrary({ likedSongs: favorites, playlists: playlists });
         else {
             localStorage.setItem('velium_v2_favorites', JSON.stringify(favorites));
@@ -1905,41 +1648,14 @@ async function saveLibraryData() {
         }
     } catch (e) { console.error("Error saving library", e); }
 }
-
-function getTotalLibrarySongs() {
-    const allSongs = new Set();
-    favorites.forEach(s => allSongs.add(getTrackUid(s)));
-    playlists.forEach(pl => pl.tracks.forEach(s => allSongs.add(getTrackUid(s))));
-    return allSongs.size;
-}
-
-function enforceLibraryLimit() {
-    if (!settings || settings.libraryLimit === Infinity) return;
-    
-    // We only enforce limit on favorites for now to stay under total unique limit
-    while (getTotalLibrarySongs() > settings.libraryLimit && favorites.length > 0) {
-        favorites.shift();
-    }
-}
-
 function saveToStorage(key, value) { localStorage.setItem(`velium_v2_${key}`, JSON.stringify(value)); }
 window.toggleLikeTrack = async function(track, btnEl) {
     const trackUid = getTrackUid(track);
     const index = favorites.findIndex(t => getTrackUid(t) === trackUid);
     const isLiking = index === -1;
-
-    if (isLiking && settings.libraryLimit !== Infinity) {
-        const allSongs = new Set();
-        favorites.forEach(s => allSongs.add(getTrackUid(s)));
-        playlists.forEach(pl => pl.tracks.forEach(s => allSongs.add(getTrackUid(s))));
-        
-        if (!allSongs.has(trackUid) && allSongs.size >= settings.libraryLimit) {
-            showToast(`Library limit (${settings.libraryLimit}) reached. Increase it in settings.`, 'info');
-            return;
-        }
-    }
-
-    const originalFavorites = [...favorites];    
+    
+    const originalFavorites = [...favorites];
+    
     if (isLiking) {
         favorites.push(track);
     } else {
@@ -2376,18 +2092,6 @@ async function addTrackToPlaylist(track, playlistId) {
             return;
         }
 
-        if (settings.libraryLimit !== Infinity) {
-            const allSongs = new Set();
-            favorites.forEach(s => allSongs.add(getTrackUid(s)));
-            playlists.forEach(pl => pl.tracks.forEach(s => allSongs.add(getTrackUid(s))));
-            
-            if (!allSongs.has(trackUid) && allSongs.size >= settings.libraryLimit) {
-                showToast(`Library limit (${settings.libraryLimit}) reached. Increase it in settings.`, 'info');
-                hideAddToPlaylistModal();
-                return;
-            }
-        }
-
         // Deep clone track and ensure critical IDs are preserved
         const trackToSave = JSON.parse(JSON.stringify(track));
         
@@ -2596,8 +2300,6 @@ function parseLyrics(lyricsText, duration) {
     const lines = lyricsText.split('\n');
     const parsed = [];
     const timeRegex = /\[(\d+):(\d+)(?:\.(\d+))?\]/;
-    const wordTimeRegex = /<(\d+):(\d+)(?:\.(\d+))?>/g;
-    
     let hasTimestamps = false;
     for (let line of lines) {
         line = line.trim();
@@ -2609,35 +2311,12 @@ function parseLyrics(lyricsText, duration) {
             const seconds = parseInt(match[2]);
             const ms = match[3] ? parseFloat('0.' + match[3]) : 0;
             const time = minutes * 60 + seconds + ms;
-            
-            let text = line.replace(timeRegex, '').trim();
-            
-            // Parse word-level timestamps if available (Enhanced LRC)
-            const words = [];
-            let lastIdx = 0;
-            let wordMatch;
-            while ((wordMatch = wordTimeRegex.exec(text)) !== null) {
-                const wordText = text.substring(lastIdx, wordMatch.index).trim();
-                if (wordText) {
-                    const wMin = parseInt(wordMatch[1]);
-                    const wSec = parseInt(wordMatch[2]);
-                    const wMs = wordMatch[3] ? parseFloat('0.' + wordMatch[3]) : 0;
-                    words.push({ text: wordText, time: wMin * 60 + wSec + wMs });
-                }
-                lastIdx = wordTimeRegex.lastIndex;
-            }
-            const remainingText = text.substring(lastIdx).trim();
-            if (remainingText) words.push({ text: remainingText, time: time + 5 }); // Fallback end time
-
-            // Clean text for display if it had word tags
-            const cleanText = text.replace(wordTimeRegex, ' ').replace(/\s+/g, ' ').trim();
-            
-            parsed.push({ time, text: cleanText, words: words.length > 0 ? words : null });
+            const text = line.replace(timeRegex, '').trim();
+            parsed.push({ time, text });
         } else {
-            parsed.push({ time: null, text: line, words: null });
+            parsed.push({ time: null, text: line });
         }
     }
-
     if (!hasTimestamps && duration && duration > 0) {
         const total = parsed.length;
         parsed.forEach((item, index) => {
@@ -2645,38 +2324,25 @@ function parseLyrics(lyricsText, duration) {
         });
     }
     
-    // Insert dots and calculate end times
+    // Insert dots for long breaks
     const finalParsed = [];
     
-    // Handle start wait (instrumental intro)
+    // Handle start wait
     if (parsed.length > 0 && parsed[0].time > 3) {
         finalParsed.push({ 
             time: 0, 
-            endTime: parsed[0].time,
+            endTime: parsed[0].time - 0.5,
             type: 'dots', 
             text: '...' 
         });
     }
 
     for (let i = 0; i < parsed.length; i++) {
-        const current = parsed[i];
-        const next = parsed[i+1];
-        
-        // Calculate endTime based on next line or total duration
-        if (next && next.time !== null) {
-            current.endTime = next.time;
-        } else if (duration) {
-            current.endTime = duration;
-        } else {
-            current.endTime = current.time + 5;
-        }
-
-        finalParsed.push(current);
-
-        if (next && next.time !== null && (next.time - current.time > 8)) {
+        finalParsed.push(parsed[i]);
+        if (i < parsed.length - 1 && parsed[i+1].time - parsed[i].time > 5) {
             finalParsed.push({ 
-                time: current.time + 4, 
-                endTime: next.time,
+                time: parsed[i].time + 1, 
+                endTime: parsed[i+1].time - 0.5,
                 type: 'dots', 
                 text: '...' 
             });
@@ -2687,84 +2353,49 @@ function parseLyrics(lyricsText, duration) {
 function updateLyricsSync(currentTime) {
     if (!parsedLyrics || parsedLyrics.length === 0) return;
     
-    // Adjusted lead-in for tight sync
-    let adjustedTime = currentTime + 0.35;
-    
-    // Auto-calibration: If we've detected vocals, and the first lyric is close, 
-    // we can use the detection to improve accuracy
-    if (vocalDetectedTime && parsedLyrics.length > 0) {
-        const firstLyric = parsedLyrics.find(l => l.type !== 'dots');
-        if (firstLyric && Math.abs(vocalDetectedTime - firstLyric.time) < 2.5) {
-            const drift = vocalDetectedTime - firstLyric.time;
-            // Apply a small correction if we detected vocals significantly before/after expected
-            if (Math.abs(drift) > 0.05) {
-                adjustedTime -= (drift * 0.4); // Smoothly apply correction
-            }
-        }
-    }
+    // Add a small lead-in offset so lyrics change slightly before they are said
+    const adjustedTime = currentTime + 0.3;
     
     let activeIndex = -1;
     for (let i = 0; i < parsedLyrics.length; i++) {
-        if (adjustedTime >= parsedLyrics[i].time && adjustedTime < (parsedLyrics[i].endTime || Infinity)) {
+        if (adjustedTime >= parsedLyrics[i].time) {
             activeIndex = i;
+        } else {
             break;
         }
     }
+    if (activeIndex === -1) return;
 
     const updateUI = (container, isVisible) => {
         if (!container) return;
         const lines = container.querySelectorAll('.lyric-line');
         lines.forEach((line, index) => {
             if (index === activeIndex) {
-                line.classList.add('active');
-                line.classList.remove('next-up');
-
-                const currentLine = parsedLyrics[index];
-                const startTime = currentLine.time;
-                const endTime = currentLine.endTime;
-                const lineDuration = Math.max(0.1, endTime - startTime);
-                const progress = Math.min(100, Math.max(0, ((adjustedTime - startTime) / lineDuration) * 100));
-                
-                // Update line-level fill progress
-                line.style.setProperty('--lyric-progress', `${progress}%`);
-
-                if (isVisible) {
-                    line.scrollIntoView({ behavior: 'auto', block: 'center' });
+                if (!line.classList.contains('active')) {
+                    line.classList.add('active');
+                    if (isVisible) {
+                        line.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                 }
                 
-                // Word-level highlighting (if Enhanced LRC is parsed)
-                if (currentLine.words) {
-                    const wordEls = line.querySelectorAll('.word');
-                    currentLine.words.forEach((word, wIdx) => {
-                        if (adjustedTime >= word.time) {
-                            if (wordEls[wIdx]) wordEls[wIdx].classList.add('highlight');
-                        } else {
-                            if (wordEls[wIdx]) wordEls[wIdx].classList.remove('highlight');
-                        }
-                    });
-                }
-
                 // Handle dots animation
                 const dots = line.querySelector('.lyric-dots');
                 if (dots) {
                     dots.classList.add('active');
                     const dotEls = dots.querySelectorAll('.lyric-dot');
-                    const dotProgress = (adjustedTime - startTime) / lineDuration;
+                    const startTime = parsedLyrics[index].time;
+                    const endTime = parsedLyrics[index].endTime;
+                    const duration = endTime - startTime;
+                    const progress = (adjustedTime - startTime) / duration;
                     
                     dotEls.forEach((dot, i) => {
-                        const threshold = (i + 1) / 4; 
-                        if (dotProgress > threshold) dot.classList.add('highlight');
+                        const threshold = (i + 1) / 4; // 3 dots, 4 segments
+                        if (progress > threshold) dot.classList.add('highlight');
                         else dot.classList.remove('highlight');
                     });
                 }
             } else {
                 line.classList.remove('active');
-                line.style.setProperty('--lyric-progress', '0%');
-                if (index === activeIndex + 1) {
-                    line.classList.add('next-up');
-                } else {
-                    line.classList.remove('next-up');
-                }
                 const dots = line.querySelector('.lyric-dots');
                 if (dots) dots.classList.remove('active');
             }
@@ -2776,7 +2407,7 @@ function updateLyricsSync(currentTime) {
     updateUI(panelContent, isLyricsPanel);
 
     const fsPlayer = document.getElementById('fsPlayer');
-    const isFsVisible = fsPlayer && fsPlayer.classList.contains('active');
+    const isFsVisible = fsPlayer && fsPlayer.style.display === 'flex';
     const fsLyrics = document.querySelector('.fs-lyrics-container');
     updateUI(fsLyrics, isFsVisible);
 }
@@ -2789,40 +2420,6 @@ function seekToLyrics(time) {
         player.seekTo(time);
     }
 }
-function calibrateLyrics(e, index) {
-    e.preventDefault();
-    if (!currentTrack || !parsedLyrics || parsedLyrics.length === 0) return;
-    
-    const audio = document.getElementById('nativeAudio');
-    let currentTime = 0;
-    if (activeSource === 'audio' && audio) {
-        currentTime = audio.currentTime;
-    } else if (player && typeof player.getCurrentTime === 'function') {
-        currentTime = player.getCurrentTime();
-    }
-    
-    if (currentTime <= 0) return;
-
-    // Use a small lead-in to match the user's perception
-    const targetTime = currentTime;
-    const originalTime = parsedLyrics[index].time;
-    const offset = targetTime - originalTime;
-
-    const trackId = getTrackUid(currentTrack);
-    const calibrationData = JSON.parse(localStorage.getItem('velium_lyric_calibration') || '{}');
-    calibrationData[trackId] = offset;
-    localStorage.setItem('velium_lyric_calibration', JSON.stringify(calibrationData));
-
-    showToast(`Lyrics calibrated! Offset: ${offset > 0 ? '+' : ''}${offset.toFixed(2)}s`, 'success');
-    
-    // Apply offset to current session
-    parsedLyrics.forEach(l => {
-        if (l.time !== null) l.time += offset;
-        if (l.endTime !== null) l.endTime += offset;
-    });
-}
-window.calibrateLyrics = calibrateLyrics;
-
 function adjustLyricsFontSize() {
     const fsLyrics = document.querySelector('.fs-lyrics-container');
     if (!fsLyrics) return;
@@ -2869,7 +2466,6 @@ function adjustLyricsFontSize() {
         }
     });
 }
-
 window.addEventListener('resize', adjustLyricsFontSize);
 
 async function fetchLyrics() {
@@ -2943,17 +2539,6 @@ function renderLyricsToUI(lyricsText, playingWhenStarted) {
         }
         parsedLyrics = parseLyrics(lyricsText, duration);
 
-        // Apply saved calibration
-        const trackId = getTrackUid(currentTrack);
-        const calibrationData = JSON.parse(localStorage.getItem('velium_lyric_calibration') || '{}');
-        const savedOffset = calibrationData[trackId] || 0;
-        if (savedOffset !== 0) {
-            parsedLyrics.forEach(l => {
-                if (l.time !== null) l.time += savedOffset;
-                if (l.endTime !== null) l.endTime += savedOffset;
-            });
-        }
-
         const html = parsedLyrics.map((line, idx) => {
             if (line.type === 'dots') {
                 return `<div class="lyric-line dots-line" style="display: flex; justify-content: center; pointer-events: none;">
@@ -2964,16 +2549,9 @@ function renderLyricsToUI(lyricsText, playingWhenStarted) {
                     </div>
                 </div>`;
             }
-            
             const contextAttr = (line.time !== null) ? `oncontextmenu="calibrateLyrics(event, ${idx})"` : '';
             const untimedClass = (line.time === null || line.time === undefined) ? 'untimed' : '';
-            
-            let lineHtml = '';
-            if (line.words) {
-                lineHtml = line.words.map(w => `<span class="word">${escapeHtml(w.text)}</span>`).join('');
-            } else {
-                lineHtml = escapeHtml(line.text);
-            }
+            let lineHtml = escapeHtml(line.text);
 
             if (line.time !== null && line.time !== undefined) {
                 return `<div class="lyric-line ${untimedClass}" onclick="seekToLyrics(${line.time})" ${contextAttr}>${lineHtml}</div>`;

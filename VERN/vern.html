@@ -110,17 +110,17 @@
 
         /* --- 4SP THEME SYNC --- */
         :root {
-            --bg-color: var(--bg-primary, #000000);
-            --toolbar-bg: var(--bg-primary, #000000);
-            --item-bg: var(--bg-secondary, #0d0d0d);
-            --item-border: var(--border-primary, #1a1a1a);
-            --item-hover-bg: var(--border-faint, rgba(255,255,255,0.05));
-            --accent: var(--accent-primary, #4f46e5);
+            --bg-color: var(--bg-primary, #0B0A10);
+            --toolbar-bg: var(--bg-primary, #0B0A10);
+            --item-bg: var(--bg-secondary, #15131C);
+            --item-border: var(--border-primary, #2D273D);
+            --item-hover-bg: var(--menu-item-hover-bg, rgba(157, 123, 255, 0.1));
+            --accent: var(--accent-primary, #9D7BFF);
             --text-main: var(--text-primary, #ffffff);
-            --text-muted: var(--text-secondary, #666);
-            --radius: 18px; /* 20 - 2 */
+            --text-muted: var(--text-secondary, #C4B0FF);
+            --radius: 18px;
             --control-size: 42px;
-            --border-color: var(--border-primary, rgba(255,255,255,0.05));
+            --border-color: var(--border-primary, #2D273D);
         }
 
         body { 
@@ -357,6 +357,7 @@
             <input type="text" id="urlbar" placeholder="Search or enter URL">
         </form>
         <div class="flex items-center gap-2">
+             <button onclick="favoriteCurrent()" class="control-btn" title="Favorite Page"><i class="fa-solid fa-star"></i></button>
              <button onclick="pinCurrent()" class="control-btn" title="Pin Current Page"><i class="fas fa-thumbtack"></i></button>
              <button onclick="fullscreen()" class="control-btn" title="Fullscreen"><i class="fas fa-expand"></i></button>
         </div>
@@ -961,7 +962,46 @@
              navigateFrame(aTab, url);
         }
 
-        newTab();
+        function favoriteCurrent() {
+            const frame = document.querySelector(`.viewframe[data-frame-id="${aTab}"]`);
+            if (frame) {
+                try {
+                    const url = frame.contentWindow.location.href;
+                    const title = frame.contentDocument.title || "Proxy Page";
+                    let realUrl = url.includes(__uv$config.prefix) ? __uv$config.decodeUrl(url.split(__uv$config.prefix)[1]) : url;
+                    
+                    const favUrl = `/logged-in/vern.html?url=${encodeURIComponent(realUrl)}`;
+                    
+                    if (window.top.toggleFavorite) {
+                        window.top.toggleFavorite(title, favUrl, 'fa-solid fa-globe');
+                        window.showNotification("Toggled Favorite", "fa-solid fa-star", "success");
+                    } else {
+                        let favs = JSON.parse(localStorage.getItem('4sp-v7-favorites')) || [];
+                        const index = favs.findIndex(f => f.url === favUrl);
+                        if (index > -1) {
+                            favs.splice(index, 1);
+                            window.showNotification("Removed from Favorites", "fa-solid fa-star", "info");
+                        } else {
+                            favs.push({ name: title, url: favUrl, icon: 'fa-solid fa-globe' });
+                            window.showNotification("Added to Favorites", "fa-solid fa-star", "success");
+                        }
+                        localStorage.setItem('4sp-v7-favorites', JSON.stringify(favs));
+                    }
+                } catch(e) {
+                    console.error("Failed to favorite current page:", e);
+                }
+            }
+        }
+
+        // Handle incoming URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const incomingUrl = urlParams.get('url') || urlParams.get('q');
+        if (incomingUrl) {
+            nav(incomingUrl);
+        } else {
+            newTab();
+        }
+        
         window.nav = nav;
         window.addPin = addPin;
         window.removePin = removePin;

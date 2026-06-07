@@ -3,492 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4SP V7 - HOME</title>
-    <meta name="description" content="4SP V7 — A comprehensive academic platform for students. Featuring collaborative tools, focus audio, and a personalized learning environment.">
-
+    <title>4SP V7 - SEARCH</title>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6659160370587814" crossorigin="anonymous"></script>
-
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <script>window.__4sp_nav_mini = true;</script>
+    <script>window.__4sp_nav_none = true;</script>
     <script src="/injector.js"></script>
+    <script src="/pillbar.js"></script>
 
     <style>
-        :root {
-            --bg-page: var(--bg-primary, #0B0A10);
-            --bg-card: var(--bg-secondary, #15131C);
-            --text-main: var(--text-primary, #ffffff);
-            --text-muted: var(--text-secondary, #C4B0FF);
-            --accent-color: var(--accent-primary, #9D7BFF);
-            --accent-glow: var(--accent-secondary, rgba(157, 123, 255, 0.4));
-            --border-main: var(--border-primary, #2D273D);
-            --border-faint: var(--border-secondary, rgba(255,255,255,0.05));
-            --btn-bg: var(--button-bg, rgba(157, 123, 255, 0.1));
-            --btn-text: var(--button-text, #9D7BFF);
-        }
-
-        * { box-sizing: border-box; }
-
         body { 
             font-family: 'Manrope', sans-serif; 
-            color: var(--text-main);
-            background-color: var(--bg-page);
-            font-weight: 400;
+            background-color: var(--bg-main, #0B0A10);
+            color: var(--text-main, #ffffff);
             overflow-x: hidden;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* Subtle dot grid */
-        .grid-bg {
-            background-image: radial-gradient(var(--border-faint) 1px, transparent 0);
-            background-size: 24px 24px;
+        .search-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1.2rem 1.5rem 1.2rem 3.5rem;
+            background: var(--bg-card, #15131C);
+            border: 1px solid var(--border-color, #2D273D);
+            border-radius: 20px;
+            color: var(--text-main, #ffffff);
+            font-size: 1.1rem;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: var(--glow-soft);
+        }
+
+        .search-input:focus {
+            border-color: var(--accent, #9D7BFF);
+            box-shadow: var(--glow-hover);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted, #C4B0FF);
+            font-size: 1.2rem;
+        }
+
+        .quick-selections {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            width: 100%;
+        }
+
+        @media (min-width: 640px) {
+            .quick-selections {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .selection-card {
+            background: var(--bg-card, #15131C);
+            border: 1px solid var(--border-color, #2D273D);
+            border-radius: 20px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-decoration: none;
+            color: var(--text-main, #ffffff);
+        }
+
+        .selection-card:hover {
+            border-color: var(--accent, #9D7BFF);
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: var(--glow-hover);
+        }
+
+        .selection-card i {
+            font-size: 1.5rem;
+            color: var(--accent, #9D7BFF);
+        }
+
+        .selection-card span {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         #dynamic-background {
             position: fixed;
             inset: 0;
-            background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%);
+            background: radial-gradient(circle at 50% 50%, var(--accent-glow), transparent 70%);
             pointer-events: none;
             z-index: -1;
-            opacity: 0.5; 
+            opacity: 0.3;
         }
-
-        /* Gradient Text Animation */
-        .gradient-text {
-            background-image: linear-gradient(90deg, #9D7BFF, #C4B0FF, #9D7BFF);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            background-size: 300% auto;
-            animation: shine 8s linear infinite;
-        }
-        @keyframes shine {
-            to { background-position: 300% center; }
-        }
-
-        /* Feature Cards */
-        .feature-card {
-            border-radius: 2rem;
-            border: 1px solid var(--border-main);
-            background: var(--bg-card);
-            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative;
-            overflow: hidden;
-        }
-        .feature-card:hover {
-            border-color: var(--accent-color);
-            transform: scale(1.02) translateY(-4px);
-            box-shadow: 0 20px 40px -10px rgba(157, 123, 255, 0.35);
-        }
-        .feature-card:active {
-            transform: scale(0.97);
-        }
-
-        /* Hero Button */
-        .btn-primary-override {
-            background-color: var(--btn-bg) !important;
-            border: 1px solid var(--accent-color) !important;
-            color: var(--accent-color) !important;
-            outline: 1px solid var(--accent-glow);
-            border-radius: 1.5rem;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .btn-primary-override:hover {
-            background-color: rgba(157, 123, 255, 0.25) !important;
-            color: #fff !important;
-            transform: scale(1.02) translateY(-4px);
-            outline: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 10px 30px -10px var(--accent-glow);
-        }
-        .btn-primary-override:active {
-            transform: scale(0.97);
-        }
-
-        /* Social Link Buttons */
-        .hero-btn-base {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.75rem 1.5rem;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--text-muted);
-            border-radius: 1rem; 
-            text-decoration: none;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border-main);
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .hero-btn-base:hover {
-            transform: scale(1.02) translateY(-4px);
-            border-color: var(--accent-color);
-            box-shadow: 0 10px 20px rgba(157, 123, 255, 0.2);
-        }
-        .hero-btn-base:active {
-            transform: scale(0.97);
-        }
-        .btn-style-purple:hover {
-            background-color: rgba(157, 123, 255, 0.1);
-            color: #fff;
-        }
-        .btn-style-orange:hover {
-            background-color: rgba(249, 115, 22, 0.1);
-            border-color: rgba(253, 186, 116, 0.5);
-            color: #fff;
-        }
-
-        /* Carousel controls */
-        .carousel-button {
-            width: 3rem; 
-            height: 3rem; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 1rem; 
-            border: 1px solid rgba(255,255,255,0.1);
-            cursor: pointer;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            background: rgba(0,0,0,0.5);
-        }
-        .carousel-button:hover {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            color: #fff;
-            transform: scale(1.02) translateY(-4px);
-        }
-        .carousel-button:active {
-            transform: scale(0.97);
-        }
-
-        /* Overlays */
-        .modal-backdrop {
-            position: fixed; inset: 0; z-index: 9999;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-        .modal-backdrop.open {
-            opacity: 1; pointer-events: auto;
-        }
-
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 10px; }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #333; }
     </style>
-
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-1D4F692C1Q');
-    </script>    
 </head>
-
 <body class="grid-bg">
     <div id="dynamic-background"></div>
-    <div id="navbar-container"></div>
 
-    <main class="flex-1 min-w-0 pt-24 overflow-y-auto custom-scroll relative z-10">
+    <div class="search-container">
+        <h1 class="text-4xl font-extrabold mb-8 tracking-tighter">4SP <span class="text-[var(--accent)]">V7</span></h1>
         
-        <header class="text-center px-6 lg:px-8 pt-12 pb-8 max-w-4xl mx-auto">
-            <h1 class="text-xs md:text-sm font-black text-[var(--accent-color)] uppercase tracking-widest mb-4 opacity-80">
-                Trusted by over 700 students across 13+ schools.
-            </h1>
-            <h2 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
-                <span class="gradient-text">Academic Collaboration, Reimagined.</span>
-            </h2>
-            <p class="text-base md:text-xl text-gray-400 max-w-2xl mx-auto font-light leading-relaxed">
-                Welcome to <strong>4SP V7</strong> — a stateless, student-built hub featuring peer network capabilities, study audio tools, and customized dashboard controls.
-            </p>
-        </header>
+        <form id="search-form" class="search-input-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="search-query" class="search-input" placeholder="Search the web or 4SP..." autocomplete="off">
+        </form>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto px-6 lg:px-8 pb-12">
-            
-            <!-- MAIN HERO ACTION CARD (col-span-2) -->
-            <div class="feature-card col-span-1 md:col-span-2 p-8 flex flex-col justify-between min-h-[350px]">
-                <div>
-                    <div class="flex items-center gap-3 mb-4">
-                        <span class="text-[10px] font-black text-[var(--accent-color)] uppercase tracking-[0.2em] bg-[var(--btn-bg)] border border-[var(--accent-color)]/20 px-3 py-1 rounded-lg">Get Started</span>
-                    </div>
-                    <h3 class="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-4">Explore 4SP Instantly</h3>
-                    <p class="text-sm md:text-base text-gray-400 leading-relaxed mb-6">
-                        Access games, audio engines, local settings, and dictionary tools with zero login required. Sign in optionally to synchronize streaks and social network status.
-                    </p>
-                </div>
-                
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                    <a id="auth-button" href="/authentication.html" class="btn-primary-override inline-flex items-center justify-center px-8 py-4 text-sm font-bold uppercase tracking-widest shadow-lg">
-                        Sign In / Up <i class="fas fa-sign-in-alt ml-3"></i>
-                    </a>
-                    <a id="offline-button" href="/logged-in/games.html" class="btn-primary-override inline-flex items-center justify-center px-8 py-4 text-sm font-bold uppercase tracking-widest shadow-lg" style="border-color: rgba(255,255,255,0.1) !important; color: rgba(255,255,255,0.7) !important;">
-                        Continue Offline <i class="fas fa-arrow-right ml-3"></i>
-                    </a>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <a href="https://linktr.ee/4simpleproblems" target="_blank" class="hero-btn-base btn-style-purple">
-                            <i class="fas fa-link mr-2"></i> Linktree
-                        </a>
-                        <a href="https://discord.gg/zcADhddGQz" target="_blank" class="hero-btn-base btn-style-purple">
-                            <i class="fa-brands fa-discord mr-2"></i> Discord
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- COLLABORATION CARD (col-span-1) -->
-            <div class="feature-card p-8 flex flex-col justify-between min-h-[350px]">
-                <div>
-                    <div class="flex items-center gap-3 mb-4">
-                        <span class="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-lg">Peer Network</span>
-                    </div>
-                    <h3 class="text-2xl font-semibold tracking-tight text-white mb-3">Collaboration</h3>
-                    <p class="text-xs md:text-sm text-gray-400 leading-relaxed">
-                        Connect with classmates through our peer learning network. Follow fellow students to stay updated on shared study activity and academic progress in real-time.
-                    </p>
-                </div>
-                <div class="mt-4">
-                    <a href="/logged-in/profile.html" class="inline-flex items-center text-xs font-bold uppercase tracking-widest text-orange-400 hover:text-orange-300 transition group">
-                        View Your Profile <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                    </a>
-                </div>
-            </div>
-
-            <!-- FOCUS AUDIO CARD (col-span-1) -->
-            <div class="feature-card p-8 flex flex-col justify-between min-h-[320px]">
-                <div>
-                    <div class="flex items-center gap-3 mb-4">
-                        <span class="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-lg">Focus Audio</span>
-                    </div>
-                    <h3 class="text-2xl font-semibold tracking-tight text-white mb-3">Velium Study Audio</h3>
-                    <p class="text-xs md:text-sm text-gray-400 leading-relaxed mb-4">
-                        Search through a curated library of study music, lo-fi, and concentration audio. Fully optimized metadata caching ensures instant playback.
-                    </p>
-                </div>
-                <div>
-                    <a href="/VELIUM/index.html" class="inline-flex items-center text-xs font-bold uppercase tracking-widest text-blue-400 hover:text-blue-300 transition group">
-                        Open Velium <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                    </a>
-                </div>
-            </div>
-
-            <!-- PRIVACY CAROUSEL CARD (col-span-2) -->
-            <div class="feature-card col-span-1 md:col-span-2 p-8 flex flex-col md:flex-row gap-6 min-h-[320px]">
-                <div class="flex-1 flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center gap-3 mb-4">
-                            <span class="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] bg-purple-500/10 border border-purple-500/20 px-3 py-1 rounded-lg">Student Essentials</span>
-                        </div>
-                        <h3 class="text-2xl font-semibold tracking-tight text-white mb-3">Academic Toolkit</h3>
-                        <p class="text-xs md:text-sm text-gray-400 leading-relaxed mb-4">
-                            Featuring encrypted note storage, custom-key panic redirects, visual theme picker, and integrated tab-disguising tools to safeguard your environment.
-                        </p>
-                    </div>
-                    <div class="text-xs text-gray-500 font-mono">
-                        Stateless Customization Active.
-                    </div>
-                </div>
-                <div class="w-full md:w-1/2 aspect-video rounded-2xl overflow-hidden relative border border-[var(--border-main)] flex items-center justify-center p-1 bg-black/40">
-                    <div class="image-carousel-container relative w-full h-full rounded-xl overflow-hidden">
-                        <img src="doc-images/pin_button.png" alt="Privacy" class="carousel-image absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out opacity-100">
-                        <img src="doc-images/panic_key.png" alt="Tools" class="carousel-image absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out opacity-0">
-                        <img src="doc-images/tab_disguise.png" alt="Tools" class="carousel-image absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out opacity-0">
-
-                        <button class="carousel-button prev-button absolute top-1/2 left-4 -translate-y-1/2 text-white z-20 shadow-xl border border-white/20 hover:scale-110">
-                            <i class="fas fa-chevron-left text-sm"></i>
-                        </button>
-                        <button class="carousel-button next-button absolute top-1/2 right-4 -translate-y-1/2 text-white z-20 shadow-xl border border-white/20 hover:scale-110">
-                            <i class="fas fa-chevron-right text-sm"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <section class="max-w-4xl mx-auto px-6 py-16 text-center border-t border-white/10 mt-20">
-            <h2 class="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4">Powered by Firebase</h2>
-            <p class="text-gray-400 text-lg font-light leading-relaxed">
-                4SP V7 uses a modern cloud backend. 
-                <strong class="text-white font-normal">Data integrity and student privacy are our priority</strong> as we continue to refine the platform.
-            </p>
-            
-            <div class="mt-12 flex items-center justify-center gap-4 text-xs font-bold uppercase tracking-widest text-gray-600">
-                <span>&copy; 2026 4SP.</span>
-                <span class="opacity-30">•</span>
-                <a href="/legal.html#terms-of-service" class="hover:text-white transition-colors">Terms</a>
-                <span class="opacity-30">•</span>
-                <a href="/legal.html#privacy-policy" class="hover:text-white transition-colors">Privacy</a>
-            </div>
-        </section>
-
-    </main>
-
-    <div id="cookie-overlay" class="modal-backdrop">
-        <div class="feature-card max-w-2xl w-full p-8 mx-4 flex flex-col md:flex-row items-center gap-8">
-            <div class="flex-1 text-center md:text-left">
-                <h3 class="text-2xl font-light tracking-tight mb-2 text-white">Cookie Consent</h3>
-                <p class="text-sm text-gray-400 font-light leading-relaxed mb-4">
-                    We use cookies for authentication and to save your preferences.
-                </p>
-                <div class="flex items-center justify-center md:justify-start gap-4 text-[10px] font-bold uppercase tracking-widest">
-                    <a href="https://policies.google.com/technologies/cookies" target="_blank" class="text-indigo-400 hover:text-indigo-300 transition-colors">Details</a>
-                    <span class="opacity-20">•</span>
-                    <a href="/legal.html#privacy-policy" class="text-indigo-400 hover:text-indigo-300 transition-colors">Policy</a>
-                </div>
-            </div>
-            <button id="accept-cookies-button" class="btn-toolbar-style btn-primary-override px-8 py-3 text-xs font-black uppercase tracking-widest shrink-0">
-                I Understand
-            </button>
-        </div>
-    </div>
-
-    <div id="mobile-warning-overlay" class="modal-backdrop">
-        <div class="feature-card max-w-md w-full p-10 mx-4 text-center">
-            <div class="w-20 h-20 bg-indigo-500/10 border border-indigo-500/20 rounded-[24px] flex items-center justify-center text-indigo-400 text-3xl mx-auto mb-6">
-                <i class="fas fa-desktop"></i>
-            </div>
-            <h2 class="text-3xl font-light text-white tracking-tight mb-4">Desktop Recommended</h2>
-            <p class="text-gray-400 text-sm font-light leading-relaxed mb-8">
-                4SP V7 features tools like Velium and the dashboard that are best experienced on a larger screen. Please use a desktop for the full experience.
-            </p>
-            <button id="dismiss-mobile-warning" class="btn-toolbar-style w-full py-4 text-[10px] font-black uppercase tracking-widest">
-                Dismiss Warning
-            </button>
+        <div class="quick-selections">
+            <a href="/logged-in/games.html" class="selection-card">
+                <i class="fa-solid fa-gamepad"></i>
+                <span>Games</span>
+            </a>
+            <a href="/VELIUM/index.html" class="selection-card">
+                <i class="fa-solid fa-music"></i>
+                <span>Music</span>
+            </a>
+            <a href="/logged-in/vora.html" class="selection-card">
+                <i class="fa-solid fa-tv"></i>
+                <span>Movies</span>
+            </a>
+            <a href="/logged-in/settings.html" class="selection-card">
+                <i class="fa-solid fa-gear"></i>
+                <span>Settings</span>
+            </a>
         </div>
     </div>
 
     <script>
-        (function() {
-            const mobileOverlay = document.getElementById('mobile-warning-overlay');
-            const dismissBtn = document.getElementById('dismiss-mobile-warning');
-            const STORAGE_KEY = '4sp-v7-mobile-dismissed';
-            
-            function checkAspectRatio() {
-                if (localStorage.getItem(STORAGE_KEY) === 'true') return;
-                if (window.innerHeight > window.innerWidth) {
-                    mobileOverlay.classList.add('open');
-                } else {
-                    mobileOverlay.classList.remove('open');
-                }
-            }
-            
-            checkAspectRatio();
-            window.addEventListener('resize', checkAspectRatio);
-            
-            if (dismissBtn) {
-                dismissBtn.addEventListener('click', () => {
-                    mobileOverlay.classList.remove('open');
-                    localStorage.setItem(STORAGE_KEY, 'true');
-                });
-            }
-        })();
-    </script>
-    
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
-    <script type="module" src="/firebase-config.js"></script>
+        const searchForm = document.getElementById('search-form');
+        const searchQuery = document.getElementById('search-query');
 
-    <script type="module">
-        const COOKIE_KEY = '4sp-v7-cookie-consent';
-        const cookieOverlay = document.getElementById('cookie-overlay');
-        const acceptCookiesButton = document.getElementById('accept-cookies-button');
-        
-        const hideCookieBanner = () => {
-            cookieOverlay.classList.remove('open');
-            localStorage.setItem(COOKIE_KEY, 'accepted');
-        };
-        
-        const showCookieBanner = () => {
-            cookieOverlay.classList.add('open');
-        };
-        
-        if (localStorage.getItem(COOKIE_KEY) !== 'accepted') {
-            window.addEventListener('load', showCookieBanner);
-        }
-        if (acceptCookiesButton) acceptCookiesButton.addEventListener('click', hideCookieBanner);
-
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
-        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
-        import { firebaseConfig } from '/firebase-config.js';
-        
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const authButton = document.getElementById('auth-button');
-        const offlineButton = document.getElementById('offline-button');
- 
-        const updateButtonState = (isLoggedIn) => {
-            if (!authButton) return;
-            if (isLoggedIn) {
-                authButton.href = '/logged-in/dashboard.html';
-                authButton.innerHTML = 'Go to Dashboard <i class="fas fa-arrow-right ml-3"></i>';
-                if (offlineButton) offlineButton.style.display = 'none';
-            } else {
-                authButton.href = '/authentication.html';
-                authButton.innerHTML = 'Sign In / Up <i class="fas fa-sign-in-alt ml-3"></i>';
-                if (offlineButton) offlineButton.style.display = 'inline-flex';
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = searchQuery.value.trim();
+            if (query) {
+                // Redirect to proxy search
+                window.location.href = `/logged-in/vern.html?q=${encodeURIComponent(query)}`;
             }
-        };
-
-        // Firebase Auth listener
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                updateButtonState(true);
-            } else {
-                // If no firebase user, check supabase
-                checkSupabase();
-            }
-        });
-
-        // Supabase Auth check
-        async function checkSupabase() {
-            if (window.supabase) {
-                const { data: { session } } = await window.supabase.auth.getSession();
-                if (session) {
-                    updateButtonState(true);
-                }
-            } else {
-                setTimeout(checkSupabase, 500);
-            }
-        }
-        checkSupabase();
-    </script>
-    <script type="module">
-        document.querySelectorAll('.image-carousel-container').forEach(container => {
-            const images = container.querySelectorAll('.carousel-image');
-            const prevButton = container.querySelector('.prev-button');
-            const nextButton = container.querySelector('.next-button');
-            let currentIndex = 0;
-            
-            function showImage(index) {
-                images.forEach((img, i) => {
-                    img.classList.toggle('opacity-100', i === index);
-                    img.classList.toggle('opacity-0', i !== index);
-                });
-            }
-            
-            if (prevButton && nextButton) {
-                prevButton.addEventListener('click', () => {
-                    currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
-                    showImage(currentIndex);
-                });
-                nextButton.addEventListener('click', () => {
-                    currentIndex = (currentIndex < images.length - 1) ? currentIndex + 1 : 0;
-                    showImage(currentIndex);
-                });
-            }
-            showImage(currentIndex); 
         });
     </script>
 </body>

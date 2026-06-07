@@ -213,7 +213,7 @@
             #dynamic-background {
                 position: fixed !important;
                 inset: 0 !important;
-                background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 65%) !important;
+                background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 20%), var(--accent-glow), transparent 65%) !important;
                 pointer-events: none !important;
                 z-index: -1 !important;
                 opacity: 0.5 !important; 
@@ -284,6 +284,16 @@
             }
         `;
     };
+
+    const initCursorTracking = () => {
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) * 100;
+            const y = (e.clientY / window.innerHeight) * 100;
+            document.documentElement.style.setProperty('--mouse-x', x + '%');
+            document.documentElement.style.setProperty('--mouse-y', y + '%');
+        });
+    };
+    initCursorTracking();
 
     const ensureManropeFont = () => {
         if (!document.querySelector('link[href*="fonts.googleapis.com/css2?family=Manrope"]')) {
@@ -373,12 +383,8 @@
     ];
 
     // Conditionally load navigation based on flag
-    if (window.__4sp_nav_none) {
-        console.log("Navbar loading skipped due to __4sp_nav_none flag.");
-    } else if (window.__4sp_nav_mini) {
-        scriptsToLoad.push({ url: '/navigation-mini.js' });
-    } else {
-        scriptsToLoad.push({ url: '/navigation.js' });
+    if (!window.__4sp_nav_none) {
+        scriptsToLoad.push({ url: '/pillbar.js' });
     }
 
     // --- V7.0 Announcement Modal ---
@@ -522,7 +528,7 @@
                         if (!window.supabase) return;
 
                         try {
-                            const { data: { user } } = await window.supabase.auth.getUser();
+                            const { data: { user } } = await window.supabase.auth.getSession();
                             if (!user) return;
 
                             const { data: profile } = await window.supabase.from('profiles').select('is_admin, email').eq('id', user.id).single();

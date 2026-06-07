@@ -1,5 +1,3 @@
-// db.js - IndexedDB Wrapper for Velium Music
-
 const DB_NAME = 'VeliumMusicDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'library';
@@ -10,9 +8,6 @@ const dbPromise = new Promise((resolve, reject) => {
     request.onupgradeneeded = (event) => {
         const db = event.target.result;
         if (!db.objectStoreNames.contains(STORE_NAME)) {
-            // We store the entire library object as a single entry for simplicity,
-            // mimicking the previous localStorage structure but with more capacity.
-            // Alternatively, we could normalize it, but let's stick to the current shape for minimal refactor.
             db.createObjectStore(STORE_NAME);
         }
     };
@@ -22,7 +17,7 @@ const dbPromise = new Promise((resolve, reject) => {
     };
 
     request.onerror = (event) => {
-        console.error("IndexedDB error:", event.target.error);
+        console.error(event.target.error);
         reject(event.target.error);
     };
 });
@@ -36,7 +31,6 @@ const DB = {
             const request = store.get('main_library');
 
             request.onsuccess = () => {
-                // Return default structure if empty
                 resolve(request.result || { likedSongs: [], playlists: [] });
             };
             request.onerror = () => reject(request.error);
@@ -56,7 +50,4 @@ const DB = {
     }
 };
 
-// Export for usage in modules (or window global for script.js)
 window.VeliumDB = DB;
-
-// Made with ❤️ from 4SP

@@ -49,14 +49,21 @@
 </head>
 <body>
     <div id="page-content" style="display: none;">
-        <iframe src="../VERN/vern.html" allowfullscreen></iframe>
+        <iframe id="proxy-frame" src="../VERN/vern.html" allowfullscreen></iframe>
     </div>
 
     <script type="module">
         import { checkAdminStatus } from "../utils.js";
 
-        // Supabase client is initialized by injector.js and available as window.supabase
         const pageContent = document.getElementById('page-content');
+        const proxyFrame = document.getElementById('proxy-frame');
+
+        // Handle URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetUrl = urlParams.get('url') || urlParams.get('q');
+        if (targetUrl) {
+            proxyFrame.src = `../VERN/vern.html?url=${encodeURIComponent(targetUrl)}`;
+        }
 
         async function checkSession() {
             if (!window.supabase) {

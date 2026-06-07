@@ -53,28 +53,39 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { firebaseConfig } from "../firebase-config.js";
         import { checkAdminStatus } from "../utils.js";
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
+        // Supabase client is initialized by injector.js and available as window.supabase
         const pageContent = document.getElementById('page-content');
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                if (window.showLoader) window.showLoader("Velium");
-                // User is signed in, show content
-                if (window.hideLoader) window.hideLoader();
+        async function checkSession() {
+            if (!window.supabase) {
+                console.warn("Velium: Supabase not ready, waiting...");
+                setTimeout(checkSession, 100);
+                return;
+            }
+
+            const { data: { session } } = await window.supabase.auth.getSession();
+            
+            if (session) {
                 pageContent.style.display = 'flex';
             } else {
-                // User is signed out, redirect to authentication page
                 window.location.href = '../authentication.html';
             }
-        });
+        }
+
+        // Listen for auth changes
+        if (window.supabase) {
+            window.supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT') {
+                    window.location.href = '../authentication.html';
+                } else if (session) {
+                    pageContent.style.display = 'flex';
+                }
+            });
+        }
+
+        checkSession();
     </script>
 </body>
 </html>

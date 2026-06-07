@@ -1,47 +1,17 @@
-importScripts('/VELIUM/uv/uv.bundle.js');
-importScripts('/VELIUM/baremux/index.js');
+importScripts('/VERN/uv/uv.bundle.js');
+importScripts('/VERN/baremux/index.js');
 
 // Unified Proxy Configuration
 const configs = {
     velium: {
-        prefix: '/VELIUM/uv/service/',
+        prefix: '/VELIUM/v-proxy/service/',
         bare: '/api/bare',
-        bundle: '/VELIUM/uv/uv.bundle.js',
-        config: '/VELIUM/uv/uv.config.js',
-        sw: '/VELIUM/uv/uv.sw.js',
-        handler: '/VELIUM/uv/uv.handler.js',
-        client: '/VELIUM/uv/uv.client.js',
+        bundle: '/VELIUM/v-proxy/uv.bundle.js',
+        config: '/VELIUM/v-proxy/uv.config.js',
+        sw: '/VELIUM/v-proxy/uv.sw.js',
+        handler: '/VELIUM/v-proxy/uv.handler.js',
+        client: '/VELIUM/v-proxy/uv.client.js',
         worker: '/logged-in/baremux/worker.js'
-    },
-    vora: {
-        prefix: '/VORA/VERN_SYSTEM/uv/service/',
-        bare: '/api/bare',
-        bundle: '/VORA/VERN_SYSTEM/uv/uv.bundle.js',
-        config: '/VORA/VERN_SYSTEM/uv/uv.config.js',
-        sw: '/VORA/VERN_SYSTEM/uv/uv.sw.js',
-        handler: '/VORA/VERN_SYSTEM/uv/uv.handler.js',
-        client: '/VORA/VERN_SYSTEM/uv/uv.client.js',
-        worker: '/logged-in/baremux/worker.js'
-    },
-    vora_plus: {
-        prefix: '/VORA_PLUS/VERN_SYSTEM/uv/service/',
-        bare: '/api/bare',
-        bundle: '/VORA_PLUS/VERN_SYSTEM/uv/uv.bundle.js',
-        config: '/VORA_PLUS/VERN_SYSTEM/uv/uv.config.js',
-        sw: '/VORA_PLUS/VERN_SYSTEM/uv/uv.sw.js',
-        handler: '/VORA_PLUS/VERN_SYSTEM/uv/uv.handler.js',
-        client: '/VORA_PLUS/VERN_SYSTEM/uv/uv.client.js',
-        worker: '/logged-in/baremux/worker.js'
-    },
-    valo_plus: {
-        prefix: '/VALO_PLUS/VERN_SYSTEM/uv/service/',
-        bare: '/api/bare',
-        bundle: '/VALO_PLUS/VERN_SYSTEM/uv/uv.bundle.js',
-        config: '/VALO_PLUS/VERN_SYSTEM/uv/uv.config.js',
-        sw: '/VALO_PLUS/VERN_SYSTEM/uv/uv.sw.js',
-        handler: '/VALO_PLUS/VERN_SYSTEM/uv/uv.handler.js',
-        client: '/VALO_PLUS/VERN_SYSTEM/uv/uv.client.js',
-        worker: '/VALO_PLUS/VERN_SYSTEM/baremux/worker.js'
     },
     vern: {
         prefix: '/VERN/uv/service/',
@@ -72,26 +42,6 @@ const configs = {
         handler: '/GAMES/uv/uv.handler.js',
         client: '/GAMES/uv/uv.client.js',
         worker: '/logged-in/baremux/worker.js'
-    },
-    valo: {
-        prefix: '/VERN/uv/service/',
-        bare: '/api/bare',
-        bundle: '/VERN/uv/uv.bundle.js',
-        config: '/VERN/uv/uv.config.js',
-        sw: '/VERN/uv/uv.sw.js',
-        handler: '/VERN/uv/uv.handler.js',
-        client: '/VERN/uv/uv.client.js',
-        worker: '/logged-in/baremux/worker.js'
-    },
-    velium_plus: {
-        prefix: '/VELIUM_PLUS/VERN_SYSTEM/uv/service/',
-        bare: '/api/bare',
-        bundle: '/VELIUM_PLUS/VERN_SYSTEM/uv/uv.bundle.js',
-        config: '/VELIUM_PLUS/VERN_SYSTEM/uv/uv.config.js',
-        sw: '/VELIUM_PLUS/VERN_SYSTEM/uv/uv.sw.js',
-        handler: '/VELIUM_PLUS/VERN_SYSTEM/uv/uv.handler.js',
-        client: '/VELIUM_PLUS/VERN_SYSTEM/uv/uv.client.js',
-        worker: '/VELIUM_PLUS/VERN_SYSTEM/baremux/worker.js'
     }
 };
 
