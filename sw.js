@@ -261,10 +261,10 @@ async function handleRequest(event) {
 
     // Fallback routing for encoded URLs or media domains missing prefixes
     if (autoProxyDomains.some(domain => url.includes(domain)) || isEncoded) {
-        let targetInstance = instances.vora;
-        let targetConfig = configs.vora;
+        let targetInstance = instances.vern;
+        let targetConfig = configs.vern;
 
-        // Force TMDB to use vora instance as it's the most stable for assets
+        // Force TMDB to use vern instance as it's the most stable for assets
         let decodedForCheck = "";
         if (isEncoded) {
             try {
@@ -274,16 +274,16 @@ async function handleRequest(event) {
         }
 
         if (url.includes('themoviedb.org') || url.includes('tmdb.org') || decodedForCheck.includes('tmdb.org')) {
-            targetInstance = instances.vora;
-            targetConfig = configs.vora;
+            targetInstance = instances.vern;
+            targetConfig = configs.vern;
         } else {
             const referrer = event.request.referrer || "";
-            if (referrer.includes('/VORA_PLUS/') || referrer.includes('/logged-in/vora-plus.html')) {
-                targetInstance = instances.vora_plus;
-                targetConfig = configs.vora_plus;
-            } else if (referrer.includes('/VERN/') || referrer.includes('/logged-in/valo')) {
-                targetInstance = instances.valo;
-                targetConfig = configs.valo;
+            if (referrer.includes('/VELIUM/') || referrer.includes('/logged-in/velium.html')) {
+                targetInstance = instances.velium;
+                targetConfig = configs.velium;
+            } else if (referrer.includes('/VERN/') || referrer.includes('/logged-in/vern')) {
+                targetInstance = instances.vern;
+                targetConfig = configs.vern;
             }
         }
 
