@@ -1568,30 +1568,29 @@
             const checkPrivilege = () => {
                 return new Promise((resolve) => {
                     const check = async () => {
-                        if (typeof firebase === 'undefined' || !firebase.apps.length) {
+                        if (!window.supabase) {
                             setTimeout(check, 100);
                             return;
                         }
-                        const auth = firebase.auth();
-                        const validate = async (u) => {
-                            if (!u) return false;
-                            if (u.email === 'otweno30@minerva.sparcc.org' || u.email === '4simpleproblems@gmail.com') return true;
-                            const db = firebase.firestore();
-                            try {
-                                const adminDoc = await db.collection('admins').doc(u.uid).get();
-                                return adminDoc.exists;
-                            } catch (e) {
-                                return false;
-                            }
-                        };
-                        const user = auth.currentUser;
-                        if (user) resolve(await validate(user));
-                        else {
-                            const unsubscribe = auth.onAuthStateChanged(async (u) => {
-                                unsubscribe();
-                                resolve(await validate(u));
-                            });
+                        const { data: { session } } = await window.supabase.auth.getSession();
+                        if (!session) {
+                            resolve(false);
+                            return;
                         }
+                        const user = session.user;
+                        if (user.email === 'otweno30@minerva.sparcc.org' || user.email === '4simpleproblems@gmail.com') {
+                            resolve(true);
+                            return;
+                        }
+                        try {
+                            const { data: profile } = await window.supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+                            const { data: role } = await window.supabase.from('roles').select('role').eq('user_id', user.id).maybeSingle();
+                            if (profile?.is_admin || role?.role === 'full_admin') {
+                                resolve(true);
+                                return;
+                            }
+                        } catch (e) {}
+                        resolve(false);
                     };
                     check();
                 });

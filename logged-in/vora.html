@@ -44,6 +44,20 @@
                         ]);
                     }
                     console.log("Vora: BareMux Transport Active");
+                    
+                    const signalReady = () => {
+                        const msg = { type: 'baremuxready', path: "/logged-in/baremux/worker.js" };
+                        if (navigator.serviceWorker.controller) {
+                            navigator.serviceWorker.controller.postMessage(msg);
+                        }
+                        try {
+                            const bc = new BroadcastChannel("bare-mux-sync");
+                            bc.postMessage(msg);
+                        } catch(e) {}
+                    };
+                    signalReady();
+                    setTimeout(signalReady, 1000);
+
                     window.__4sp_bare_mux_connecting = false;
                     return; 
                 } catch (e) {

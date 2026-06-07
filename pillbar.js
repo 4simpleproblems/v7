@@ -27,7 +27,6 @@
                 <div class="sub-menu" id="more-links">
                     <a href="/logged-in/soundboard.html" data-tooltip="Soundboard" class="nav-icon sub-icon"><i class="fa-solid fa-volume-up"></i></a>
                     <a href="/logged-in/notes.html" data-tooltip="Notes" class="nav-icon sub-icon account-only"><i class="fa-solid fa-sticky-note"></i></a>
-                    <a href="/logged-in/dictionary.html" data-tooltip="Dictionary" class="nav-icon sub-icon"><i class="fa-solid fa-book"></i></a>
                     <a href="/logged-in/messenger-tutorial.html" data-tooltip="Messenger" class="nav-icon sub-icon account-only"><i class="fa-solid fa-comments"></i></a>
                 </div>
             </div>
