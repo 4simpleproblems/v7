@@ -1955,6 +1955,11 @@
 
                 // Case 2: Native APK
                 updateStatus("Native APK Detected.");
+                
+                // Revoke old URL if exists to prevent memory leak
+                if (window._currentApkUrl) URL.revokeObjectURL(window._currentApkUrl);
+                window._currentApkUrl = URL.createObjectURL(file);
+
                 setTimeout(() => {
                     loadingOverlay.remove();
                     zoneNameEl.textContent = file.name.replace('.apk', '');
@@ -1976,8 +1981,8 @@
                             <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;500;800&display=swap" rel="stylesheet">
                             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
                             <style>
-                                body { background: #000; color: #fff; font-family: 'Manrope', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-                                .card { background: #080808; border: 1px solid #1a1a1a; border-radius: 40px; padding: 48px; width: 85%; max-width: 480px; text-align: center; box-shadow: 0 50px 100px rgba(0,0,0,0.9); }
+                                body { background: #000; color: #fff; font-family: 'Manrope', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+                                .player-container { background: #080808; border: 1px solid #1a1a1a; border-radius: 40px; padding: 48px; width: 85%; max-width: 480px; text-align: center; box-shadow: 0 50px 100px rgba(0,0,0,0.9); position: relative; }
                                 .icon-container { position: relative; width: 140px; height: 140px; margin: 0 auto 32px; }
                                 .icon { width: 100%; height: 100%; border-radius: 32px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid #222; }
                                 .icon-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #1e1b4b, #312e81); border-radius: 32px; display: flex; align-items: center; justify-content: center; font-size: 4rem; color: #818cf8; border: 1px solid #4338ca; }
@@ -1990,37 +1995,47 @@
                                 .btn-primary:hover { background: #6366f1; transform: translateY(-3px); box-shadow: 0 15px 30px rgba(79, 70, 229, 0.4); }
                                 .btn-secondary { background: #111; color: #888; border: 1px solid #222; }
                                 .btn-secondary:hover { background: #1a1a1a; color: #fff; border-color: #333; }
-                                .footer-note { font-size: 0.8rem; color: #333; margin-top: 24px; font-weight: 500; }
+                                
+                                /* Custom Emulator Elements */
+                                .scanline { width: 100%; height: 2px; background: rgba(255,255,255,0.03); position: absolute; left: 0; pointer-events: none; }
+                                .player-brand { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; font-weight: 800; color: #222; text-transform: uppercase; letter-spacing: 0.3em; }
                             </style>
                         </head>
                         <body>
-                            <div class="card">
+                            <div class="player-container">
+                                <div class="player-brand">4SP Native Virtualizer</div>
                                 <div class="engine-tag"><i class="${engineIcon}"></i> ${engineName}</div>
                                 <div class="icon-container">
                                     ${appIcon ? `<img src="${appIcon}" class="icon">` : `<div class="icon-placeholder"><i class="fa-brands fa-android"></i></div>`}
                                 </div>
                                 <h1>${file.name.replace('.apk', '')}</h1>
-                                <p>This package contains native binaries. Native APKs cannot be played directly in the browser.</p>
+                                <p>Package compiled successfully. To play, you must launch this binary on your device.</p>
                                 <div class="btn-group">
-                                    <a href="${URL.createObjectURL(file)}" download="${file.name}" class="btn btn-primary">
-                                        <i class="fa-solid fa-download"></i> Download & Play Locally
-                                    </a>
+                                    <button class="btn btn-primary" onclick="window.parent.playLocal()">
+                                        <i class="fa-solid fa-play"></i> Play Locally
+                                    </button>
                                     <button class="btn btn-secondary" onclick="window.parent.launchCloudEmulator()">
-                                        <i class="fa-solid fa-cloud-play"></i> Try Cloud Emulator (Unstable)
+                                        <i class="fa-solid fa-cloud-bolt"></i> Stream to Browser
                                     </button>
                                 </div>
-                                <div class="footer-note">Note: Cloud instances are third-party and may be unreliable.</div>
                             </div>
                         </body>
                         </html>
                     `);
                     doc.close();
                     
+                    window.playLocal = () => {
+                        const a = document.createElement('a');
+                        a.href = window._currentApkUrl;
+                        a.download = file.name;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    };
+
                     window.launchCloudEmulator = () => {
-                        // Using Appetize.io as a modern replacement for the defunct ApkOnline
-                        // This uses a generic Nexus 5 demo instance as a placeholder
                         zoneFrame.src = 'https://appetize.io/embed/8bnv6hyie98pathut676bd8r80?device=nexus5&osVersion=8.1&scale=75';
-                        zoneNameEl.textContent = file.name.replace('.apk', '') + ' (Appetize Emulator)';
+                        zoneNameEl.textContent = file.name.replace('.apk', '') + ' (Stream)';
                     };
 
                     zoneViewer.style.display = "flex";
