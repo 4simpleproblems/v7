@@ -10,7 +10,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <script src="https://cdn.tailwindcss.com"></script>
     <script>window.__4sp_nav_mini = true;</script>
     <script src="/injector.js"></script>
 
@@ -781,7 +780,7 @@
             // Apply theme-based layout
             const savedTheme = JSON.parse(localStorage.getItem('user-navbar-theme')) || { name: 'Dark' };
             const isV1OrV2 = savedTheme.name === 'V1 Original' || savedTheme.name === 'V2 Original';
-            const isLightTheme = ['Light', 'Potato', 'Mint', 'Lavender', 'Rose Gold', 'V3 Original', 'Birthday'].includes(savedTheme.name);
+            const isLightTheme = ['Light', 'Potato', 'Mint', 'Lavender', 'Rose Gold', 'V3 Original', 'V4 Original', 'Birthday'].includes(savedTheme.name);
 
             if (isV1OrV2) {
                 document.body.classList.add('v1-mode');
