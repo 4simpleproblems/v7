@@ -353,7 +353,7 @@
             <button onclick="r()" class="control-btn" title="Reload"><i class="fas fa-rotate-right"></i></button>
              <button onclick="newTab()" class="control-btn" title="New Tab"><i class="fas fa-plus"></i></button>
         </div>
-        <form id="form" class="flex-grow">
+        <form id="form" class="flex-grow" onsubmit="event.preventDefault(); nav(document.getElementById('urlbar').value);">
             <input type="text" id="urlbar" placeholder="Search or enter URL">
         </form>
         <div class="flex items-center gap-2">
