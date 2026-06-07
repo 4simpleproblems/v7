@@ -288,6 +288,11 @@ async function handleRequest(event) {
         }
 
         try {
+            if (!targetConfig || !targetInstance) {
+                console.warn(`Root SW: Missing target config/instance for ${url}`);
+                return await fetch(event.request);
+            }
+
             if (isEncoded && !url.includes(targetConfig.prefix)) {
                 const encodedPart = url.split('hvtrs8')[1];
                 const fullProxyUrl = location.origin + targetConfig.prefix + 'hvtrs8' + encodedPart;

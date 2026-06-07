@@ -30,11 +30,9 @@
             background-color: var(--bg-page); 
             color: var(--text-muted); 
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
             min-height: 100vh;
             margin: 0;
-            overflow: hidden;
         }
 
         .auth-container {
@@ -48,6 +46,7 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             z-index: 10;
+            margin: 2rem auto;
         }
 
         .input-style {
@@ -173,7 +172,7 @@
     <div class="brand-bg"></div>
     <div id="navbar-container"></div>
 
-    <main class="flex-grow flex items-center justify-center p-6 mt-12">
+    <main class="flex-grow flex items-center justify-center p-6">
         <div class="auth-container animate-slide-up w-full max-w-md">
             <!-- Consolidated Auth Forms -->
             <div id="auth-forms" class="w-full">
