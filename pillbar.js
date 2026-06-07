@@ -130,6 +130,11 @@
             }
         });
         
+        if (window.location.pathname.includes('authentication.html')) {
+            const footer = document.querySelector('.footer-bar');
+            if (footer) footer.style.display = 'none';
+        }
+
         updateAuthUI();
     }
 

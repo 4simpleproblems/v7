@@ -42,6 +42,16 @@ const configs = {
         handler: '/GAMES/uv/uv.handler.js',
         client: '/GAMES/uv/uv.client.js',
         worker: '/logged-in/baremux/worker.js'
+    },
+    vora: {
+        prefix: '/VORA/VERN_SYSTEM/uv/service/',
+        bare: '/api/bare',
+        bundle: '/VORA/VERN_SYSTEM/uv/uv.bundle.js',
+        config: '/VORA/VERN_SYSTEM/uv/uv.config.js',
+        sw: '/VORA/VERN_SYSTEM/uv/uv.sw.js',
+        handler: '/VORA/VERN_SYSTEM/uv/uv.handler.js',
+        client: '/VORA/VERN_SYSTEM/uv/uv.client.js',
+        worker: '/logged-in/baremux/worker.js'
     }
 };
 
